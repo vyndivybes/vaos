@@ -273,3 +273,136 @@ test('Engineering adapter refuses malformed baseline before touching the domain 
   );
   assert.equal(touched, false);
 });
+
+
+test('Project/Risk adapter persists a durable escalation record and verifies it from the domain store', async () => {
+  const calls = [];
+  const projectRisk = {
+    async escalateRisk(job, input) {
+      calls.push({ operation: 'escalate', job, input });
+      return {
+        outcome: 'CREATED',
+        record: {
+          riskId: input.riskId,
+          status: 'ESCALATED',
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+    async getRiskEscalation(job, riskId) {
+      calls.push({ operation: 'read', job, riskId });
+      return {
+        riskId,
+        status: 'ESCALATED',
+        executionJobId: job.id,
+        intentId: job.intentId,
+      };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ projectRisk }).get('PROJECT.ESCALATE_RISK').execute({
+    id: 'job-risk-1',
+    intentId: 'intent-risk-1',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    payload: { riskId: 'RSK-013' },
+  });
+
+  assert.equal(result.adapterId, 'supabase.project-risk.v1');
+  assert.deepEqual(result.effect, {
+    effectType: 'PROJECT.RISK_ESCALATED',
+    resourceType: 'RISK',
+    resourceId: 'RSK-013',
+    state: 'ESCALATED',
+    domainOutcome: 'CREATED',
+  });
+  assert.deepEqual(result.verification, {
+    verified: true,
+    resourceType: 'RISK',
+    resourceId: 'RSK-013',
+    expectedState: 'ESCALATED',
+    evidenceSource: 'vaos_private.project_risk_escalations',
+  });
+  assert.deepEqual(calls.map((call) => call.operation), ['escalate', 'read']);
+});
+
+test('Project/Risk adapter treats a replayed escalation as the same verified domain effect', async () => {
+  const projectRisk = {
+    async escalateRisk(job, input) {
+      return {
+        outcome: 'REPLAY',
+        record: { riskId: input.riskId, status: 'ESCALATED', executionJobId: job.id, intentId: job.intentId },
+      };
+    },
+    async getRiskEscalation(job, riskId) {
+      return { riskId, status: 'ESCALATED', executionJobId: job.id, intentId: job.intentId };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ projectRisk }).get('PROJECT.ESCALATE_RISK').execute({
+    id: 'job-risk-2',
+    intentId: 'intent-risk-2',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    payload: { riskId: 'RSK-014' },
+  });
+
+  assert.equal(result.effect.domainOutcome, 'REPLAY');
+  assert.equal(result.verification.verified, true);
+});
+
+test('Project/Risk adapter fails closed when no durable project-risk port is configured', async () => {
+  const adapter = createExecutionAdapterRegistry().get('PROJECT.ESCALATE_RISK');
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-risk-3',
+      intentId: 'intent-risk-3',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      payload: { riskId: 'RSK-015' },
+    }),
+    /DOMAIN_PORT_REQUIRED:projectRisk/,
+  );
+});
+
+test('Project/Risk adapter rejects a mismatched durable readback', async () => {
+  const projectRisk = {
+    async escalateRisk(job, input) {
+      return {
+        outcome: 'CREATED',
+        record: { riskId: input.riskId, status: 'ESCALATED', executionJobId: job.id, intentId: job.intentId },
+      };
+    },
+    async getRiskEscalation(job, riskId) {
+      return { riskId, status: 'MONITORED', executionJobId: job.id, intentId: job.intentId };
+    },
+  };
+
+  const adapter = createExecutionAdapterRegistry({ projectRisk }).get('PROJECT.ESCALATE_RISK');
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-risk-4',
+      intentId: 'intent-risk-4',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      payload: { riskId: 'RSK-016' },
+    }),
+    /PROJECT_RISK_VERIFICATION_MISMATCH/,
+  );
+});
+
+test('Project/Risk adapter refuses malformed risk ID before touching the domain store', async () => {
+  let touched = false;
+  const projectRisk = {
+    async escalateRisk() { touched = true; },
+    async getRiskEscalation() { touched = true; },
+  };
+  const adapter = createExecutionAdapterRegistry({ projectRisk }).get('PROJECT.ESCALATE_RISK');
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-risk-5',
+      intentId: 'intent-risk-5',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      payload: {},
+    }),
+    /ADAPTER_PAYLOAD_INVALID:riskId/,
+  );
+  assert.equal(touched, false);
+});

@@ -113,3 +113,30 @@ test('Engineering baseline domain writes and readback use dedicated Edge operati
     baseline: '5.3.9',
   });
 });
+
+
+test('Project/Risk domain escalation and readback use dedicated Edge operations bound to the execution lease', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', record: { riskId: 'RSK-013', status: 'ESCALATED', executionJobId: 'job-risk-1', intentId: 'intent-risk-1' } } },
+    { body: { riskId: 'RSK-013', status: 'ESCALATED', executionJobId: 'job-risk-1', intentId: 'intent-risk-1' } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-risk-1', intentId: 'intent-risk-1', leaseToken: 'lease-risk-1' };
+
+  const escalated = await store.escalateRisk(job, { riskId: 'RSK-013' });
+  const record = await store.getRiskEscalation(job, 'RSK-013');
+
+  assert.equal(escalated.outcome, 'CREATED');
+  assert.equal(record.status, 'ESCALATED');
+  assert.equal(fake.calls[0].body.operation, 'escalateRisk');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-risk-1',
+    leaseToken: 'lease-risk-1',
+    riskId: 'RSK-013',
+  });
+  assert.equal(fake.calls[1].body.operation, 'getRiskEscalation');
+  assert.deepEqual(fake.calls[1].body.payload, {
+    jobId: 'job-risk-1',
+    riskId: 'RSK-013',
+  });
+});

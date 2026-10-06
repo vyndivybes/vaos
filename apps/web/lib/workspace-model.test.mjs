@@ -165,3 +165,91 @@ test('workspace exposes empty durable registers when the runtime snapshot has no
   assert.deepEqual(model.domainWorkspaces.engineering.records, []);
   assert.deepEqual(model.domainWorkspaces.risk.records, []);
 });
+
+
+test('durable domain record exposes complete bounded digital thread context', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.domains = {
+    qaCapa: [{
+      id: 'domain-thread-1',
+      resourceId: 'CAPA-100',
+      status: 'OPEN',
+      recordedAt: '2026-10-07T01:00:00.000Z',
+      intentId: 'intent-100',
+      intentStatus: 'EXECUTED',
+      intentRisk: 'medium',
+      approvalId: 'approval-100',
+      approvalStatus: 'APPROVED',
+      decidedBy: 'founder@example.com',
+      decidedAt: '2026-10-07T00:55:00.000Z',
+      executionJobId: 'job-100',
+      executionStatus: 'SUCCEEDED',
+      attemptCount: 2,
+      maxAttempts: 5,
+      adapterId: 'supabase.qa-capa.v1',
+      evidenceCount: 1,
+      evidenceVerifiedAt: '2026-10-07T01:01:00.000Z',
+      effect: {
+        effectType: 'QUALITY.CAPA_OPENED',
+        resourceType: 'CAPA',
+        resourceId: 'CAPA-100',
+        state: 'OPEN',
+      },
+      evidenceVerification: {
+        verified: true,
+        resourceType: 'CAPA',
+        resourceId: 'CAPA-100',
+        expectedState: 'OPEN',
+      },
+      threadEvents: [
+        {
+          id: 'evt-2',
+          sequence: 2,
+          type: 'EXECUTION.SUCCEEDED',
+          source: 'supabase.qa-capa.v1',
+          occurredAt: '2026-10-07T01:01:00.000Z',
+          payload: { executionJobId: 'job-100' },
+        },
+        {
+          id: 'evt-1',
+          sequence: 1,
+          type: 'GOVERNANCE.APPROVAL_DECIDED',
+          source: 'founder@example.com',
+          occurredAt: '2026-10-07T00:55:00.000Z',
+          payload: { approvalId: 'approval-100', decision: 'APPROVED' },
+        },
+      ],
+    }],
+    engineering: [],
+    projectRisk: [],
+  };
+
+  const record = buildWorkspaceModel(snapshot).domainWorkspaces['qa-capa'].records[0];
+
+  assert.equal(record.thread.effect.effectType, 'QUALITY.CAPA_OPENED');
+  assert.equal(record.thread.verification.verified, true);
+  assert.deepEqual(record.thread.events.map((event) => event.sequence), [1, 2]);
+  assert.equal(record.thread.events[0].payload.decision, 'APPROVED');
+});
+
+test('digital thread defaults safely when persisted effect, evidence or event detail is absent', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.domains = {
+    qaCapa: [{
+      id: 'domain-thread-empty',
+      resourceId: 'CAPA-101',
+      status: 'OPEN',
+      intentId: 'intent-101',
+      intentStatus: 'EXECUTED',
+      executionJobId: 'job-101',
+      executionStatus: 'SUCCEEDED',
+    }],
+    engineering: [],
+    projectRisk: [],
+  };
+
+  const record = buildWorkspaceModel(snapshot).domainWorkspaces['qa-capa'].records[0];
+  assert.equal(record.thread.effect, null);
+  assert.equal(record.thread.verification, null);
+  assert.deepEqual(record.thread.events, []);
+});

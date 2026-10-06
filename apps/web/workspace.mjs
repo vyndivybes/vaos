@@ -154,7 +154,7 @@ function renderDomainWorkspace(module) {
 
   const list = document.querySelector('#domain-record-list');
   list.innerHTML = domain.records.length ? domain.records.map((record) => `
-    <article class="domain-record-row">
+    <article class="domain-record-row" role="button" tabindex="0" data-domain-record-id="${esc(record.id)}" data-domain-module="${esc(module.id)}" aria-label="Open digital thread for ${esc(record.resourceId)}">
       <div class="domain-record-primary">
         <small>${esc(domain.resourceLabel)}</small>
         <strong>${esc(record.resourceId)}</strong>
@@ -176,6 +176,60 @@ function renderDomainWorkspace(module) {
   `).join('') : '<p class="empty-state">No durable operational records have been created for this domain yet.</p>';
 
   return true;
+}
+
+function jsonForDisplay(value) {
+  return value ? JSON.stringify(value, null, 2) : 'No persisted object.';
+}
+
+function lineageCell(label, value, tone = 'neutral', detail = '') {
+  return `
+    <article class="thread-lineage-cell">
+      <small>${esc(label)}</small>
+      <strong class="domain-status domain-status--${tone}">${esc(value || '—')}</strong>
+      <span>${esc(detail || '')}</span>
+    </article>
+  `;
+}
+
+function openDomainThread(moduleId, recordId) {
+  const domain = model.domainWorkspaces?.[moduleId];
+  const record = domain?.records.find((item) => item.id === recordId);
+  const traceDialog = document.querySelector('#domain-thread-dialog');
+  if (!record || !traceDialog) return;
+
+  document.querySelector('#domain-thread-title').textContent = `${domain.resourceLabel} · ${record.resourceId}`;
+  document.querySelector('#domain-thread-subtitle').textContent =
+    `${domain.title} · persisted governance and execution lineage`;
+
+  document.querySelector('#domain-thread-lineage').innerHTML = [
+    lineageCell('Domain state', record.status, statusTone(record.status), record.recordedAt ? new Date(record.recordedAt).toLocaleString() : ''),
+    lineageCell('Intent', record.intent.status, statusTone(record.intent.status), record.intent.id || ''),
+    lineageCell('Approval', record.approval.status, statusTone(record.approval.status), record.approval.decidedBy || ''),
+    lineageCell('Execution', record.execution.status, statusTone(record.execution.status), `${record.execution.attempts}/${record.execution.maxAttempts || '—'} attempt(s)`),
+    lineageCell('Evidence', record.evidence.count ? 'VERIFIED' : 'NONE', record.evidence.count ? 'success' : 'neutral', record.evidence.verifiedAt ? new Date(record.evidence.verifiedAt).toLocaleString() : ''),
+  ].join('');
+
+  document.querySelector('#domain-thread-effect').textContent = jsonForDisplay(record.thread.effect);
+  document.querySelector('#domain-thread-evidence').textContent = jsonForDisplay(record.thread.verification);
+
+  const events = record.thread.events || [];
+  document.querySelector('#domain-thread-event-count').textContent = events.length;
+  document.querySelector('#domain-thread-timeline').innerHTML = events.length ? events.map((item) => `
+    <article class="thread-event">
+      <span class="thread-event__rail"><i></i></span>
+      <div>
+        <div class="thread-event__heading">
+          <strong>${esc(item.type)}</strong>
+          <small>#${esc(item.sequence)} · ${esc(item.occurredAt ? new Date(item.occurredAt).toLocaleString() : '—')}</small>
+        </div>
+        <p>${esc(item.source)}</p>
+        <pre>${esc(JSON.stringify(item.payload || {}, null, 2))}</pre>
+      </div>
+    </article>
+  `).join('') : '<p class="empty-state">No related persisted events were found for this record.</p>';
+
+  traceDialog.showModal();
 }
 
 function renderModule(module) {
@@ -246,10 +300,27 @@ function wireInteractions() {
     const approval = event.target.closest('[data-approval-id][data-decision]');
     if (approval) { decideApproval(approval); return; }
 
+    const domainRecord = event.target.closest('[data-domain-record-id][data-domain-module]');
+    if (domainRecord) {
+      openDomainThread(domainRecord.dataset.domainModule, domainRecord.dataset.domainRecordId);
+      return;
+    }
+
     const trigger = event.target.closest('[data-view]');
     if (!trigger) return;
     setView(trigger.dataset.view);
     if (dialog?.open) dialog.close();
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const domainRecord = event.target.closest?.('[data-domain-record-id][data-domain-module]');
+    if (!domainRecord || !['Enter', ' '].includes(event.key)) return;
+    event.preventDefault();
+    openDomainThread(domainRecord.dataset.domainModule, domainRecord.dataset.domainRecordId);
+  });
+
+  document.querySelector('#domain-thread-close')?.addEventListener('click', () => {
+    document.querySelector('#domain-thread-dialog')?.close();
   });
 
   commandButton?.addEventListener('click', () => { renderCommandResults(); dialog.showModal(); queueMicrotask(() => commandInput.focus()); });

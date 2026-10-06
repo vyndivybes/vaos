@@ -25,10 +25,14 @@ assert.match(css, /prefers-reduced-motion/);
 assert.match(workspace, /Agent Control Centre/);
 assert.match(workspace, /id="domain-workspace"/);
 assert.match(workspace, /id="domain-record-list"/);
+assert.match(workspace, /id="domain-thread-dialog"/);
+assert.match(workspace, /id="domain-thread-timeline"/);
 assert.match(workspace, /workspace\.css/);
 assert.match(workspaceApp, /\/api\/control-plane/);
 assert.match(workspaceApp, /\/api\/approvals/);
 assert.match(workspaceApp, /renderDomainWorkspace/);
+assert.match(workspaceApp, /openDomainThread/);
+assert.match(workspaceApp, /data-domain-record-id/);
 const executionsApi = readFileSync(resolve(web, "api", "executions.mjs"), "utf8");
 assert.match(executionsApi, /getExecutionEngine/);
 assert.match(workspaceCss, /max-width: 900px/);
@@ -44,6 +48,8 @@ assert.match(css, /--vayu-graphite-0/);
 assert.match(workspaceCss, /landscape-workspace/);
 assert.match(workspaceCss, /metallic-gold-rim/);
 assert.match(workspaceCss, /domain-record-table/);
+assert.match(workspaceCss, /digital-thread-dialog/);
+assert.match(workspaceCss, /digital-thread-timeline/);
 
 for (const table of ["server_credentials","intents","approvals","events"]) {
   assert.match(rlsMigration, new RegExp(`alter table vaos_private\\.${table} enable row level security;`, "i"));

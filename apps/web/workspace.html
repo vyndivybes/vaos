@@ -4,19 +4,90 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#080909" />
-  <title>VAOS · Development workspace</title>
+  <meta name="description" content="VAOS Agentic Control Workspace" />
+  <title>VAOS · Agentic Control Workspace</title>
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/workspace.css" />
 </head>
-<body>
-  <main class="workspace-shell">
-    <section class="workspace-card">
-      <div class="auth-kicker">VAOS DEVELOPMENT WORKSPACE</div>
-      <h1>Session active.</h1>
-      <p>This is the authenticated development landing surface. Agentic modules will be mounted here as the monorepo evolves.</p>
-      <p class="workspace-email" id="workspace-email"></p>
-      <button class="secondary-button" id="logout-button" type="button">Sign out</button>
-    </section>
-  </main>
+<body class="workspace-body">
+  <div class="control-shell" id="control-shell" hidden>
+    <aside class="control-sidebar" aria-label="VAOS modules">
+      <div class="control-brand">
+        <img src="/assets/vayu-shastr-original.webp" alt="" aria-hidden="true" />
+        <div><strong>VAOS</strong><span>Agentic OS</span></div>
+      </div>
+      <nav class="module-nav" id="module-nav"></nav>
+      <div class="sidebar-footer">
+        <div class="environment-pill"><i></i><span id="environment-label">Development</span></div>
+        <button class="sidebar-signout" id="logout-button" type="button">Sign out</button>
+      </div>
+    </aside>
+
+    <main class="control-main">
+      <header class="control-topbar">
+        <div>
+          <p class="workspace-overline" id="module-group">Operate</p>
+          <h1 id="module-title">Command Centre</h1>
+          <p id="module-description">Enterprise pulse, agents, events and decisions.</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="command-button" id="command-button" type="button"><span>⌘</span> Command</button>
+          <div class="identity-chip"><span class="identity-dot"></span><div><strong id="identity-email">Loading…</strong><small>Authorised session</small></div></div>
+        </div>
+      </header>
+
+      <section id="command-view" class="workspace-view">
+        <div class="pulse-grid" id="pulse-grid"></div>
+
+        <div class="workspace-grid workspace-grid--primary">
+          <section class="control-panel control-panel--agents">
+            <div class="panel-heading"><div><span class="panel-kicker">AGENT FLEET</span><h2>Agent Control Centre</h2></div><button class="panel-action" data-view="agents">Open fleet →</button></div>
+            <div class="agent-grid" id="agent-grid"></div>
+          </section>
+
+          <section class="control-panel control-panel--approvals">
+            <div class="panel-heading"><div><span class="panel-kicker">HUMAN GATE</span><h2>Decision inbox</h2></div><span class="count-badge" id="approval-count">0</span></div>
+            <div class="approval-list" id="approval-list"></div>
+          </section>
+        </div>
+
+        <div class="workspace-grid workspace-grid--secondary">
+          <section class="control-panel">
+            <div class="panel-heading"><div><span class="panel-kicker">EVENT FABRIC</span><h2>Live enterprise events</h2></div><span class="live-badge"><i></i>Live model</span></div>
+            <div class="event-list" id="event-list"></div>
+          </section>
+
+          <section class="control-panel">
+            <div class="panel-heading"><div><span class="panel-kicker">RISK RADAR</span><h2>Current exposure</h2></div><button class="panel-action" data-view="risk">Risk register →</button></div>
+            <div class="risk-list" id="risk-list"></div>
+          </section>
+        </div>
+      </section>
+
+      <section id="module-view" class="workspace-view" hidden>
+        <div class="module-hero">
+          <div><span class="panel-kicker" id="module-hero-group">MODULE</span><h2 id="module-hero-title"></h2><p id="module-hero-description"></p></div>
+          <span class="module-phase">Foundation phase</span>
+        </div>
+        <div class="module-foundation-grid" id="module-foundation-grid"></div>
+      </section>
+    </main>
+  </div>
+
+  <div class="workspace-loading" id="workspace-loading">
+    <div class="loading-mark">V</div>
+    <strong>Authorising VAOS workspace…</strong>
+    <span>Validating session and control-plane state</span>
+  </div>
+
+  <dialog class="command-dialog" id="command-dialog">
+    <form method="dialog">
+      <div class="command-dialog__header"><div><span class="panel-kicker">VAOS COMMAND</span><strong>Go to a module</strong></div><button value="cancel" aria-label="Close">×</button></div>
+      <input id="command-input" type="search" placeholder="Type a module name…" autocomplete="off" />
+      <div class="command-results" id="command-results"></div>
+    </form>
+  </dialog>
+
   <script type="module" src="/workspace.mjs"></script>
 </body>
 </html>

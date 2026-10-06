@@ -40,6 +40,12 @@ const DOMAIN_WORKSPACE_CONFIG = Object.freeze({
   },
 });
 
+const TRACE_DOMAIN_CONFIG = Object.freeze({
+  QA_CAPA: { moduleId: 'qa-capa', label: 'QA / CAPA', glyph: 'QA' },
+  ENGINEERING_BASELINE: { moduleId: 'engineering', label: 'Engineering', glyph: 'EN' },
+  PROJECT_RISK: { moduleId: 'risk', label: 'Project / Risk', glyph: 'RK' },
+});
+
 const APPROVAL_TITLES = Object.freeze({
   'QA.OPEN_CAPA': 'Open CAPA',
   'ENGINEERING.BASELINE_CHANGE': 'Approve engineering baseline change',
@@ -193,6 +199,62 @@ function buildDomainWorkspaces(domains = {}) {
   }));
 }
 
+function buildTraceGraph(domainWorkspaces, rawLinks = []) {
+  const nodes = [];
+  const index = new Map();
+
+  for (const [domain, config] of Object.entries(TRACE_DOMAIN_CONFIG)) {
+    const records = domainWorkspaces?.[config.moduleId]?.records || [];
+    for (const record of records) {
+      const id = `${domain}:${record.id}`;
+      const node = {
+        id,
+        domain,
+        domainLabel: config.label,
+        glyph: config.glyph,
+        moduleId: config.moduleId,
+        recordId: record.id,
+        resourceId: record.resourceId,
+        status: record.status,
+        executionStatus: record.execution.status,
+        evidenceCount: record.evidence.count,
+        recordedAt: record.recordedAt,
+      };
+      nodes.push(node);
+      index.set(id, node);
+    }
+  }
+
+  const edges = (Array.isArray(rawLinks) ? rawLinks : []).flatMap((link) => {
+    const sourceNodeId = `${link.sourceDomain}:${link.sourceRecordId}`;
+    const targetNodeId = `${link.targetDomain}:${link.targetRecordId}`;
+    if (!index.has(sourceNodeId) || !index.has(targetNodeId)) return [];
+    return [{
+      id: link.id,
+      sourceNodeId,
+      targetNodeId,
+      sourceDomain: link.sourceDomain,
+      targetDomain: link.targetDomain,
+      relationType: link.relationType,
+      createdBy: link.createdBy || 'system',
+      createdAt: link.createdAt || null,
+      context: link.context && typeof link.context === 'object' ? { ...link.context } : {},
+    }];
+  });
+
+  const connected = new Set(edges.flatMap((edge) => [edge.sourceNodeId, edge.targetNodeId]));
+  return {
+    nodes,
+    edges,
+    summary: {
+      totalNodes: nodes.length,
+      totalLinks: edges.length,
+      connectedNodes: nodes.filter((node) => connected.has(node.id)).length,
+      orphanNodes: nodes.filter((node) => !connected.has(node.id)).length,
+    },
+  };
+}
+
 export function summarizeAgentFleet(agents = []) {
   return {
     total: agents.length,
@@ -216,6 +278,8 @@ export function buildWorkspaceModel(runtimeSnapshot) {
   const approvals = runtimeSnapshot.approvals.filter((item) => item.status === 'PENDING').map((item) => mapApproval(item, names));
   const events = runtimeSnapshot.events.map((item) => mapEvent(item, names)).sort((a,b) => b.timeRank - a.timeRank);
   const fleet = summarizeAgentFleet(agents);
+  const domainWorkspaces = buildDomainWorkspaces(runtimeSnapshot.domains);
+  const traceGraph = buildTraceGraph(domainWorkspaces, runtimeSnapshot.digitalThreadLinks);
 
   return {
     environment: 'Development',
@@ -226,7 +290,8 @@ export function buildWorkspaceModel(runtimeSnapshot) {
     approvals,
     events,
     risks: RISKS.map((item) => ({ ...item })),
-    domainWorkspaces: buildDomainWorkspaces(runtimeSnapshot.domains),
+    domainWorkspaces,
+    traceGraph,
     pulse: {
       governance: 'Nominal',
       evidenceCoverage: 86,

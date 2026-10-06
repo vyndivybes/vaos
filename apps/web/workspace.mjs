@@ -232,10 +232,105 @@ function openDomainThread(moduleId, recordId) {
   traceDialog.showModal();
 }
 
+function traceLane(domain) {
+  return model.traceGraph.nodes.filter((node) => node.domain === domain);
+}
+
+function renderEnterpriseTraceGraph() {
+  const section = document.querySelector('#enterprise-trace-graph');
+  const graph = model.traceGraph;
+  section.hidden = false;
+
+  document.querySelector('#trace-summary').innerHTML = [
+    ['Records', graph.summary.totalNodes, 'DB'],
+    ['Explicit links', graph.summary.totalLinks, 'LN'],
+    ['Connected', graph.summary.connectedNodes, 'OK'],
+    ['Orphans', graph.summary.orphanNodes, 'OR'],
+  ].map(([label, value, glyph]) => `
+    <article class="domain-summary-card"><span>${esc(glyph)}</span><div><small>${esc(label)}</small><strong>${esc(value)}</strong></div></article>
+  `).join('');
+
+  const lanes = [
+    ['QA_CAPA', 'QA / CAPA'],
+    ['ENGINEERING_BASELINE', 'Engineering'],
+    ['PROJECT_RISK', 'Project / Risk'],
+  ];
+  document.querySelector('#trace-node-layer').innerHTML = lanes.map(([domain, label]) => `
+    <section class="trace-lane">
+      <header><span>${esc(label)}</span><b>${traceLane(domain).length}</b></header>
+      <div class="trace-lane__nodes">
+        ${traceLane(domain).map((node) => `
+          <article class="trace-node" tabindex="0" role="button"
+            data-trace-node-id="${esc(node.id)}"
+            data-domain-record-id="${esc(node.recordId)}"
+            data-domain-module="${esc(node.moduleId)}">
+            <span class="trace-node__glyph">${esc(node.glyph)}</span>
+            <div><small>${esc(node.domainLabel)}</small><strong>${esc(node.resourceId)}</strong><em>${esc(node.status)}</em></div>
+            <span class="trace-node__evidence">${esc(node.evidenceCount)} EV</span>
+          </article>
+        `).join('') || '<p class="empty-state">No durable records.</p>'}
+      </div>
+    </section>
+  `).join('');
+
+  const index = new Map(graph.nodes.map((node) => [node.id, node]));
+  document.querySelector('#trace-edge-list').innerHTML = graph.edges.length ? graph.edges.map((edge) => {
+    const source = index.get(edge.sourceNodeId);
+    const target = index.get(edge.targetNodeId);
+    return `
+      <article class="trace-link-row">
+        <span>${esc(source?.resourceId || edge.sourceNodeId)}</span>
+        <strong>${esc(edge.relationType)}</strong>
+        <span>${esc(target?.resourceId || edge.targetNodeId)}</span>
+        <small>${esc(edge.createdBy)}${edge.createdAt ? ` · ${esc(new Date(edge.createdAt).toLocaleString())}` : ''}</small>
+      </article>
+    `;
+  }).join('') : '<p class="empty-state">No explicit cross-domain links have been persisted yet.</p>';
+
+  requestAnimationFrame(drawTraceEdges);
+}
+
+function drawTraceEdges() {
+  const canvas = document.querySelector('#trace-canvas');
+  const svg = document.querySelector('#trace-edge-svg');
+  if (!canvas || !svg || currentView !== 'digital-thread') return;
+
+  const bounds = canvas.getBoundingClientRect();
+  svg.setAttribute('viewBox', `0 0 ${Math.max(1,bounds.width)} ${Math.max(1,bounds.height)}`);
+  svg.innerHTML = '<defs><marker id="trace-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z"></path></marker></defs>';
+
+  const elements = new Map([...document.querySelectorAll('[data-trace-node-id]')].map((item) => [item.dataset.traceNodeId, item]));
+  for (const edge of model.traceGraph.edges) {
+    const source = elements.get(edge.sourceNodeId);
+    const target = elements.get(edge.targetNodeId);
+    if (!source || !target) continue;
+    const a = source.getBoundingClientRect();
+    const b = target.getBoundingClientRect();
+    const x1 = a.right - bounds.left;
+    const y1 = a.top + a.height / 2 - bounds.top;
+    const x2 = b.left - bounds.left;
+    const y2 = b.top + b.height / 2 - bounds.top;
+    const bend = Math.max(55, Math.abs(x2 - x1) * .42);
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', `M ${x1} ${y1} C ${x1 + bend} ${y1}, ${x2 - bend} ${y2}, ${x2} ${y2}`);
+    path.setAttribute('class', 'trace-edge-path');
+    path.setAttribute('marker-end', 'url(#trace-arrow)');
+    svg.appendChild(path);
+  }
+}
+
 function renderModule(module) {
   document.querySelector('#module-hero-group').textContent = module.group.toUpperCase();
   document.querySelector('#module-hero-title').textContent = module.label;
   document.querySelector('#module-hero-description').textContent = module.description;
+  const graphSection = document.querySelector('#enterprise-trace-graph');
+  if (module.id === 'digital-thread') {
+    document.querySelector('#domain-workspace').hidden = true;
+    document.querySelector('#module-foundation-grid').hidden = true;
+    renderEnterpriseTraceGraph();
+    return;
+  }
+  graphSection.hidden = true;
   const hasDomain = renderDomainWorkspace(module);
   if (!hasDomain) {
     document.querySelector('#module-foundation-grid').innerHTML = foundationCards(module).map(([title, copy], index) => `
@@ -326,6 +421,7 @@ function wireInteractions() {
   commandButton?.addEventListener('click', () => { renderCommandResults(); dialog.showModal(); queueMicrotask(() => commandInput.focus()); });
   commandInput?.addEventListener('input', () => renderCommandResults(commandInput.value));
   window.addEventListener('popstate', () => setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false }));
+  window.addEventListener('resize', () => { if (currentView === 'digital-thread') requestAnimationFrame(drawTraceEdges); });
 }
 
 async function bootstrap() {

@@ -11,13 +11,12 @@ const html = readFileSync(resolve(web, "index.html"), "utf8");
 const css = readFileSync(resolve(web, "styles.css"), "utf8");
 const app = readFileSync(resolve(web, "app.mjs"), "utf8");
 
-assert.match(html, /VYNDI Agentic Operating System/);
-assert.match(html, /data-parallax/);
+assert.match(html, /vayu-shastr-original\.webp/);
 assert.match(html, /id="login-form"/);
+assert.match(app, /\/api\/login/);
+assert.match(app, /\/api\/session/);
 assert.match(css, /prefers-reduced-motion/);
-assert.match(app, /resolveRoute/);
-
-assert.equal(existsSync(resolve(web, "house")), false, "legacy House page must not exist");
-assert.equal(existsSync(resolve(web, "range")), false, "legacy Range page must not exist");
+assert.equal(existsSync(resolve(web, "house")), false);
+assert.equal(existsSync(resolve(web, "range")), false);
 
 console.log("VAOS web verification passed.");

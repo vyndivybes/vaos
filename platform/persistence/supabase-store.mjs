@@ -74,5 +74,18 @@ export function createSupabaseControlStore({
         baseline,
       });
     },
+    escalateRisk(job, input) {
+      return invoke('escalateRisk', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        riskId: input.riskId,
+      });
+    },
+    getRiskEscalation(job, riskId) {
+      return invoke('getRiskEscalation', {
+        jobId: job.id,
+        riskId,
+      });
+    },
   });
 }

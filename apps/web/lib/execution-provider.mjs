@@ -21,9 +21,14 @@ export function getExecutionEngine() {
       getBaselineChange(job, baseline) { return store.getBaselineChange(job, baseline); },
     });
 
+    const projectRisk = Object.freeze({
+      escalateRisk(job, input) { return store.escalateRisk(job, input); },
+      getRiskEscalation(job, riskId) { return store.getRiskEscalation(job, riskId); },
+    });
+
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange }),
+      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk }),
       workerId: 'vaos-vercel-worker',
     });
   }

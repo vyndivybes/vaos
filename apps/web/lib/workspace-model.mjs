@@ -13,38 +13,89 @@ const MODULES = Object.freeze([
   { id: 'admin', label: 'Admin', group: 'System', glyph: 'AD', description: 'Identity, integrations and platform configuration.' },
 ]);
 
-const AGENTS = Object.freeze([
-  { id: 'orchestrator', name: 'VAOS Orchestrator', domain: 'Enterprise', status: 'active', authority: 5, confidence: 97, task: 'Coordinating event and approval flow' },
-  { id: 'vibpe', name: 'VIBPE Engineering', domain: 'Engineering', status: 'active', authority: 4, confidence: 94, task: 'Watching engineering change impact' },
-  { id: 'qa', name: 'QA / CAPA Agent', domain: 'Quality', status: 'approval', authority: 4, confidence: 91, task: 'CAPA-024 requires approval' },
-  { id: 'risk', name: 'Risk Agent', domain: 'Governance', status: 'active', authority: 3, confidence: 89, task: 'Recalculating supplier exposure' },
-  { id: 'release', name: 'Release Agent', domain: 'Delivery', status: 'observe', authority: 2, confidence: 96, task: 'Release gate evidence watch' },
-  { id: 'project', name: 'Project Controls', domain: 'Management', status: 'active', authority: 3, confidence: 92, task: 'Tracking milestone variance' },
-  { id: 'security', name: 'Security Agent', domain: 'Security', status: 'active', authority: 4, confidence: 98, task: 'Identity and policy monitoring' },
-  { id: 'knowledge', name: 'Knowledge Agent', domain: 'Intelligence', status: 'observe', authority: 1, confidence: 93, task: 'Maintaining source authority graph' },
-]);
-
-const APPROVALS = Object.freeze([
-  { id: 'APR-1042', title: 'Open CAPA-024', owner: 'QA / CAPA Agent', risk: 'medium', authority: 'L4', reason: 'Repeated dimensional non-conformance pattern', age: '12 min' },
-  { id: 'APR-1041', title: 'Approve engineering baseline change', owner: 'VIBPE Engineering', risk: 'high', authority: 'L4', reason: 'Impacts released verification evidence', age: '26 min' },
-  { id: 'APR-1038', title: 'Escalate supplier schedule risk', owner: 'Risk Agent', risk: 'low', authority: 'L3', reason: 'Forecast exceeds milestone tolerance', age: '1 h' },
-]);
-
-const EVENTS = Object.freeze([
-  { id: 'EVT-8821', type: 'QA.CAPA_PROPOSED', source: 'QA / CAPA Agent', summary: 'CAPA-024 prepared from recurring NCR pattern', severity: 'warning', time: '2 min ago', timeRank: 100 },
-  { id: 'EVT-8820', type: 'ENGINEERING.IMPACT_ANALYSED', source: 'VIBPE Engineering', summary: 'Baseline change touches 4 verification objects', severity: 'info', time: '7 min ago', timeRank: 93 },
-  { id: 'EVT-8819', type: 'SECURITY.SESSION_AUTHENTICATED', source: 'Security Agent', summary: 'Authorised VAOS development identity accepted', severity: 'success', time: '11 min ago', timeRank: 89 },
-  { id: 'EVT-8818', type: 'PROJECT.MILESTONE_RISK', source: 'Project Controls', summary: 'Prototype validation milestone variance increased', severity: 'warning', time: '19 min ago', timeRank: 81 },
-  { id: 'EVT-8817', type: 'GOVERNANCE.POLICY_CHECK', source: 'VAOS Orchestrator', summary: 'High-risk effects remain human-gated', severity: 'success', time: '31 min ago', timeRank: 69 },
-]);
-
 const RISKS = Object.freeze([
   { id: 'RSK-018', title: 'Verification evidence lag', score: 72, band: 'high', trend: 'up' },
   { id: 'RSK-013', title: 'Supplier schedule exposure', score: 56, band: 'medium', trend: 'up' },
   { id: 'RSK-009', title: 'Identity / access drift', score: 22, band: 'low', trend: 'flat' },
 ]);
 
-export function summarizeAgentFleet(agents = AGENTS) {
+const APPROVAL_TITLES = Object.freeze({
+  'QA.OPEN_CAPA': 'Open CAPA-024',
+  'ENGINEERING.BASELINE_CHANGE': 'Approve engineering baseline change',
+  'PROJECT.ESCALATE_RISK': 'Escalate supplier schedule risk',
+});
+
+const EVENT_SEVERITY = Object.freeze({
+  'GOVERNANCE.APPROVAL_REQUIRED': 'warning',
+  'GOVERNANCE.ACTION_AUTHORIZED': 'success',
+  'GOVERNANCE.ACTION_DENIED': 'warning',
+  'AGENT.REGISTERED': 'info',
+  'AGENT.ACTION_PREPARED': 'info',
+});
+
+function maxAuthority(agent) {
+  return Math.max(0, ...Object.values(agent.capabilities || {}).map((value) => Number(value) || 0));
+}
+
+function mapAgent(agent) {
+  return {
+    id: agent.id,
+    name: agent.name,
+    domain: agent.domain,
+    status: agent.status || 'observe',
+    authority: maxAuthority(agent),
+    confidence: agent.confidence ?? 0,
+    task: agent.task || 'Awaiting work',
+  };
+}
+
+function agentNameMap(agents) {
+  return new Map(agents.map((agent) => [agent.id, agent.name]));
+}
+
+function mapApproval(approval, names) {
+  return {
+    id: approval.id,
+    title: APPROVAL_TITLES[approval.actionType] || approval.actionType,
+    owner: names.get(approval.agentId) || approval.agentId,
+    risk: approval.risk || 'medium',
+    authority: `L${approval.authority ?? 0}`,
+    reason: approval.reason || 'Governed effect requires human decision',
+    age: 'runtime',
+  };
+}
+
+function eventSummary(event, names) {
+  const payload = event.payload || {};
+  switch (event.type) {
+    case 'AGENT.REGISTERED':
+      return `${names.get(payload.agentId) || payload.agentId} registered with ${payload.capabilityCount ?? 0} capability contract(s)`;
+    case 'GOVERNANCE.APPROVAL_REQUIRED':
+      return `${payload.actionType} is waiting for human approval`;
+    case 'GOVERNANCE.ACTION_AUTHORIZED':
+      return `${payload.actionType} passed policy and authority checks`;
+    case 'GOVERNANCE.ACTION_DENIED':
+      return `${payload.actionType} was denied: ${payload.reason || 'policy gate'}`;
+    case 'AGENT.ACTION_PREPARED':
+      return `${payload.actionType} was prepared without executing an effect`;
+    default:
+      return event.type;
+  }
+}
+
+function mapEvent(event, names) {
+  return {
+    id: event.id,
+    type: event.type,
+    source: names.get(event.source) || event.source,
+    summary: eventSummary(event, names),
+    severity: EVENT_SEVERITY[event.type] || 'info',
+    time: `event #${event.sequence}`,
+    timeRank: Number(event.sequence) || 0,
+  };
+}
+
+export function summarizeAgentFleet(agents = []) {
   return {
     total: agents.length,
     active: agents.filter((agent) => agent.status === 'active').length,
@@ -62,22 +113,36 @@ export function normaliseWorkspaceView(view) {
   return findModule(String(view || '').trim())?.id || 'command';
 }
 
-export function buildWorkspaceModel() {
-  const fleet = summarizeAgentFleet(AGENTS);
+export function buildWorkspaceModel(runtimeSnapshot) {
+  if (!runtimeSnapshot || !Array.isArray(runtimeSnapshot.agents) || !Array.isArray(runtimeSnapshot.approvals) || !Array.isArray(runtimeSnapshot.events)) {
+    throw new Error('RUNTIME_SNAPSHOT_REQUIRED');
+  }
+
+  const agents = runtimeSnapshot.agents.map(mapAgent);
+  const names = agentNameMap(agents);
+  const approvals = runtimeSnapshot.approvals
+    .filter((item) => item.status === 'PENDING')
+    .map((item) => mapApproval(item, names));
+  const events = runtimeSnapshot.events
+    .map((item) => mapEvent(item, names))
+    .sort((a, b) => b.timeRank - a.timeRank);
+  const fleet = summarizeAgentFleet(agents);
+
   return {
     environment: 'Development',
-    release: 'VAOS 0.1 / foundation',
+    release: 'VAOS 0.1 / agent runtime',
+    runtimeMode: runtimeSnapshot.mode,
     modules: MODULES.map((item) => ({ ...item })),
-    agents: AGENTS.map((item) => ({ ...item })),
-    approvals: APPROVALS.map((item) => ({ ...item })),
-    events: EVENTS.map((item) => ({ ...item })).sort((a, b) => b.timeRank - a.timeRank),
+    agents,
+    approvals,
+    events,
     risks: RISKS.map((item) => ({ ...item })),
     pulse: {
       governance: 'Nominal',
       evidenceCoverage: 86,
-      openApprovals: APPROVALS.length,
+      openApprovals: approvals.length,
       agentFleet: fleet,
-      decisionLatency: '4.8 min',
+      decisionLatency: 'policy-gated',
     },
   };
 }

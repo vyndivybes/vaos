@@ -1,12 +1,13 @@
 import { parseCookies, SESSION_COOKIE, verifySessionToken } from './auth.mjs';
 import { buildWorkspaceModel } from './workspace-model.mjs';
-import { getDevelopmentRuntime } from './runtime-provider.mjs';
+import { getDurableControlService } from './durable-control-provider.mjs';
 
-export function getControlPlanePayload(cookieHeader = '') {
+export async function getControlPlanePayload(cookieHeader = '', service = null) {
   const session = verifySessionToken(parseCookies(cookieHeader)[SESSION_COOKIE]);
   if (!session) return null;
 
-  const runtimeSnapshot = getDevelopmentRuntime().snapshot();
+  const controlService = service || getDurableControlService();
+  const runtimeSnapshot = await controlService.snapshot();
   return {
     session: { email: session.email },
     model: buildWorkspaceModel(runtimeSnapshot),

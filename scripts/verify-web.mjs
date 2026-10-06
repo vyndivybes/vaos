@@ -14,6 +14,7 @@ const app = readFileSync(resolve(web, "app.mjs"), "utf8");
 const workspace = readFileSync(resolve(web, "workspace.html"), "utf8");
 const workspaceCss = readFileSync(resolve(web, "workspace.css"), "utf8");
 const workspaceApp = readFileSync(resolve(web, "workspace.mjs"), "utf8");
+const rlsMigration = readFileSync(resolve(root, "supabase", "migrations", "20261006223142_enable_legacy_control_plane_rls.sql"), "utf8");
 
 assert.match(html, /vayu-shastr-original\.webp/);
 assert.match(html, /id="login-form"/);
@@ -39,6 +40,11 @@ assert.match(css, /--vayu-gold-metallic/);
 assert.match(css, /--vayu-graphite-0/);
 assert.match(workspaceCss, /landscape-workspace/);
 assert.match(workspaceCss, /metallic-gold-rim/);
+
+for (const table of ["server_credentials","intents","approvals","events"]) {
+  assert.match(rlsMigration, new RegExp(`alter table vaos_private\\.${table} enable row level security;`, "i"));
+}
+assert.doesNotMatch(rlsMigration, /create\s+policy/i);
 
 assert.equal(existsSync(resolve(web, "house")), false);
 assert.equal(existsSync(resolve(web, "range")), false);

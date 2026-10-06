@@ -118,12 +118,75 @@ function foundationCards(module) {
   return specific[module.id] ? [specific[module.id], ...common] : common;
 }
 
+function statusTone(value) {
+  const status = String(value || '').toUpperCase();
+  if (['SUCCEEDED','EXECUTED','APPROVED','OPEN','CHANGE_RECORDED','ESCALATED','VERIFIED','RELEASED'].includes(status)) return 'success';
+  if (['FAILED','DEAD_LETTER','REJECTED','CLOSED','SUPERSEDED'].includes(status)) return 'danger';
+  if (['PENDING','LEASED','AWAIT_APPROVAL','MITIGATING','MONITORED','ACTION_PENDING','INVESTIGATING'].includes(status)) return 'warning';
+  return 'neutral';
+}
+
+function renderDomainWorkspace(module) {
+  const section = document.querySelector('#domain-workspace');
+  const foundation = document.querySelector('#module-foundation-grid');
+  const domain = model.domainWorkspaces?.[module.id];
+
+  if (!domain) {
+    section.hidden = true;
+    foundation.hidden = false;
+    return false;
+  }
+
+  section.hidden = false;
+  foundation.hidden = true;
+  document.querySelector('#domain-workspace-title').textContent = domain.title;
+  document.querySelector('#domain-workspace-copy').textContent = domain.copy;
+  document.querySelector('#domain-record-count').textContent = domain.records.length;
+
+  document.querySelector('#domain-summary').innerHTML = [
+    ['Records', domain.summary.total, 'DB'],
+    ['Succeeded', domain.summary.succeeded, 'OK'],
+    ['Verified', domain.summary.verified, 'EV'],
+    ['Retried', domain.summary.retried, 'RT'],
+  ].map(([label, value, glyph]) => `
+    <article class="domain-summary-card"><span>${esc(glyph)}</span><div><small>${esc(label)}</small><strong>${esc(value)}</strong></div></article>
+  `).join('');
+
+  const list = document.querySelector('#domain-record-list');
+  list.innerHTML = domain.records.length ? domain.records.map((record) => `
+    <article class="domain-record-row">
+      <div class="domain-record-primary">
+        <small>${esc(domain.resourceLabel)}</small>
+        <strong>${esc(record.resourceId)}</strong>
+        <span class="domain-status domain-status--${statusTone(record.status)}">${esc(record.status)}</span>
+      </div>
+      <div class="domain-trace">
+        <span><small>Intent</small><strong class="domain-status domain-status--${statusTone(record.intent.status)}">${esc(record.intent.status)}</strong></span>
+        <span><small>Approval</small><strong class="domain-status domain-status--${statusTone(record.approval.status)}">${esc(record.approval.status)}</strong></span>
+        <span><small>Execution</small><strong class="domain-status domain-status--${statusTone(record.execution.status)}">${esc(record.execution.status)}</strong></span>
+        <span><small>Attempts</small><strong>${esc(record.execution.attempts)} / ${esc(record.execution.maxAttempts || '—')}</strong></span>
+        <span><small>Evidence</small><strong>${esc(record.evidence.count)}</strong></span>
+      </div>
+      <div class="domain-record-meta">
+        <span><small>Adapter</small><strong>${esc(record.execution.adapterId || '—')}</strong></span>
+        <span><small>Latest event</small><strong>${esc(record.latestEvent.type || '—')}</strong></span>
+        <span><small>Recorded</small><strong>${esc(record.recordedAt ? new Date(record.recordedAt).toLocaleString() : '—')}</strong></span>
+      </div>
+    </article>
+  `).join('') : '<p class="empty-state">No durable operational records have been created for this domain yet.</p>';
+
+  return true;
+}
+
 function renderModule(module) {
   document.querySelector('#module-hero-group').textContent = module.group.toUpperCase();
   document.querySelector('#module-hero-title').textContent = module.label;
   document.querySelector('#module-hero-description').textContent = module.description;
-  document.querySelector('#module-foundation-grid').innerHTML = foundationCards(module).map(([title, copy], index) => `
-    <article class="foundation-card"><span>0${index + 1}</span><h3>${esc(title)}</h3><p>${esc(copy)}</p></article>`).join('');
+  const hasDomain = renderDomainWorkspace(module);
+  if (!hasDomain) {
+    document.querySelector('#module-foundation-grid').innerHTML = foundationCards(module).map(([title, copy], index) => `
+      <article class="foundation-card"><span>0${index + 1}</span><h3>${esc(title)}</h3><p>${esc(copy)}</p></article>`).join('');
+  }
 }
 
 function setView(view, { push = true } = {}) {

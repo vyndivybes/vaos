@@ -138,3 +138,138 @@ test('QA adapter refuses malformed payload before touching the domain store', as
   );
   assert.equal(touched, false);
 });
+
+
+test('Engineering adapter persists a durable baseline-change record and verifies it from the domain store', async () => {
+  const calls = [];
+  const engineeringChange = {
+    async recordBaselineChange(job, input) {
+      calls.push({ operation: 'record', job, input });
+      return {
+        outcome: 'CREATED',
+        record: {
+          baseline: input.baseline,
+          status: 'CHANGE_RECORDED',
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+    async getBaselineChange(job, baseline) {
+      calls.push({ operation: 'read', job, baseline });
+      return {
+        baseline,
+        status: 'CHANGE_RECORDED',
+        executionJobId: job.id,
+        intentId: job.intentId,
+      };
+    },
+  };
+
+  const registry = createExecutionAdapterRegistry({ engineeringChange });
+  const adapter = registry.get('ENGINEERING.BASELINE_CHANGE');
+  const result = await adapter.execute({
+    id: 'job-eng-1',
+    intentId: 'intent-eng-1',
+    actionType: 'ENGINEERING.BASELINE_CHANGE',
+    payload: { baseline: '5.3.9' },
+  });
+
+  assert.equal(result.adapterId, 'supabase.engineering-baseline.v1');
+  assert.deepEqual(result.effect, {
+    effectType: 'ENGINEERING.BASELINE_CHANGE_APPLIED',
+    resourceType: 'ENGINEERING_BASELINE',
+    resourceId: '5.3.9',
+    state: 'CHANGE_RECORDED',
+    domainOutcome: 'CREATED',
+  });
+  assert.deepEqual(result.verification, {
+    verified: true,
+    resourceType: 'ENGINEERING_BASELINE',
+    resourceId: '5.3.9',
+    expectedState: 'CHANGE_RECORDED',
+    evidenceSource: 'vaos_private.engineering_baseline_changes',
+  });
+  assert.deepEqual(calls.map((call) => call.operation), ['record', 'read']);
+});
+
+test('Engineering adapter treats a replayed domain write as the same verified baseline change', async () => {
+  const engineeringChange = {
+    async recordBaselineChange(job, input) {
+      return {
+        outcome: 'REPLAY',
+        record: { baseline: input.baseline, status: 'CHANGE_RECORDED', executionJobId: job.id, intentId: job.intentId },
+      };
+    },
+    async getBaselineChange(job, baseline) {
+      return { baseline, status: 'CHANGE_RECORDED', executionJobId: job.id, intentId: job.intentId };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ engineeringChange }).get('ENGINEERING.BASELINE_CHANGE').execute({
+    id: 'job-eng-2',
+    intentId: 'intent-eng-2',
+    actionType: 'ENGINEERING.BASELINE_CHANGE',
+    payload: { baseline: '5.4-FK75' },
+  });
+
+  assert.equal(result.effect.domainOutcome, 'REPLAY');
+  assert.equal(result.verification.verified, true);
+});
+
+test('Engineering adapter fails closed when no durable engineering domain port is configured', async () => {
+  const adapter = createExecutionAdapterRegistry().get('ENGINEERING.BASELINE_CHANGE');
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-eng-3',
+      intentId: 'intent-eng-3',
+      actionType: 'ENGINEERING.BASELINE_CHANGE',
+      payload: { baseline: '5.3.9' },
+    }),
+    /DOMAIN_PORT_REQUIRED:engineeringChange/,
+  );
+});
+
+test('Engineering adapter rejects mismatched durable readback', async () => {
+  const engineeringChange = {
+    async recordBaselineChange(job, input) {
+      return {
+        outcome: 'CREATED',
+        record: { baseline: input.baseline, status: 'CHANGE_RECORDED', executionJobId: job.id, intentId: job.intentId },
+      };
+    },
+    async getBaselineChange(job, baseline) {
+      return { baseline, status: 'RELEASED', executionJobId: job.id, intentId: job.intentId };
+    },
+  };
+
+  const adapter = createExecutionAdapterRegistry({ engineeringChange }).get('ENGINEERING.BASELINE_CHANGE');
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-eng-4',
+      intentId: 'intent-eng-4',
+      actionType: 'ENGINEERING.BASELINE_CHANGE',
+      payload: { baseline: '5.3.9' },
+    }),
+    /ENGINEERING_BASELINE_VERIFICATION_MISMATCH/,
+  );
+});
+
+test('Engineering adapter refuses malformed baseline before touching the domain store', async () => {
+  let touched = false;
+  const engineeringChange = {
+    async recordBaselineChange() { touched = true; },
+    async getBaselineChange() { touched = true; },
+  };
+  const adapter = createExecutionAdapterRegistry({ engineeringChange }).get('ENGINEERING.BASELINE_CHANGE');
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-eng-5',
+      intentId: 'intent-eng-5',
+      actionType: 'ENGINEERING.BASELINE_CHANGE',
+      payload: {},
+    }),
+    /ADAPTER_PAYLOAD_INVALID:baseline/,
+  );
+  assert.equal(touched, false);
+});

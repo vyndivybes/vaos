@@ -86,3 +86,30 @@ test('Edge bridge failures are surfaced without leaking response internals', asy
   const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
   await assert.rejects(() => store.snapshot(), /SUPABASE_EDGE_FAILED:401/);
 });
+
+
+test('Engineering baseline domain writes and readback use dedicated Edge operations bound to the execution lease', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', record: { baseline: '5.3.9', status: 'CHANGE_RECORDED', executionJobId: 'job-eng-1', intentId: 'intent-eng-1' } } },
+    { body: { baseline: '5.3.9', status: 'CHANGE_RECORDED', executionJobId: 'job-eng-1', intentId: 'intent-eng-1' } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-eng-1', intentId: 'intent-eng-1', leaseToken: 'lease-eng-1' };
+
+  const recorded = await store.recordBaselineChange(job, { baseline: '5.3.9' });
+  const record = await store.getBaselineChange(job, '5.3.9');
+
+  assert.equal(recorded.outcome, 'CREATED');
+  assert.equal(record.status, 'CHANGE_RECORDED');
+  assert.equal(fake.calls[0].body.operation, 'recordBaselineChange');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-eng-1',
+    leaseToken: 'lease-eng-1',
+    baseline: '5.3.9',
+  });
+  assert.equal(fake.calls[1].body.operation, 'getBaselineChange');
+  assert.deepEqual(fake.calls[1].body.payload, {
+    jobId: 'job-eng-1',
+    baseline: '5.3.9',
+  });
+});

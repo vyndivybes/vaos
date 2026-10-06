@@ -55,6 +55,32 @@ test('execution lifecycle is routed through typed Edge operations', async () => 
   assert.equal(fake.calls[2].body.operation, 'failExecution');
 });
 
+test('QA/CAPA domain writes and readback use dedicated Edge operations bound to the execution lease', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', record: { capaId: 'CAPA-024', status: 'OPEN', executionJobId: 'job-1', intentId: 'intent-1' } } },
+    { body: { capaId: 'CAPA-024', status: 'OPEN', executionJobId: 'job-1', intentId: 'intent-1' } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-1', intentId: 'intent-1', leaseToken: 'lease-1' };
+
+  const opened = await store.openCapa(job, { capaId: 'CAPA-024' });
+  const record = await store.getCapa(job, 'CAPA-024');
+
+  assert.equal(opened.outcome, 'CREATED');
+  assert.equal(record.status, 'OPEN');
+  assert.equal(fake.calls[0].body.operation, 'openCapa');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-1',
+    leaseToken: 'lease-1',
+    capaId: 'CAPA-024',
+  });
+  assert.equal(fake.calls[1].body.operation, 'getCapa');
+  assert.deepEqual(fake.calls[1].body.payload, {
+    jobId: 'job-1',
+    capaId: 'CAPA-024',
+  });
+});
+
 test('Edge bridge failures are surfaced without leaking response internals', async () => {
   const fake = fakeFetch([{ ok: false, status: 401, body: { message: 'internal detail' } }]);
   const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });

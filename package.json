@@ -1,7 +1,7 @@
 {
   "name": "vaos",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "VYNDI Agentic OS monorepo",
   "workspaces": [
     "apps/*",
@@ -17,8 +17,8 @@
     "workflows/*"
   ],
   "scripts": {
-    "lint": "node --check apps/web/app.mjs && node --check apps/web/router.mjs && node --check apps/web/workspace.mjs && node --check apps/web/lib/auth.mjs && node --check apps/web/api/login.mjs && node --check apps/web/api/session.mjs && node --check apps/web/api/logout.mjs",
-    "test:web": "node --test apps/web/router.test.mjs apps/web/lib/auth.test.mjs",
+    "lint": "node --check apps/web/app.mjs && node --check apps/web/router.mjs && node --check apps/web/workspace.mjs && node --check apps/web/lib/auth.mjs && node --check apps/web/lib/workspace-model.mjs && node --check apps/web/lib/control-plane.mjs && node --check apps/web/api/login.mjs && node --check apps/web/api/session.mjs && node --check apps/web/api/logout.mjs && node --check apps/web/api/control-plane.mjs",
+    "test:web": "node --test apps/web/router.test.mjs apps/web/lib/auth.test.mjs apps/web/lib/workspace-model.test.mjs apps/web/lib/control-plane.test.mjs",
     "verify:web": "node scripts/verify-web.mjs",
     "test": "npm run test:web && npm run verify:web && npm run lint"
   }

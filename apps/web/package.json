@@ -1,10 +1,10 @@
 {
   "name": "@vaos/web",
   "private": true,
-  "version": "0.0.2",
+  "version": "0.0.3",
   "type": "module",
   "scripts": {
-    "test": "node --test router.test.mjs lib/auth.test.mjs",
-    "lint": "node --check app.mjs && node --check router.mjs && node --check workspace.mjs && node --check lib/auth.mjs && node --check api/login.mjs && node --check api/session.mjs && node --check api/logout.mjs"
+    "test": "node --test router.test.mjs lib/auth.test.mjs lib/workspace-model.test.mjs lib/control-plane.test.mjs",
+    "lint": "node --check app.mjs && node --check router.mjs && node --check workspace.mjs && node --check lib/auth.mjs && node --check lib/workspace-model.mjs && node --check lib/control-plane.mjs && node --check api/login.mjs && node --check api/session.mjs && node --check api/logout.mjs && node --check api/control-plane.mjs"
   }
 }

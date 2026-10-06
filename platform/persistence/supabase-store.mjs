@@ -61,5 +61,18 @@ export function createSupabaseControlStore({
         capaId,
       });
     },
+    recordBaselineChange(job, input) {
+      return invoke('recordBaselineChange', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        baseline: input.baseline,
+      });
+    },
+    getBaselineChange(job, baseline) {
+      return invoke('getBaselineChange', {
+        jobId: job.id,
+        baseline,
+      });
+    },
   });
 }

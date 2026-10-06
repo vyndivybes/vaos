@@ -16,9 +16,14 @@ export function getExecutionEngine() {
       getCapa(job, capaId) { return store.getCapa(job, capaId); },
     });
 
+    const engineeringChange = Object.freeze({
+      recordBaselineChange(job, input) { return store.recordBaselineChange(job, input); },
+      getBaselineChange(job, baseline) { return store.getBaselineChange(job, baseline); },
+    });
+
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa }),
+      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange }),
       workerId: 'vaos-vercel-worker',
     });
   }

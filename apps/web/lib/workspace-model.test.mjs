@@ -65,3 +65,103 @@ test('workspace runtime events remain ordered newest-first for rendering', () =>
     assert.ok(model.events[i - 1].timeRank >= model.events[i].timeRank);
   }
 });
+
+
+test('workspace normalizes durable QA, Engineering and Project/Risk records into operational registers', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.domains = {
+    qaCapa: [{
+    id: 'domain-1',
+    resourceId: 'CAPA-024',
+    status: 'OPEN',
+    recordedAt: '2026-10-07T00:10:00.000Z',
+    intentId: 'intent-1',
+    intentStatus: 'EXECUTED',
+    intentRisk: 'medium',
+    approvalId: 'approval-1',
+    approvalStatus: 'APPROVED',
+    decidedBy: 'founder@example.com',
+    decidedAt: '2026-10-07T00:05:00.000Z',
+    executionJobId: 'job-1',
+    executionStatus: 'SUCCEEDED',
+    attemptCount: 2,
+    maxAttempts: 5,
+    adapterId: 'supabase.qa-capa.v1',
+    evidenceCount: 1,
+    evidenceVerifiedAt: '2026-10-07T00:11:00.000Z',
+    latestEventType: 'EVIDENCE.VERIFIED',
+    latestEventAt: '2026-10-07T00:11:00.000Z',
+  }],
+    engineering: [{
+      ...{
+    id: 'domain-1',
+    resourceId: 'CAPA-024',
+    status: 'OPEN',
+    recordedAt: '2026-10-07T00:10:00.000Z',
+    intentId: 'intent-1',
+    intentStatus: 'EXECUTED',
+    intentRisk: 'medium',
+    approvalId: 'approval-1',
+    approvalStatus: 'APPROVED',
+    decidedBy: 'founder@example.com',
+    decidedAt: '2026-10-07T00:05:00.000Z',
+    executionJobId: 'job-1',
+    executionStatus: 'SUCCEEDED',
+    attemptCount: 2,
+    maxAttempts: 5,
+    adapterId: 'supabase.qa-capa.v1',
+    evidenceCount: 1,
+    evidenceVerifiedAt: '2026-10-07T00:11:00.000Z',
+    latestEventType: 'EVIDENCE.VERIFIED',
+    latestEventAt: '2026-10-07T00:11:00.000Z',
+  },
+      id: 'domain-2',
+      resourceId: '5.3.9',
+      adapterId: 'supabase.engineering-baseline.v1',
+    }],
+    projectRisk: [{
+      ...{
+    id: 'domain-1',
+    resourceId: 'CAPA-024',
+    status: 'OPEN',
+    recordedAt: '2026-10-07T00:10:00.000Z',
+    intentId: 'intent-1',
+    intentStatus: 'EXECUTED',
+    intentRisk: 'medium',
+    approvalId: 'approval-1',
+    approvalStatus: 'APPROVED',
+    decidedBy: 'founder@example.com',
+    decidedAt: '2026-10-07T00:05:00.000Z',
+    executionJobId: 'job-1',
+    executionStatus: 'SUCCEEDED',
+    attemptCount: 2,
+    maxAttempts: 5,
+    adapterId: 'supabase.qa-capa.v1',
+    evidenceCount: 1,
+    evidenceVerifiedAt: '2026-10-07T00:11:00.000Z',
+    latestEventType: 'EVIDENCE.VERIFIED',
+    latestEventAt: '2026-10-07T00:11:00.000Z',
+  },
+      id: 'domain-3',
+      resourceId: 'RSK-013',
+      adapterId: 'supabase.project-risk.v1',
+    }],
+  };
+
+  const model = buildWorkspaceModel(snapshot);
+
+  assert.equal(model.domainWorkspaces['qa-capa'].records[0].resourceId, 'CAPA-024');
+  assert.equal(model.domainWorkspaces.engineering.records[0].resourceId, '5.3.9');
+  assert.equal(model.domainWorkspaces.risk.records[0].resourceId, 'RSK-013');
+  assert.equal(model.domainWorkspaces.risk.records[0].execution.status, 'SUCCEEDED');
+  assert.equal(model.domainWorkspaces.risk.records[0].execution.attempts, 2);
+  assert.equal(model.domainWorkspaces.risk.records[0].evidence.count, 1);
+  assert.equal(model.domainWorkspaces.risk.records[0].latestEvent.type, 'EVIDENCE.VERIFIED');
+});
+
+test('workspace exposes empty durable registers when the runtime snapshot has no domain section', () => {
+  const model = buildWorkspaceModel(runtimeSnapshot());
+  assert.deepEqual(model.domainWorkspaces['qa-capa'].records, []);
+  assert.deepEqual(model.domainWorkspaces.engineering.records, []);
+  assert.deepEqual(model.domainWorkspaces.risk.records, []);
+});

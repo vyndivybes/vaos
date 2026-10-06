@@ -34,3 +34,49 @@ test('control plane returns identity and durable model for an authorised signed 
   assert.equal(payload.model.runtimeMode, 'DURABLE_POSTGRES');
   assert.equal(payload.model.approvals.length, 1);
 });
+
+
+test('control plane carries durable domain records through the authenticated workspace model', async () => {
+  const token = createSessionToken('shyamsundhar1982@gmail.com');
+  const domainService = {
+    async snapshot() {
+      return {
+        mode: 'DURABLE_POSTGRES',
+        agents: [],
+        approvals: [],
+        events: [],
+        metrics: { pendingApprovals: 0, eventCount: 0, intentCount: 1 },
+        domains: {
+          qaCapa: [{
+    id: 'domain-1',
+    resourceId: 'CAPA-024',
+    status: 'OPEN',
+    recordedAt: '2026-10-07T00:10:00.000Z',
+    intentId: 'intent-1',
+    intentStatus: 'EXECUTED',
+    intentRisk: 'medium',
+    approvalId: 'approval-1',
+    approvalStatus: 'APPROVED',
+    decidedBy: 'founder@example.com',
+    decidedAt: '2026-10-07T00:05:00.000Z',
+    executionJobId: 'job-1',
+    executionStatus: 'SUCCEEDED',
+    attemptCount: 2,
+    maxAttempts: 5,
+    adapterId: 'supabase.qa-capa.v1',
+    evidenceCount: 1,
+    evidenceVerifiedAt: '2026-10-07T00:11:00.000Z',
+    latestEventType: 'EVIDENCE.VERIFIED',
+    latestEventAt: '2026-10-07T00:11:00.000Z',
+  }],
+          engineering: [],
+          projectRisk: [],
+        },
+      };
+    },
+  };
+
+  const payload = await getControlPlanePayload(`${SESSION_COOKIE}=${encodeURIComponent(token)}`, domainService);
+  assert.equal(payload.model.domainWorkspaces['qa-capa'].records.length, 1);
+  assert.equal(payload.model.domainWorkspaces['qa-capa'].records[0].resourceId, 'CAPA-024');
+});

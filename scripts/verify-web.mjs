@@ -23,6 +23,7 @@ assert.match(workspace, /Agent Control Centre/);
 assert.match(workspace, /workspace\.css/);
 assert.match(workspaceApp, /\/api\/control-plane/);
 assert.match(workspaceApp, /\/api\/approvals/);
+assert.match(await read('api/executions.mjs'), /getExecutionEngine/);
 assert.match(workspaceCss, /max-width: 900px/);
 assert.equal(existsSync(resolve(web, "house")), false);
 assert.equal(existsSync(resolve(web, "range")), false);

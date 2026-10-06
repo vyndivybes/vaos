@@ -1,6 +1,7 @@
 import { parseCookies, SESSION_COOKIE, verifySessionToken } from '../lib/auth.mjs';
 import { apiError, validateApprovalDecision } from '../lib/api-contracts.mjs';
 import { getDurableControlService } from '../lib/durable-control-provider.mjs';
+import { getExecutionEngine } from '../lib/execution-provider.mjs';
 
 function parseBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -31,7 +32,13 @@ export default async function handler(req, res) {
     });
     if (result?.outcome === 'NOT_FOUND') return res.status(404).json(apiError('NOT_FOUND', 'Approval not found'));
     if (result?.outcome === 'CONFLICT') return res.status(409).json(apiError('APPROVAL_ALREADY_DECIDED', 'Approval already has a different terminal decision'));
-    return res.status(200).json({ data: result });
+
+    let execution = null;
+    if (validation.decision === 'APPROVED') {
+      try { execution = await getExecutionEngine().processOne(); }
+      catch { execution = { status: 'QUEUED' }; }
+    }
+    return res.status(200).json({ data: { ...result, execution } });
   } catch {
     return res.status(503).json(apiError('CONTROL_PLANE_UNAVAILABLE', 'Unable to persist approval decision'));
   }

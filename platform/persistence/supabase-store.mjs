@@ -28,14 +28,25 @@ export function createSupabaseControlStore({
   }
 
   return Object.freeze({
-    snapshot() {
-      return invoke('snapshot');
+    snapshot() { return invoke('snapshot'); },
+    submitIntent(input) { return invoke('submitIntent', input); },
+    decideApproval(approvalId, input) { return invoke('decideApproval', { approvalId, ...input }); },
+    claimExecution(input) { return invoke('claimExecution', input); },
+    completeExecution(job, result) {
+      return invoke('completeExecution', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        adapterId: result.adapterId,
+        effect: result.effect,
+        verification: result.verification,
+      });
     },
-    submitIntent(input) {
-      return invoke('submitIntent', input);
-    },
-    decideApproval(approvalId, input) {
-      return invoke('decideApproval', { approvalId, ...input });
+    failExecution(job, error) {
+      return invoke('failExecution', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        error,
+      });
     },
   });
 }

@@ -30,6 +30,12 @@ const EVENT_SEVERITY = Object.freeze({
   'GOVERNANCE.APPROVAL_DECIDED': 'success',
   'GOVERNANCE.ACTION_AUTHORIZED': 'success',
   'GOVERNANCE.ACTION_DENIED': 'warning',
+  'EXECUTION.QUEUED': 'info',
+  'EXECUTION.CLAIMED': 'info',
+  'EXECUTION.SUCCEEDED': 'success',
+  'EXECUTION.RETRY_SCHEDULED': 'warning',
+  'EXECUTION.DEAD_LETTER': 'warning',
+  'EVIDENCE.VERIFIED': 'success',
   'AGENT.REGISTERED': 'info',
   'AGENT.ACTION_PREPARED': 'info',
 });
@@ -64,6 +70,12 @@ function eventSummary(event, names) {
     case 'GOVERNANCE.APPROVAL_DECIDED': return `${payload.actionType} was ${String(payload.decision || 'decided').toLowerCase()}`;
     case 'GOVERNANCE.ACTION_AUTHORIZED': return `${payload.actionType} passed policy and authority checks`;
     case 'GOVERNANCE.ACTION_DENIED': return `${payload.actionType} was denied: ${payload.reason || 'policy gate'}`;
+    case 'EXECUTION.QUEUED': return `${payload.actionType} entered the durable execution queue`;
+    case 'EXECUTION.CLAIMED': return `${payload.actionType} was leased to ${payload.workerId || 'execution worker'}`;
+    case 'EXECUTION.SUCCEEDED': return `${payload.actionType} executed and persisted effect evidence`;
+    case 'EXECUTION.RETRY_SCHEDULED': return `${payload.actionType} failed and is scheduled for retry`;
+    case 'EXECUTION.DEAD_LETTER': return `${payload.actionType} moved to dead letter after a terminal failure`;
+    case 'EVIDENCE.VERIFIED': return `Execution evidence verified for ${payload.actionType}`;
     case 'AGENT.ACTION_PREPARED': return `${payload.actionType} was prepared without executing an effect`;
     default: return event.type;
   }
@@ -97,13 +109,13 @@ export function buildWorkspaceModel(runtimeSnapshot) {
   const fleet = summarizeAgentFleet(agents);
   return {
     environment: 'Development',
-    release: 'VAOS 0.2 / durable control plane',
+    release: 'VAOS 0.3 / governed execution',
     runtimeMode: runtimeSnapshot.mode,
     modules: MODULES.map((item) => ({ ...item })),
     agents, approvals, events, risks: RISKS.map((item) => ({ ...item })),
     pulse: {
       governance: 'Nominal', evidenceCoverage: 86, openApprovals: approvals.length,
-      agentFleet: fleet, decisionLatency: runtimeSnapshot.mode === 'DURABLE_POSTGRES' ? 'durable / policy-gated' : 'policy-gated',
+      agentFleet: fleet, executionQueue: runtimeSnapshot.metrics?.executionPending ?? 0, decisionLatency: runtimeSnapshot.mode === 'DURABLE_POSTGRES' ? 'durable / policy-gated' : 'policy-gated',
     },
   };
 }

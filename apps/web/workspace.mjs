@@ -44,7 +44,7 @@ function renderPulse() {
   const pulse = model.pulse;
   const cards = [
     ['Agents active', `${pulse.agentFleet.active}/${pulse.agentFleet.total}`, `${pulse.agentFleet.needsApproval} awaiting approval`, 'AI'],
-    ['Governance', pulse.governance, 'Policy gates enforcing effects', 'GV'],
+    ['Governance', pulse.governance, `${pulse.executionQueue ?? 0} effect(s) queued for execution`, 'GV'],
     ['Evidence coverage', `${pulse.evidenceCoverage}%`, 'Verification objects linked', 'EV'],
     ['Decision latency', pulse.decisionLatency, `${pulse.openApprovals} open approvals`, 'AP'],
   ];

@@ -119,6 +119,17 @@ function mapEvent(event, names) {
   };
 }
 
+function mapThreadEvent(event = {}) {
+  return {
+    id: event.id || null,
+    sequence: Number(event.sequence) || 0,
+    type: event.type || 'UNKNOWN',
+    source: event.source || 'unknown',
+    occurredAt: event.occurredAt || null,
+    payload: event.payload && typeof event.payload === 'object' ? { ...event.payload } : {},
+  };
+}
+
 function mapDomainRecord(record = {}) {
   return {
     id: record.id,
@@ -150,6 +161,15 @@ function mapDomainRecord(record = {}) {
     latestEvent: {
       type: record.latestEventType || null,
       occurredAt: record.latestEventAt || null,
+    },
+    thread: {
+      effect: record.effect && typeof record.effect === 'object' ? { ...record.effect } : null,
+      verification: record.evidenceVerification && typeof record.evidenceVerification === 'object'
+        ? { ...record.evidenceVerification }
+        : null,
+      events: Array.isArray(record.threadEvents)
+        ? record.threadEvents.map(mapThreadEvent).sort((a, b) => a.sequence - b.sequence)
+        : [],
     },
   };
 }

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0a0b0b" />
+    <meta
+      name="description"
+      content="VAOS — VYNDI Agentic Operating System by Vāyū Shastr Pvt Ltd."
+    />
+    <title>VAOS · Sign in</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="login-shell" id="app">
+      <div class="scene" aria-hidden="true">
+        <div class="scene__layer scene__layer--network" data-parallax data-depth="10">
+          <img src="./assets/molecular-grid.svg" alt="" />
+        </div>
+        <div class="scene__layer scene__layer--halo" data-parallax data-depth="16"></div>
+        <div class="scene__layer scene__layer--core" data-parallax data-depth="25">
+          <div class="brand-core">
+            <div class="brand-core__rim">
+              <div class="brand-core__mark">
+                <span>vā</span>
+                <span class="brand-core__gold">yū:</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="scene__layer scene__layer--shards" data-parallax data-depth="34">
+          <i class="shard shard--1"></i>
+          <i class="shard shard--2"></i>
+          <i class="shard shard--3"></i>
+          <i class="shard shard--4"></i>
+          <i class="shard shard--5"></i>
+        </div>
+      </div>
+
+      <section class="brand-panel" aria-label="VAOS introduction">
+        <p class="eyebrow">VĀYŪ SHASTR PVT LTD</p>
+        <h1>VAOS</h1>
+        <p class="brand-panel__title">VYNDI Agentic Operating System</p>
+        <p class="brand-panel__copy">
+          Governed enterprise intelligence for engineering, operations,
+          decisions, evidence and autonomous execution.
+        </p>
+        <div class="brand-panel__status">
+          <span></span>
+          Development environment
+        </div>
+      </section>
+
+      <section class="auth-panel" aria-labelledby="signin-title">
+        <div class="auth-panel__brand">
+          <div class="mini-mark" aria-hidden="true">V</div>
+          <div>
+            <strong>VAOS</strong>
+            <span>Secure access</span>
+          </div>
+        </div>
+
+        <div class="auth-panel__heading">
+          <p class="eyebrow">IDENTITY GATEWAY</p>
+          <h2 id="signin-title">Enter the operating system.</h2>
+          <p>Sign in with your authorised VYNDI identity.</p>
+        </div>
+
+        <form id="login-form" class="login-form" novalidate>
+          <label>
+            <span>Email</span>
+            <input
+              id="email"
+              name="email"
+              type="email"
+              autocomplete="email"
+              placeholder="name@company.com"
+              required
+            />
+          </label>
+
+          <label>
+            <span>Password</span>
+            <input
+              id="password"
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              placeholder="••••••••••••"
+              minlength="8"
+              required
+            />
+          </label>
+
+          <div class="login-form__row">
+            <label class="remember">
+              <input type="checkbox" name="remember" />
+              <span>Keep me signed in</span>
+            </label>
+            <button class="text-button" type="button">Access help</button>
+          </div>
+
+          <button class="primary-button" type="submit">
+            <span>Sign in to VAOS</span>
+            <span aria-hidden="true">→</span>
+          </button>
+
+          <p id="login-status" class="login-status" role="status" aria-live="polite"></p>
+        </form>
+
+        <footer class="auth-panel__footer">
+          <span>Governed access</span>
+          <span>·</span>
+          <span>Auditable actions</span>
+          <span>·</span>
+          <span>Policy controlled</span>
+        </footer>
+      </section>
+    </main>
+
+    <script type="module" src="./app.mjs"></script>
+  </body>
+</html>

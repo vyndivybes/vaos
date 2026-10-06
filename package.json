@@ -17,7 +17,9 @@
     "workflows/*"
   ],
   "scripts": {
-    "lint": "echo \"lint pipeline to be added in platform foundation\"",
-    "test": "echo \"test pipeline to be added in qualification foundation\""
+    "lint": "node --check apps/web/app.mjs && node --check apps/web/router.mjs",
+    "test:web": "node --test apps/web/router.test.mjs",
+    "verify:web": "node scripts/verify-web.mjs",
+    "test": "npm run test:web && npm run verify:web && npm run lint"
   }
 }

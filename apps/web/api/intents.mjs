@@ -1,6 +1,7 @@
 import { parseCookies, SESSION_COOKIE, verifySessionToken } from '../lib/auth.mjs';
 import { apiError, validateIntentRequest } from '../lib/api-contracts.mjs';
 import { getDurableControlService } from '../lib/durable-control-provider.mjs';
+import { getExecutionEngine } from '../lib/execution-provider.mjs';
 
 function parseBody(req) {
   if (req.body && typeof req.body === 'object') return req.body;
@@ -36,7 +37,12 @@ export default async function handler(req, res) {
       actor: session.email,
     });
 
-    return res.status(result.status === 'AWAIT_APPROVAL' ? 202 : 200).json({ data: result });
+    let execution = null;
+    if (result.status === 'AUTHORIZED') {
+      try { execution = await getExecutionEngine().processOne(); }
+      catch { execution = { status: 'QUEUED' }; }
+    }
+    return res.status(result.status === 'AWAIT_APPROVAL' ? 202 : 200).json({ data: { ...result, execution } });
   } catch (error) {
     if (String(error?.message).includes('IDEMPOTENCY_CONFLICT')) {
       return res.status(422).json(apiError('IDEMPOTENCY_CONFLICT', 'Idempotency key was reused with a different intent'));

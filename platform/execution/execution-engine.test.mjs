@@ -1,0 +1,115 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { createExecutionEngine } from './execution-engine.mjs';
+
+function makeStore(jobs = []) {
+  const queue = [...jobs];
+  const completed = [];
+  const failed = [];
+  return {
+    completed, failed,
+    async claimExecution() { return queue.shift() || null; },
+    async completeExecution(job, result) {
+      completed.push({ job, result });
+      return { outcome: 'SUCCEEDED', jobId: job.id };
+    },
+    async failExecution(job, error) {
+      failed.push({ job, error });
+      return { outcome: 'RETRY_SCHEDULED', jobId: job.id };
+    },
+  };
+}
+
+function makeRegistry(adapter) {
+  return {
+    get(type) { return type === 'QA.OPEN_CAPA' ? adapter : null; },
+  };
+}
+
+test('engine claims, executes, verifies and completes one durable job', async () => {
+  const store = makeStore([{
+    id: 'job-1',
+    intentId: 'intent-1',
+    actionType: 'QA.OPEN_CAPA',
+    payload: { capaId: 'CAPA-024' },
+    leaseToken: 'lease-1',
+  }]);
+  const registry = makeRegistry({
+    async execute() {
+      return {
+        adapterId: 'qa.v1',
+        effect: { resourceId: 'CAPA-024' },
+        verification: { verified: true, resourceId: 'CAPA-024' },
+      };
+    },
+  });
+  const engine = createExecutionEngine({ store, registry });
+  const result = await engine.processOne();
+
+  assert.equal(result.status, 'SUCCEEDED');
+  assert.equal(store.completed.length, 1);
+  assert.equal(store.failed.length, 0);
+  assert.equal(store.completed[0].result.verification.verified, true);
+});
+
+test('engine records retryable failure without losing the leased job', async () => {
+  const store = makeStore([{
+    id: 'job-2',
+    intentId: 'intent-2',
+    actionType: 'QA.OPEN_CAPA',
+    payload: { capaId: 'CAPA-025' },
+    leaseToken: 'lease-2',
+  }]);
+  const registry = makeRegistry({
+    async execute() { throw new Error('DEPENDENCY_TIMEOUT'); },
+  });
+  const engine = createExecutionEngine({ store, registry });
+  const result = await engine.processOne();
+
+  assert.equal(result.status, 'RETRY_SCHEDULED');
+  assert.equal(store.completed.length, 0);
+  assert.equal(store.failed.length, 1);
+  assert.equal(store.failed[0].error.code, 'ADAPTER_EXECUTION_FAILED');
+});
+
+test('engine dead-letters unsupported action rather than executing an unknown effect', async () => {
+  const store = makeStore([{
+    id: 'job-3',
+    intentId: 'intent-3',
+    actionType: 'UNKNOWN.ACTION',
+    payload: {},
+    leaseToken: 'lease-3',
+  }]);
+  store.failExecution = async (job, error) => {
+    store.failed.push({ job, error });
+    return { outcome: 'DEAD_LETTER', jobId: job.id };
+  };
+  const engine = createExecutionEngine({ store, registry: makeRegistry(null) });
+  const result = await engine.processOne();
+
+  assert.equal(result.status, 'DEAD_LETTER');
+  assert.equal(store.failed[0].error.code, 'EXECUTION_ADAPTER_NOT_FOUND');
+});
+
+test('drain stops cleanly when queue becomes empty', async () => {
+  const store = makeStore([{
+    id: 'job-4',
+    intentId: 'intent-4',
+    actionType: 'QA.OPEN_CAPA',
+    payload: { capaId: 'CAPA-026' },
+    leaseToken: 'lease-4',
+  }]);
+  const engine = createExecutionEngine({
+    store,
+    registry: makeRegistry({
+      async execute() {
+        return { adapterId: 'qa.v1', effect: {}, verification: { verified: true } };
+      },
+    }),
+  });
+
+  const result = await engine.drain({ limit: 5 });
+  assert.equal(result.processed, 1);
+  assert.equal(result.succeeded, 1);
+  assert.equal(result.remainingCapacity, 4);
+});

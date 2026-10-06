@@ -18,11 +18,8 @@ let model = null;
 let currentView = 'command';
 
 const esc = (value) => String(value ?? '')
-  .replaceAll('&', '&amp;')
-  .replaceAll('<', '&lt;')
-  .replaceAll('>', '&gt;')
-  .replaceAll('"', '&quot;')
-  .replaceAll("'", '&#039;');
+  .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
+  .replaceAll('"', '&quot;').replaceAll("'", '&#039;');
 
 function moduleGroups(modules) {
   return modules.reduce((groups, module) => {
@@ -34,8 +31,7 @@ function moduleGroups(modules) {
 function renderNavigation() {
   const groups = moduleGroups(model.modules);
   nav.innerHTML = Object.entries(groups).map(([group, modules]) => `
-    <div class="nav-group">
-      <span class="nav-group__label">${esc(group)}</span>
+    <div class="nav-group"><span class="nav-group__label">${esc(group)}</span>
       ${modules.map((module) => `
         <button class="nav-item" type="button" data-view="${esc(module.id)}" aria-current="${module.id === currentView ? 'page' : 'false'}">
           <span class="nav-glyph">${esc(module.glyph)}</span><span>${esc(module.label)}</span>
@@ -71,12 +67,19 @@ function renderAgents() {
 
 function renderApprovals() {
   document.querySelector('#approval-count').textContent = model.approvals.length;
-  document.querySelector('#approval-list').innerHTML = model.approvals.map((approval) => `
-    <button class="approval-row" type="button" data-view="approvals">
+  const list = document.querySelector('#approval-list');
+  list.innerHTML = model.approvals.length ? model.approvals.map((approval) => `
+    <article class="approval-row">
       <span class="risk-dot risk-dot--${esc(approval.risk)}"></span>
       <span class="approval-row__body"><strong>${esc(approval.title)}</strong><small>${esc(approval.owner)} · ${esc(approval.age)}</small><em>${esc(approval.reason)}</em></span>
-      <span class="authority-badge">${esc(approval.authority)}</span>
-    </button>`).join('');
+      <span class="approval-row__side">
+        <span class="authority-badge">${esc(approval.authority)}</span>
+        <span class="approval-actions">
+          <button type="button" data-approval-id="${esc(approval.id)}" data-decision="APPROVED">Approve</button>
+          <button type="button" data-approval-id="${esc(approval.id)}" data-decision="REJECTED">Reject</button>
+        </span>
+      </span>
+    </article>`).join('') : '<p class="empty-state">No governed effects are waiting for human approval.</p>';
 }
 
 function renderEvents() {
@@ -89,11 +92,15 @@ function renderRisks() {
     <article class="risk-row"><div class="risk-row__heading"><div><strong>${esc(risk.title)}</strong><small>${esc(risk.id)}</small></div><span class="risk-score risk-score--${esc(risk.band)}">${esc(risk.score)}</span></div><div class="risk-meter"><i style="width:${Number(risk.score)}%"></i></div><small>${esc(risk.band.toUpperCase())} · trend ${esc(risk.trend)}</small></article>`).join('');
 }
 
+function renderAll() {
+  renderPulse(); renderAgents(); renderApprovals(); renderEvents(); renderRisks(); renderNavigation();
+}
+
 function foundationCards(module) {
   const common = [
     ['Authority boundary', 'All state-changing effects route through policy, capability authority and approval gates.'],
-    ['Event integration', `${module.label} will subscribe to typed VAOS events rather than polling unrelated domains.`],
-    ['Evidence contract', 'Every governed action will emit verification and audit evidence into the digital thread.'],
+    ['Event integration', `${module.label} subscribes to typed VAOS events rather than polling unrelated domains.`],
+    ['Evidence contract', 'Every governed action emits verification and audit evidence into the digital thread.'],
   ];
   const specific = {
     agents: ['Fleet registry', 'Persistent specialist agents, current task, confidence, tool access and authority level.'],
@@ -105,7 +112,7 @@ function foundationCards(module) {
     governance: ['Autonomy governor', 'RBAC/ABAC, policy-as-code, authority graph and human escalation rules.'],
     'digital-thread': ['Traceability graph', 'Requirement → design → analysis → manufacturing → inspection → verification → release.'],
     evidence: ['Evidence ledger', 'Immutable references to decisions, tests, approvals, verification and source authority.'],
-    approvals: ['Decision inbox', 'Human-gated actions ordered by risk, impact, confidence and decision age.'],
+    approvals: ['Decision inbox', 'Human-gated effects are approved or rejected here and persisted to the governance event ledger.'],
     admin: ['Platform control', 'Identity, integrations, agent capabilities, environments and system configuration.'],
   };
   return specific[module.id] ? [specific[module.id], ...common] : common;
@@ -122,17 +129,13 @@ function renderModule(module) {
 function setView(view, { push = true } = {}) {
   const module = model.modules.find((item) => item.id === view) || model.modules[0];
   currentView = module.id;
-  moduleTitle.textContent = module.label;
-  moduleGroup.textContent = module.group;
-  moduleDescription.textContent = module.description;
-  commandView.hidden = module.id !== 'command';
-  moduleView.hidden = module.id === 'command';
+  moduleTitle.textContent = module.label; moduleGroup.textContent = module.group; moduleDescription.textContent = module.description;
+  commandView.hidden = module.id !== 'command'; moduleView.hidden = module.id === 'command';
   if (module.id !== 'command') renderModule(module);
   renderNavigation();
   if (push) {
     const url = new URL(window.location.href);
-    if (module.id === 'command') url.searchParams.delete('view');
-    else url.searchParams.set('view', module.id);
+    if (module.id === 'command') url.searchParams.delete('view'); else url.searchParams.set('view', module.id);
     window.history.pushState({ view: module.id }, '', url);
   }
 }
@@ -143,48 +146,65 @@ function renderCommandResults(query = '') {
   commandResults.innerHTML = modules.map((module) => `<button type="button" data-view="${esc(module.id)}"><span class="nav-glyph">${esc(module.glyph)}</span><div><strong>${esc(module.label)}</strong><small>${esc(module.description)}</small></div></button>`).join('') || '<p>No matching module.</p>';
 }
 
+async function loadControlPlane() {
+  const response = await fetch('/api/control-plane', { credentials: 'same-origin', cache: 'no-store' });
+  if (response.status === 401) { window.location.replace('/login'); return null; }
+  if (!response.ok) throw new Error('control_plane_unavailable');
+  return response.json();
+}
+
+async function decideApproval(button) {
+  const approvalId = button.dataset.approvalId;
+  const decision = button.dataset.decision;
+  const row = button.closest('.approval-row');
+  row?.querySelectorAll('button').forEach((item) => { item.disabled = true; });
+
+  try {
+    const response = await fetch('/api/approvals', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ approvalId, decision }),
+    });
+    if (!response.ok) throw new Error('approval_failed');
+    const payload = await loadControlPlane();
+    if (!payload) return;
+    model = payload.model;
+    renderAll();
+    if (currentView !== 'command') renderModule(model.modules.find((item) => item.id === currentView) || model.modules[0]);
+  } catch {
+    row?.querySelectorAll('button').forEach((item) => { item.disabled = false; });
+    window.alert('VAOS could not persist this approval decision.');
+  }
+}
+
 function wireInteractions() {
   document.addEventListener('click', (event) => {
+    const approval = event.target.closest('[data-approval-id][data-decision]');
+    if (approval) { decideApproval(approval); return; }
+
     const trigger = event.target.closest('[data-view]');
     if (!trigger) return;
     setView(trigger.dataset.view);
     if (dialog?.open) dialog.close();
   });
 
-  commandButton?.addEventListener('click', () => {
-    renderCommandResults();
-    dialog.showModal();
-    queueMicrotask(() => commandInput.focus());
-  });
+  commandButton?.addEventListener('click', () => { renderCommandResults(); dialog.showModal(); queueMicrotask(() => commandInput.focus()); });
   commandInput?.addEventListener('input', () => renderCommandResults(commandInput.value));
-  window.addEventListener('popstate', () => {
-    const view = new URL(window.location.href).searchParams.get('view') || 'command';
-    setView(view, { push: false });
-  });
+  window.addEventListener('popstate', () => setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false }));
 }
 
 async function bootstrap() {
   try {
-    const response = await fetch('/api/control-plane', { credentials: 'same-origin', cache: 'no-store' });
-    if (response.status === 401) {
-      window.location.replace('/login');
-      return;
-    }
-    if (!response.ok) throw new Error('control_plane_unavailable');
-    const payload = await response.json();
+    const payload = await loadControlPlane();
+    if (!payload) return;
     model = payload.model;
     identityEmail.textContent = payload.session.email;
     environmentLabel.textContent = model.environment;
-    renderPulse();
-    renderAgents();
-    renderApprovals();
-    renderEvents();
-    renderRisks();
+    renderAll();
     wireInteractions();
-    const view = new URL(window.location.href).searchParams.get('view') || 'command';
-    setView(view, { push: false });
-    loading.hidden = true;
-    shell.hidden = false;
+    setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false });
+    loading.hidden = true; shell.hidden = false;
   } catch {
     loading.querySelector('strong').textContent = 'VAOS control plane unavailable';
     loading.querySelector('span').textContent = 'Refresh to retry. No unauthorised workspace data has been displayed.';

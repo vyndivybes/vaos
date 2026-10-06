@@ -7,7 +7,6 @@ export function getDurableControlService() {
   if (!service) {
     const store = createSupabaseControlStore({
       url: process.env.SUPABASE_URL,
-      publishableKey: process.env.SUPABASE_PUBLISHABLE_KEY,
       serverSecret: process.env.VAOS_DB_RPC_SECRET,
     });
     service = createDurableControlService({ store });

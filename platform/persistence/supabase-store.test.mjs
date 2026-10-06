@@ -16,11 +16,10 @@ function fakeFetch(responses) {
   return { fetchImpl, calls };
 }
 
-test('submitIntent calls the durable RPC with server-only credentials', async () => {
+test('submitIntent uses the service-role Edge bridge with only the VAOS server credential', async () => {
   const fake = fakeFetch([{ body: { outcome: 'CREATED', intent: { status: 'AWAIT_APPROVAL' }, approvalId: 'apr-1' } }]);
   const store = createSupabaseControlStore({
     url: 'https://example.supabase.co',
-    publishableKey: 'pub-key',
     serverSecret: 'server-secret',
     fetchImpl: fake.fetchImpl,
   });
@@ -39,44 +38,40 @@ test('submitIntent calls the durable RPC with server-only credentials', async ()
   });
 
   assert.equal(result.outcome, 'CREATED');
-  assert.equal(fake.calls[0].url, 'https://example.supabase.co/rest/v1/rpc/vaos_submit_intent');
-  assert.equal(fake.calls[0].options.headers.apikey, 'pub-key');
-  assert.equal(fake.calls[0].body.p_server_key, 'server-secret');
-  assert.equal(fake.calls[0].body.p_idempotency_key, 'qa:capa:024');
+  assert.equal(fake.calls[0].url, 'https://example.supabase.co/functions/v1/vaos-control');
+  assert.equal(fake.calls[0].options.headers['x-vaos-server-key'], 'server-secret');
+  assert.equal(fake.calls[0].options.headers.apikey, undefined);
+  assert.equal(fake.calls[0].body.operation, 'submitIntent');
+  assert.equal(fake.calls[0].body.payload.idempotencyKey, 'qa:capa:024');
 });
 
-test('snapshot and approval decision use dedicated RPCs', async () => {
+test('snapshot and approval decision use the same authenticated Edge bridge', async () => {
   const fake = fakeFetch([
     { body: { mode: 'DURABLE_POSTGRES', approvals: [], events: [], metrics: {} } },
     { body: { outcome: 'DECIDED', approval: { id: 'apr-1', status: 'APPROVED' } } },
   ]);
   const store = createSupabaseControlStore({
     url: 'https://example.supabase.co',
-    publishableKey: 'pub-key',
     serverSecret: 'server-secret',
     fetchImpl: fake.fetchImpl,
   });
 
   const snapshot = await store.snapshot();
-  const decision = await store.decideApproval('apr-1', {
-    decision: 'APPROVED',
-    decidedBy: 'founder@example.com',
-  });
+  const decision = await store.decideApproval('apr-1', { decision: 'APPROVED', decidedBy: 'founder@example.com' });
 
   assert.equal(snapshot.mode, 'DURABLE_POSTGRES');
   assert.equal(decision.approval.status, 'APPROVED');
-  assert.match(fake.calls[0].url, /vaos_control_snapshot$/);
-  assert.match(fake.calls[1].url, /vaos_decide_approval$/);
+  assert.equal(fake.calls[0].body.operation, 'snapshot');
+  assert.equal(fake.calls[1].body.operation, 'decideApproval');
+  assert.equal(fake.calls[1].body.payload.approvalId, 'apr-1');
 });
 
-test('RPC failures are surfaced without leaking response internals', async () => {
-  const fake = fakeFetch([{ ok: false, status: 401, body: { message: 'database internals here' } }]);
+test('Edge bridge failures are surfaced without leaking response internals', async () => {
+  const fake = fakeFetch([{ ok: false, status: 401, body: { message: 'internal detail' } }]);
   const store = createSupabaseControlStore({
     url: 'https://example.supabase.co',
-    publishableKey: 'pub-key',
     serverSecret: 'server-secret',
     fetchImpl: fake.fetchImpl,
   });
-
-  await assert.rejects(() => store.snapshot(), /SUPABASE_RPC_FAILED:401/);
+  await assert.rejects(() => store.snapshot(), /SUPABASE_EDGE_FAILED:401/);
 });

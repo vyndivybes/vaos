@@ -5,59 +5,37 @@ function required(value, name) {
 
 export function createSupabaseControlStore({
   url,
-  publishableKey,
   serverSecret,
   fetchImpl = globalThis.fetch,
 } = {}) {
   const baseUrl = required(url, 'url').replace(/\/$/, '');
-  const apiKey = required(publishableKey, 'publishableKey');
   const secret = required(serverSecret, 'serverSecret');
   if (typeof fetchImpl !== 'function') throw new Error('SUPABASE_CONFIG_MISSING:fetch');
 
-  async function rpc(name, params) {
-    const response = await fetchImpl(`${baseUrl}/rest/v1/rpc/${name}`, {
+  async function invoke(operation, payload = {}) {
+    const response = await fetchImpl(`${baseUrl}/functions/v1/vaos-control`, {
       method: 'POST',
       headers: {
-        apikey: apiKey,
-        Authorization: `Bearer ${apiKey}`,
+        'x-vaos-server-key': secret,
         'Content-Type': 'application/json',
         'Cache-Control': 'no-store',
       },
-      body: JSON.stringify(params),
+      body: JSON.stringify({ operation, payload }),
     });
 
-    if (!response.ok) {
-      throw new Error(`SUPABASE_RPC_FAILED:${response.status}`);
-    }
+    if (!response.ok) throw new Error(`SUPABASE_EDGE_FAILED:${response.status}`);
     return response.json();
   }
 
   return Object.freeze({
     snapshot() {
-      return rpc('vaos_control_snapshot', { p_server_key: secret });
+      return invoke('snapshot');
     },
     submitIntent(input) {
-      return rpc('vaos_submit_intent', {
-        p_server_key: secret,
-        p_idempotency_key: input.idempotencyKey,
-        p_request_hash: input.requestHash,
-        p_agent_id: input.agentId,
-        p_action_type: input.actionType,
-        p_risk: input.risk,
-        p_reason: input.reason,
-        p_payload: input.payload || {},
-        p_authority: input.authority,
-        p_result: input.result,
-        p_event_type: input.eventType,
-      });
+      return invoke('submitIntent', input);
     },
     decideApproval(approvalId, input) {
-      return rpc('vaos_decide_approval', {
-        p_server_key: secret,
-        p_approval_id: approvalId,
-        p_decision: input.decision,
-        p_decided_by: input.decidedBy,
-      });
+      return invoke('decideApproval', { approvalId, ...input });
     },
   });
 }

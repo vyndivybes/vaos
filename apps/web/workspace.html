@@ -3,86 +3,159 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#080909" />
+  <meta name="theme-color" content="#101318" />
   <meta name="description" content="VAOS Agentic Control Workspace" />
   <title>VAOS · Agentic Control Workspace</title>
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/workspace.css" />
 </head>
-<body class="workspace-body">
-  <div class="control-shell" id="control-shell" hidden>
-    <aside class="control-sidebar" aria-label="VAOS modules">
-      <div class="control-brand">
-        <img src="/assets/vayu-shastr-original.webp" alt="" aria-hidden="true" />
-        <div><strong>VAOS</strong><span>Agentic OS</span></div>
+<body class="workspace-body landscape-workspace">
+  <div class="control-shell metallic-gold-rim" id="control-shell" hidden>
+    <header class="control-header">
+      <div class="header-brand">
+        <span class="header-emblem" aria-hidden="true">
+          <img src="/assets/vayu-shastr-original.webp" alt="" />
+        </span>
+        <span class="header-brand__copy">
+          <small>VĀYŪ SHASTR PVT. LTD.</small>
+          <strong>VAOS</strong>
+          <em>VYNDI Agentic Operating System</em>
+        </span>
       </div>
+      <div class="header-system">
+        <span class="system-chip"><i></i><span id="environment-label">Development</span></span>
+        <span class="system-version">Governed execution · v0.3</span>
+      </div>
+      <div class="topbar-actions">
+        <div class="identity-chip">
+          <span class="identity-dot"></span>
+          <div><strong id="identity-email">Loading…</strong><small>Authorised VAOS identity</small></div>
+        </div>
+      </div>
+    </header>
+
+    <aside class="control-sidebar" aria-label="VAOS modules">
+      <section class="sidebar-brand-card">
+        <span class="sidebar-logo-wrap" aria-hidden="true">
+          <img src="/assets/vayu-shastr-original.webp" alt="" />
+        </span>
+        <div>
+          <small>VĀYŪ SHASTR PVT. LTD.</small>
+          <strong>VAOS</strong>
+          <span>Agentic Control Workspace</span>
+        </div>
+      </section>
+
+      <div class="sidebar-section-title">
+        <span>Operating workspaces</span>
+        <small>governed</small>
+      </div>
+
       <nav class="module-nav" id="module-nav"></nav>
+
       <div class="sidebar-footer">
-        <div class="environment-pill"><i></i><span id="environment-label">Development</span></div>
-        <button class="sidebar-signout" id="logout-button" type="button">Sign out</button>
+        <span class="sidebar-footer__note">Policy controlled · evidence backed</span>
+        <button class="sidebar-signout" id="logout-button" type="button"><span>↪</span> Sign out</button>
       </div>
     </aside>
 
     <main class="control-main">
-      <header class="control-topbar">
-        <div>
-          <p class="workspace-overline" id="module-group">Operate</p>
-          <h1 id="module-title">Command Centre</h1>
-          <p id="module-description">Enterprise pulse, agents, events and decisions.</p>
+      <section class="workspace-hero">
+        <div class="workspace-breadcrumb">VAOS <span>›</span> VYNDI <span>›</span> <strong id="module-group">Operate</strong></div>
+        <div class="workspace-hero__row">
+          <div>
+            <p class="workspace-overline">VYNDI AGENTIC OPERATING SYSTEM</p>
+            <h1 id="module-title">Command Centre</h1>
+            <p id="module-description">Enterprise pulse, agents, events and decisions.</p>
+          </div>
+          <span class="hero-status"><i></i> Control plane online</span>
         </div>
-        <div class="topbar-actions">
-          <button class="command-button" id="command-button" type="button"><span>⌘</span> Command</button>
-          <div class="identity-chip"><span class="identity-dot"></span><div><strong id="identity-email">Loading…</strong><small>Authorised session</small></div></div>
-        </div>
-      </header>
+      </section>
+
+      <button class="workspace-search metallic-gold-rim" id="command-button" type="button">
+        <span class="workspace-search__icon" aria-hidden="true">⌕</span>
+        <span class="workspace-search__copy">
+          <strong>Search modules, governance, approvals and operational controls…</strong>
+          <small>Open the VAOS command launcher</small>
+        </span>
+        <span class="workspace-search__action">Command ↗</span>
+      </button>
 
       <section id="command-view" class="workspace-view">
+        <div class="section-strapline">CONTROL PLANE → AUTHORITY → APPROVAL → EXECUTION → EVIDENCE</div>
         <div class="pulse-grid" id="pulse-grid"></div>
 
         <div class="workspace-grid workspace-grid--primary">
-          <section class="control-panel control-panel--agents">
-            <div class="panel-heading"><div><span class="panel-kicker">AGENT FLEET</span><h2>Agent Control Centre</h2></div><button class="panel-action" data-view="agents">Open fleet →</button></div>
+          <section class="control-panel control-panel--agents metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">AGENT FLEET</span><h2>Agent Control Centre</h2></div>
+              <button class="panel-action" data-view="agents">Open fleet →</button>
+            </div>
             <div class="agent-grid" id="agent-grid"></div>
           </section>
 
-          <section class="control-panel control-panel--approvals">
-            <div class="panel-heading"><div><span class="panel-kicker">HUMAN GATE</span><h2>Decision inbox</h2></div><span class="count-badge" id="approval-count">0</span></div>
+          <section class="control-panel control-panel--approvals metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">HUMAN GATE</span><h2>Decision inbox</h2></div>
+              <span class="count-badge" id="approval-count">0</span>
+            </div>
             <div class="approval-list" id="approval-list"></div>
           </section>
         </div>
 
         <div class="workspace-grid workspace-grid--secondary">
-          <section class="control-panel">
-            <div class="panel-heading"><div><span class="panel-kicker">EVENT FABRIC</span><h2>Live enterprise events</h2></div><span class="live-badge"><i></i>Live model</span></div>
+          <section class="control-panel metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">EVENT FABRIC</span><h2>Live enterprise events</h2></div>
+              <span class="live-badge"><i></i>Live model</span>
+            </div>
             <div class="event-list" id="event-list"></div>
           </section>
 
-          <section class="control-panel">
-            <div class="panel-heading"><div><span class="panel-kicker">RISK RADAR</span><h2>Current exposure</h2></div><button class="panel-action" data-view="risk">Risk register →</button></div>
+          <section class="control-panel metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">RISK RADAR</span><h2>Current exposure</h2></div>
+              <button class="panel-action" data-view="risk">Risk register →</button>
+            </div>
             <div class="risk-list" id="risk-list"></div>
           </section>
         </div>
       </section>
 
       <section id="module-view" class="workspace-view" hidden>
-        <div class="module-hero">
-          <div><span class="panel-kicker" id="module-hero-group">MODULE</span><h2 id="module-hero-title"></h2><p id="module-hero-description"></p></div>
-          <span class="module-phase">Foundation phase</span>
+        <div class="module-hero metallic-gold-rim">
+          <div>
+            <span class="panel-kicker" id="module-hero-group">MODULE</span>
+            <h2 id="module-hero-title"></h2>
+            <p id="module-hero-description"></p>
+          </div>
+          <span class="module-phase">Governed foundation</span>
         </div>
         <div class="module-foundation-grid" id="module-foundation-grid"></div>
       </section>
     </main>
+
+    <footer class="workspace-license">
+      <span>© 2026 Vāyū Shastr Pvt. Ltd. All Rights Reserved.</span>
+      <span class="workspace-license__divider"></span>
+      <span>Official licensed interface of Vāyū Shastr Pvt. Ltd.</span>
+      <span class="workspace-license__spacer"></span>
+      <span>Designed & Developed by S. Shyam Sundhar</span>
+    </footer>
   </div>
 
   <div class="workspace-loading" id="workspace-loading">
-    <div class="loading-mark">V</div>
+    <span class="loading-emblem" aria-hidden="true"><img src="/assets/vayu-shastr-original.webp" alt="" /></span>
     <strong>Authorising VAOS workspace…</strong>
-    <span>Validating session and control-plane state</span>
+    <span>Validating session, authority and durable control-plane state</span>
   </div>
 
   <dialog class="command-dialog" id="command-dialog">
     <form method="dialog">
-      <div class="command-dialog__header"><div><span class="panel-kicker">VAOS COMMAND</span><strong>Go to a module</strong></div><button value="cancel" aria-label="Close">×</button></div>
+      <div class="command-dialog__header">
+        <div><span class="panel-kicker">VAOS COMMAND</span><strong>Go to a module</strong></div>
+        <button value="cancel" aria-label="Close">×</button>
+      </div>
       <input id="command-input" type="search" placeholder="Type a module name…" autocomplete="off" />
       <div class="command-results" id="command-results"></div>
     </form>

@@ -8,6 +8,7 @@ const root = resolve(here, "..");
 const web = resolve(root, "apps", "web");
 
 const html = readFileSync(resolve(web, "index.html"), "utf8");
+const login = readFileSync(resolve(web, "login.html"), "utf8");
 const css = readFileSync(resolve(web, "styles.css"), "utf8");
 const app = readFileSync(resolve(web, "app.mjs"), "utf8");
 const workspace = readFileSync(resolve(web, "workspace.html"), "utf8");
@@ -19,6 +20,7 @@ assert.match(html, /id="login-form"/);
 assert.match(app, /\/api\/login/);
 assert.match(app, /\/api\/session/);
 assert.match(css, /prefers-reduced-motion/);
+
 assert.match(workspace, /Agent Control Centre/);
 assert.match(workspace, /workspace\.css/);
 assert.match(workspaceApp, /\/api\/control-plane/);
@@ -26,6 +28,18 @@ assert.match(workspaceApp, /\/api\/approvals/);
 const executionsApi = readFileSync(resolve(web, "api", "executions.mjs"), "utf8");
 assert.match(executionsApi, /getExecutionEngine/);
 assert.match(workspaceCss, /max-width: 900px/);
+
+assert.match(workspace, /class="control-header"/);
+assert.match(workspace, /class="workspace-license"/);
+assert.match(workspace, /© 2026 Vāyū Shastr Pvt\. Ltd\. All Rights Reserved\./);
+assert.match(workspace, /Official licensed interface of Vāyū Shastr Pvt\. Ltd\./);
+assert.match(workspace, /Designed & Developed by S\. Shyam Sundhar/);
+assert.match(login, /© 2026 Vāyū Shastr Pvt\. Ltd\. All Rights Reserved\./);
+assert.match(css, /--vayu-gold-metallic/);
+assert.match(css, /--vayu-graphite-0/);
+assert.match(workspaceCss, /landscape-workspace/);
+assert.match(workspaceCss, /metallic-gold-rim/);
+
 assert.equal(existsSync(resolve(web, "house")), false);
 assert.equal(existsSync(resolve(web, "range")), false);
 

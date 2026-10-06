@@ -92,6 +92,21 @@ Deno.serve(async (req: Request) => {
       p_job_id: payload.jobId,
       p_capa_id: payload.capaId,
     }
+  } else if (operation === 'recordBaselineChange') {
+    rpcName = 'vaos_record_baseline_change'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_baseline: payload.baseline,
+    }
+  } else if (operation === 'getBaselineChange') {
+    rpcName = 'vaos_get_baseline_change'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_baseline: payload.baseline,
+    }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

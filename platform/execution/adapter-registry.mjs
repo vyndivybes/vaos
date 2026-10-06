@@ -15,6 +15,15 @@ function assertQaCapaPort(qaCapa) {
   return qaCapa;
 }
 
+function assertEngineeringChangePort(engineeringChange) {
+  if (!engineeringChange
+      || typeof engineeringChange.recordBaselineChange !== 'function'
+      || typeof engineeringChange.getBaselineChange !== 'function') {
+    throw new Error('DOMAIN_PORT_REQUIRED:engineeringChange');
+  }
+  return engineeringChange;
+}
+
 function qaCapaAdapter(qaCapa) {
   return adapter('supabase.qa-capa.v1', async (job) => {
     const capaId = requiredText(job.payload, 'capaId');
@@ -56,24 +65,46 @@ function qaCapaAdapter(qaCapa) {
   });
 }
 
-const engineeringAdapter = adapter('internal-ledger.engineering-baseline.v1', async (job) => {
-  const resourceId = requiredText(job.payload, 'baseline');
-  return {
-    adapterId: 'internal-ledger.engineering-baseline.v1',
-    effect: {
-      effectType: 'ENGINEERING.BASELINE_CHANGE_APPLIED',
-      resourceType: 'ENGINEERING_BASELINE',
-      resourceId,
-      state: 'CHANGE_RECORDED',
-    },
-    verification: {
-      verified: true,
-      resourceType: 'ENGINEERING_BASELINE',
-      resourceId,
-      expectedState: 'CHANGE_RECORDED',
-    },
-  };
-});
+function engineeringBaselineAdapter(engineeringChange) {
+  return adapter('supabase.engineering-baseline.v1', async (job) => {
+    const baseline = requiredText(job.payload, 'baseline');
+    const port = assertEngineeringChangePort(engineeringChange);
+
+    const recorded = await port.recordBaselineChange(job, { baseline });
+    if (!recorded || !['CREATED', 'REPLAY'].includes(recorded.outcome)) {
+      throw new Error(`ENGINEERING_BASELINE_DOMAIN_WRITE_FAILED:${recorded?.outcome || 'UNKNOWN'}`);
+    }
+
+    const record = await port.getBaselineChange(job, baseline);
+    const verified = Boolean(
+      record
+      && record.baseline === baseline
+      && record.status === 'CHANGE_RECORDED'
+      && record.executionJobId === job.id
+      && record.intentId === job.intentId
+    );
+
+    if (!verified) throw new Error('ENGINEERING_BASELINE_VERIFICATION_MISMATCH');
+
+    return {
+      adapterId: 'supabase.engineering-baseline.v1',
+      effect: {
+        effectType: 'ENGINEERING.BASELINE_CHANGE_APPLIED',
+        resourceType: 'ENGINEERING_BASELINE',
+        resourceId: baseline,
+        state: record.status,
+        domainOutcome: recorded.outcome,
+      },
+      verification: {
+        verified: true,
+        resourceType: 'ENGINEERING_BASELINE',
+        resourceId: baseline,
+        expectedState: 'CHANGE_RECORDED',
+        evidenceSource: 'vaos_private.engineering_baseline_changes',
+      },
+    };
+  });
+}
 
 const riskAdapter = adapter('internal-ledger.project-risk.v1', async (job) => {
   const resourceId = requiredText(job.payload, 'riskId');
@@ -94,10 +125,10 @@ const riskAdapter = adapter('internal-ledger.project-risk.v1', async (job) => {
   };
 });
 
-export function createExecutionAdapterRegistry({ qaCapa } = {}) {
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
-    ['ENGINEERING.BASELINE_CHANGE', engineeringAdapter],
+    ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
     ['PROJECT.ESCALATE_RISK', riskAdapter],
   ]);
 

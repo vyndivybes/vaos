@@ -107,6 +107,21 @@ Deno.serve(async (req: Request) => {
       p_job_id: payload.jobId,
       p_baseline: payload.baseline,
     }
+  } else if (operation === 'escalateRisk') {
+    rpcName = 'vaos_escalate_risk'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_risk_id: payload.riskId,
+    }
+  } else if (operation === 'getRiskEscalation') {
+    rpcName = 'vaos_get_risk_escalation'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_risk_id: payload.riskId,
+    }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

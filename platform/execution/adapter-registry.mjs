@@ -106,30 +106,61 @@ function engineeringBaselineAdapter(engineeringChange) {
   });
 }
 
-const riskAdapter = adapter('internal-ledger.project-risk.v1', async (job) => {
-  const resourceId = requiredText(job.payload, 'riskId');
-  return {
-    adapterId: 'internal-ledger.project-risk.v1',
-    effect: {
-      effectType: 'PROJECT.RISK_ESCALATED',
-      resourceType: 'RISK',
-      resourceId,
-      state: 'ESCALATED',
-    },
-    verification: {
-      verified: true,
-      resourceType: 'RISK',
-      resourceId,
-      expectedState: 'ESCALATED',
-    },
-  };
-});
+function assertProjectRiskPort(projectRisk) {
+  if (!projectRisk
+      || typeof projectRisk.escalateRisk !== 'function'
+      || typeof projectRisk.getRiskEscalation !== 'function') {
+    throw new Error('DOMAIN_PORT_REQUIRED:projectRisk');
+  }
+  return projectRisk;
+}
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange } = {}) {
+function projectRiskAdapter(projectRisk) {
+  return adapter('supabase.project-risk.v1', async (job) => {
+    const riskId = requiredText(job.payload, 'riskId');
+    const port = assertProjectRiskPort(projectRisk);
+
+    const escalated = await port.escalateRisk(job, { riskId });
+    if (!escalated || !['CREATED', 'REPLAY'].includes(escalated.outcome)) {
+      throw new Error(`PROJECT_RISK_DOMAIN_WRITE_FAILED:${escalated?.outcome || 'UNKNOWN'}`);
+    }
+
+    const record = await port.getRiskEscalation(job, riskId);
+    const verified = Boolean(
+      record
+      && record.riskId === riskId
+      && record.status === 'ESCALATED'
+      && record.executionJobId === job.id
+      && record.intentId === job.intentId
+    );
+
+    if (!verified) throw new Error('PROJECT_RISK_VERIFICATION_MISMATCH');
+
+    return {
+      adapterId: 'supabase.project-risk.v1',
+      effect: {
+        effectType: 'PROJECT.RISK_ESCALATED',
+        resourceType: 'RISK',
+        resourceId: riskId,
+        state: record.status,
+        domainOutcome: escalated.outcome,
+      },
+      verification: {
+        verified: true,
+        resourceType: 'RISK',
+        resourceId: riskId,
+        expectedState: 'ESCALATED',
+        evidenceSource: 'vaos_private.project_risk_escalations',
+      },
+    };
+  });
+}
+
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
-    ['PROJECT.ESCALATE_RISK', riskAdapter],
+    ['PROJECT.ESCALATE_RISK', projectRiskAdapter(projectRisk)],
   ]);
 
   return Object.freeze({

@@ -1,0 +1,28 @@
+name: Architecture change
+description: Propose a change to VAOS architecture, boundaries, or contracts
+title: "[ARCH] "
+labels:
+  - architecture
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed change
+    validations:
+      required: true
+  - type: textarea
+    id: impact
+    attributes:
+      label: Impact and affected domains
+    validations:
+      required: true
+  - type: textarea
+    id: migration
+    attributes:
+      label: Migration / rollback

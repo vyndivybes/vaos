@@ -10,9 +10,15 @@ export function getExecutionEngine() {
       url: process.env.SUPABASE_URL,
       serverSecret: process.env.VAOS_DB_RPC_SECRET,
     });
+
+    const qaCapa = Object.freeze({
+      openCapa(job, input) { return store.openCapa(job, input); },
+      getCapa(job, capaId) { return store.getCapa(job, capaId); },
+    });
+
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry(),
+      registry: createExecutionAdapterRegistry({ qaCapa }),
       workerId: 'vaos-vercel-worker',
     });
   }

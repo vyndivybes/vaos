@@ -48,5 +48,18 @@ export function createSupabaseControlStore({
         error,
       });
     },
+    openCapa(job, input) {
+      return invoke('openCapa', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        capaId: input.capaId,
+      });
+    },
+    getCapa(job, capaId) {
+      return invoke('getCapa', {
+        jobId: job.id,
+        capaId,
+      });
+    },
   });
 }

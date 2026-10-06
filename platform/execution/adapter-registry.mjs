@@ -8,67 +8,102 @@ function adapter(id, execute) {
   return Object.freeze({ id, execute });
 }
 
-const ADAPTERS = new Map([
-  ['QA.OPEN_CAPA', adapter('internal-ledger.qa-capa.v1', async (job) => {
-    const resourceId = requiredText(job.payload, 'capaId');
+function assertQaCapaPort(qaCapa) {
+  if (!qaCapa || typeof qaCapa.openCapa !== 'function' || typeof qaCapa.getCapa !== 'function') {
+    throw new Error('DOMAIN_PORT_REQUIRED:qaCapa');
+  }
+  return qaCapa;
+}
+
+function qaCapaAdapter(qaCapa) {
+  return adapter('supabase.qa-capa.v1', async (job) => {
+    const capaId = requiredText(job.payload, 'capaId');
+    const port = assertQaCapaPort(qaCapa);
+
+    const opened = await port.openCapa(job, { capaId });
+    if (!opened || !['CREATED', 'REPLAY'].includes(opened.outcome)) {
+      throw new Error(`CAPA_DOMAIN_WRITE_FAILED:${opened?.outcome || 'UNKNOWN'}`);
+    }
+
+    const record = await port.getCapa(job, capaId);
+    const verified = Boolean(
+      record
+      && record.capaId === capaId
+      && record.status === 'OPEN'
+      && record.executionJobId === job.id
+      && record.intentId === job.intentId
+    );
+
+    if (!verified) throw new Error('CAPA_VERIFICATION_MISMATCH');
+
     return {
-      adapterId: 'internal-ledger.qa-capa.v1',
+      adapterId: 'supabase.qa-capa.v1',
       effect: {
         effectType: 'QUALITY.CAPA_OPENED',
         resourceType: 'CAPA',
-        resourceId,
-        state: 'OPEN',
+        resourceId: capaId,
+        state: record.status,
+        domainOutcome: opened.outcome,
       },
       verification: {
         verified: true,
         resourceType: 'CAPA',
-        resourceId,
+        resourceId: capaId,
         expectedState: 'OPEN',
+        evidenceSource: 'vaos_private.capa_records',
       },
     };
-  })],
-  ['ENGINEERING.BASELINE_CHANGE', adapter('internal-ledger.engineering-baseline.v1', async (job) => {
-    const resourceId = requiredText(job.payload, 'baseline');
-    return {
-      adapterId: 'internal-ledger.engineering-baseline.v1',
-      effect: {
-        effectType: 'ENGINEERING.BASELINE_CHANGE_APPLIED',
-        resourceType: 'ENGINEERING_BASELINE',
-        resourceId,
-        state: 'CHANGE_RECORDED',
-      },
-      verification: {
-        verified: true,
-        resourceType: 'ENGINEERING_BASELINE',
-        resourceId,
-        expectedState: 'CHANGE_RECORDED',
-      },
-    };
-  })],
-  ['PROJECT.ESCALATE_RISK', adapter('internal-ledger.project-risk.v1', async (job) => {
-    const resourceId = requiredText(job.payload, 'riskId');
-    return {
-      adapterId: 'internal-ledger.project-risk.v1',
-      effect: {
-        effectType: 'PROJECT.RISK_ESCALATED',
-        resourceType: 'RISK',
-        resourceId,
-        state: 'ESCALATED',
-      },
-      verification: {
-        verified: true,
-        resourceType: 'RISK',
-        resourceId,
-        expectedState: 'ESCALATED',
-      },
-    };
-  })],
-]);
+  });
+}
 
-export function createExecutionAdapterRegistry() {
+const engineeringAdapter = adapter('internal-ledger.engineering-baseline.v1', async (job) => {
+  const resourceId = requiredText(job.payload, 'baseline');
+  return {
+    adapterId: 'internal-ledger.engineering-baseline.v1',
+    effect: {
+      effectType: 'ENGINEERING.BASELINE_CHANGE_APPLIED',
+      resourceType: 'ENGINEERING_BASELINE',
+      resourceId,
+      state: 'CHANGE_RECORDED',
+    },
+    verification: {
+      verified: true,
+      resourceType: 'ENGINEERING_BASELINE',
+      resourceId,
+      expectedState: 'CHANGE_RECORDED',
+    },
+  };
+});
+
+const riskAdapter = adapter('internal-ledger.project-risk.v1', async (job) => {
+  const resourceId = requiredText(job.payload, 'riskId');
+  return {
+    adapterId: 'internal-ledger.project-risk.v1',
+    effect: {
+      effectType: 'PROJECT.RISK_ESCALATED',
+      resourceType: 'RISK',
+      resourceId,
+      state: 'ESCALATED',
+    },
+    verification: {
+      verified: true,
+      resourceType: 'RISK',
+      resourceId,
+      expectedState: 'ESCALATED',
+    },
+  };
+});
+
+export function createExecutionAdapterRegistry({ qaCapa } = {}) {
+  const adapters = new Map([
+    ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
+    ['ENGINEERING.BASELINE_CHANGE', engineeringAdapter],
+    ['PROJECT.ESCALATE_RISK', riskAdapter],
+  ]);
+
   return Object.freeze({
-    has(actionType) { return ADAPTERS.has(actionType); },
-    get(actionType) { return ADAPTERS.get(actionType) || null; },
-    list() { return [...ADAPTERS.entries()].map(([actionType, item]) => ({ actionType, adapterId: item.id })); },
+    has(actionType) { return adapters.has(actionType); },
+    get(actionType) { return adapters.get(actionType) || null; },
+    list() { return [...adapters.entries()].map(([actionType, item]) => ({ actionType, adapterId: item.id })); },
   });
 }

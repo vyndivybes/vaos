@@ -77,6 +77,21 @@ Deno.serve(async (req: Request) => {
       p_lease_token: payload.leaseToken,
       p_error: payload.error || {},
     }
+  } else if (operation === 'openCapa') {
+    rpcName = 'vaos_open_capa'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_capa_id: payload.capaId,
+    }
+  } else if (operation === 'getCapa') {
+    rpcName = 'vaos_get_capa'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_capa_id: payload.capaId,
+    }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

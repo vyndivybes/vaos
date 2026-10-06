@@ -19,6 +19,27 @@ const RISKS = Object.freeze([
   { id: 'RSK-009', title: 'Identity / access drift', score: 22, band: 'low', trend: 'flat' },
 ]);
 
+const DOMAIN_WORKSPACE_CONFIG = Object.freeze({
+  'qa-capa': {
+    source: 'qaCapa',
+    title: 'Durable CAPA Register',
+    resourceLabel: 'CAPA',
+    copy: 'Persisted quality actions with approval, execution, verification and event traceability.',
+  },
+  engineering: {
+    source: 'engineering',
+    title: 'Engineering Baseline Change Register',
+    resourceLabel: 'Baseline',
+    copy: 'Governed baseline-change history linked to intent, approval, execution and verification evidence.',
+  },
+  risk: {
+    source: 'projectRisk',
+    title: 'Project / Risk Escalation Register',
+    resourceLabel: 'Risk',
+    copy: 'Durable project-risk escalations with complete governance and execution lineage.',
+  },
+});
+
 const APPROVAL_TITLES = Object.freeze({
   'QA.OPEN_CAPA': 'Open CAPA',
   'ENGINEERING.BASELINE_CHANGE': 'Approve engineering baseline change',
@@ -36,6 +57,9 @@ const EVENT_SEVERITY = Object.freeze({
   'EXECUTION.RETRY_SCHEDULED': 'warning',
   'EXECUTION.DEAD_LETTER': 'warning',
   'EVIDENCE.VERIFIED': 'success',
+  'QA.CAPA_OPENED': 'success',
+  'ENGINEERING.BASELINE_CHANGE_RECORDED': 'success',
+  'PROJECT.RISK_ESCALATION_RECORDED': 'success',
   'AGENT.REGISTERED': 'info',
   'AGENT.ACTION_PREPARED': 'info',
 });
@@ -50,7 +74,9 @@ function mapAgent(agent) {
     authority: maxAuthority(agent), confidence: agent.confidence ?? 0, task: agent.task || 'Awaiting work',
   };
 }
+
 function agentNameMap(agents) { return new Map(agents.map((agent) => [agent.id, agent.name])); }
+
 function mapApproval(approval, names) {
   return {
     id: approval.id,
@@ -62,6 +88,7 @@ function mapApproval(approval, names) {
     age: approval.requestedAt ? 'persisted' : 'runtime',
   };
 }
+
 function eventSummary(event, names) {
   const payload = event.payload || {};
   switch (event.type) {
@@ -76,10 +103,14 @@ function eventSummary(event, names) {
     case 'EXECUTION.RETRY_SCHEDULED': return `${payload.actionType} failed and is scheduled for retry`;
     case 'EXECUTION.DEAD_LETTER': return `${payload.actionType} moved to dead letter after a terminal failure`;
     case 'EVIDENCE.VERIFIED': return `Execution evidence verified for ${payload.actionType}`;
+    case 'QA.CAPA_OPENED': return `CAPA ${payload.capaId || ''} opened in the durable quality register`;
+    case 'ENGINEERING.BASELINE_CHANGE_RECORDED': return `Baseline ${payload.baseline || ''} change persisted`;
+    case 'PROJECT.RISK_ESCALATION_RECORDED': return `Risk ${payload.riskId || ''} escalation persisted`;
     case 'AGENT.ACTION_PREPARED': return `${payload.actionType} was prepared without executing an effect`;
     default: return event.type;
   }
 }
+
 function mapEvent(event, names) {
   return {
     id: event.id, type: event.type, source: names.get(event.source) || event.source,
@@ -87,6 +118,61 @@ function mapEvent(event, names) {
     time: `event #${event.sequence}`, timeRank: Number(event.sequence) || 0,
   };
 }
+
+function mapDomainRecord(record = {}) {
+  return {
+    id: record.id,
+    resourceId: record.resourceId || '—',
+    status: record.status || 'UNKNOWN',
+    recordedAt: record.recordedAt || null,
+    intent: {
+      id: record.intentId || null,
+      status: record.intentStatus || 'UNKNOWN',
+      risk: record.intentRisk || null,
+    },
+    approval: {
+      id: record.approvalId || null,
+      status: record.approvalStatus || 'NOT_REQUIRED',
+      decidedBy: record.decidedBy || null,
+      decidedAt: record.decidedAt || null,
+    },
+    execution: {
+      id: record.executionJobId || null,
+      status: record.executionStatus || 'UNKNOWN',
+      attempts: Number(record.attemptCount) || 0,
+      maxAttempts: Number(record.maxAttempts) || 0,
+      adapterId: record.adapterId || null,
+    },
+    evidence: {
+      count: Number(record.evidenceCount) || 0,
+      verifiedAt: record.evidenceVerifiedAt || null,
+    },
+    latestEvent: {
+      type: record.latestEventType || null,
+      occurredAt: record.latestEventAt || null,
+    },
+  };
+}
+
+function buildDomainWorkspaces(domains = {}) {
+  return Object.fromEntries(Object.entries(DOMAIN_WORKSPACE_CONFIG).map(([moduleId, config]) => {
+    const records = Array.isArray(domains?.[config.source]) ? domains[config.source].map(mapDomainRecord) : [];
+    return [moduleId, {
+      moduleId,
+      title: config.title,
+      resourceLabel: config.resourceLabel,
+      copy: config.copy,
+      records,
+      summary: {
+        total: records.length,
+        succeeded: records.filter((item) => item.execution.status === 'SUCCEEDED').length,
+        verified: records.filter((item) => item.evidence.count > 0).length,
+        retried: records.filter((item) => item.execution.attempts > 1).length,
+      },
+    }];
+  }));
+}
+
 export function summarizeAgentFleet(agents = []) {
   return {
     total: agents.length,
@@ -96,27 +182,40 @@ export function summarizeAgentFleet(agents = []) {
     maxAuthority: Math.max(0, ...agents.map((agent) => Number(agent.authority) || 0)),
   };
 }
+
 export function findModule(id) { return MODULES.find((module) => module.id === id) || null; }
 export function normaliseWorkspaceView(view) { return findModule(String(view || '').trim())?.id || 'command'; }
+
 export function buildWorkspaceModel(runtimeSnapshot) {
   if (!runtimeSnapshot || !Array.isArray(runtimeSnapshot.agents) || !Array.isArray(runtimeSnapshot.approvals) || !Array.isArray(runtimeSnapshot.events)) {
     throw new Error('RUNTIME_SNAPSHOT_REQUIRED');
   }
+
   const agents = runtimeSnapshot.agents.map(mapAgent);
   const names = agentNameMap(agents);
   const approvals = runtimeSnapshot.approvals.filter((item) => item.status === 'PENDING').map((item) => mapApproval(item, names));
   const events = runtimeSnapshot.events.map((item) => mapEvent(item, names)).sort((a,b) => b.timeRank - a.timeRank);
   const fleet = summarizeAgentFleet(agents);
+
   return {
     environment: 'Development',
     release: 'VAOS 0.3 / governed execution',
     runtimeMode: runtimeSnapshot.mode,
     modules: MODULES.map((item) => ({ ...item })),
-    agents, approvals, events, risks: RISKS.map((item) => ({ ...item })),
+    agents,
+    approvals,
+    events,
+    risks: RISKS.map((item) => ({ ...item })),
+    domainWorkspaces: buildDomainWorkspaces(runtimeSnapshot.domains),
     pulse: {
-      governance: 'Nominal', evidenceCoverage: 86, openApprovals: approvals.length,
-      agentFleet: fleet, executionQueue: runtimeSnapshot.metrics?.executionPending ?? 0, decisionLatency: runtimeSnapshot.mode === 'DURABLE_POSTGRES' ? 'durable / policy-gated' : 'policy-gated',
+      governance: 'Nominal',
+      evidenceCoverage: 86,
+      openApprovals: approvals.length,
+      agentFleet: fleet,
+      executionQueue: runtimeSnapshot.metrics?.executionPending ?? 0,
+      decisionLatency: runtimeSnapshot.mode === 'DURABLE_POSTGRES' ? 'durable / policy-gated' : 'policy-gated',
     },
   };
 }
+
 export { MODULES };

@@ -1264,3 +1264,189 @@
   .workspace-search__copy strong { font-size: .7rem; }
   .workspace-license__divider { display: none; }
 }
+
+.domain-workspace {
+  margin-top: 12px;
+  padding: 20px;
+  border: 1px solid var(--workspace-rim);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 88% 4%, rgba(215,152,47,.065), transparent 24%),
+    linear-gradient(150deg, rgba(23,29,35,.94), rgba(8,11,14,.96));
+}
+
+.domain-workspace__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+
+.domain-workspace__header h3 {
+  margin: 0;
+  color: #efede7;
+  font-size: 1.2rem;
+  letter-spacing: -.025em;
+}
+
+.domain-workspace__header p {
+  max-width: 780px;
+  margin: 7px 0 0;
+  color: #7f888e;
+  font-size: .69rem;
+  line-height: 1.55;
+}
+
+.domain-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.domain-summary-card {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 13px;
+  border: 1px solid rgba(255,221,157,.085);
+  border-radius: 10px;
+  background: rgba(255,255,255,.014);
+}
+
+.domain-summary-card > span {
+  width: 29px;
+  height: 29px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(227,178,91,.22);
+  border-radius: 8px;
+  color: #d8aa5b;
+  background: rgba(191,118,22,.07);
+  font-size: .55rem;
+  font-weight: 800;
+}
+
+.domain-summary-card > div { display: grid; gap: 3px; }
+.domain-summary-card small { color: #687178; font-size: .55rem; text-transform: uppercase; letter-spacing: .06em; }
+.domain-summary-card strong { color: #e9e6df; font-size: 1.02rem; }
+
+.domain-record-table {
+  display: grid;
+  gap: 8px;
+}
+
+.domain-record-row {
+  display: grid;
+  grid-template-columns: minmax(150px,.7fr) minmax(520px,2.2fr) minmax(260px,1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 15px;
+  border: 1px solid rgba(255,224,166,.075);
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(255,255,255,.022), rgba(255,255,255,.006));
+}
+
+.domain-record-primary {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  justify-items: start;
+}
+
+.domain-record-primary small,
+.domain-trace small,
+.domain-record-meta small {
+  color: #646d73;
+  font-size: .52rem;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+
+.domain-record-primary > strong {
+  max-width: 100%;
+  overflow: hidden;
+  color: #f0ede6;
+  font-size: .82rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.domain-status {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  padding: 3px 7px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 999px;
+  font-size: .54rem;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+
+.domain-status--success { color: #91d3a3; border-color: rgba(105,194,131,.22); background: rgba(62,130,79,.08); }
+.domain-status--warning { color: #e3b66b; border-color: rgba(218,160,77,.22); background: rgba(174,108,25,.08); }
+.domain-status--danger { color: #df9182; border-color: rgba(220,111,91,.22); background: rgba(155,68,52,.08); }
+.domain-status--neutral { color: #a0a8ac; }
+
+.domain-trace {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0,1fr));
+  gap: 7px;
+}
+
+.domain-trace > span,
+.domain-record-meta > span {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.domain-trace strong {
+  color: #cfd0cc;
+  font-size: .62rem;
+  font-weight: 600;
+}
+
+.domain-record-meta {
+  min-width: 0;
+  display: grid;
+  gap: 7px;
+  padding-left: 14px;
+  border-left: 1px solid rgba(255,255,255,.05);
+}
+
+.domain-record-meta strong {
+  overflow: hidden;
+  color: #8d969b;
+  font-size: .57rem;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 1250px) {
+  .domain-record-row {
+    grid-template-columns: minmax(150px,.7fr) minmax(0,2fr);
+  }
+  .domain-record-meta {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(3, minmax(0,1fr));
+    padding: 11px 0 0;
+    border-left: 0;
+    border-top: 1px solid rgba(255,255,255,.05);
+  }
+}
+
+@media (max-width: 760px) {
+  .domain-summary { grid-template-columns: 1fr 1fr; }
+  .domain-record-row { grid-template-columns: 1fr; }
+  .domain-trace { grid-template-columns: 1fr 1fr; }
+  .domain-record-meta {
+    grid-column: auto;
+    grid-template-columns: 1fr;
+  }
+}

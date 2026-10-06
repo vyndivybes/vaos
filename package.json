@@ -1,0 +1,23 @@
+{
+  "name": "vaos",
+  "private": true,
+  "version": "0.0.1",
+  "description": "VYNDI Agentic OS monorepo",
+  "workspaces": [
+    "apps/*",
+    "agents/*",
+    "platform/*",
+    "mcp/*",
+    "intelligence/*",
+    "digital-thread/*",
+    "governance/*",
+    "integrations/*",
+    "compute/*",
+    "packages/*",
+    "workflows/*"
+  ],
+  "scripts": {
+    "lint": "echo \"lint pipeline to be added in platform foundation\"",
+    "test": "echo \"test pipeline to be added in qualification foundation\""
+  }
+}

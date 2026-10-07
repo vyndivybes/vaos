@@ -79,3 +79,23 @@ test('command router creates explicit Risk recovery qualification drill intent',
   });
 });
 
+test('command router can bind the Risk recovery drill to an explicit engineering baseline trace target', () => {
+  assert.deepEqual(resolveCommand('qualification risk recovery RSK-015 link baseline 5.3.9'), {
+    kind: 'intent',
+    targetView: 'risk',
+    agentId: 'risk',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    payload: {
+      riskId: 'RSK-015',
+      qualificationMode: true,
+      qualificationRecoveryDrill: true,
+      qualificationTrace: {
+        targetDomain: 'ENGINEERING_BASELINE',
+        targetResourceId: '5.3.9',
+        relationType: 'MITIGATES_RISK',
+      },
+    },
+  });
+});
+

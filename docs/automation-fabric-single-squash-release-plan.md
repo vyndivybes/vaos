@@ -1,4 +1,4 @@
-# VAOS Automation & Integration Fabric — Single-Squash Release Plan
+# VAOS Automation & Integration Fabric — Definitive Single-Squash Release Plan
 
 **PR:** #30  
 **Branch:** `prep/automation-integration-fabric`  
@@ -6,275 +6,392 @@
 **Landing strategy:** one squash merge  
 **Intended squash title:** `feat: add governed VAOS Automation & Integration Fabric`
 
-## Release objective
+## Non-dilution rule
 
-Complete the Automation & Integration Fabric as one coherent, additive VAOS capability layer, qualify the complete branch against the latest `main`, and land the entire body of work as **one commit on `main`**.
+This document is the authoritative scope contract for PR #30.
 
-Development commits may remain granular for diagnosis and rollback while the PR is draft. They are not intended to appear individually in `main`.
+No capability, provider family, governance control, failure-mode control or architectural boundary previously accepted for the VAOS Automation & Integration Fabric may be silently removed, narrowed or deferred. If implementation depth differs by provider, the provider/capability must still remain represented in the catalog, manifest model, qualification backlog and interface architecture.
 
-## Scope already prepared
+Production activation remains separate from code merge.
 
-- AF-0 architecture + ADR + provider manifest contract
-- AF-1 capability registry
-- AF-2 credential broker boundary
-- AF-3 n8n workflow adapter
-- AF-4 Paperwork extraction adapter
-- AF-5 Zapier SaaS action adapter
-- AF-6 Playwright browser automation adapter
-- AF-7 Windmill governed code execution adapter
-- AF-9 Airbyte governed replication
-- vendor-neutral execution telemetry
-- telemetry lifecycle recorder
-- OpenTelemetry span mapping
+## Core architectural invariant
 
-All provider manifests remain **evaluation-only** until separately live-qualified.
+```text
+VYNDI / domain authority
+  -> governed intent/event
+  -> VAOS policy + RBAC/ABAC + capability authority
+  -> approval when required
+  -> execution job
+  -> capability router
+  -> provider runtime
+  -> credential broker / artifact broker / transport
+  -> provider
+  -> callback/readback/reconciliation
+  -> verified evidence
+  -> governed return event
+  -> VYNDI canonical linkage
+```
 
-## Remaining implementation scope before release candidate
+Providers are executors, never sources of authority or canonical enterprise truth.
 
-### R1 — Paperless-ngx
+## Mandatory common fabric before release candidate
 
-Capability: `document.archive`
+### F1 — Provider Manifest v2
 
-Required boundary:
-- archive by governed intake key;
-- source artifact hash/reference retained;
-- immutable provider document ID captured as evidence;
-- no provider document becomes canonical business truth;
-- duplicate intake behavior qualified;
-- provider search/index state verified independently where practical.
+Must model:
+- provider identity and adapter version;
+- capability classes;
+- enabled/disabled/kill-switch state;
+- deployment mode;
+- supported data classifications;
+- supported execution risk classes;
+- data egress;
+- authentication and secret-binding;
+- idempotency;
+- retry/unknown-outcome semantics;
+- callback verification;
+- verification/evidence contract;
+- health/readiness;
+- licensing/redistribution;
+- data retention/residency;
+- cost-control metadata;
+- rollback/disable method;
+- qualification state and evidence.
 
-### R2 — Stirling PDF
+### F2 — Capability Router / Provider Runtime
 
-Capability: `document.transform`
+Must enforce:
+- enabled state;
+- per-capability qualification;
+- data classification;
+- execution risk class;
+- deployment policy;
+- licensing policy;
+- health/readiness;
+- deterministic provider selection;
+- provider allow/deny policy;
+- fail-closed routing.
 
-Required boundary:
-- allow-listed deterministic transformation operations only;
-- no arbitrary command/file-system execution;
-- source + output artifact hashes;
-- output size/type constraints;
-- transformation evidence;
-- no uncontrolled remote fetches.
+### F3 — Provider Qualification Service
 
-### R3 — Documenso
+Govern:
+`CANDIDATE -> EVALUATION -> QUALIFIED -> RESTRICTED -> QUALIFIED/REJECTED`
 
-Capability: `document.sign`
+Must record:
+- capability being qualified;
+- evidence refs;
+- actor/authority reference;
+- qualification/restriction/rejection reason;
+- validity/requalification metadata;
+- complete transition audit.
 
-Required boundary:
-- governed template/document key;
-- signer identities supplied from authorized VAOS context;
-- provider document/envelope ID retained;
-- signed artifact hash + completion evidence;
-- send/sign side effects treated as unknown on ambiguous post-send failure;
-- no automatic duplicate signature request.
+### F4 — Provider Control / Kill Switch
 
-### R4 — Temporal
+Must support:
+- disable one provider;
+- disable one capability on a provider;
+- restrict provider by risk/data class;
+- emergency stop without deleting evidence/history;
+- deterministic recovery.
 
-Capability: `workflow.durable`
+### F5 — Health / Readiness
 
-Required boundary:
-- only approved workflow type keys;
-- VAOS remains authority plane;
-- Temporal owns durable execution state, not business truth;
-- workflow ID stable across retries;
-- signal/query/termination semantics qualified;
-- no duplicate workflow start.
+Must support:
+- provider health probe result;
+- freshness timestamp;
+- degraded/unhealthy states;
+- fail-closed routing when policy requires health;
+- health evidence without secrets.
 
-### R5 — Camunda
+### F6 — Reconciliation + DLQ
 
-Capability: `process.orchestrate`
+Unknown outcomes must enter governed reconciliation:
+```text
+UNKNOWN
+ -> reconcile by provider readback/callback/target readback
+ -> SUCCEEDED | FAILED | MANUAL_REVIEW
+```
 
-Required boundary:
-- approved process definition key/version;
-- human-task approvals cannot bypass VAOS authority;
-- process instance ID captured;
-- BPMN process state treated as execution state, not canonical enterprise truth;
-- incident/failure reconciliation.
+Must preserve providerRunId, intentId, jobId, attempt history and evidence.
 
-### R6 — Node-RED
+### F7 — Governed HTTP Transport
 
-Capability: `event.edge`
+Common provider HTTP boundary:
+- HTTPS policy;
+- target host allow-list;
+- redirect policy;
+- timeout/AbortController;
+- request/response size limits;
+- content-type validation;
+- correlation headers;
+- SSRF controls;
+- safe error classification;
+- no secret logging.
 
-Required boundary:
-- approved flow/device key;
-- ingress/egress allow-list;
-- no unrestricted arbitrary node deployment from agents;
-- device/event identity validation;
-- physical side effects require explicit high-assurance policy;
-- edge outage/buffering/replay semantics qualified.
+### F8 — Callback Gateway / Receipt Store
 
-## Explicitly deferred from this squash
+Required for Zapier and future callbacks:
+- one-time callback token;
+- token hashing;
+- expiry;
+- exactly-once consumption;
+- replay rejection;
+- payload/schema validation;
+- provider/job/intent/action correlation;
+- audit + evidence.
 
-The following are **not blockers** for this release unless already required by tests or architecture:
+### F9 — Artifact / Evidence Broker
 
-- production activation of any provider;
-- real provider credentials;
-- production endpoint configuration;
-- Grafana backend;
-- Langfuse backend;
-- OTLP collector deployment;
-- Infisical concrete adapter;
-- Qdrant / Meilisearch / Metabase / Apromore;
-- Activepieces fallback adapter;
-- production factory/physical actuator enablement.
+Cloudflare-first target:
+- Cloudflare R2 adapter/port;
+- immutable artifact reference;
+- SHA-256 hash;
+- content type + size;
+- source/output lineage;
+- signed document / PDF / screenshot / trace support;
+- no large binary payloads embedded in execution records.
 
-These can be activated or added in later governed PRs after this common fabric exists.
+### F10 — Credential Broker + Infisical
+
+Keep broker vault-neutral and add an Infisical evaluation adapter:
+- scoped secret resolution;
+- expiry;
+- rotation/renewal boundary;
+- revoke/lease semantics where provider supports them;
+- no permanent secret exposure to agents.
+
+### F11 — Telemetry / Observability
+
+Required:
+- vendor-neutral execution telemetry;
+- lifecycle recorder;
+- OpenTelemetry span mapping;
+- OTLP exporter/sink interface;
+- Grafana operations boundary;
+- Langfuse AI-observability boundary;
+- no production backend required for merge.
+
+### F12 — VYNDI ↔ VAOS Governed Contract
+
+Required:
+- versioned outbound intent contract;
+- governed result/evidence return contract;
+- canonical truth remains in VYNDI/domain system;
+- correlation IDs;
+- idempotency;
+- schema validation;
+- rejection/quarantine;
+- replay semantics.
+
+### F13 — Event Standards
+
+Required:
+- CloudEvents-style envelope;
+- AsyncAPI contract/documentation for external events;
+- provider callback events;
+- VYNDI->VAOS intents;
+- VAOS->VYNDI result events;
+- reconciliation events;
+- edge/device events.
+
+### F14 — Execution Error Sanitization
+
+Persist only safe machine-readable failure data:
+- error code;
+- retryable;
+- outcomeUnknown;
+- providerRunId;
+- safe classification metadata.
+
+Raw provider messages, URLs, tokens, cookies or request bodies must never be persisted by default.
+
+## Provider adapters required before release candidate
+
+### P1 — n8n — `workflow.orchestrate`
+Already implemented; complete common-runtime wiring, health, kill-switch and reconciliation.
+
+### P2 — Activepieces — `workflow.orchestrate`
+Required provider-replacement/licensing hedge. Baseline governed adapter + evaluation manifest.
+
+### P3 — Zapier — `integration.saas`
+Already implemented; complete real callback-gateway integration.
+
+### P4 — Paperwork — document worker
+Required capabilities:
+- `document.extract`;
+- classify/intelligence boundary;
+- fill/redact/redline boundaries when provider qualification supports them.
+
+Stirling remains preferred deterministic PDF transformer; Documenso remains formal signature provider.
+
+### P5 — Paperless-ngx — `document.archive`
+Archive/OCR/index/search evidence boundary.
+
+### P6 — Stirling PDF — `document.transform`
+Allow-listed deterministic transformations only.
+
+### P7 — Documenso — `document.sign`
+Governed signature request/completion evidence; no duplicate sends.
+
+### P8 — Playwright — `browser.automate`
+Already implemented; wire through common transport/artifact/runtime controls.
+
+### P9 — Power Automate Desktop — `desktop.automate`
+Windows/legacy/Excel/no-API RPA boundary. Physical/local execution remains evaluation-only.
+
+### P10 — Windmill — `code.execute`
+Already implemented; common-runtime wiring + artifact handoff for large results.
+
+### P11 — Airbyte — `data.replicate`
+Already implemented; common-runtime wiring + connection/data classification.
+
+### P12 — Temporal — `workflow.durable`
+Approved workflow types only; stable workflow identity; no duplicate start.
+
+### P13 — Camunda — `process.orchestrate`
+Approved process definition/version; human tasks cannot bypass VAOS authority.
+
+### P14 — Node-RED — `event.edge`
+Approved flows/devices; physical effects require high-assurance policy.
+
+### P15 — Infisical — `secret.broker`
+Concrete evaluation adapter behind vault-neutral broker.
+
+## Provider/catalog preservation required in this squash
+
+The following must remain represented in a machine-readable provider catalog and qualification backlog even if a full runtime adapter is intentionally later:
+
+- Google Apps Script — Workspace automation;
+- NocoDB — operational tables/forms/views;
+- Grafana — operations dashboards;
+- Langfuse — AI/agent tracing/evaluation;
+- Metabase — BI;
+- Apromore — process mining;
+- Qdrant — semantic search;
+- Meilisearch / Typesense — full-text search;
+- Formbricks — forms/feedback;
+- Cal.com — scheduling;
+- Zammad — service desk;
+- GLPI — ITSM/assets;
+- OpenProject — project execution;
+- Pipedream — long-tail API connectivity;
+- Great Expectations — data quality;
+- Appsmith / Budibase / Retool — internal tools;
+- Kong Gateway — API gateway;
+- Bardeen / Gumloop — optional automation candidates.
+
+Provider appearance in the catalog is not production approval.
+
+## Enterprise platform backlog preservation
+
+The following previously-discussed platform capabilities must be captured in the definitive VAOS enterprise backlog so they are not lost:
+
+- Authentik / Keycloak;
+- OPA / Cedar / Casbin;
+- NATS / Redpanda / RabbitMQ / Kafka;
+- Cloudflare R2;
+- CloudEvents / AsyncAPI;
+- Novu / ntfy;
+- Wiki.js / BookStack / Outline;
+- Restic / Kopia;
+- Sigstore / Cosign / Syft / Grype;
+- OpenLineage / Marquez / OpenMetadata;
+- Unleash;
+- k6;
+- incident/status management;
+- Ollama / vLLM / LiteLLM.
+
+## Self-improvement loop
+
+Preserve and document:
+```text
+VAOS/VYNDI activity
+ -> telemetry/event/evidence data
+ -> process mining (Apromore boundary)
+ -> bottleneck discovery
+ -> VIBPE recommendation
+ -> governed VAOS automation
+ -> measured outcome
+ -> repeat
+```
 
 ## Provider state at merge
 
-Every external provider must satisfy:
-
+Every external provider:
 ```text
-manifest.state = evaluation
+state = evaluation
 qualifiedCapabilities = []
 production credentials = absent
 production routing = disabled
 ```
 
-The merge introduces **capability and adapter code**, not production authority.
+Unit tests may construct qualified in-memory manifests to prove behavior; committed real manifests stay evaluation-only.
 
-## Final integration sequence
+## Final release sequence
 
-### Gate A — Complete remaining adapters
+### Gate A — Complete F1–F14 and P1–P15
+Use RED -> GREEN -> REFACTOR.
 
-Implement R1–R6 using RED → GREEN → REFACTOR.
+### Gate B — Machine-readable catalog completeness
+Every discussed provider/tool family must be represented or explicitly mapped to the enterprise backlog.
 
-For each adapter:
-1. tests committed first;
-2. focused tests pass;
-3. adapter linted;
-4. evaluation manifest added;
-5. failure/unknown-outcome semantics proven;
-6. no secrets in returned evidence;
-7. no production activation.
+### Gate C — Freeze branch scope
+No new unrelated features after definitive checklist completion.
 
-### Gate B — Freeze branch scope
+### Gate D — Reconcile once with latest main
+Resolve conflicts against current architecture; do not repeatedly rebase during parallel work.
 
-After R1–R6:
-- no new provider categories;
-- no unrelated feature work;
-- documentation/checklist updates only unless qualification exposes defects.
+### Gate E — Cloudflare-only audit
+- no Vercel runtime/config/workflow/documentation dependency;
+- repository homepage must no longer point to Vercel;
+- Cloudflare remains deployment target.
 
-### Gate C — Reconcile once with latest main
+### Gate F — Full qualification
+Run authoritative `npm test`, all fabric tests, Cloudflare smoke checks and reconciliation/security tests on reconciled head.
 
-Do this **once**, after implementation is complete.
+### Gate G — Security/governance audit
+Verify authority, secret, retry, callback, evidence, artifact, data-classification, risk, health, qualification and canonical-truth rules.
 
-Required:
-- fetch latest `main`;
-- reconcile/rebase/merge according to safest conflict path;
-- resolve conflicts in favor of current mainline architecture where appropriate;
-- re-run all targeted adapter tests after reconciliation.
+### Gate H — Definitive release matrix
+Every F1–F14 and P1–P15 row must be PASS/evaluation as appropriate. Catalog/backlog preservation must be PASS.
 
-Do not repeatedly rebase during parallel development.
+### Gate I — One squash merge
+- PR #30 Ready only after all previous gates pass;
+- merge method: squash;
+- expected-head SHA protection;
+- title: `feat: add governed VAOS Automation & Integration Fabric`;
+- verify exactly one feature commit on `main`.
 
-### Gate D — Cloudflare-only cleanup
+## User intervention boundary
 
-Mandatory before merge:
-- no Vercel runtime/deployment references;
-- no Vercel workflow/config dependency;
-- no Vercel documentation references;
-- repository homepage metadata must no longer point to Vercel;
-- Cloudflare remains the deployment target.
+Autonomous work does **not** require user intervention for:
+- repository code;
+- tests;
+- schemas/contracts;
+- provider manifests/catalog;
+- documentation;
+- architecture;
+- adapters with injected/mock transports;
+- security hardening;
+- branch/PR preparation;
+- reconciliation and merge when GitHub permissions/checks allow it.
 
-If repository metadata cannot be changed through the available automation API, record that as the only manual pre-merge setting change and do not mark the gate complete until verified.
-
-### Gate E — Full qualification
-
-Run the repository's authoritative qualification path from the reconciled head:
-
-```text
-npm test
-```
-
-This must include:
-- platform tests;
-- web tests;
-- verify:web;
-- lint;
-- all integration-fabric tests.
-
-Then run any Cloudflare smoke/production-safe checks required by current `main`.
-
-Required outcome:
-- no skipped tests added to bypass failures;
-- no obsolete check silently removed;
-- no latest-main regression;
-- no provider test relying on real credentials.
-
-### Gate F — Security / governance audit
-
-Verify:
-
-- agents cannot call providers directly;
-- capability registry is fail-closed;
-- unqualified providers are not selectable;
-- credentials only pass through broker callbacks;
-- no secret value in logs/evidence/manifests;
-- state-changing ambiguous outcomes never blindly retry unless provider idempotency makes replay safe;
-- provider responses are treated as untrusted;
-- evidence IDs/hashes/correlation IDs are preserved;
-- provider state is non-authoritative;
-- VYNDI remains canonical where applicable;
-- Cloudflare-only deployment rule satisfied.
-
-### Gate G — Release-candidate audit
-
-Produce one final status matrix:
-
-| Area | Required state |
-| --- | --- |
-| Architecture | PASS |
-| Capability registry | PASS |
-| Credential boundary | PASS |
-| n8n | PASS / evaluation |
-| Paperwork | PASS / evaluation |
-| Zapier | PASS / evaluation |
-| Playwright | PASS / evaluation |
-| Windmill | PASS / evaluation |
-| Airbyte | PASS / evaluation |
-| Paperless-ngx | PASS / evaluation |
-| Stirling PDF | PASS / evaluation |
-| Documenso | PASS / evaluation |
-| Temporal | PASS / evaluation |
-| Camunda | PASS / evaluation |
-| Node-RED | PASS / evaluation |
-| Telemetry contract | PASS |
-| OpenTelemetry mapping | PASS |
-| Cloudflare-only check | PASS |
-| Full repo qualification | PASS |
-| Security audit | PASS |
-| Production activation | DISABLED by design |
-
-Any non-PASS required row blocks merge.
-
-## Final merge
-
-Only after Gates A–G pass:
-
-1. convert PR #30 from Draft to Ready;
-2. confirm latest head is still based on current `main`;
-3. confirm required checks are green;
-4. squash merge PR #30;
-5. use title:
-   `feat: add governed VAOS Automation & Integration Fabric`
-6. verify `main` contains exactly one new squash commit for this feature body;
-7. verify provider manifests remain evaluation-only;
-8. verify Cloudflare deployment posture remains unchanged unless explicitly qualified.
-
-## Rollback model
-
-Because `main` receives one squash commit, the entire fabric can be reverted with one revert commit if release-level regression is discovered.
-
-Individual provider activation remains independent and can be disabled without reverting the common fabric.
+User intervention is required only for:
+- supplying or authorizing real third-party credentials;
+- external-provider account setup/consent;
+- manual account/repository settings unavailable through connected APIs;
+- production activation decisions;
+- external commercial/license purchase decisions;
+- physical-device access not exposed to the connected tooling.
 
 ## Definition of done
 
-This initiative is complete when:
-
-- all remaining adapter scopes R1–R6 are implemented and qualified;
-- branch is reconciled once with latest `main`;
-- full repo qualification passes;
-- security/governance audit passes;
-- Cloudflare-only gate passes;
-- PR #30 is squash-merged;
-- `main` contains one feature commit;
-- no external provider is production-enabled merely by the merge.
+PR #30 is complete only when:
+- no accepted capability/tool/provider family has silently disappeared;
+- F1–F14 are implemented and qualified;
+- P1–P15 are implemented to evaluation-grade boundaries;
+- catalog and enterprise backlog are complete;
+- full reconciliation/qualification/audit is green;
+- Vercel cleanup is complete;
+- one squash commit lands on `main`;
+- no provider is accidentally production-enabled.

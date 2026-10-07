@@ -20,6 +20,13 @@ const workforceMigration = readFileSync(resolve(root, "supabase", "migrations", 
 const workforceLifecycleMigration = readFileSync(resolve(root, "supabase", "migrations", "20261007133440_digital_workforce_lifecycle_v2.sql"), "utf8");
 const workforceQualificationMigration = readFileSync(resolve(root, "supabase", "migrations", "20261007151724_digital_workforce_qualification_v1.sql"), "utf8");
 const workspaceModel = readFileSync(resolve(web, "lib", "workspace-model.mjs"), "utf8");
+const executionProvider = readFileSync(resolve(web, "lib", "execution-provider.mjs"), "utf8");
+
+assert.equal(existsSync(resolve(web, "vercel.json")), false);
+assert.equal(existsSync(resolve(root, "api")), false);
+assert.equal(existsSync(resolve(root, "lib")), false);
+assert.doesNotMatch(executionProvider, /vercel/i);
+assert.match(executionProvider, /vaos-cloudflare-worker/);
 
 assert.match(html, /vayu-shastr-original\.webp/);
 assert.match(html, /id="login-form"/);

@@ -93,7 +93,7 @@ Use Zapier for long-tail SaaS integration where a dedicated connector does not a
 
 Keep it optional and replaceable. No business intent contract may mention Zapier-native concepts.
 
-### AF-6 — Browser Automation
+### AF-6 — Browser Automation — IMPLEMENTED / EVALUATION
 
 Add Playwright behind `browser.automate`.
 
@@ -220,7 +220,7 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] capability registry tests
 - [x] capability registry implementation
 - [x] credential broker interface
-- [ ] provider adapters (n8n + Paperwork + Zapier implemented; specialist adapters pending)
+- [ ] provider adapters (n8n + Paperwork + Zapier + Playwright implemented; specialist adapters pending)
 - [ ] deployment
 - [ ] production activation
 

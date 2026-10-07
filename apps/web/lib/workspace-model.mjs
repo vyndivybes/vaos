@@ -80,6 +80,7 @@ function mapAgent(agent) {
   return {
     id: agent.id, name: agent.name, domain: agent.domain, status: agent.status || 'observe',
     authority: maxAuthority(agent), confidence: agent.confidence ?? 0, task: agent.task || 'Awaiting work',
+    capabilities: Object.entries(agent.capabilities || {}).map(([actionType, authority]) => ({ actionType, authority })),
   };
 }
 
@@ -261,6 +262,236 @@ function buildTraceGraph(domainWorkspaces, rawLinks = []) {
   };
 }
 
+
+function summaryItem(label, value, note = '') {
+  return { label, value, note };
+}
+
+function operationalRow({ id, title, status, subtitle = '', detail = '', meta = [] }) {
+  return { id, title, status, subtitle, detail, meta };
+}
+
+function domainEvidenceRows(domainWorkspaces) {
+  return Object.entries(domainWorkspaces).flatMap(([moduleId, workspace]) =>
+    workspace.records
+      .filter((record) => record.evidence.count > 0)
+      .map((record) => operationalRow({
+        id: `evidence:${moduleId}:${record.id}`,
+        title: record.resourceId,
+        status: 'VERIFIED',
+        subtitle: workspace.title,
+        detail: record.latestEvent.type || 'EVIDENCE.VERIFIED',
+        meta: [
+          { label: 'Execution', value: record.execution.status },
+          { label: 'Adapter', value: record.execution.adapterId || '—' },
+          { label: 'Verified', value: record.evidence.verifiedAt || 'persisted' },
+        ],
+      }))
+  );
+}
+
+function buildOperationalViews({ agents, approvals, events, domainWorkspaces, runtimeSnapshot }) {
+  const metrics = runtimeSnapshot.metrics || {};
+  const executions = Array.isArray(runtimeSnapshot.executions) ? runtimeSnapshot.executions : [];
+  const engineering = domainWorkspaces.engineering?.records || [];
+  const projectRisk = domainWorkspaces.risk?.records || [];
+  const allDomainRecords = Object.values(domainWorkspaces).flatMap((workspace) => workspace.records || []);
+  const verifiedObjects = allDomainRecords.reduce((sum, record) => sum + (record.evidence.count > 0 ? 1 : 0), 0);
+  const governanceEvents = events.filter((event) => event.type.startsWith('GOVERNANCE.')).slice(0, 20);
+  const evidenceEvents = events.filter((event) => event.type === 'EVIDENCE.VERIFIED').slice(0, 20);
+  const evidenceRows = domainEvidenceRows(domainWorkspaces);
+
+  const agentRows = agents.map((agent) => operationalRow({
+    id: `agent:${agent.id}`,
+    title: agent.name,
+    status: agent.status.toUpperCase(),
+    subtitle: `${agent.domain} · L${agent.authority} · ${agent.confidence}% confidence`,
+    detail: agent.task,
+    meta: agent.capabilities.slice(0, 4).map((capability) => ({
+      label: capability.actionType,
+      value: `L${capability.authority}`,
+    })),
+  }));
+
+  const vibpeAgent = agents.find((agent) => agent.id === 'vibpe');
+  const vibpeRows = engineering.length
+    ? engineering.map((record) => operationalRow({
+        id: `vibpe:${record.id}`,
+        title: record.resourceId,
+        status: record.status,
+        subtitle: 'Engineering baseline',
+        detail: `${record.intent.status} → ${record.execution.status} → ${record.evidence.count ? 'VERIFIED' : 'NO EVIDENCE'}`,
+        meta: [
+          { label: 'Approval', value: record.approval.status },
+          { label: 'Attempts', value: `${record.execution.attempts}/${record.execution.maxAttempts || '—'}` },
+          { label: 'Adapter', value: record.execution.adapterId || '—' },
+        ],
+      }))
+    : (vibpeAgent ? [operationalRow({
+        id: 'vibpe:agent',
+        title: vibpeAgent.name,
+        status: vibpeAgent.status.toUpperCase(),
+        subtitle: 'Engineering intelligence agent',
+        detail: vibpeAgent.task,
+        meta: vibpeAgent.capabilities.map((capability) => ({ label: capability.actionType, value: `L${capability.authority}` })),
+      })] : []);
+
+  const projectAgents = agents.filter((agent) => ['project','risk','orchestrator'].includes(agent.id));
+  const projectRows = projectRisk.length
+    ? projectRisk.map((record) => operationalRow({
+        id: `project:${record.id}`,
+        title: record.resourceId,
+        status: record.status,
+        subtitle: 'Project / risk escalation',
+        detail: `${record.intent.status} → ${record.execution.status}`,
+        meta: [
+          { label: 'Approval', value: record.approval.status },
+          { label: 'Evidence', value: String(record.evidence.count) },
+          { label: 'Attempts', value: `${record.execution.attempts}/${record.execution.maxAttempts || '—'}` },
+        ],
+      }))
+    : projectAgents.map((agent) => operationalRow({
+        id: `project-agent:${agent.id}`,
+        title: agent.name,
+        status: agent.status.toUpperCase(),
+        subtitle: agent.domain,
+        detail: agent.task,
+        meta: [{ label: 'Authority', value: `L${agent.authority}` }],
+      }));
+
+  const governanceRows = approvals.length
+    ? approvals.map((approval) => operationalRow({
+        id: `governance:${approval.id}`,
+        title: approval.title,
+        status: 'PENDING',
+        subtitle: `${approval.owner} · ${approval.risk.toUpperCase()} risk`,
+        detail: approval.reason,
+        meta: [{ label: 'Authority', value: approval.authority }],
+      }))
+    : governanceEvents.map((event) => operationalRow({
+        id: `governance-event:${event.id}`,
+        title: event.type,
+        status: event.severity.toUpperCase(),
+        subtitle: event.source,
+        detail: event.summary,
+        meta: [{ label: 'Event', value: `#${event.timeRank}` }],
+      }));
+
+  const effectiveEvidenceRows = evidenceRows.length ? evidenceRows : (evidenceEvents.length ? evidenceEvents : events.slice(0, 10)).map((event) => operationalRow({
+    id: `evidence-event:${event.id}`,
+    title: event.type,
+    status: event.type === 'EVIDENCE.VERIFIED' ? 'VERIFIED' : 'EVENT',
+    subtitle: event.source,
+    detail: event.summary,
+    meta: [{ label: 'Event', value: `#${event.timeRank}` }],
+  }));
+
+  const adminRows = [
+    operationalRow({
+      id: 'admin:runtime',
+      title: 'Runtime authority',
+      status: runtimeSnapshot.mode || 'UNKNOWN',
+      subtitle: 'Control-plane persistence mode',
+      detail: 'Authenticated server-side control plane backed by the current runtime provider.',
+      meta: [
+        { label: 'Agents', value: String(agents.length) },
+        { label: 'Events', value: String(metrics.eventCount ?? events.length) },
+      ],
+    }),
+    operationalRow({
+      id: 'admin:execution',
+      title: 'Execution queue',
+      status: Number(metrics.executionDeadLetter || 0) > 0 ? 'ATTENTION' : 'HEALTHY',
+      subtitle: 'Durable execution worker state',
+      detail: `${metrics.executionPending ?? 0} pending · ${metrics.executionSucceeded ?? executions.filter((item) => item.status === 'SUCCEEDED').length} succeeded`,
+      meta: [
+        { label: 'Leased', value: String(metrics.executionLeased ?? executions.filter((item) => item.status === 'LEASED').length) },
+        { label: 'Dead letter', value: String(metrics.executionDeadLetter ?? executions.filter((item) => item.status === 'DEAD_LETTER').length) },
+      ],
+    }),
+    operationalRow({
+      id: 'admin:governance',
+      title: 'Governance ledger',
+      status: approvals.length ? 'ACTION REQUIRED' : 'NOMINAL',
+      subtitle: 'Human gates and immutable event history',
+      detail: `${approvals.length} pending approval(s) · ${metrics.intentCount ?? '—'} durable intent(s)`,
+      meta: [
+        { label: 'Governance events', value: String(governanceEvents.length) },
+        { label: 'Verified objects', value: String(verifiedObjects) },
+      ],
+    }),
+  ];
+
+  return {
+    agents: {
+      title: 'Live Agent Fleet',
+      copy: 'Registered enterprise agents with current state, assigned task, confidence, capabilities and authority.',
+      summary: [
+        summaryItem('Registered', agents.length, 'live fleet'),
+        summaryItem('Active', agents.filter((agent) => agent.status === 'active').length, 'executing / available'),
+        summaryItem('Human-gated', agents.filter((agent) => agent.status === 'approval').length, 'awaiting authority'),
+        summaryItem('Max authority', `L${Math.max(0, ...agents.map((agent) => agent.authority))}`, 'bounded autonomy'),
+      ],
+      rows: agentRows,
+    },
+    vibpe: {
+      title: 'VIBPE Engineering Intelligence',
+      copy: 'Live engineering baseline state, governed changes, execution lineage and VIBPE agent authority.',
+      summary: [
+        summaryItem('Baselines', engineering.length, 'durable records'),
+        summaryItem('Verified', engineering.filter((record) => record.evidence.count > 0).length, 'evidence-backed'),
+        summaryItem('Pending gates', approvals.filter((approval) => /engineering/i.test(approval.title)).length, 'human decisions'),
+        summaryItem('VIBPE authority', vibpeAgent ? `L${vibpeAgent.authority}` : '—', vibpeAgent?.status || 'unregistered'),
+      ],
+      rows: vibpeRows,
+    },
+    projects: {
+      title: 'Project Execution Control',
+      copy: 'Live project/risk execution state derived from persisted escalations, execution jobs and project-control agents.',
+      summary: [
+        summaryItem('Risk records', projectRisk.length, 'durable project exposure'),
+        summaryItem('Verified', projectRisk.filter((record) => record.evidence.count > 0).length, 'evidence-backed'),
+        summaryItem('Execution pending', metrics.executionPending ?? 0, 'durable queue'),
+        summaryItem('Project agents', projectAgents.length, 'orchestrator / controls / risk'),
+      ],
+      rows: projectRows,
+    },
+    governance: {
+      title: 'Governance Control Plane',
+      copy: 'Live human gates, policy decisions and governance event history—not a static policy description.',
+      summary: [
+        summaryItem('Pending approvals', approvals.length, 'human gate'),
+        summaryItem('Governance events', governanceEvents.length, 'current snapshot'),
+        summaryItem('Execution pending', metrics.executionPending ?? 0, 'post-policy queue'),
+        summaryItem('Dead letter', metrics.executionDeadLetter ?? 0, 'terminal exceptions'),
+      ],
+      rows: governanceRows,
+    },
+    evidence: {
+      title: 'Evidence Ledger',
+      copy: 'Verified execution evidence and auditable control-plane events linked to durable domain records.',
+      summary: [
+        summaryItem('Verified objects', verifiedObjects, 'domain evidence'),
+        summaryItem('Evidence events', evidenceEvents.length, 'current snapshot'),
+        summaryItem('Domain records', allDomainRecords.length, 'traceable objects'),
+        summaryItem('Trace links', runtimeSnapshot.digitalThreadLinks?.length ?? 0, 'explicit relationships'),
+      ],
+      rows: effectiveEvidenceRows,
+    },
+    admin: {
+      title: 'Platform Administration',
+      copy: 'Live runtime, execution, governance and fleet health for VAOS platform administration.',
+      summary: [
+        summaryItem('Runtime', runtimeSnapshot.mode || 'UNKNOWN', 'persistence provider'),
+        summaryItem('Agents', agents.length, 'registered fleet'),
+        summaryItem('Events', metrics.eventCount ?? events.length, 'ledger size'),
+        summaryItem('Intents', metrics.intentCount ?? '—', 'durable control requests'),
+      ],
+      rows: adminRows,
+    },
+  };
+}
+
 export function summarizeAgentFleet(agents = []) {
   return {
     total: agents.length,
@@ -286,6 +517,13 @@ export function buildWorkspaceModel(runtimeSnapshot) {
   const fleet = summarizeAgentFleet(agents);
   const domainWorkspaces = buildDomainWorkspaces(runtimeSnapshot.domains);
   const traceGraph = buildTraceGraph(domainWorkspaces, runtimeSnapshot.digitalThreadLinks);
+  const operationalViews = buildOperationalViews({
+    agents,
+    approvals,
+    events,
+    domainWorkspaces,
+    runtimeSnapshot,
+  });
 
   return {
     environment: 'Development',
@@ -298,6 +536,7 @@ export function buildWorkspaceModel(runtimeSnapshot) {
     risks: RISKS.map((item) => ({ ...item })),
     domainWorkspaces,
     traceGraph,
+    operationalViews,
     pulse: {
       governance: 'Nominal',
       evidenceCoverage: 86,

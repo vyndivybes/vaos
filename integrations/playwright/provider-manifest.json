@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "vaos.provider.v1",
+  "providerId": "playwright",
+  "displayName": "Playwright",
+  "description": "Self-hosted governed browser automation provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "capabilities": ["browser.automate"],
+  "deploymentModes": ["self-hosted"],
+  "qualification": {"state": "evaluation", "evidenceRefs": [], "qualifiedCapabilities": []},
+  "security": {"secretBinding": "required", "dataEgress": "controlled", "authModes": ["session"], "callbackVerification": "none"},
+  "execution": {"idempotency": "not-supported", "retrySemantics": "conditional", "verificationStrategy": "artifact-hash", "healthProbe": "required"},
+  "licensing": {
+    "model": "Open-source browser automation runtime; browser binaries and deployment posture require qualification.",
+    "redistributionReviewRequired": false,
+    "notes": "Authenticated browser state is treated as secret material and must not be committed or returned as VAOS evidence."
+  },
+  "notes": "Initial AF-6 scope requires origin allow-listing, isolated execution, sealed trace/evidence references, downloads disabled by default, and no blind retry after a task may have caused an external side effect."
+}

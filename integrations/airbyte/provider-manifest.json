@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "vaos.provider.v1",
+  "providerId": "airbyte",
+  "displayName": "Airbyte",
+  "description": "Governed data replication provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "capabilities": ["data.replicate"],
+  "deploymentModes": ["self-hosted", "managed-saas"],
+  "qualification": {"state": "evaluation", "evidenceRefs": [], "qualifiedCapabilities": []},
+  "security": {"secretBinding": "required", "dataEgress": "controlled", "authModes": ["bearer"], "callbackVerification": "none"},
+  "execution": {"idempotency": "not-supported", "retrySemantics": "conditional", "verificationStrategy": "provider-readback", "healthProbe": "required"},
+  "licensing": {
+    "model": "Open-source/self-managed or managed service; connector licensing, data-residency and commercial terms require qualification.",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS invokes only pre-approved connection keys mapped to Airbyte connection IDs."
+  },
+  "notes": "Production qualification remains blocked until connection-level data classification, source/destination ownership, short-lived token acquisition, busy/rate-limit behavior, status reconciliation, cancellation, schema-change policy and data-residency controls are evidenced."
+}

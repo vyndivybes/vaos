@@ -66,10 +66,8 @@ function renderAgents() {
     </article>`).join('');
 }
 
-function renderApprovals() {
-  document.querySelector('#approval-count').textContent = model.approvals.length;
-  const list = document.querySelector('#approval-list');
-  list.innerHTML = model.approvals.length ? model.approvals.map((approval) => `
+function approvalRowsMarkup() {
+  return model.approvals.length ? model.approvals.map((approval) => `
     <article class="approval-row">
       <span class="risk-dot risk-dot--${esc(approval.risk)}"></span>
       <span class="approval-row__body"><strong>${esc(approval.title)}</strong><small>${esc(approval.owner)} · ${esc(approval.age)}</small><em>${esc(approval.reason)}</em></span>
@@ -81,6 +79,19 @@ function renderApprovals() {
         </span>
       </span>
     </article>`).join('') : '<p class="empty-state">No governed effects are waiting for human approval.</p>';
+}
+
+function renderApprovalWorkspace() {
+  const count = document.querySelector('#module-approval-count');
+  const list = document.querySelector('#module-approval-list');
+  if (count) count.textContent = model.approvals.length;
+  if (list) list.innerHTML = approvalRowsMarkup();
+}
+
+function renderApprovals() {
+  document.querySelector('#approval-count').textContent = model.approvals.length;
+  document.querySelector('#approval-list').innerHTML = approvalRowsMarkup();
+  renderApprovalWorkspace();
 }
 
 function renderEvents() {
@@ -343,17 +354,32 @@ function renderModule(module) {
   document.querySelector('#module-hero-group').textContent = module.group.toUpperCase();
   document.querySelector('#module-hero-title').textContent = module.label;
   document.querySelector('#module-hero-description').textContent = module.description;
+
   const graphSection = document.querySelector('#enterprise-trace-graph');
+  const domainSection = document.querySelector('#domain-workspace');
+  const foundation = document.querySelector('#module-foundation-grid');
+  const approvalPanel = document.querySelector('#module-approval-panel');
+
+  graphSection.hidden = true;
+  domainSection.hidden = true;
+  foundation.hidden = true;
+  approvalPanel.hidden = true;
+
   if (module.id === 'digital-thread') {
-    document.querySelector('#domain-workspace').hidden = true;
-    document.querySelector('#module-foundation-grid').hidden = true;
     renderEnterpriseTraceGraph();
     return;
   }
-  graphSection.hidden = true;
+
+  if (module.id === 'approvals') {
+    approvalPanel.hidden = false;
+    renderApprovalWorkspace();
+    return;
+  }
+
   const hasDomain = renderDomainWorkspace(module);
   if (!hasDomain) {
-    document.querySelector('#module-foundation-grid').innerHTML = foundationCards(module).map(([title, copy], index) => `
+    foundation.hidden = false;
+    foundation.innerHTML = foundationCards(module).map(([title, copy], index) => `
       <article class="foundation-card"><span>0${index + 1}</span><h3>${esc(title)}</h3><p>${esc(copy)}</p></article>`).join('');
   }
 }

@@ -1,3 +1,5 @@
+import { createRiskQualificationTrace } from './risk-qualification-trace.mjs';
+
 function requiredText(payload, key) {
   const value = payload?.[key];
   if (typeof value !== 'string' || !value.trim()) throw new Error(`ADAPTER_PAYLOAD_INVALID:${key}`);
@@ -136,6 +138,18 @@ function projectRiskAdapter(projectRisk) {
     const riskId = requiredText(job.payload, 'riskId');
     const port = assertProjectRiskPort(projectRisk);
 
+    if (job.payload?.qualificationRecoveryDrill === true) {
+      if (job.payload?.qualificationMode !== true) {
+        throw terminalError('QUALIFICATION_MODE_REQUIRED');
+      }
+      if (Number(job.attemptCount) === 1) {
+        const error = new Error('QUALIFICATION_RECOVERY_DRILL_RETRY');
+        error.code = 'QUALIFICATION_RECOVERY_DRILL_RETRY';
+        error.retryable = true;
+        throw error;
+      }
+    }
+
     const escalated = await port.escalateRisk(job, { riskId });
     if (!escalated || !['CREATED', 'REPLAY'].includes(escalated.outcome)) {
       throw new Error(`PROJECT_RISK_DOMAIN_WRITE_FAILED:${escalated?.outcome || 'UNKNOWN'}`);
@@ -152,6 +166,8 @@ function projectRiskAdapter(projectRisk) {
 
     if (!verified) throw new Error('PROJECT_RISK_VERIFICATION_MISMATCH');
 
+    const qualificationTraceLink = await createRiskQualificationTrace({ port, job });
+
     return {
       adapterId: 'supabase.project-risk.v1',
       effect: {
@@ -160,6 +176,7 @@ function projectRiskAdapter(projectRisk) {
         resourceId: riskId,
         state: record.status,
         domainOutcome: escalated.outcome,
+        ...(qualificationTraceLink ? { qualificationTraceLinkId: qualificationTraceLink.id } : {}),
       },
       verification: {
         verified: true,

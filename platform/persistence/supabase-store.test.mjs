@@ -249,3 +249,40 @@ test('Digital Workforce qualification assessment uses typed Edge bridge operatio
   });
   assert.equal(fake.calls[1].body.operation, 'getQualificationAssessment');
 });
+
+test('Risk Q3 recovery and trace operations use typed Edge bridge calls', async () => {
+  const fake = fakeFetch([
+    { body: { id: 'job-risk-q3', attemptCount: 2, leaseToken: 'lease-2', actionType: 'PROJECT.ESCALATE_RISK', payload: { riskId: 'RSK-015' } } },
+    { body: { outcome: 'CREATED', link: { id: 'link-risk-q3', executionJobId: 'job-risk-q3' } } },
+  ]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+  const job = { id: 'job-risk-q3', leaseToken: 'lease-1' };
+
+  const recovered = await store.claimQualificationRecovery(job, { workerId: 'worker-q3' });
+  const linked = await store.linkRiskQualificationTrace(
+    { ...job, leaseToken: 'lease-2' },
+    {
+      targetDomain: 'ENGINEERING_BASELINE',
+      targetResourceId: '5.3.9',
+      relationType: 'MITIGATES_RISK',
+    },
+  );
+
+  assert.equal(recovered.attemptCount, 2);
+  assert.equal(linked.link.executionJobId, 'job-risk-q3');
+  assert.equal(fake.calls[0].body.operation, 'claimQualificationRecovery');
+  assert.deepEqual(fake.calls[0].body.payload, { jobId: 'job-risk-q3', workerId: 'worker-q3' });
+  assert.equal(fake.calls[1].body.operation, 'linkRiskQualificationTrace');
+  assert.deepEqual(fake.calls[1].body.payload, {
+    jobId: 'job-risk-q3',
+    leaseToken: 'lease-2',
+    targetDomain: 'ENGINEERING_BASELINE',
+    targetResourceId: '5.3.9',
+    relationType: 'MITIGATES_RISK',
+  });
+});
+

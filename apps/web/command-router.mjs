@@ -57,6 +57,18 @@ export function resolveCommand(input) {
     };
   }
 
+  const qualificationRisk = query.match(/^qualification\s+risk\s+(.+)$/i);
+  if (qualificationRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'risk',
+      agentId: 'risk',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: { riskId: qualificationRisk[1].trim(), qualificationMode: true },
+    };
+  }
+
   const risk = query.match(/^escalate\s+risk\s+(.+)$/i);
   if (risk) {
     return {

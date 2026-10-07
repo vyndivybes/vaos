@@ -193,22 +193,23 @@ VYNDI canonical decision/approval
 
 ## Merge strategy
 
-Keep each runtime provider in its own PR after AF-0/AF-1.
+PR #30 is the single integration vehicle for the Automation & Integration Fabric.
 
-Do **not** make one mega-PR containing all providers.
+Development commits remain granular on the isolated branch for diagnosis, testing and conflict resolution, but the feature body will land on `main` through **one squash merge** after all planned adapters, reconciliation, full qualification and final audit are complete.
 
-Suggested sequence:
+Required sequence:
 
-- PR-AF0: architecture + provider contract
-- PR-AF1: capability registry only
-- PR-AF2: credential-broker interface
-- PR-AF3: n8n adapter
-- PR-AF4: Paperwork adapter
-- PR-AF5: Zapier adapter
-- PR-AF6: Playwright adapter
-- later PRs per specialist capability
+1. finish the planned adapter set on `prep/automation-integration-fabric`;
+2. freeze scope;
+3. reconcile once with latest `main`;
+4. run the complete repository qualification;
+5. complete Cloudflare-only, security and governance audits;
+6. convert PR #30 from Draft to Ready;
+7. squash merge with title `feat: add governed VAOS Automation & Integration Fabric`.
 
-This gives each provider an independent qualification and rollback boundary.
+Provider production activation remains separate from this merge. Every external provider stays evaluation-only until live qualification is approved.
+
+See `docs/automation-fabric-single-squash-release-plan.md` for the authoritative release checklist.
 
 ## Current preparation status
 

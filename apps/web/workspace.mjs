@@ -132,9 +132,9 @@ function foundationCards(module) {
 
 function statusTone(value) {
   const status = String(value || '').toUpperCase();
-  if (['SUCCEEDED','EXECUTED','APPROVED','OPEN','CHANGE_RECORDED','ESCALATED','VERIFIED','RELEASED'].includes(status)) return 'success';
-  if (['FAILED','DEAD_LETTER','REJECTED','CLOSED','SUPERSEDED'].includes(status)) return 'danger';
-  if (['PENDING','LEASED','AWAIT_APPROVAL','MITIGATING','MONITORED','ACTION_PENDING','INVESTIGATING'].includes(status)) return 'warning';
+  if (['SUCCEEDED','EXECUTED','APPROVED','OPEN','CHANGE_RECORDED','ESCALATED','VERIFIED','RELEASED','ACTIVE','HEALTHY','NOMINAL','DURABLE_POSTGRES'].includes(status)) return 'success';
+  if (['FAILED','DEAD_LETTER','REJECTED','CLOSED','SUPERSEDED','ATTENTION'].includes(status)) return 'danger';
+  if (['PENDING','LEASED','AWAIT_APPROVAL','MITIGATING','MONITORED','ACTION_PENDING','INVESTIGATING','APPROVAL','ACTION REQUIRED'].includes(status)) return 'warning';
   return 'neutral';
 }
 
@@ -350,6 +350,47 @@ function drawTraceEdges() {
   }
 }
 
+function renderOperationalWorkspace(module) {
+  const section = document.querySelector('#operational-workspace');
+  const view = model.operationalViews?.[module.id];
+  if (!section || !view) {
+    if (section) section.hidden = true;
+    return false;
+  }
+
+  document.querySelector('#operational-title').textContent = view.title;
+  document.querySelector('#operational-copy').textContent = view.copy;
+
+  document.querySelector('#operational-summary').innerHTML = view.summary.map((item) => `
+    <article class="operational-summary-card">
+      <small>${esc(item.label)}</small>
+      <strong>${esc(item.value)}</strong>
+      <span>${esc(item.note)}</span>
+    </article>
+  `).join('');
+
+  document.querySelector('#operational-record-list').innerHTML = view.rows.length ? view.rows.map((row) => `
+    <article class="operational-record">
+      <div class="operational-record__heading">
+        <div>
+          <small>${esc(row.subtitle)}</small>
+          <strong>${esc(row.title)}</strong>
+        </div>
+        <span class="domain-status domain-status--${statusTone(row.status)}">${esc(row.status)}</span>
+      </div>
+      <p>${esc(row.detail)}</p>
+      <div class="operational-record__meta">
+        ${row.meta.map((item) => `
+          <span><small>${esc(item.label)}</small><strong>${esc(item.value)}</strong></span>
+        `).join('')}
+      </div>
+    </article>
+  `).join('') : '<p class="empty-state">No live control-plane records are available for this workspace yet.</p>';
+
+  section.hidden = false;
+  return true;
+}
+
 function renderModule(module) {
   document.querySelector('#module-hero-group').textContent = module.group.toUpperCase();
   document.querySelector('#module-hero-title').textContent = module.label;
@@ -359,11 +400,13 @@ function renderModule(module) {
   const domainSection = document.querySelector('#domain-workspace');
   const foundation = document.querySelector('#module-foundation-grid');
   const approvalPanel = document.querySelector('#module-approval-panel');
+  const operationalSection = document.querySelector('#operational-workspace');
 
   graphSection.hidden = true;
   domainSection.hidden = true;
   foundation.hidden = true;
   approvalPanel.hidden = true;
+  operationalSection.hidden = true;
 
   if (module.id === 'digital-thread') {
     renderEnterpriseTraceGraph();
@@ -377,11 +420,13 @@ function renderModule(module) {
   }
 
   const hasDomain = renderDomainWorkspace(module);
-  if (!hasDomain) {
-    foundation.hidden = false;
-    foundation.innerHTML = foundationCards(module).map(([title, copy], index) => `
-      <article class="foundation-card"><span>0${index + 1}</span><h3>${esc(title)}</h3><p>${esc(copy)}</p></article>`).join('');
-  }
+  if (hasDomain) return;
+
+  if (renderOperationalWorkspace(module)) return;
+
+  foundation.hidden = false;
+  foundation.innerHTML = foundationCards(module).map(([title, copy], index) => `
+    <article class="foundation-card"><span>0${index + 1}</span><h3>${esc(title)}</h3><p>${esc(copy)}</p></article>`).join('');
 }
 
 function setView(view, { push = true } = {}) {

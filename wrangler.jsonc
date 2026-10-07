@@ -5,6 +5,10 @@
   "compatibility_date": "2026-10-07",
   "compatibility_flags": ["nodejs_compat"],
   "workers_dev": true,
+  "keep_vars": true,
+  "vars": {
+    "SUPABASE_URL": "https://jjzycduoujbmiegqfiud.supabase.co"
+  },
   "assets": {
     "directory": "./apps/web",
     "binding": "ASSETS",

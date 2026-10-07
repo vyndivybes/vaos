@@ -87,6 +87,14 @@ Deno.serve(async (req: Request) => {
       p_worker_id: payload.workerId,
       p_lease_seconds: payload.leaseSeconds || 120,
     }
+  } else if (operation === 'claimQualificationRecovery') {
+    rpcName = 'vaos_claim_qualification_recovery'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_worker_id: payload.workerId,
+      p_lease_seconds: payload.leaseSeconds || 120,
+    }
   } else if (operation === 'completeExecution') {
     rpcName = 'vaos_complete_execution'
     args = {

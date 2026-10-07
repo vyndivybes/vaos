@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "vaos.provider.v1",
+  "providerId": "n8n",
+  "displayName": "n8n",
+  "description": "General workflow orchestration provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "capabilities": [
+    "workflow.orchestrate"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "qualification": {
+    "state": "evaluation",
+    "evidenceRefs": [],
+    "qualifiedCapabilities": []
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "api-key"
+    ],
+    "callbackVerification": "provider-specific"
+  },
+  "execution": {
+    "idempotency": "hybrid",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required"
+  },
+  "licensing": {
+    "model": "External provider; deployment/licensing review required before production activation",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS treats n8n as a replaceable execution provider and does not expose or embed the n8n editor in this phase."
+  },
+  "notes": "Production qualification remains blocked until authenticated dispatch, duplicate handling, unknown-outcome reconciliation, outage behavior, callback authenticity, rate limiting, disable/kill-switch, and licensing evidence are recorded."
+}

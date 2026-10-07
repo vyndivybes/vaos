@@ -147,31 +147,39 @@ test('Project/Risk domain escalation and readback use dedicated Edge operations 
 });
 
 
-test('explicit domain links use a typed authenticated Edge operation', async () => {
+test('governed domain link writes and readback are bound to the execution lease', async () => {
   const fake = fakeFetch([
-    { body: { outcome: 'CREATED', link: { id: 'link-1', relationType: 'DRIVES_CHANGE' } } },
+    { body: { outcome: 'CREATED', link: { id: 'link-1', relationType: 'DRIVES_CHANGE', executionJobId: 'job-link-1', intentId: 'intent-link-1' } } },
+    { body: { id: 'link-1', relationType: 'DRIVES_CHANGE', executionJobId: 'job-link-1', intentId: 'intent-link-1' } },
   ]);
   const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
-
-  const result = await store.linkDomainRecords({
+  const job = { id: 'job-link-1', intentId: 'intent-link-1', leaseToken: 'lease-link-1' };
+  const input = {
     sourceDomain: 'QA_CAPA',
-    sourceRecordId: 'qa-1',
+    sourceRecordId: '6ee7b7d0-8694-47fb-a00c-b3540bb380db',
     relationType: 'DRIVES_CHANGE',
     targetDomain: 'ENGINEERING_BASELINE',
-    targetRecordId: 'eng-1',
-    createdBy: 'qa-agent',
+    targetRecordId: 'b51465ef-2777-4e48-90f8-92ad7943317e',
+    proposedBy: 'founder@example.com',
     context: { reason: 'CAPA requires baseline update' },
-  });
+  };
 
-  assert.equal(result.outcome, 'CREATED');
+  const created = await store.linkDomainRecords(job, input);
+  const record = await store.getDomainLink(job, input);
+
+  assert.equal(created.outcome, 'CREATED');
+  assert.equal(record.executionJobId, 'job-link-1');
   assert.equal(fake.calls[0].body.operation, 'linkDomainRecords');
   assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-link-1',
+    leaseToken: 'lease-link-1',
     sourceDomain: 'QA_CAPA',
-    sourceRecordId: 'qa-1',
+    sourceRecordId: '6ee7b7d0-8694-47fb-a00c-b3540bb380db',
     relationType: 'DRIVES_CHANGE',
     targetDomain: 'ENGINEERING_BASELINE',
-    targetRecordId: 'eng-1',
-    createdBy: 'qa-agent',
+    targetRecordId: 'b51465ef-2777-4e48-90f8-92ad7943317e',
+    proposedBy: 'founder@example.com',
     context: { reason: 'CAPA requires baseline update' },
   });
+  assert.equal(fake.calls[1].body.operation, 'getDomainLink');
 });

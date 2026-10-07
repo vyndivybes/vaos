@@ -1,3 +1,5 @@
+import { resolveCommand } from './lib/command-router.mjs';
+
 const shell = document.querySelector('#control-shell');
 const loading = document.querySelector('#workspace-loading');
 const nav = document.querySelector('#module-nav');
@@ -10,13 +12,18 @@ const moduleTitle = document.querySelector('#module-title');
 const moduleGroup = document.querySelector('#module-group');
 const moduleDescription = document.querySelector('#module-description');
 const dialog = document.querySelector('#command-dialog');
+const commandBar = document.querySelector('#command-bar');
+const commandBarInput = document.querySelector('#command-bar-input');
 const commandButton = document.querySelector('#command-button');
+const commandStatus = document.querySelector('#command-status');
 const commandInput = document.querySelector('#command-input');
 const commandResults = document.querySelector('#command-results');
 
 let model = null;
 let currentView = 'command';
 let traceProposalKey = null;
+let commandIntentKey = null;
+let commandIntentQuery = null;
 
 const esc = (value) => String(value ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -443,6 +450,98 @@ function setView(view, { push = true } = {}) {
   }
 }
 
+function newCommandIntentKey(query) {
+  if (commandIntentKey && commandIntentQuery === query) return commandIntentKey;
+  commandIntentQuery = query;
+  commandIntentKey = globalThis.crypto?.randomUUID
+    ? `command:${globalThis.crypto.randomUUID()}`
+    : `command:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+  return commandIntentKey;
+}
+
+function resetCommandIntentKey() {
+  commandIntentKey = null;
+  commandIntentQuery = null;
+}
+
+async function executeVAOSCommand(rawQuery) {
+  const query = String(rawQuery || '').trim();
+  const resolved = resolveCommand(query);
+
+  if (resolved.kind === 'navigate') {
+    commandStatus.textContent = `Opened ${model.modules.find((item) => item.id === resolved.view)?.label || resolved.view}.`;
+    setView(resolved.view);
+    commandBarInput.select();
+    return;
+  }
+
+  if (resolved.kind === 'unknown') {
+    commandStatus.textContent = query
+      ? 'Command not recognised. Showing matching workspaces instead.'
+      : 'Enter a VAOS command.';
+    renderCommandResults(query);
+    if (dialog && !dialog.open) dialog.showModal();
+    queueMicrotask(() => {
+      commandInput.value = query;
+      renderCommandResults(query);
+      commandInput.focus();
+      commandInput.select();
+    });
+    return;
+  }
+
+  commandButton.disabled = true;
+  commandStatus.textContent = 'Submitting governed command to the VAOS control plane…';
+
+  try {
+    const response = await fetch('/api/intents', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': newCommandIntentKey(query),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        agentId: resolved.agentId,
+        actionType: resolved.actionType,
+        risk: resolved.risk,
+        reason: query,
+        payload: resolved.payload,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result?.error?.code || 'COMMAND_FAILED');
+    }
+
+    resetCommandIntentKey();
+    const refreshed = await loadControlPlane();
+    if (refreshed) {
+      model = refreshed.model;
+      renderAll();
+    }
+
+    const status = result?.data?.status || 'PERSISTED';
+    if (status === 'AWAIT_APPROVAL') {
+      commandStatus.textContent = 'Governed command persisted. Human approval is required.';
+      setView('approvals');
+    } else if (status === 'AUTHORIZED') {
+      commandStatus.textContent = `Command authorised. Execution: ${result?.data?.execution?.status || 'QUEUED'}.`;
+      setView(resolved.targetView);
+    } else {
+      commandStatus.textContent = `Command status: ${status}.`;
+      setView(resolved.targetView);
+    }
+
+    commandBarInput.select();
+  } catch (error) {
+    commandStatus.textContent = `Command failed: ${error.message}. Retry will reuse the same intent key.`;
+  } finally {
+    commandButton.disabled = false;
+  }
+}
+
 function renderCommandResults(query = '') {
   const q = query.trim().toLowerCase();
   const modules = model.modules.filter((module) => !q || `${module.label} ${module.group} ${module.description}`.toLowerCase().includes(q));
@@ -597,7 +696,10 @@ function wireInteractions() {
   });
   document.querySelector('#trace-author-form')?.addEventListener('submit', submitTraceLinkProposal);
 
-  commandButton?.addEventListener('click', () => { renderCommandResults(); dialog.showModal(); queueMicrotask(() => commandInput.focus()); });
+  commandBar?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    executeVAOSCommand(commandBarInput.value);
+  });
   commandInput?.addEventListener('input', () => renderCommandResults(commandInput.value));
   window.addEventListener('popstate', () => setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false }));
   window.addEventListener('resize', () => { if (currentView === 'digital-thread') requestAnimationFrame(drawTraceEdges); });

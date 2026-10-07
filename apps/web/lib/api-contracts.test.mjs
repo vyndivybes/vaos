@@ -77,3 +77,50 @@ test('intent API validates governed digital-thread link payloads at the boundary
   assert.equal(selfLink.ok, false);
   assert.ok(selfLink.errors.includes('DIGITAL_THREAD_SELF_LINK_DENIED'));
 });
+
+
+test('Digital Workforce qualification payload requires employee, Q-level and explicit evidence references', () => {
+  const valid = validateIntentRequest({
+    idempotencyKey: 'workforce:vibpe:qualify:1',
+    body: {
+      agentId: 'orchestrator',
+      actionType: 'WORKFORCE.QUALIFY',
+      risk: 'high',
+      reason: 'Qualification evidence reviewed',
+      payload: {
+        employeeId: 'vibpe',
+        qualificationLevel: 3,
+        evidenceRefs: ['evidence:benchmark:vibpe:1'],
+      },
+    },
+  });
+  assert.equal(valid.ok, true);
+
+  const noEvidence = validateIntentRequest({
+    idempotencyKey: 'workforce:vibpe:qualify:2',
+    body: {
+      agentId: 'orchestrator',
+      actionType: 'WORKFORCE.QUALIFY',
+      risk: 'high',
+      reason: 'Qualification without evidence',
+      payload: { employeeId: 'vibpe', qualificationLevel: 3, evidenceRefs: [] },
+    },
+  });
+  assert.equal(noEvidence.ok, false);
+  assert.ok(noEvidence.errors.includes('QUALIFICATION_EVIDENCE_REQUIRED'));
+});
+
+test('unknown WORKFORCE actions fail closed at the API boundary', () => {
+  const result = validateIntentRequest({
+    idempotencyKey: 'workforce:invented:1',
+    body: {
+      agentId: 'orchestrator',
+      actionType: 'WORKFORCE.INVENTED',
+      risk: 'medium',
+      reason: 'Should fail closed',
+      payload: { employeeId: 'vibpe' },
+    },
+  });
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('INVALID_WORKFORCE_ACTION'));
+});

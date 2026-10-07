@@ -3,9 +3,15 @@ import assert from 'node:assert/strict';
 import { createDurableControlService } from './durable-control-service.mjs';
 
 function makeStore() {
-  const calls = { intents: [], decisions: [] };
+  const calls = { intents: [], decisions: [], workforceReads: [] };
+  let workforceState = { status: 'ACTIVE', qualificationLevel: 2 };
   return {
     calls,
+    setWorkforceState(value) { workforceState = value; },
+    async getDigitalEmployee(employeeId) {
+      calls.workforceReads.push(employeeId);
+      return workforceState ? { id: employeeId, ...workforceState } : null;
+    },
     async submitIntent(input) {
       calls.intents.push(input);
       return {
@@ -111,4 +117,44 @@ test('approval decisions are delegated with authenticated actor identity', async
     decision: 'APPROVED',
     decidedBy: 'founder@example.com',
   });
+});
+
+
+test('normal agent work is denied until its Digital Employee is ACTIVE and qualified', async () => {
+  const store = makeStore();
+  store.setWorkforceState({ status: 'PROPOSED', qualificationLevel: 0 });
+  const service = createDurableControlService({ store });
+
+  const result = await service.proposeIntent({
+    idempotencyKey: 'qa:capa:blocked',
+    agentId: 'qa',
+    actionType: 'QA.OPEN_CAPA',
+    risk: 'medium',
+    reason: 'Attempt before qualification',
+    payload: { capaId: 'CAPA-BLOCKED' },
+  });
+
+  assert.equal(result.status, 'DENIED');
+  assert.equal(result.reason, 'DIGITAL_EMPLOYEE_NOT_ACTIVE');
+  assert.equal(store.calls.workforceReads[0], 'qa');
+  assert.equal(store.calls.intents[0].result.reason, 'DIGITAL_EMPLOYEE_NOT_ACTIVE');
+});
+
+test('human-gated workforce lifecycle intents remain available for bootstrap qualification', async () => {
+  const store = makeStore();
+  store.setWorkforceState({ status: 'PROPOSED', qualificationLevel: 0 });
+  const service = createDurableControlService({ store });
+
+  const result = await service.proposeIntent({
+    idempotencyKey: 'workforce:orchestrator:training',
+    agentId: 'orchestrator',
+    actionType: 'WORKFORCE.START_TRAINING',
+    risk: 'medium',
+    reason: 'Begin orchestrator qualification',
+    payload: { employeeId: 'orchestrator' },
+  });
+
+  assert.equal(result.status, 'AWAIT_APPROVAL');
+  assert.equal(result.authority, 4);
+  assert.equal(store.calls.workforceReads.length, 0);
 });

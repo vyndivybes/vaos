@@ -8,6 +8,22 @@ function adapter(id, execute) {
   return Object.freeze({ id, execute });
 }
 
+function terminalError(code, message = code) {
+  const error = new Error(message);
+  error.code = code;
+  error.retryable = false;
+  return error;
+}
+
+const WORKFORCE_TARGET_STATUS = Object.freeze({
+  'WORKFORCE.START_TRAINING': 'TRAINING',
+  'WORKFORCE.QUALIFY': 'QUALIFIED',
+  'WORKFORCE.ACTIVATE': 'ACTIVE',
+  'WORKFORCE.RESTRICT': 'RESTRICTED',
+  'WORKFORCE.START_RETRAINING': 'RETRAINING',
+  'WORKFORCE.RETIRE': 'RETIRED',
+});
+
 function assertQaCapaPort(qaCapa) {
   if (!qaCapa || typeof qaCapa.openCapa !== 'function' || typeof qaCapa.getCapa !== 'function') {
     throw new Error('DOMAIN_PORT_REQUIRED:qaCapa');
@@ -227,12 +243,78 @@ function digitalThreadLinkAdapter(digitalThread) {
   });
 }
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread } = {}) {
+function assertDigitalWorkforcePort(digitalWorkforce) {
+  if (!digitalWorkforce
+      || typeof digitalWorkforce.transitionDigitalEmployee !== 'function'
+      || typeof digitalWorkforce.getDigitalEmployee !== 'function') {
+    throw terminalError('DOMAIN_PORT_REQUIRED:digitalWorkforce');
+  }
+  return digitalWorkforce;
+}
+
+function digitalWorkforceAdapter(digitalWorkforce, actionType) {
+  return adapter('supabase.digital-workforce-lifecycle.v2', async (job) => {
+    const employeeId = requiredText(job.payload, 'employeeId');
+    const port = assertDigitalWorkforcePort(digitalWorkforce);
+    const expectedStatus = WORKFORCE_TARGET_STATUS[actionType];
+    const qualificationLevel = actionType === 'WORKFORCE.QUALIFY' ? Number(job.payload?.qualificationLevel) : null;
+    const evidenceRefs = Array.isArray(job.payload?.evidenceRefs)
+      ? job.payload.evidenceRefs.filter((item) => typeof item === 'string' && item.trim()).map((item) => item.trim())
+      : [];
+
+    if (actionType === 'WORKFORCE.QUALIFY') {
+      if (!Number.isInteger(qualificationLevel) || qualificationLevel < 1 || qualificationLevel > 4) {
+        throw terminalError('WORKFORCE_INVALID_QUALIFICATION_LEVEL');
+      }
+      if (!evidenceRefs.length) throw terminalError('WORKFORCE_QUALIFICATION_EVIDENCE_REQUIRED');
+    }
+
+    const transitioned = await port.transitionDigitalEmployee(job, { employeeId, qualificationLevel, evidenceRefs });
+    if (!transitioned || !['CREATED','REPLAY'].includes(transitioned.outcome)) {
+      throw terminalError(`WORKFORCE_${transitioned?.outcome || 'TRANSITION_FAILED'}`);
+    }
+
+    const employee = await port.getDigitalEmployee(employeeId);
+    const verified = Boolean(
+      employee
+      && employee.id === employeeId
+      && employee.status === expectedStatus
+      && (actionType !== 'WORKFORCE.QUALIFY'
+        || (Number(employee.qualificationLevel) === qualificationLevel
+          && Array.isArray(employee.evidenceRefs)
+          && evidenceRefs.every((ref) => employee.evidenceRefs.includes(ref))))
+    );
+    if (!verified) throw terminalError('WORKFORCE_VERIFICATION_MISMATCH');
+
+    return {
+      adapterId: 'supabase.digital-workforce-lifecycle.v2',
+      effect: {
+        effectType: 'WORKFORCE.DIGITAL_EMPLOYEE.TRANSITIONED',
+        resourceType: 'DIGITAL_EMPLOYEE',
+        resourceId: employeeId,
+        state: employee.status,
+        qualificationLevel: Number(employee.qualificationLevel) || 0,
+        domainOutcome: transitioned.outcome,
+      },
+      verification: {
+        verified: true,
+        resourceType: 'DIGITAL_EMPLOYEE',
+        resourceId: employeeId,
+        expectedState: expectedStatus,
+        qualificationLevel: Number(employee.qualificationLevel) || 0,
+        evidenceSource: 'vaos_private.digital_employee_lifecycle_events',
+      },
+    };
+  });
+}
+
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread, digitalWorkforce } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
     ['PROJECT.ESCALATE_RISK', projectRiskAdapter(projectRisk)],
     ['DIGITAL_THREAD.CREATE_LINK', digitalThreadLinkAdapter(digitalThread)],
+    ...Object.keys(WORKFORCE_TARGET_STATUS).map((actionType) => [actionType, digitalWorkforceAdapter(digitalWorkforce, actionType)]),
   ]);
 
   return Object.freeze({

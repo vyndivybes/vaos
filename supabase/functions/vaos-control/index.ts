@@ -150,6 +150,23 @@ Deno.serve(async (req: Request) => {
       p_job_id: payload.jobId,
       p_risk_id: payload.riskId,
     }
+  } else if (operation === 'getDigitalEmployee') {
+    rpcName = 'vaos_get_digital_employee'
+    args = {
+      p_server_key: serverKey,
+      p_employee_id: payload.employeeId,
+    }
+  } else if (operation === 'transitionDigitalEmployee') {
+    rpcName = 'vaos_transition_digital_employee'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_employee_id: payload.employeeId,
+      p_action_type: payload.actionType,
+      p_qualification_level: payload.qualificationLevel ?? null,
+      p_evidence_refs: payload.evidenceRefs || [],
+    }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

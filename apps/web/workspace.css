@@ -2350,3 +2350,107 @@
   .workforce-contract { grid-template-columns: 1fr; }
   .workforce-contract__counts { grid-template-columns: 1fr 1fr; }
 }
+
+
+/* Digital Workforce v2 lifecycle controls */
+.workforce-actions {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255,255,255,.045);
+}
+.workforce-actions > small {
+  color: #717a80;
+  font-size: .53rem;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+}
+.workforce-actions > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+.workforce-actions button,
+.workforce-action-footer button {
+  border: 1px solid rgba(229,175,82,.22);
+  border-radius: 8px;
+  padding: 7px 10px;
+  color: #d8c291;
+  background: rgba(190,122,24,.06);
+  font: inherit;
+  font-size: .58rem;
+  cursor: pointer;
+}
+.workforce-actions button:hover,
+.workforce-action-footer button:hover {
+  border-color: rgba(229,175,82,.46);
+  background: rgba(190,122,24,.12);
+}
+.workforce-terminal-state { color: #6f787e; font-size: .58rem; }
+.workforce-action-dialog {
+  width: min(620px, calc(100vw - 24px));
+  border: 0;
+  border-radius: 16px;
+  padding: 0;
+  background: #0a0d10;
+  color: #e8e5dd;
+}
+.workforce-action-dialog::backdrop { background: rgba(0,0,0,.62); backdrop-filter: blur(4px); }
+.workforce-action-shell { display: grid; gap: 0; }
+.workforce-action-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 19px 20px 15px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+}
+.workforce-action-header h2 { margin: 5px 0 4px; font-size: 1rem; }
+.workforce-action-header p { margin: 0; color: #7f888d; font-size: .62rem; }
+.workforce-action-header button {
+  align-self: start;
+  border: 0;
+  color: #9ca3a7;
+  background: transparent;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+.workforce-action-body { display: grid; gap: 13px; padding: 18px 20px; }
+.workforce-action-body label,
+.workforce-qualification-fields label {
+  display: grid;
+  gap: 7px;
+  color: #aab0b3;
+  font-size: .61rem;
+}
+.workforce-action-body textarea,
+.workforce-action-body select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgba(255,221,153,.12);
+  border-radius: 9px;
+  padding: 9px 10px;
+  color: #e7e3da;
+  background: rgba(255,255,255,.025);
+  font: inherit;
+}
+.workforce-action-body textarea { min-height: 82px; resize: vertical; }
+.workforce-qualification-fields {
+  display: grid;
+  gap: 12px;
+  padding: 13px;
+  border: 1px solid rgba(229,175,82,.13);
+  border-radius: 10px;
+  background: rgba(190,122,24,.035);
+}
+.workforce-qualification-fields[hidden] { display: none !important; }
+.workforce-qualification-fields p,
+.workforce-action-status { margin: 0; color: #7f888d; font-size: .58rem; }
+.workforce-action-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 13px 20px 18px;
+  border-top: 1px solid rgba(255,255,255,.045);
+}
+.workforce-action-footer button[type="submit"] { color: #f0ca7e; }

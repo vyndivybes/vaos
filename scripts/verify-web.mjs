@@ -17,6 +17,7 @@ const workspaceApp = readFileSync(resolve(web, "workspace.mjs"), "utf8");
 const rootCommandRouter = resolve(web, "command-router.mjs");
 const rlsMigration = readFileSync(resolve(root, "supabase", "migrations", "20261006223142_enable_legacy_control_plane_rls.sql"), "utf8");
 const workforceMigration = readFileSync(resolve(root, "supabase", "migrations", "20261007131344_digital_workforce_v1.sql"), "utf8");
+const workforceLifecycleMigration = readFileSync(resolve(root, "supabase", "migrations", "20261007133440_digital_workforce_lifecycle_v2.sql"), "utf8");
 const workspaceModel = readFileSync(resolve(web, "lib", "workspace-model.mjs"), "utf8");
 
 assert.match(html, /vayu-shastr-original\.webp/);
@@ -100,6 +101,11 @@ assert.match(workspaceCss, /record-detail-tabs/);
 assert.match(workspaceCss, /record-detail-panel\[hidden\]/);
 assert.match(workspaceCss, /record-overview-summary/);
 assert.match(workspaceCss, /workforce-contract/);
+assert.match(workspaceCss, /workforce-action-dialog/);
+assert.match(workspace, /id="workforce-action-dialog"/);
+assert.match(workspace, /id="workforce-evidence-refs"/);
+assert.match(workspaceApp, /submitWorkforceLifecycle/);
+assert.match(workspaceApp, /data-workforce-action/);
 assert.match(workspaceApp, /workforce-responsibilities/);
 assert.match(workspaceModel, /Digital Workforce Console/);
 assert.match(workspaceModel, /normalizeWorkforce/);
@@ -118,6 +124,11 @@ assert.match(workforceMigration, /alter table vaos_private\.digital_employees en
 assert.match(workforceMigration, /revoke all on table vaos_private\.digital_employees from public, anon, authenticated, service_role/i);
 assert.match(workforceMigration, /alter function public\.vaos_control_snapshot\(text\) rename to vaos_control_snapshot_core/i);
 assert.match(workforceMigration, /'workforce'/i);
+assert.match(workforceLifecycleMigration, /digital_employee_lifecycle_events/i);
+assert.match(workforceLifecycleMigration, /WORKFORCE\.QUALIFY/i);
+assert.match(workforceLifecycleMigration, /QUALIFICATION_EVIDENCE_REQUIRED/i);
+assert.match(workforceLifecycleMigration, /vaos_transition_digital_employee/i);
+assert.match(workforceLifecycleMigration, /revoke all on table vaos_private\.digital_employee_lifecycle_events from public, anon, authenticated, service_role/i);
 
 assert.equal(existsSync(resolve(web, "house")), false);
 assert.equal(existsSync(resolve(web, "range")), false);

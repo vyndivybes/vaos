@@ -469,3 +469,41 @@ test('Agent Control falls back to the legacy runtime fleet when no durable workf
   assert.equal(model.operationalViews.agents.title, 'Live Agent Fleet');
   assert.equal(model.operationalViews.agents.rows.length, model.agents.length);
 });
+
+
+test('Digital Workforce rows expose only valid next lifecycle actions', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'orchestrator',
+      name: 'VAOS Orchestrator',
+      role: 'Enterprise Orchestrator',
+      department: 'Enterprise Operations',
+      mission: 'Coordinate governed enterprise work.',
+      responsibilities: ['Coordinate work'],
+      responsibilityContractId: 'orchestrator-contract',
+      qualificationLevel: 0,
+      status: 'PROPOSED',
+      capabilities: { 'WORKFORCE.START_TRAINING': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 4,
+      currentAssignment: 'Bootstrap qualification',
+      priority: 'HIGH',
+      confidence: 97,
+      modelRequirements: { minimumQualification: 'Q2_BUSINESS' },
+      evidenceRefs: [],
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 1, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  const row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.deepEqual(row.actions.map((item) => item.actionType), ['WORKFORCE.START_TRAINING','WORKFORCE.RETIRE']);
+  assert.equal(row.resourceId, 'orchestrator');
+
+  snapshot.workforce.digitalEmployees[0].status = 'TRAINING';
+  const training = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(training.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(training.actions[0].recommendedQualificationLevel, 2);
+});

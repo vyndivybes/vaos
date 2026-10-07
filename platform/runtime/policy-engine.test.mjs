@@ -65,3 +65,19 @@ test('digital-thread relationship creation is human-gated at both L4 and L5', ()
   assert.equal(l5.decision, POLICY_DECISION.AWAIT_APPROVAL);
   assert.equal(ACTION_POLICIES['DIGITAL_THREAD.CREATE_LINK'].requiresApproval, true);
 });
+
+
+test('every Digital Workforce lifecycle mutation is human-gated', () => {
+  for (const actionType of [
+    'WORKFORCE.START_TRAINING',
+    'WORKFORCE.QUALIFY',
+    'WORKFORCE.ACTIVATE',
+    'WORKFORCE.RESTRICT',
+    'WORKFORCE.START_RETRAINING',
+    'WORKFORCE.RETIRE',
+  ]) {
+    const result = evaluateActionPolicy({ actionType, authority: 4, risk: 'medium' });
+    assert.equal(result.decision, POLICY_DECISION.AWAIT_APPROVAL, actionType);
+    assert.equal(ACTION_POLICIES[actionType].requiresApproval, true, actionType);
+  }
+});

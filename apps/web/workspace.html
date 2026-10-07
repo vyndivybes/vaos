@@ -245,6 +245,43 @@
     </form>
   </dialog>
 
+  <dialog class="workforce-action-dialog metallic-gold-rim" id="workforce-action-dialog">
+    <form class="workforce-action-shell" id="workforce-action-form">
+      <header class="workforce-action-header">
+        <div>
+          <span class="panel-kicker">GOVERNED LIFECYCLE</span>
+          <h2 id="workforce-action-title">Digital Employee lifecycle</h2>
+          <p id="workforce-action-copy">Every mutation requires human approval and verified execution evidence.</p>
+        </div>
+        <button type="button" id="workforce-action-close" aria-label="Close lifecycle action">×</button>
+      </header>
+      <div class="workforce-action-body">
+        <label>Reason
+          <textarea id="workforce-action-reason" minlength="3" maxlength="1000" required placeholder="Why should this lifecycle transition occur?"></textarea>
+        </label>
+        <div class="workforce-qualification-fields" id="workforce-qualification-fields" hidden>
+          <label>Qualification level
+            <select id="workforce-qualification-level">
+              <option value="1">Q1 · General</option>
+              <option value="2">Q2 · Business-critical</option>
+              <option value="3">Q3 · Engineering</option>
+              <option value="4">Q4 · High assurance</option>
+            </select>
+          </label>
+          <label>Evidence references
+            <textarea id="workforce-evidence-refs" placeholder="One real evidence reference per line"></textarea>
+          </label>
+          <p>Qualification cannot execute without at least one explicit evidence reference.</p>
+        </div>
+        <p class="workforce-action-status" id="workforce-action-status" aria-live="polite"></p>
+      </div>
+      <footer class="workforce-action-footer">
+        <button type="button" id="workforce-action-cancel">Cancel</button>
+        <button type="submit" class="trace-author-submit">Submit for approval</button>
+      </footer>
+    </form>
+  </dialog>
+
   <dialog class="digital-thread-dialog metallic-gold-rim" id="domain-thread-dialog">
     <div class="digital-thread-shell record-inspector">
       <header class="digital-thread-header record-inspector__header">

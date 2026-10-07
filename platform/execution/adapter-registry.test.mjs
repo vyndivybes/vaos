@@ -8,6 +8,9 @@ test('registry resolves only explicitly supported governed effects', () => {
   assert.equal(registry.has('ENGINEERING.BASELINE_CHANGE'), true);
   assert.equal(registry.has('PROJECT.ESCALATE_RISK'), true);
   assert.equal(registry.has('DIGITAL_THREAD.CREATE_LINK'), true);
+  assert.equal(registry.has('WORKFORCE.START_TRAINING'), true);
+  assert.equal(registry.has('WORKFORCE.QUALIFY'), true);
+  assert.equal(registry.has('WORKFORCE.ACTIVATE'), true);
   assert.equal(registry.has('FINANCE.PAY_INVOICE'), false);
 });
 
@@ -483,5 +486,57 @@ test('Digital Thread adapter fails closed without a durable link port', async ()
       },
     }),
     /DOMAIN_PORT_REQUIRED:digitalThread/,
+  );
+});
+
+
+test('Digital Workforce qualification adapter persists, reads back and verifies qualification evidence', async () => {
+  const calls = [];
+  const digitalWorkforce = {
+    async transitionDigitalEmployee(job, input) {
+      calls.push({ operation: 'transition', job, input });
+      return { outcome: 'CREATED', employee: { id: input.employeeId, status: 'QUALIFIED', qualificationLevel: input.qualificationLevel } };
+    },
+    async getDigitalEmployee(employeeId) {
+      calls.push({ operation: 'read', employeeId });
+      return { id: employeeId, status: 'QUALIFIED', qualificationLevel: 3, evidenceRefs: ['evidence:benchmark:1'] };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ digitalWorkforce }).get('WORKFORCE.QUALIFY').execute({
+    id: 'job-wf-1',
+    intentId: 'intent-wf-1',
+    actionType: 'WORKFORCE.QUALIFY',
+    payload: { employeeId: 'vibpe', qualificationLevel: 3, evidenceRefs: ['evidence:benchmark:1'] },
+  });
+
+  assert.equal(result.adapterId, 'supabase.digital-workforce-lifecycle.v2');
+  assert.equal(result.effect.state, 'QUALIFIED');
+  assert.equal(result.verification.verified, true);
+  assert.equal(result.verification.evidenceSource, 'vaos_private.digital_employee_lifecycle_events');
+  assert.deepEqual(calls.map((call) => call.operation), ['transition','read']);
+});
+
+test('Digital Workforce qualification adapter fails terminally without evidence', async () => {
+  const digitalWorkforce = {
+    async transitionDigitalEmployee() { throw new Error('should not execute'); },
+    async getDigitalEmployee() { return null; },
+  };
+  const adapter = createExecutionAdapterRegistry({ digitalWorkforce }).get('WORKFORCE.QUALIFY');
+
+  await assert.rejects(
+    async () => {
+      try {
+        await adapter.execute({
+          id: 'job-wf-2', intentId: 'intent-wf-2', actionType: 'WORKFORCE.QUALIFY',
+          payload: { employeeId: 'vibpe', qualificationLevel: 3, evidenceRefs: [] },
+        });
+      } catch (error) {
+        assert.equal(error.retryable, false);
+        assert.equal(error.code, 'WORKFORCE_QUALIFICATION_EVIDENCE_REQUIRED');
+        throw error;
+      }
+    },
+    /WORKFORCE_QUALIFICATION_EVIDENCE_REQUIRED/,
   );
 });

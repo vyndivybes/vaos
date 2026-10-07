@@ -19,12 +19,23 @@ const commandButton = document.querySelector('#command-button');
 const commandStatus = document.querySelector('#command-status');
 const commandInput = document.querySelector('#command-input');
 const commandResults = document.querySelector('#command-results');
+const workforceActionDialog = document.querySelector('#workforce-action-dialog');
+const workforceActionForm = document.querySelector('#workforce-action-form');
+const workforceActionTitle = document.querySelector('#workforce-action-title');
+const workforceActionCopy = document.querySelector('#workforce-action-copy');
+const workforceActionReason = document.querySelector('#workforce-action-reason');
+const workforceQualificationFields = document.querySelector('#workforce-qualification-fields');
+const workforceQualificationLevel = document.querySelector('#workforce-qualification-level');
+const workforceEvidenceRefs = document.querySelector('#workforce-evidence-refs');
+const workforceActionStatus = document.querySelector('#workforce-action-status');
 
 let model = null;
 let currentView = 'command';
 let traceProposalKey = null;
 let commandIntentKey = null;
 let commandIntentQuery = null;
+let workforceActionContext = null;
+let workforceActionKey = null;
 
 const esc = (value) => String(value ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -503,6 +514,23 @@ function renderOperationalWorkspace(module) {
             <span><b>${esc(row.contract?.evidenceRequirements?.length ?? 0)}</b> evidence</span>
           </div>
         </div>
+        <div class="workforce-actions">
+          <small>Governed lifecycle</small>
+          <div>
+            ${row.actions.map((action) => `
+              <button type="button"
+                data-workforce-action="${esc(action.actionType)}"
+                data-workforce-employee-id="${esc(row.resourceId)}"
+                data-workforce-employee-name="${esc(row.title)}"
+                data-workforce-risk="${esc(action.risk)}"
+                data-workforce-label="${esc(action.label)}"
+                data-workforce-qualification="${action.qualificationEvidence ? 'true' : 'false'}"
+                data-workforce-recommended-q="${esc(action.recommendedQualificationLevel || '')}">
+                ${esc(action.label)}
+              </button>
+            `).join('') || '<span class="workforce-terminal-state">No further lifecycle actions.</span>'}
+          </div>
+        </div>
       ` : ''}
     </article>
   `).join('') : '<p class="empty-state">No live control-plane records are available for this workspace yet.</p>';
@@ -784,8 +812,115 @@ async function submitTraceLinkProposal(event) {
   }
 }
 
+function newWorkforceActionKey(employeeId, actionType) {
+  if (workforceActionKey) return workforceActionKey;
+  workforceActionKey = globalThis.crypto?.randomUUID
+    ? `workforce:${employeeId}:${actionType}:${globalThis.crypto.randomUUID()}`
+    : `workforce:${employeeId}:${actionType}:${Date.now()}`;
+  return workforceActionKey;
+}
+
+function openWorkforceActionDialog(button) {
+  workforceActionContext = {
+    employeeId: button.dataset.workforceEmployeeId,
+    employeeName: button.dataset.workforceEmployeeName,
+    actionType: button.dataset.workforceAction,
+    label: button.dataset.workforceLabel,
+    risk: button.dataset.workforceRisk,
+    qualificationEvidence: button.dataset.workforceQualification === 'true',
+    recommendedQualificationLevel: Number(button.dataset.workforceRecommendedQ || 1),
+  };
+  workforceActionKey = null;
+  workforceActionTitle.textContent = `${workforceActionContext.label} · ${workforceActionContext.employeeName}`;
+  workforceActionCopy.textContent = `${workforceActionContext.actionType} · human approval required before execution`;
+  workforceActionReason.value = '';
+  workforceActionStatus.textContent = '';
+  workforceEvidenceRefs.value = '';
+  workforceQualificationFields.hidden = !workforceActionContext.qualificationEvidence;
+  if (workforceActionContext.qualificationEvidence) {
+    workforceQualificationLevel.value = String(Math.max(1, Math.min(4, workforceActionContext.recommendedQualificationLevel || 1)));
+  }
+  workforceActionDialog?.showModal();
+  queueMicrotask(() => workforceActionReason?.focus());
+}
+
+function closeWorkforceActionDialog() {
+  workforceActionDialog?.close();
+  workforceActionContext = null;
+  workforceActionKey = null;
+}
+
+async function submitWorkforceLifecycle(event) {
+  event.preventDefault();
+  if (!workforceActionContext) return;
+
+  const reason = workforceActionReason.value.trim();
+  if (reason.length < 3) {
+    workforceActionStatus.textContent = 'Provide a reason for this lifecycle transition.';
+    return;
+  }
+
+  const payload = { employeeId: workforceActionContext.employeeId };
+  if (workforceActionContext.qualificationEvidence) {
+    payload.qualificationLevel = Number(workforceQualificationLevel.value);
+    payload.evidenceRefs = workforceEvidenceRefs.value
+      .split(/\r?\n/)
+      .map((item) => item.trim())
+      .filter(Boolean);
+    if (!payload.evidenceRefs.length) {
+      workforceActionStatus.textContent = 'Qualification requires at least one real evidence reference.';
+      return;
+    }
+  }
+
+  const submit = workforceActionForm.querySelector('button[type="submit"]');
+  submit.disabled = true;
+  workforceActionStatus.textContent = 'Submitting governed lifecycle intent…';
+
+  try {
+    const response = await fetch('/api/intents', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': newWorkforceActionKey(workforceActionContext.employeeId, workforceActionContext.actionType),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        agentId: 'orchestrator',
+        actionType: workforceActionContext.actionType,
+        risk: workforceActionContext.risk,
+        reason,
+        payload,
+      }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result?.error?.code || 'WORKFORCE_LIFECYCLE_FAILED');
+    if (result?.data?.status !== 'AWAIT_APPROVAL') {
+      throw new Error(result?.data?.reason || result?.data?.status || 'WORKFORCE_LIFECYCLE_DENIED');
+    }
+
+    workforceActionKey = null;
+    workforceActionStatus.textContent = 'Lifecycle intent persisted. Human approval is required.';
+    const refreshed = await loadControlPlane();
+    if (refreshed) {
+      model = refreshed.model;
+      renderAll();
+    }
+    workforceActionDialog?.close();
+    workforceActionContext = null;
+    setView('approvals');
+  } catch (error) {
+    workforceActionStatus.textContent = `Lifecycle proposal not persisted: ${error.message}. Retry reuses the same intent key.`;
+  } finally {
+    submit.disabled = false;
+  }
+}
+
 function wireInteractions() {
   document.addEventListener('click', (event) => {
+    const workforceAction = event.target.closest('[data-workforce-action][data-workforce-employee-id]');
+    if (workforceAction) { openWorkforceActionDialog(workforceAction); return; }
+
     const recordTab = event.target.closest('[data-record-tab]');
     if (recordTab) { setRecordDetailTab(recordTab.dataset.recordTab); return; }
 
@@ -814,6 +949,9 @@ function wireInteractions() {
   document.querySelector('#domain-thread-close')?.addEventListener('click', () => {
     document.querySelector('#domain-thread-dialog')?.close();
   });
+  document.querySelector('#workforce-action-close')?.addEventListener('click', closeWorkforceActionDialog);
+  document.querySelector('#workforce-action-cancel')?.addEventListener('click', closeWorkforceActionDialog);
+  workforceActionForm?.addEventListener('submit', submitWorkforceLifecycle);
   document.querySelector('#trace-author-form')?.addEventListener('submit', submitTraceLinkProposal);
 
   commandBar?.addEventListener('submit', (event) => {

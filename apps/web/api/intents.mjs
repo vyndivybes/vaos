@@ -40,7 +40,9 @@ export default async function handler(req, res) {
             reason,
           },
         }
-      : rawPayload;
+      : String(body.actionType || '').startsWith('WORKFORCE.')
+        ? { ...rawPayload, requestedBy: session.email }
+        : rawPayload;
 
     const result = await getDurableControlService(req.env).proposeIntent({
       idempotencyKey,

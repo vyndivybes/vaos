@@ -130,7 +130,7 @@ Evaluate:
 
 Document intelligence, storage, transformation and signature remain separate capabilities.
 
-### AF-9 — Data & Observability
+### AF-9 — Data & Observability — TELEMETRY FOUNDATION IMPLEMENTED
 
 Evaluate:
 
@@ -221,7 +221,7 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] capability registry implementation
 - [x] credential broker interface
 - [ ] provider adapters (n8n + Paperwork + Zapier + Playwright implemented; specialist adapters pending)
-- [ ] deployment
+- [ ] deployment (no observability backend or provider deployment yet)
 - [ ] production activation
 
 The unchecked items intentionally remain deferred until this preparation layer is reviewed against the concurrently evolving VAOS mainline.

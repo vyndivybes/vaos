@@ -57,6 +57,22 @@ export function resolveCommand(input) {
     };
   }
 
+  const qualificationRecoveryRisk = query.match(/^qualification\s+risk\s+recovery\s+(.+)$/i);
+  if (qualificationRecoveryRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'risk',
+      agentId: 'risk',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: {
+        riskId: qualificationRecoveryRisk[1].trim(),
+        qualificationMode: true,
+        qualificationRecoveryDrill: true,
+      },
+    };
+  }
+
   const qualificationRisk = query.match(/^qualification\s+risk\s+(.+)$/i);
   if (qualificationRisk) {
     return {

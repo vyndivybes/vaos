@@ -87,7 +87,7 @@ Evidence must bind:
 - extraction/operation result;
 - verification status.
 
-### AF-5 — Zapier Provider Adapter
+### AF-5 — Zapier Provider Adapter — IMPLEMENTED / EVALUATION
 
 Use Zapier for long-tail SaaS integration where a dedicated connector does not add strategic value.
 
@@ -220,7 +220,7 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] capability registry tests
 - [x] capability registry implementation
 - [x] credential broker interface
-- [ ] provider adapters (n8n + Paperwork implemented; Zapier and specialist adapters pending)
+- [ ] provider adapters (n8n + Paperwork + Zapier implemented; specialist adapters pending)
 - [ ] deployment
 - [ ] production activation
 

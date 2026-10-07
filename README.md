@@ -71,6 +71,10 @@ Authority is granted **per capability**, never as an unrestricted blanket permis
 9. Transfer to professional VYNDI/Vāyú Shastr ownership
 10. Production deployment from the professional organization
 
+## Deployment
+
+VAOS uses **Cloudflare Workers Builds** as its deployment authority. The Cloudflare Worker is connected directly to the GitHub repository and deploys from the configured production branch using `wrangler.jsonc`. GitHub Actions remains a qualification and Cloudflare bundle-smoke layer; it does not hold Cloudflare deployment credentials.
+
 ## Repository status
 
 **Bootstrap / architecture phase.** No production credentials belong in this repository. Development and qualification must use test or sandbox credentials.

@@ -27,16 +27,21 @@ test('submitIntent uses the service-role Edge bridge with only the VAOS server c
   assert.equal(fake.calls[0].body.operation, 'submitIntent');
 });
 
-test('snapshot and approval decision use the same authenticated Edge bridge', async () => {
+test('snapshot merges explicit digital-thread links from the authenticated Edge bridge', async () => {
   const fake = fakeFetch([
     { body: { mode: 'DURABLE_POSTGRES', approvals: [], events: [], metrics: {} } },
+    { body: [{ id: 'link-1', sourceDomain: 'QA_CAPA', sourceRecordId: 'qa-1', relationType: 'DRIVES_CHANGE', targetDomain: 'ENGINEERING_BASELINE', targetRecordId: 'eng-1' }] },
     { body: { outcome: 'DECIDED', approval: { id: 'apr-1', status: 'APPROVED' } } },
   ]);
   const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
-  assert.equal((await store.snapshot()).mode, 'DURABLE_POSTGRES');
+  const snapshot = await store.snapshot();
+  assert.equal(snapshot.mode, 'DURABLE_POSTGRES');
+  assert.equal(snapshot.digitalThreadLinks.length, 1);
+  assert.equal(snapshot.digitalThreadLinks[0].relationType, 'DRIVES_CHANGE');
   assert.equal((await store.decideApproval('apr-1', { decision: 'APPROVED', decidedBy: 'founder@example.com' })).approval.status, 'APPROVED');
   assert.equal(fake.calls[0].body.operation, 'snapshot');
-  assert.equal(fake.calls[1].body.operation, 'decideApproval');
+  assert.equal(fake.calls[1].body.operation, 'traceLinks');
+  assert.equal(fake.calls[2].body.operation, 'decideApproval');
 });
 
 test('execution lifecycle is routed through typed Edge operations', async () => {
@@ -138,5 +143,35 @@ test('Project/Risk domain escalation and readback use dedicated Edge operations 
   assert.deepEqual(fake.calls[1].body.payload, {
     jobId: 'job-risk-1',
     riskId: 'RSK-013',
+  });
+});
+
+
+test('explicit domain links use a typed authenticated Edge operation', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', link: { id: 'link-1', relationType: 'DRIVES_CHANGE' } } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+
+  const result = await store.linkDomainRecords({
+    sourceDomain: 'QA_CAPA',
+    sourceRecordId: 'qa-1',
+    relationType: 'DRIVES_CHANGE',
+    targetDomain: 'ENGINEERING_BASELINE',
+    targetRecordId: 'eng-1',
+    createdBy: 'qa-agent',
+    context: { reason: 'CAPA requires baseline update' },
+  });
+
+  assert.equal(result.outcome, 'CREATED');
+  assert.equal(fake.calls[0].body.operation, 'linkDomainRecords');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    sourceDomain: 'QA_CAPA',
+    sourceRecordId: 'qa-1',
+    relationType: 'DRIVES_CHANGE',
+    targetDomain: 'ENGINEERING_BASELINE',
+    targetRecordId: 'eng-1',
+    createdBy: 'qa-agent',
+    context: { reason: 'CAPA requires baseline update' },
   });
 });

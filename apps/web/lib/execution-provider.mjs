@@ -39,7 +39,7 @@ export function getExecutionEngine(runtimeEnv = undefined) {
     engine = createExecutionEngine({
       store,
       registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread, digitalWorkforce }),
-      workerId: 'vaos-vercel-worker',
+      workerId: 'vaos-cloudflare-worker',
     });
   }
   return engine;

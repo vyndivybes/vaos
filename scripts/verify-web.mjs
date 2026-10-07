@@ -37,7 +37,7 @@ assert.match(workspace, /id="trace-author-target"/);
 assert.match(workspace, /id="trace-author-reason"/);
 assert.match(workspace, /workspace\.css/);
 assert.match(workspaceApp, /\/api\/control-plane/);
-assert.match(workspaceApp, /\/api\/approvals/);
+assert.match(workspaceApp, /\/api\/approvals/);\nassert.match(workspaceApp, /renderApprovalWorkspace/);\nassert.match(workspaceApp, /module-approval-list/);
 assert.match(workspaceApp, /renderDomainWorkspace/);
 assert.match(workspaceApp, /openDomainThread/);
 assert.match(workspaceApp, /data-domain-record-id/);

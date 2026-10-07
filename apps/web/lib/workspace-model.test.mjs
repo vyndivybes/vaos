@@ -333,3 +333,68 @@ test('enterprise trace graph preserves unlinked durable records as visible orpha
   assert.equal(graph.summary.connectedNodes, 0);
   assert.equal(graph.summary.orphanNodes, 3);
 });
+
+
+test('live operational workspaces derive Agent Control, VIBPE, Projects, Governance, Evidence and Admin from control-plane state', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.executions = [
+    { id: 'job-1', intentId: 'intent-1', actionType: 'ENGINEERING.BASELINE_CHANGE', status: 'SUCCEEDED', attemptCount: 1, maxAttempts: 5 },
+    { id: 'job-2', intentId: 'intent-2', actionType: 'PROJECT.ESCALATE_RISK', status: 'FAILED', attemptCount: 2, maxAttempts: 5 },
+  ];
+  snapshot.metrics = {
+    ...(snapshot.metrics || {}),
+    intentCount: 12,
+    eventCount: snapshot.events.length,
+    executionPending: 1,
+    executionSucceeded: 7,
+    executionDeadLetter: 0,
+    engineeringChanges: 1,
+    riskEscalations: 1,
+    capaRecords: 1,
+  };
+  snapshot.domains = {
+    qaCapa: [{
+      id: 'qa-live-1', resourceId: 'CAPA-LIVE-1', status: 'OPEN',
+      intentId: 'intent-qa', intentStatus: 'EXECUTED',
+      executionJobId: 'job-qa', executionStatus: 'SUCCEEDED',
+      evidenceCount: 1, evidenceVerifiedAt: '2026-10-07T08:00:00.000Z',
+      latestEventType: 'EVIDENCE.VERIFIED',
+    }],
+    engineering: [{
+      id: 'eng-live-1', resourceId: 'BASE-LIVE-1', status: 'CHANGE_RECORDED',
+      intentId: 'intent-eng', intentStatus: 'EXECUTED',
+      approvalId: 'approval-eng', approvalStatus: 'APPROVED',
+      executionJobId: 'job-eng', executionStatus: 'SUCCEEDED',
+      evidenceCount: 1, evidenceVerifiedAt: '2026-10-07T08:01:00.000Z',
+      latestEventType: 'EVIDENCE.VERIFIED',
+    }],
+    projectRisk: [{
+      id: 'risk-live-1', resourceId: 'RSK-LIVE-1', status: 'ESCALATED',
+      intentId: 'intent-risk', intentStatus: 'EXECUTED',
+      executionJobId: 'job-risk', executionStatus: 'SUCCEEDED',
+      evidenceCount: 1, evidenceVerifiedAt: '2026-10-07T08:02:00.000Z',
+      latestEventType: 'EVIDENCE.VERIFIED',
+    }],
+  };
+
+  const model = buildWorkspaceModel(snapshot);
+
+  for (const id of ['agents','vibpe','projects','governance','evidence','admin']) {
+    assert.ok(model.operationalViews[id], `missing operational view: ${id}`);
+    assert.ok(model.operationalViews[id].summary.length >= 3, `missing summary: ${id}`);
+    assert.ok(model.operationalViews[id].rows.length >= 1, `missing live rows: ${id}`);
+  }
+
+  assert.equal(model.operationalViews.agents.rows.length, model.agents.length);
+  assert.equal(model.operationalViews.vibpe.rows[0].resourceId, 'BASE-LIVE-1');
+  assert.equal(model.operationalViews.projects.rows[0].resourceId, 'RSK-LIVE-1');
+  assert.equal(model.operationalViews.evidence.summary.find((item) => item.label === 'Verified objects').value, 3);
+  assert.equal(model.operationalViews.admin.summary.find((item) => item.label === 'Runtime').value, model.runtimeMode);
+});
+
+test('live operational workspaces fail safely when durable domain data is empty', () => {
+  const model = buildWorkspaceModel(runtimeSnapshot());
+  assert.equal(model.operationalViews.projects.rows.length >= 1, true);
+  assert.equal(model.operationalViews.evidence.rows.length >= 1, true);
+  assert.equal(model.operationalViews.admin.rows.length >= 1, true);
+});

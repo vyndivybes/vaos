@@ -70,6 +70,7 @@ test('digital-thread relationship creation is human-gated at both L4 and L5', ()
 test('every Digital Workforce lifecycle mutation is human-gated', () => {
   for (const actionType of [
     'WORKFORCE.START_TRAINING',
+    'WORKFORCE.ASSESS_QUALIFICATION',
     'WORKFORCE.QUALIFY',
     'WORKFORCE.ACTIVATE',
     'WORKFORCE.RESTRICT',

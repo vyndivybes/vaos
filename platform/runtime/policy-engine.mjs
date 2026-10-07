@@ -33,6 +33,11 @@ export const ACTION_POLICIES = Object.freeze({
     requiresApproval: true,
     defaultRisk: 'medium',
   }),
+  'WORKFORCE.ASSESS_QUALIFICATION': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
   'WORKFORCE.QUALIFY': Object.freeze({
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,

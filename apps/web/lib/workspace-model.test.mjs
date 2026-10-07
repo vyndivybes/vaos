@@ -504,6 +504,53 @@ test('Digital Workforce rows expose only valid next lifecycle actions', () => {
 
   snapshot.workforce.digitalEmployees[0].status = 'TRAINING';
   const training = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
-  assert.equal(training.actions[0].actionType, 'WORKFORCE.QUALIFY');
-  assert.equal(training.actions[0].recommendedQualificationLevel, 2);
+  assert.deepEqual(training.actions.map((item) => item.actionType), ['WORKFORCE.RETIRE']);
+});
+
+test('VIBPE Q3 training requires a PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'vibpe',
+      name: 'VIBPE Engineering',
+      role: 'Engineering Intelligence',
+      department: 'Engineering',
+      mission: 'Protect engineering baseline integrity.',
+      responsibilities: ['Protect configuration integrity'],
+      responsibilityContractId: 'vibpe-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'ENGINEERING.BASELINE_CHANGE': 5 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 4,
+      currentAssignment: 'Qualification',
+      priority: 'HIGH',
+      confidence: 94,
+      modelRequirements: { minimumQualification: 'Q3_ENGINEERING' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'assessment-1',
+    targetLevel: 3,
+    profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+    scope: 'ENGINEERING_BASELINE_GOVERNANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 3);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:assessment-1']);
 });

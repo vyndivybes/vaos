@@ -253,3 +253,83 @@ test('digital thread defaults safely when persisted effect, evidence or event de
   assert.equal(record.thread.verification, null);
   assert.deepEqual(record.thread.events, []);
 });
+
+
+test('enterprise trace graph derives nodes from durable domains and only accepts explicit valid links', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.domains = {
+    qaCapa: [{
+      id: 'qa-1', resourceId: 'CAPA-001', status: 'OPEN', intentId: 'i-qa',
+      intentStatus: 'EXECUTED', executionJobId: 'j-qa', executionStatus: 'SUCCEEDED',
+      evidenceCount: 1,
+    }],
+    engineering: [{
+      id: 'eng-1', resourceId: 'BASE-5.3.9', status: 'CHANGE_RECORDED', intentId: 'i-eng',
+      intentStatus: 'EXECUTED', executionJobId: 'j-eng', executionStatus: 'SUCCEEDED',
+      evidenceCount: 1,
+    }],
+    projectRisk: [{
+      id: 'risk-1', resourceId: 'RSK-001', status: 'ESCALATED', intentId: 'i-risk',
+      intentStatus: 'EXECUTED', executionJobId: 'j-risk', executionStatus: 'SUCCEEDED',
+      evidenceCount: 1,
+    }],
+  };
+  snapshot.digitalThreadLinks = [
+    {
+      id: 'link-1',
+      sourceDomain: 'QA_CAPA',
+      sourceRecordId: 'qa-1',
+      relationType: 'DRIVES_CHANGE',
+      targetDomain: 'ENGINEERING_BASELINE',
+      targetRecordId: 'eng-1',
+      createdBy: 'qualification',
+      createdAt: '2026-10-07T02:00:00.000Z',
+    },
+    {
+      id: 'link-2',
+      sourceDomain: 'ENGINEERING_BASELINE',
+      sourceRecordId: 'eng-1',
+      relationType: 'MITIGATES_RISK',
+      targetDomain: 'PROJECT_RISK',
+      targetRecordId: 'risk-1',
+      createdBy: 'qualification',
+      createdAt: '2026-10-07T02:01:00.000Z',
+    },
+    {
+      id: 'dangling',
+      sourceDomain: 'QA_CAPA',
+      sourceRecordId: 'qa-1',
+      relationType: 'RELATED_TO',
+      targetDomain: 'PROJECT_RISK',
+      targetRecordId: 'missing-risk',
+      createdBy: 'qualification',
+      createdAt: '2026-10-07T02:02:00.000Z',
+    },
+  ];
+
+  const graph = buildWorkspaceModel(snapshot).traceGraph;
+
+  assert.equal(graph.nodes.length, 3);
+  assert.equal(graph.edges.length, 2);
+  assert.deepEqual(graph.edges.map((edge) => edge.relationType), ['DRIVES_CHANGE', 'MITIGATES_RISK']);
+  assert.equal(graph.summary.connectedNodes, 3);
+  assert.equal(graph.summary.orphanNodes, 0);
+  assert.ok(graph.nodes.every((node) => ['qa-capa', 'engineering', 'risk'].includes(node.moduleId)));
+});
+
+test('enterprise trace graph preserves unlinked durable records as visible orphan nodes', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.domains = {
+    qaCapa: [{ id: 'qa-2', resourceId: 'CAPA-002', status: 'OPEN' }],
+    engineering: [{ id: 'eng-2', resourceId: 'BASE-5.4', status: 'CHANGE_RECORDED' }],
+    projectRisk: [{ id: 'risk-2', resourceId: 'RSK-002', status: 'ESCALATED' }],
+  };
+  snapshot.digitalThreadLinks = [];
+
+  const graph = buildWorkspaceModel(snapshot).traceGraph;
+
+  assert.equal(graph.nodes.length, 3);
+  assert.equal(graph.edges.length, 0);
+  assert.equal(graph.summary.connectedNodes, 0);
+  assert.equal(graph.summary.orphanNodes, 3);
+});

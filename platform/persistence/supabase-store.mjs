@@ -28,7 +28,13 @@ export function createSupabaseControlStore({
   }
 
   return Object.freeze({
-    snapshot() { return invoke('snapshot'); },
+    async snapshot() {
+      const [snapshot, digitalThreadLinks] = await Promise.all([
+        invoke('snapshot'),
+        invoke('traceLinks'),
+      ]);
+      return { ...snapshot, digitalThreadLinks: Array.isArray(digitalThreadLinks) ? digitalThreadLinks : [] };
+    },
     submitIntent(input) { return invoke('submitIntent', input); },
     decideApproval(approvalId, input) { return invoke('decideApproval', { approvalId, ...input }); },
     claimExecution(input) { return invoke('claimExecution', input); },
@@ -85,6 +91,17 @@ export function createSupabaseControlStore({
       return invoke('getRiskEscalation', {
         jobId: job.id,
         riskId,
+      });
+    },
+    linkDomainRecords(input) {
+      return invoke('linkDomainRecords', {
+        sourceDomain: input.sourceDomain,
+        sourceRecordId: input.sourceRecordId,
+        relationType: input.relationType,
+        targetDomain: input.targetDomain,
+        targetRecordId: input.targetRecordId,
+        createdBy: input.createdBy,
+        context: input.context || {},
       });
     },
   });

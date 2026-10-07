@@ -1675,3 +1675,150 @@
   .digital-thread-lineage { grid-template-columns: 1fr; }
   .thread-event__heading { display: grid; gap: 4px; }
 }
+
+.enterprise-trace-graph {
+  margin-top: 12px;
+  padding: 20px;
+  border: 1px solid var(--workspace-rim);
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 82% 5%, rgba(213,151,48,.07), transparent 25%),
+    linear-gradient(150deg, rgba(22,28,34,.95), rgba(8,11,14,.97));
+}
+
+.trace-graph-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+}
+.trace-graph-header h3 { margin: 0; color: #efede7; font-size: 1.18rem; }
+.trace-graph-header p { margin: 7px 0 0; color: #7b858b; font-size: .68rem; }
+
+.trace-summary {
+  display: grid;
+  grid-template-columns: repeat(4,minmax(0,1fr));
+  gap: 8px;
+  margin: 14px 0;
+}
+
+.enterprise-trace-canvas {
+  position: relative;
+  min-height: 360px;
+  overflow: hidden;
+  border: 1px solid rgba(255,222,159,.08);
+  border-radius: 14px;
+  background:
+    linear-gradient(rgba(255,255,255,.018) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.018) 1px, transparent 1px),
+    rgba(5,8,11,.58);
+  background-size: 28px 28px;
+}
+
+.trace-edge-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+}
+.trace-edge-svg marker path { fill: #d7a44d; }
+.trace-edge-path {
+  fill: none;
+  stroke: rgba(221,168,75,.58);
+  stroke-width: 1.6;
+  filter: drop-shadow(0 0 4px rgba(210,146,41,.18));
+}
+
+.trace-node-layer {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 52px;
+  padding: 22px;
+}
+
+.trace-lane {
+  min-width: 0;
+  border: 1px solid rgba(255,255,255,.045);
+  border-radius: 12px;
+  background: rgba(10,13,17,.64);
+}
+.trace-lane > header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,.05);
+  color: #c5a064;
+  font-size: .6rem;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.trace-lane > header b {
+  min-width: 22px; height: 22px; display: grid; place-items: center;
+  border-radius: 99px; background: rgba(210,143,39,.10); color: #efbd69; font-size: .56rem;
+}
+.trace-lane__nodes { display: grid; gap: 9px; padding: 11px; }
+
+.trace-node {
+  display: grid;
+  grid-template-columns: 34px minmax(0,1fr) auto;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding: 11px;
+  border: 1px solid rgba(255,221,155,.12);
+  border-radius: 10px;
+  background: linear-gradient(145deg, rgba(31,37,43,.94), rgba(10,13,16,.96));
+  cursor: pointer;
+}
+.trace-node:hover, .trace-node:focus-visible {
+  outline: none;
+  border-color: rgba(232,181,92,.45);
+  box-shadow: 0 0 22px rgba(203,137,34,.08);
+}
+.trace-node__glyph {
+  width: 32px; height: 32px; display: grid; place-items: center;
+  border: 1px solid rgba(230,182,96,.23); border-radius: 8px;
+  color: #e1b462; background: rgba(184,109,16,.06); font-size: .55rem; font-weight: 800;
+}
+.trace-node > div { min-width: 0; display: grid; gap: 3px; }
+.trace-node small { color: #687278; font-size: .5rem; text-transform: uppercase; letter-spacing: .06em; }
+.trace-node strong { overflow: hidden; color: #e7e4dd; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+.trace-node em { color: #8f989c; font-size: .54rem; font-style: normal; }
+.trace-node__evidence { color: #83c493; font-size: .52rem; }
+
+.trace-edge-list {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+.trace-link-row {
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto minmax(0,1fr) minmax(180px,.8fr);
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid rgba(255,255,255,.045);
+  border-radius: 9px;
+  background: rgba(255,255,255,.012);
+  font-size: .58rem;
+}
+.trace-link-row span { overflow: hidden; color: #c7c9c6; text-overflow: ellipsis; white-space: nowrap; }
+.trace-link-row strong { color: #dfac57; font-size: .54rem; letter-spacing: .04em; }
+.trace-link-row small { color: #626c72; text-align: right; }
+
+@media (max-width: 980px) {
+  .trace-node-layer { grid-template-columns: 1fr; gap: 14px; }
+  .trace-edge-svg { display: none; }
+  .trace-link-row { grid-template-columns: 1fr; }
+  .trace-link-row small { text-align: left; }
+}
+@media (max-width: 680px) {
+  .trace-summary { grid-template-columns: 1fr 1fr; }
+}

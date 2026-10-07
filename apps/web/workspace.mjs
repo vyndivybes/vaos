@@ -1,3 +1,5 @@
+import { resolveCommand } from './lib/command-router.mjs';
+
 const shell = document.querySelector('#control-shell');
 const loading = document.querySelector('#workspace-loading');
 const nav = document.querySelector('#module-nav');
@@ -10,13 +12,18 @@ const moduleTitle = document.querySelector('#module-title');
 const moduleGroup = document.querySelector('#module-group');
 const moduleDescription = document.querySelector('#module-description');
 const dialog = document.querySelector('#command-dialog');
+const commandBar = document.querySelector('#command-bar');
+const commandBarInput = document.querySelector('#command-bar-input');
 const commandButton = document.querySelector('#command-button');
+const commandStatus = document.querySelector('#command-status');
 const commandInput = document.querySelector('#command-input');
 const commandResults = document.querySelector('#command-results');
 
 let model = null;
 let currentView = 'command';
 let traceProposalKey = null;
+let commandIntentKey = null;
+let commandIntentQuery = null;
 
 const esc = (value) => String(value ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -132,9 +139,9 @@ function foundationCards(module) {
 
 function statusTone(value) {
   const status = String(value || '').toUpperCase();
-  if (['SUCCEEDED','EXECUTED','APPROVED','OPEN','CHANGE_RECORDED','ESCALATED','VERIFIED','RELEASED'].includes(status)) return 'success';
-  if (['FAILED','DEAD_LETTER','REJECTED','CLOSED','SUPERSEDED'].includes(status)) return 'danger';
-  if (['PENDING','LEASED','AWAIT_APPROVAL','MITIGATING','MONITORED','ACTION_PENDING','INVESTIGATING'].includes(status)) return 'warning';
+  if (['SUCCEEDED','EXECUTED','APPROVED','OPEN','CHANGE_RECORDED','ESCALATED','VERIFIED','RELEASED','ACTIVE','HEALTHY','NOMINAL','DURABLE_POSTGRES'].includes(status)) return 'success';
+  if (['FAILED','DEAD_LETTER','REJECTED','CLOSED','SUPERSEDED','ATTENTION'].includes(status)) return 'danger';
+  if (['PENDING','LEASED','AWAIT_APPROVAL','MITIGATING','MONITORED','ACTION_PENDING','INVESTIGATING','APPROVAL','ACTION REQUIRED'].includes(status)) return 'warning';
   return 'neutral';
 }
 
@@ -350,6 +357,47 @@ function drawTraceEdges() {
   }
 }
 
+function renderOperationalWorkspace(module) {
+  const section = document.querySelector('#operational-workspace');
+  const view = model.operationalViews?.[module.id];
+  if (!section || !view) {
+    if (section) section.hidden = true;
+    return false;
+  }
+
+  document.querySelector('#operational-title').textContent = view.title;
+  document.querySelector('#operational-copy').textContent = view.copy;
+
+  document.querySelector('#operational-summary').innerHTML = view.summary.map((item) => `
+    <article class="operational-summary-card">
+      <small>${esc(item.label)}</small>
+      <strong>${esc(item.value)}</strong>
+      <span>${esc(item.note)}</span>
+    </article>
+  `).join('');
+
+  document.querySelector('#operational-record-list').innerHTML = view.rows.length ? view.rows.map((row) => `
+    <article class="operational-record">
+      <div class="operational-record__heading">
+        <div>
+          <small>${esc(row.subtitle)}</small>
+          <strong>${esc(row.title)}</strong>
+        </div>
+        <span class="domain-status domain-status--${statusTone(row.status)}">${esc(row.status)}</span>
+      </div>
+      <p>${esc(row.detail)}</p>
+      <div class="operational-record__meta">
+        ${row.meta.map((item) => `
+          <span><small>${esc(item.label)}</small><strong>${esc(item.value)}</strong></span>
+        `).join('')}
+      </div>
+    </article>
+  `).join('') : '<p class="empty-state">No live control-plane records are available for this workspace yet.</p>';
+
+  section.hidden = false;
+  return true;
+}
+
 function renderModule(module) {
   document.querySelector('#module-hero-group').textContent = module.group.toUpperCase();
   document.querySelector('#module-hero-title').textContent = module.label;
@@ -359,11 +407,13 @@ function renderModule(module) {
   const domainSection = document.querySelector('#domain-workspace');
   const foundation = document.querySelector('#module-foundation-grid');
   const approvalPanel = document.querySelector('#module-approval-panel');
+  const operationalSection = document.querySelector('#operational-workspace');
 
   graphSection.hidden = true;
   domainSection.hidden = true;
   foundation.hidden = true;
   approvalPanel.hidden = true;
+  operationalSection.hidden = true;
 
   if (module.id === 'digital-thread') {
     renderEnterpriseTraceGraph();
@@ -377,11 +427,13 @@ function renderModule(module) {
   }
 
   const hasDomain = renderDomainWorkspace(module);
-  if (!hasDomain) {
-    foundation.hidden = false;
-    foundation.innerHTML = foundationCards(module).map(([title, copy], index) => `
-      <article class="foundation-card"><span>0${index + 1}</span><h3>${esc(title)}</h3><p>${esc(copy)}</p></article>`).join('');
-  }
+  if (hasDomain) return;
+
+  if (renderOperationalWorkspace(module)) return;
+
+  foundation.hidden = false;
+  foundation.innerHTML = foundationCards(module).map(([title, copy], index) => `
+    <article class="foundation-card"><span>0${index + 1}</span><h3>${esc(title)}</h3><p>${esc(copy)}</p></article>`).join('');
 }
 
 function setView(view, { push = true } = {}) {
@@ -395,6 +447,98 @@ function setView(view, { push = true } = {}) {
     const url = new URL(window.location.href);
     if (module.id === 'command') url.searchParams.delete('view'); else url.searchParams.set('view', module.id);
     window.history.pushState({ view: module.id }, '', url);
+  }
+}
+
+function newCommandIntentKey(query) {
+  if (commandIntentKey && commandIntentQuery === query) return commandIntentKey;
+  commandIntentQuery = query;
+  commandIntentKey = globalThis.crypto?.randomUUID
+    ? `command:${globalThis.crypto.randomUUID()}`
+    : `command:${Date.now()}:${Math.random().toString(16).slice(2)}`;
+  return commandIntentKey;
+}
+
+function resetCommandIntentKey() {
+  commandIntentKey = null;
+  commandIntentQuery = null;
+}
+
+async function executeVAOSCommand(rawQuery) {
+  const query = String(rawQuery || '').trim();
+  const resolved = resolveCommand(query);
+
+  if (resolved.kind === 'navigate') {
+    commandStatus.textContent = `Opened ${model.modules.find((item) => item.id === resolved.view)?.label || resolved.view}.`;
+    setView(resolved.view);
+    commandBarInput.select();
+    return;
+  }
+
+  if (resolved.kind === 'unknown') {
+    commandStatus.textContent = query
+      ? 'Command not recognised. Showing matching workspaces instead.'
+      : 'Enter a VAOS command.';
+    renderCommandResults(query);
+    if (dialog && !dialog.open) dialog.showModal();
+    queueMicrotask(() => {
+      commandInput.value = query;
+      renderCommandResults(query);
+      commandInput.focus();
+      commandInput.select();
+    });
+    return;
+  }
+
+  commandButton.disabled = true;
+  commandStatus.textContent = 'Submitting governed command to the VAOS control plane…';
+
+  try {
+    const response = await fetch('/api/intents', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': newCommandIntentKey(query),
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        agentId: resolved.agentId,
+        actionType: resolved.actionType,
+        risk: resolved.risk,
+        reason: query,
+        payload: resolved.payload,
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(result?.error?.code || 'COMMAND_FAILED');
+    }
+
+    resetCommandIntentKey();
+    const refreshed = await loadControlPlane();
+    if (refreshed) {
+      model = refreshed.model;
+      renderAll();
+    }
+
+    const status = result?.data?.status || 'PERSISTED';
+    if (status === 'AWAIT_APPROVAL') {
+      commandStatus.textContent = 'Governed command persisted. Human approval is required.';
+      setView('approvals');
+    } else if (status === 'AUTHORIZED') {
+      commandStatus.textContent = `Command authorised. Execution: ${result?.data?.execution?.status || 'QUEUED'}.`;
+      setView(resolved.targetView);
+    } else {
+      commandStatus.textContent = `Command status: ${status}.`;
+      setView(resolved.targetView);
+    }
+
+    commandBarInput.select();
+  } catch (error) {
+    commandStatus.textContent = `Command failed: ${error.message}. Retry will reuse the same intent key.`;
+  } finally {
+    commandButton.disabled = false;
   }
 }
 
@@ -552,7 +696,10 @@ function wireInteractions() {
   });
   document.querySelector('#trace-author-form')?.addEventListener('submit', submitTraceLinkProposal);
 
-  commandButton?.addEventListener('click', () => { renderCommandResults(); dialog.showModal(); queueMicrotask(() => commandInput.focus()); });
+  commandBar?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    executeVAOSCommand(commandBarInput.value);
+  });
   commandInput?.addEventListener('input', () => renderCommandResults(commandInput.value));
   window.addEventListener('popstate', () => setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false }));
   window.addEventListener('resize', () => { if (currentView === 'digital-thread') requestAnimationFrame(drawTraceEdges); });

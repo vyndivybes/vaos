@@ -522,7 +522,7 @@
   border-radius: 16px;
   background:
     linear-gradient(145deg, rgba(27,33,39,.92), rgba(11,14,18,.94));
-  cursor: pointer;
+  cursor: text;
   text-align: left;
 }
 
@@ -548,6 +548,22 @@
   gap: 4px;
 }
 
+.workspace-search__copy input {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: #d6dadd;
+  background: transparent;
+  font: inherit;
+  font-size: .78rem;
+}
+
+.workspace-search__copy input::placeholder {
+  color: #899198;
+  opacity: 1;
+}
+
 .workspace-search__copy strong {
   overflow: hidden;
   color: #c3c9cc;
@@ -564,11 +580,30 @@
 
 .workspace-search__action {
   padding: 10px 13px;
+  cursor: pointer;
   border: 1px solid var(--workspace-rim);
   border-radius: 9px;
   color: #e9bc6e;
   background: linear-gradient(140deg, rgba(188,117,23,.16), rgba(255,255,255,.018));
   font-size: .65rem;
+}
+
+
+.command-status {
+  min-height: 18px;
+  margin: -18px 4px 14px;
+  color: #899297;
+  font-size: .61rem;
+  line-height: 1.4;
+}
+
+.command-status:not(:empty) {
+  color: #d2aa65;
+}
+
+.workspace-search__action:disabled {
+  opacity: .5;
+  cursor: wait;
 }
 
 .workspace-view { padding-top: 0; }
@@ -1902,4 +1937,145 @@
   .trace-author-fields { grid-template-columns: 1fr; }
   .trace-author-reason { grid-column: auto; }
   .trace-author-submit { width: 100%; }
+}
+
+
+.operational-workspace {
+  margin-top: 11px;
+  padding: 20px;
+  border: 1px solid var(--workspace-rim);
+  border-radius: 16px;
+  background: linear-gradient(145deg, rgba(22,27,32,.94), rgba(9,12,15,.97));
+}
+
+.operational-workspace__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,.055);
+}
+
+.operational-workspace__header h3 {
+  margin: 4px 0 5px;
+  color: #e9e4da;
+  font-size: 1.05rem;
+}
+
+.operational-workspace__header p {
+  margin: 0;
+  color: #7e898f;
+  font-size: .68rem;
+  line-height: 1.55;
+}
+
+.operational-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0,1fr));
+  gap: 9px;
+  margin-top: 16px;
+}
+
+.operational-summary-card {
+  display: grid;
+  gap: 5px;
+  min-height: 92px;
+  padding: 14px;
+  border: 1px solid rgba(255,223,164,.09);
+  border-radius: 11px;
+  background: rgba(255,255,255,.018);
+}
+
+.operational-summary-card small,
+.operational-record__heading small,
+.operational-record__meta small {
+  color: #667279;
+  font-size: .54rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.operational-summary-card strong {
+  color: #eee9df;
+  font-size: 1.12rem;
+  overflow-wrap: anywhere;
+}
+
+.operational-summary-card span {
+  color: #7b858a;
+  font-size: .58rem;
+}
+
+.operational-record-list {
+  display: grid;
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.operational-record {
+  padding: 14px 15px;
+  border: 1px solid rgba(255,255,255,.055);
+  border-radius: 11px;
+  background: linear-gradient(145deg, rgba(255,255,255,.018), rgba(255,255,255,.006));
+}
+
+.operational-record__heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.operational-record__heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.operational-record__heading strong {
+  color: #e2dfd8;
+  font-size: .76rem;
+  overflow-wrap: anywhere;
+}
+
+.operational-record > p {
+  margin: 9px 0 0;
+  color: #858f94;
+  font-size: .64rem;
+  line-height: 1.5;
+}
+
+.operational-record__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.operational-record__meta > span {
+  min-width: 110px;
+  display: grid;
+  gap: 3px;
+  padding: 8px 9px;
+  border-radius: 8px;
+  background: rgba(255,255,255,.018);
+}
+
+.operational-record__meta strong {
+  color: #bfc4c3;
+  font-size: .59rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 980px) {
+  .operational-summary { grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+
+@media (max-width: 620px) {
+  .operational-workspace { padding: 14px; }
+  .operational-workspace__header { display: grid; }
+  .operational-summary { grid-template-columns: 1fr; }
+  .operational-record__heading { display: grid; }
+  .operational-record__meta { display: grid; grid-template-columns: 1fr; }
 }

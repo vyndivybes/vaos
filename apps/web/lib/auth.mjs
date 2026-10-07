@@ -5,14 +5,12 @@ const DEV_ALLOWED_EMAILS = new Set([
   "kaaviyam1519@gmail.com",
 ]);
 
-// Development-only credential verifier. The plaintext password is never
-// committed. Replace this mechanism with the production identity provider
-// before production release.
-const DEV_PASSWORD_SHA256 = "11c5ab3591e9d8c06eeac2afa5d6639021b569e46ae1efbb74f8dc4b81bf08d1";
-const DEV_SESSION_KEY = crypto
-  .createHash("sha256")
-  .update(`vaos-development-session-v1:${DEV_PASSWORD_SHA256}`)
-  .digest("hex");
+// Development-only credential verifier. Deployment may override the legacy
+// development digest via VAOS_DEV_LOGIN_PASSWORD_SHA256. Plaintext passwords
+// are never committed or stored in source.
+const LEGACY_DEV_PASSWORD_SHA256 = "11c5ab3591e9d8c06eeac2afa5d6639021b569e46ae1efbb74f8dc4b81bf08d1";
+const DEV_PASSWORD_ENV = "VAOS_DEV_LOGIN_PASSWORD_SHA256";
+const SHA256_HEX = /^[a-f0-9]{64}$/i;
 
 export const SESSION_COOKIE = "vaos_session";
 export const SESSION_TTL_SECONDS = 8 * 60 * 60;
@@ -30,6 +28,19 @@ export function constantTimeEqual(left, right) {
   return crypto.timingSafeEqual(a, b);
 }
 
+function developmentPasswordHash() {
+  const configured = String(process.env[DEV_PASSWORD_ENV] || "").trim();
+  if (SHA256_HEX.test(configured)) return configured.toLowerCase();
+  return LEGACY_DEV_PASSWORD_SHA256;
+}
+
+function developmentSessionKey() {
+  return crypto
+    .createHash("sha256")
+    .update(`vaos-development-session-v1:${developmentPasswordHash()}`)
+    .digest("hex");
+}
+
 export function verifyPasswordAgainstHash(password, expectedHash) {
   return constantTimeEqual(sha256(password), expectedHash);
 }
@@ -39,11 +50,15 @@ export function isAllowedEmail(email) {
 }
 
 export function verifyDevelopmentCredential(email, password) {
-  return isAllowedEmail(email) && verifyPasswordAgainstHash(password, DEV_PASSWORD_SHA256);
+  return isAllowedEmail(email)
+    && verifyPasswordAgainstHash(password, developmentPasswordHash());
 }
 
 function signature(payload) {
-  return crypto.createHmac("sha256", DEV_SESSION_KEY).update(payload).digest("base64url");
+  return crypto
+    .createHmac("sha256", developmentSessionKey())
+    .update(payload)
+    .digest("base64url");
 }
 
 export function createSessionToken(email, ttlSeconds = SESSION_TTL_SECONDS, nowMs = Date.now()) {

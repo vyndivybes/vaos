@@ -16,6 +16,7 @@ const commandResults = document.querySelector('#command-results');
 
 let model = null;
 let currentView = 'command';
+let traceProposalKey = null;
 
 const esc = (value) => String(value ?? '')
   .replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;')
@@ -236,10 +237,29 @@ function traceLane(domain) {
   return model.traceGraph.nodes.filter((node) => node.domain === domain);
 }
 
+function traceOption(node) {
+  return `<option value="${esc(node.id)}">${esc(node.domainLabel)} · ${esc(node.resourceId)}</option>`;
+}
+
 function renderEnterpriseTraceGraph() {
   const section = document.querySelector('#enterprise-trace-graph');
   const graph = model.traceGraph;
   section.hidden = false;
+
+  const sourceSelect = document.querySelector('#trace-author-source');
+  const targetSelect = document.querySelector('#trace-author-target');
+  const previousSource = sourceSelect?.value;
+  const previousTarget = targetSelect?.value;
+  const options = graph.nodes.map(traceOption).join('');
+  if (sourceSelect) {
+    sourceSelect.innerHTML = options;
+    if (previousSource && graph.nodes.some((node) => node.id === previousSource)) sourceSelect.value = previousSource;
+  }
+  if (targetSelect) {
+    targetSelect.innerHTML = options;
+    if (previousTarget && graph.nodes.some((node) => node.id === previousTarget)) targetSelect.value = previousTarget;
+    else if (graph.nodes.length > 1) targetSelect.selectedIndex = 1;
+  }
 
   document.querySelector('#trace-summary').innerHTML = [
     ['Records', graph.summary.totalNodes, 'DB'],
@@ -282,7 +302,7 @@ function renderEnterpriseTraceGraph() {
         <span>${esc(source?.resourceId || edge.sourceNodeId)}</span>
         <strong>${esc(edge.relationType)}</strong>
         <span>${esc(target?.resourceId || edge.targetNodeId)}</span>
-        <small>${esc(edge.createdBy)}${edge.createdAt ? ` · ${esc(new Date(edge.createdAt).toLocaleString())}` : ''}</small>
+        <small>${edge.governed ? '<b class="trace-governed-badge">GOVERNED</b> · ' : ''}${esc(edge.createdBy)}${edge.createdAt ? ` · ${esc(new Date(edge.createdAt).toLocaleString())}` : ''}</small>
       </article>
     `;
   }).join('') : '<p class="empty-state">No explicit cross-domain links have been persisted yet.</p>';
@@ -390,6 +410,93 @@ async function decideApproval(button) {
   }
 }
 
+function parseTraceNodeId(value) {
+  const separator = String(value || '').indexOf(':');
+  if (separator < 1) return null;
+  return {
+    domain: value.slice(0, separator),
+    recordId: value.slice(separator + 1),
+  };
+}
+
+function newTraceProposalKey() {
+  if (globalThis.crypto?.randomUUID) return `digital-thread:${globalThis.crypto.randomUUID()}`;
+  const bytes = new Uint32Array(4);
+  globalThis.crypto?.getRandomValues?.(bytes);
+  return `digital-thread:${[...bytes].join('-') || Date.now()}`;
+}
+
+async function submitTraceLinkProposal(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const source = parseTraceNodeId(document.querySelector('#trace-author-source')?.value);
+  const target = parseTraceNodeId(document.querySelector('#trace-author-target')?.value);
+  const relationType = document.querySelector('#trace-author-relation')?.value;
+  const reason = document.querySelector('#trace-author-reason')?.value.trim() || '';
+  const status = document.querySelector('#trace-author-status');
+  const button = form.querySelector('button[type="submit"]');
+
+  if (!source || !target || reason.length < 3) {
+    status.textContent = 'Select both records and provide a reason.';
+    return;
+  }
+  if (source.domain === target.domain && source.recordId === target.recordId) {
+    status.textContent = 'A record cannot be linked to itself.';
+    return;
+  }
+
+  traceProposalKey ||= newTraceProposalKey();
+  button.disabled = true;
+  status.textContent = 'Submitting governed relationship proposal…';
+
+  try {
+    const response = await fetch('/api/intents', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Idempotency-Key': traceProposalKey,
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({
+        agentId: 'knowledge',
+        actionType: 'DIGITAL_THREAD.CREATE_LINK',
+        risk: 'medium',
+        reason,
+        payload: {
+          sourceDomain: source.domain,
+          sourceRecordId: source.recordId,
+          relationType,
+          targetDomain: target.domain,
+          targetRecordId: target.recordId,
+        },
+      }),
+    });
+
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const code = result?.error?.code || 'PROPOSAL_FAILED';
+      throw new Error(code);
+    }
+
+    traceProposalKey = null;
+    form.reset();
+    status.textContent = result?.data?.status === 'AWAIT_APPROVAL'
+      ? 'Proposal persisted. Human approval is now required.'
+      : `Proposal status: ${result?.data?.status || 'PERSISTED'}`;
+
+    const refreshed = await loadControlPlane();
+    if (refreshed) {
+      model = refreshed.model;
+      renderAll();
+      renderEnterpriseTraceGraph();
+    }
+  } catch (error) {
+    status.textContent = `Proposal not persisted: ${error.message}. Retry will reuse the same intent key.`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
 function wireInteractions() {
   document.addEventListener('click', (event) => {
     const approval = event.target.closest('[data-approval-id][data-decision]');
@@ -417,6 +524,7 @@ function wireInteractions() {
   document.querySelector('#domain-thread-close')?.addEventListener('click', () => {
     document.querySelector('#domain-thread-dialog')?.close();
   });
+  document.querySelector('#trace-author-form')?.addEventListener('submit', submitTraceLinkProposal);
 
   commandButton?.addEventListener('click', () => { renderCommandResults(); dialog.showModal(); queueMicrotask(() => commandInput.focus()); });
   commandInput?.addEventListener('input', () => renderCommandResults(commandInput.value));

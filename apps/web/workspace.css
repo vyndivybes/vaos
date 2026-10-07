@@ -1822,3 +1822,84 @@
 @media (max-width: 680px) {
   .trace-summary { grid-template-columns: 1fr 1fr; }
 }
+
+.trace-author-panel {
+  margin: 0 0 14px;
+  padding: 15px;
+  border: 1px solid rgba(229,178,88,.12);
+  border-radius: 13px;
+  background: linear-gradient(145deg, rgba(31,37,43,.72), rgba(9,12,15,.82));
+}
+.trace-author-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+.trace-author-heading h4 { margin: 0; color: #e9e6df; font-size: .83rem; }
+.trace-author-heading p { margin: 5px 0 0; color: #6f797f; font-size: .58rem; }
+.trace-author-fields {
+  display: grid;
+  grid-template-columns: 1.15fr .85fr 1.15fr 1.7fr auto;
+  gap: 8px;
+  align-items: end;
+}
+.trace-author-fields label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+  color: #747e84;
+  font-size: .52rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+.trace-author-fields select,
+.trace-author-fields input {
+  min-width: 0;
+  height: 36px;
+  border: 1px solid rgba(255,222,159,.11);
+  border-radius: 8px;
+  padding: 0 9px;
+  color: #d9d8d2;
+  background: #0b0f13;
+  font: inherit;
+  font-size: .59rem;
+  text-transform: none;
+  letter-spacing: normal;
+}
+.trace-author-submit {
+  height: 36px;
+  border: 1px solid rgba(226,176,88,.42);
+  border-radius: 8px;
+  padding: 0 13px;
+  color: #f2d395;
+  background: linear-gradient(180deg, rgba(176,110,24,.18), rgba(83,54,15,.12));
+  cursor: pointer;
+  font-size: .58rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.trace-author-submit:disabled { opacity: .5; cursor: wait; }
+.trace-author-status {
+  min-height: 16px;
+  margin: 9px 0 0;
+  color: #a4acae;
+  font-size: .57rem;
+}
+.trace-governed-badge {
+  color: #8fd0a1;
+  font-size: .5rem;
+  letter-spacing: .05em;
+}
+@media (max-width: 1180px) {
+  .trace-author-fields { grid-template-columns: 1fr 1fr; }
+  .trace-author-reason { grid-column: 1 / -1; }
+  .trace-author-submit { width: max-content; }
+}
+@media (max-width: 620px) {
+  .trace-author-heading { display: grid; }
+  .trace-author-fields { grid-template-columns: 1fr; }
+  .trace-author-reason { grid-column: auto; }
+  .trace-author-submit { width: 100%; }
+}

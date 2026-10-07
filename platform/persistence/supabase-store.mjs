@@ -93,15 +93,27 @@ export function createSupabaseControlStore({
         riskId,
       });
     },
-    linkDomainRecords(input) {
+    linkDomainRecords(job, input) {
       return invoke('linkDomainRecords', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
         sourceDomain: input.sourceDomain,
         sourceRecordId: input.sourceRecordId,
         relationType: input.relationType,
         targetDomain: input.targetDomain,
         targetRecordId: input.targetRecordId,
-        createdBy: input.createdBy,
+        proposedBy: input.createdBy,
         context: input.context || {},
+      });
+    },
+    getDomainLink(job, input) {
+      return invoke('getDomainLink', {
+        jobId: job.id,
+        sourceDomain: input.sourceDomain,
+        sourceRecordId: input.sourceRecordId,
+        relationType: input.relationType,
+        targetDomain: input.targetDomain,
+        targetRecordId: input.targetRecordId,
       });
     },
   });

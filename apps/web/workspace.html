@@ -141,6 +141,37 @@
             <span class="module-phase">explicit links only</span>
           </div>
           <div class="trace-summary" id="trace-summary"></div>
+          <form class="trace-author-panel" id="trace-author-form">
+            <div class="trace-author-heading">
+              <div>
+                <span class="panel-kicker">GOVERNED AUTHORING</span>
+                <h4>Propose an explicit relationship</h4>
+                <p>Proposal only. The link is not written until policy and human approval succeed.</p>
+              </div>
+              <span class="module-phase">Knowledge Agent · L4</span>
+            </div>
+            <div class="trace-author-fields">
+              <label>Source record
+                <select id="trace-author-source" required></select>
+              </label>
+              <label>Relationship
+                <select id="trace-author-relation" required>
+                  <option value="DRIVES_CHANGE">DRIVES_CHANGE</option>
+                  <option value="MITIGATES_RISK">MITIGATES_RISK</option>
+                  <option value="TRIGGERS_CAPA">TRIGGERS_CAPA</option>
+                  <option value="RELATED_TO">RELATED_TO</option>
+                </select>
+              </label>
+              <label>Target record
+                <select id="trace-author-target" required></select>
+              </label>
+              <label class="trace-author-reason">Reason
+                <input id="trace-author-reason" type="text" minlength="3" maxlength="1000" required placeholder="Why are these records explicitly related?" />
+              </label>
+              <button class="trace-author-submit" type="submit">Submit for approval</button>
+            </div>
+            <p class="trace-author-status" id="trace-author-status" aria-live="polite"></p>
+          </form>
           <div class="enterprise-trace-canvas" id="trace-canvas">
             <svg class="trace-edge-svg" id="trace-edge-svg" aria-hidden="true"></svg>
             <div class="trace-node-layer" id="trace-node-layer"></div>

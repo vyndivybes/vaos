@@ -27,13 +27,28 @@ export default async function handler(req, res) {
   if (!validation.ok) return res.status(422).json(apiError('VALIDATION_ERROR', 'Invalid intent', validation.errors));
 
   try {
+    const reason = body.reason.trim();
+    const rawPayload = body.payload || {};
+    const payload = body.actionType === 'DIGITAL_THREAD.CREATE_LINK'
+      ? {
+          ...rawPayload,
+          proposedBy: session.email,
+          context: {
+            ...(rawPayload.context && typeof rawPayload.context === 'object' && !Array.isArray(rawPayload.context)
+              ? rawPayload.context
+              : {}),
+            reason,
+          },
+        }
+      : rawPayload;
+
     const result = await getDurableControlService().proposeIntent({
       idempotencyKey,
       agentId: body.agentId,
       actionType: body.actionType,
       risk: String(body.risk).toLowerCase(),
-      reason: body.reason.trim(),
-      payload: body.payload || {},
+      reason,
+      payload,
       actor: session.email,
     });
 

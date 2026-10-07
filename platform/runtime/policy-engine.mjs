@@ -23,6 +23,11 @@ export const ACTION_POLICIES = Object.freeze({
     requiresApproval: false,
     defaultRisk: 'medium',
   }),
+  'DIGITAL_THREAD.CREATE_LINK': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'medium',
+  }),
   'EVIDENCE.DELETE': Object.freeze({
     prohibited: true,
     minimumAuthority: AUTHORITY.AUTONOMOUS_EXECUTION,

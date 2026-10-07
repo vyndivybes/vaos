@@ -50,6 +50,7 @@ const APPROVAL_TITLES = Object.freeze({
   'QA.OPEN_CAPA': 'Open CAPA',
   'ENGINEERING.BASELINE_CHANGE': 'Approve engineering baseline change',
   'PROJECT.ESCALATE_RISK': 'Escalate project risk',
+  'DIGITAL_THREAD.CREATE_LINK': 'Create digital-thread relationship',
 });
 
 const EVENT_SEVERITY = Object.freeze({
@@ -66,6 +67,7 @@ const EVENT_SEVERITY = Object.freeze({
   'QA.CAPA_OPENED': 'success',
   'ENGINEERING.BASELINE_CHANGE_RECORDED': 'success',
   'PROJECT.RISK_ESCALATION_RECORDED': 'success',
+  'DIGITAL_THREAD.LINK_CREATED': 'success',
   'AGENT.REGISTERED': 'info',
   'AGENT.ACTION_PREPARED': 'info',
 });
@@ -112,6 +114,7 @@ function eventSummary(event, names) {
     case 'QA.CAPA_OPENED': return `CAPA ${payload.capaId || ''} opened in the durable quality register`;
     case 'ENGINEERING.BASELINE_CHANGE_RECORDED': return `Baseline ${payload.baseline || ''} change persisted`;
     case 'PROJECT.RISK_ESCALATION_RECORDED': return `Risk ${payload.riskId || ''} escalation persisted`;
+    case 'DIGITAL_THREAD.LINK_CREATED': return `${payload.sourceDomain || 'record'} ${payload.relationType || 'linked'} ${payload.targetDomain || 'record'}`;
     case 'AGENT.ACTION_PREPARED': return `${payload.actionType} was prepared without executing an effect`;
     default: return event.type;
   }
@@ -238,6 +241,9 @@ function buildTraceGraph(domainWorkspaces, rawLinks = []) {
       relationType: link.relationType,
       createdBy: link.createdBy || 'system',
       createdAt: link.createdAt || null,
+      intentId: link.intentId || null,
+      executionJobId: link.executionJobId || null,
+      governed: Boolean(link.executionJobId),
       context: link.context && typeof link.context === 'object' ? { ...link.context } : {},
     }];
   });

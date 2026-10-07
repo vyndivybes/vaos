@@ -75,6 +75,7 @@ const EVENT_SEVERITY = Object.freeze({
   'PROJECT.RISK_ESCALATION_RECORDED': 'success',
   'DIGITAL_THREAD.LINK_CREATED': 'success',
   'WORKFORCE.DIGITAL_EMPLOYEE.TRANSITIONED': 'success',
+  'WORKFORCE.QUALIFICATION_ASSESSED': 'success',
   'AGENT.REGISTERED': 'info',
   'AGENT.ACTION_PREPARED': 'info',
 });
@@ -124,6 +125,7 @@ function eventSummary(event, names) {
     case 'PROJECT.RISK_ESCALATION_RECORDED': return `Risk ${payload.riskId || ''} escalation persisted`;
     case 'DIGITAL_THREAD.LINK_CREATED': return `${payload.sourceDomain || 'record'} ${payload.relationType || 'linked'} ${payload.targetDomain || 'record'}`;
     case 'WORKFORCE.DIGITAL_EMPLOYEE.TRANSITIONED': return `${payload.employeeId || 'Digital Employee'} transitioned ${payload.fromStatus || 'UNKNOWN'} → ${payload.toStatus || 'UNKNOWN'}`;
+    case 'WORKFORCE.QUALIFICATION_ASSESSED': return `${payload.employeeId || 'Digital Employee'} Q${payload.targetLevel || '?'} assessment ${payload.status || 'UNKNOWN'}`;
     case 'AGENT.ACTION_PREPARED': return `${payload.actionType} was prepared without executing an effect`;
     default: return event.type;
   }
@@ -277,6 +279,7 @@ function summaryItem(label, value, note = '') {
 
 const WORKFORCE_ACTION_CONFIG = Object.freeze({
   'WORKFORCE.START_TRAINING': { label: 'Start training', risk: 'medium' },
+  'WORKFORCE.ASSESS_QUALIFICATION': { label: 'Run Q3 assessment', risk: 'high', assessment: true },
   'WORKFORCE.QUALIFY': { label: 'Qualify', risk: 'high', qualificationEvidence: true },
   'WORKFORCE.ACTIVATE': { label: 'Activate', risk: 'high' },
   'WORKFORCE.RESTRICT': { label: 'Restrict', risk: 'high' },
@@ -301,7 +304,50 @@ function minimumQualificationLevel(employee) {
 }
 
 function workforceLifecycleActions(employee) {
-  return (WORKFORCE_TRANSITIONS[employee.lifecycleStatus] || []).map((actionType) => ({
+  const base = WORKFORCE_TRANSITIONS[employee.lifecycleStatus] || [];
+  if (['TRAINING','RETRAINING'].includes(employee.lifecycleStatus)) {
+    const targetLevel = minimumQualificationLevel(employee);
+    const assessment = employee.latestAssessment;
+    const passMatches = assessment
+      && assessment.status === 'PASS'
+      && Number(assessment.targetLevel) === targetLevel;
+
+    if (!passMatches) {
+      if (employee.id === 'vibpe' && targetLevel === 3) {
+        return [
+          {
+            actionType: 'WORKFORCE.ASSESS_QUALIFICATION',
+            ...WORKFORCE_ACTION_CONFIG['WORKFORCE.ASSESS_QUALIFICATION'],
+            targetLevel: 3,
+            profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+          },
+          {
+            actionType: 'WORKFORCE.RETIRE',
+            ...WORKFORCE_ACTION_CONFIG['WORKFORCE.RETIRE'],
+          },
+        ];
+      }
+      return [{
+        actionType: 'WORKFORCE.RETIRE',
+        ...WORKFORCE_ACTION_CONFIG['WORKFORCE.RETIRE'],
+      }];
+    }
+
+    return [
+      {
+        actionType: 'WORKFORCE.QUALIFY',
+        ...WORKFORCE_ACTION_CONFIG['WORKFORCE.QUALIFY'],
+        recommendedQualificationLevel: targetLevel,
+        evidenceRefs: [`qualification_assessment:${assessment.id}`],
+      },
+      {
+        actionType: 'WORKFORCE.RETIRE',
+        ...WORKFORCE_ACTION_CONFIG['WORKFORCE.RETIRE'],
+      },
+    ];
+  }
+
+  return base.map((actionType) => ({
     actionType,
     ...WORKFORCE_ACTION_CONFIG[actionType],
     recommendedQualificationLevel: actionType === 'WORKFORCE.QUALIFY'
@@ -379,6 +425,19 @@ function normalizeWorkforce(runtimeSnapshot, agents) {
       memoryPolicy: employee.memoryPolicy && typeof employee.memoryPolicy === 'object' ? { ...employee.memoryPolicy } : {},
       contextPolicy: employee.contextPolicy && typeof employee.contextPolicy === 'object' ? { ...employee.contextPolicy } : {},
       evidenceRefs: Array.isArray(employee.evidenceRefs) ? [...employee.evidenceRefs] : [],
+      latestAssessment: employee.latestAssessment && typeof employee.latestAssessment === 'object'
+        ? {
+            ...employee.latestAssessment,
+            targetLevel: Number(employee.latestAssessment.targetLevel) || 0,
+            criteria: Array.isArray(employee.latestAssessment.criteria) ? [...employee.latestAssessment.criteria] : [],
+            results: employee.latestAssessment.results && typeof employee.latestAssessment.results === 'object'
+              ? { ...employee.latestAssessment.results }
+              : {},
+            evidenceRefs: Array.isArray(employee.latestAssessment.evidenceRefs)
+              ? [...employee.latestAssessment.evidenceRefs]
+              : [],
+          }
+        : null,
       contract,
     };
   });

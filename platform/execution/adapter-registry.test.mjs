@@ -9,6 +9,7 @@ test('registry resolves only explicitly supported governed effects', () => {
   assert.equal(registry.has('PROJECT.ESCALATE_RISK'), true);
   assert.equal(registry.has('DIGITAL_THREAD.CREATE_LINK'), true);
   assert.equal(registry.has('WORKFORCE.START_TRAINING'), true);
+  assert.equal(registry.has('WORKFORCE.ASSESS_QUALIFICATION'), true);
   assert.equal(registry.has('WORKFORCE.QUALIFY'), true);
   assert.equal(registry.has('WORKFORCE.ACTIVATE'), true);
   assert.equal(registry.has('FINANCE.PAY_INVOICE'), false);
@@ -539,4 +540,42 @@ test('Digital Workforce qualification adapter fails terminally without evidence'
     },
     /WORKFORCE_QUALIFICATION_EVIDENCE_REQUIRED/,
   );
+});
+
+
+test('Digital Workforce assessment adapter records and verifies PASS or FAIL as an assessment outcome', async () => {
+  const digitalWorkforce = {
+    async assessDigitalEmployeeQualification(job, input) {
+      return {
+        outcome: 'CREATED',
+        assessment: { id: 'assessment-1', employeeId: input.employeeId, targetLevel: input.targetLevel, profileId: input.profileId, status: 'PASS' },
+      };
+    },
+    async getQualificationAssessment(job, employeeId) {
+      return {
+        id: 'assessment-1',
+        employeeId,
+        targetLevel: 3,
+        profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+        status: 'PASS',
+      };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ digitalWorkforce })
+    .get('WORKFORCE.ASSESS_QUALIFICATION')
+    .execute({
+      id: 'job-assessment-1',
+      intentId: 'intent-assessment-1',
+      actionType: 'WORKFORCE.ASSESS_QUALIFICATION',
+      payload: {
+        employeeId: 'vibpe',
+        targetLevel: 3,
+        profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+      },
+    });
+
+  assert.equal(result.effect.state, 'PASS');
+  assert.equal(result.verification.verified, true);
+  assert.equal(result.verification.evidenceSource, 'vaos_private.digital_employee_qualification_assessments');
 });

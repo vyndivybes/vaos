@@ -167,6 +167,23 @@ Deno.serve(async (req: Request) => {
       p_qualification_level: payload.qualificationLevel ?? null,
       p_evidence_refs: payload.evidenceRefs || [],
     }
+  } else if (operation === 'assessDigitalEmployeeQualification') {
+    rpcName = 'vaos_assess_digital_employee_qualification'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_employee_id: payload.employeeId,
+      p_target_level: payload.targetLevel,
+      p_profile_id: payload.profileId,
+    }
+  } else if (operation === 'getQualificationAssessment') {
+    rpcName = 'vaos_get_qualification_assessment'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_employee_id: payload.employeeId,
+    }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

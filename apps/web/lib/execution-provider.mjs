@@ -32,6 +32,8 @@ export function getExecutionEngine(runtimeEnv = undefined) {
     const digitalWorkforce = Object.freeze({
       transitionDigitalEmployee(job, input) { return store.transitionDigitalEmployee(job, input); },
       getDigitalEmployee(employeeId) { return store.getDigitalEmployee(employeeId); },
+      assessDigitalEmployeeQualification(job, input) { return store.assessDigitalEmployeeQualification(job, input); },
+      getQualificationAssessment(job, employeeId) { return store.getQualificationAssessment(job, employeeId); },
     });
 
     engine = createExecutionEngine({

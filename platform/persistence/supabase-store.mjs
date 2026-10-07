@@ -129,5 +129,20 @@ export function createSupabaseControlStore({
         evidenceRefs: input.evidenceRefs || [],
       });
     },
+    assessDigitalEmployeeQualification(job, input) {
+      return invoke('assessDigitalEmployeeQualification', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        employeeId: input.employeeId,
+        targetLevel: input.targetLevel,
+        profileId: input.profileId,
+      });
+    },
+    getQualificationAssessment(job, employeeId) {
+      return invoke('getQualificationAssessment', {
+        jobId: job.id,
+        employeeId,
+      });
+    },
   });
 }

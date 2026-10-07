@@ -124,3 +124,36 @@ test('unknown WORKFORCE actions fail closed at the API boundary', () => {
   assert.equal(result.ok, false);
   assert.ok(result.errors.includes('INVALID_WORKFORCE_ACTION'));
 });
+
+
+test('Digital Workforce assessment payload requires a bounded Q-level and named profile', () => {
+  const valid = validateIntentRequest({
+    idempotencyKey: 'workforce:vibpe:assessment:1',
+    body: {
+      agentId: 'orchestrator',
+      actionType: 'WORKFORCE.ASSESS_QUALIFICATION',
+      risk: 'high',
+      reason: 'Run VIBPE Q3 assessment',
+      payload: {
+        employeeId: 'vibpe',
+        targetLevel: 3,
+        profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+      },
+    },
+  });
+  assert.equal(valid.ok, true);
+
+  const invalid = validateIntentRequest({
+    idempotencyKey: 'workforce:vibpe:assessment:2',
+    body: {
+      agentId: 'orchestrator',
+      actionType: 'WORKFORCE.ASSESS_QUALIFICATION',
+      risk: 'high',
+      reason: 'Invalid assessment',
+      payload: { employeeId: 'vibpe', targetLevel: 5, profileId: 'bad profile' },
+    },
+  });
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors.includes('INVALID_QUALIFICATION_LEVEL'));
+  assert.ok(invalid.errors.includes('INVALID_QUALIFICATION_PROFILE'));
+});

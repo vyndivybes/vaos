@@ -5,6 +5,7 @@ const TRACE_DOMAINS = new Set(['QA_CAPA', 'ENGINEERING_BASELINE', 'PROJECT_RISK'
 const TRACE_RELATIONS = new Set(['DRIVES_CHANGE', 'MITIGATES_RISK', 'TRIGGERS_CAPA', 'RELATED_TO']);
 const WORKFORCE_ACTIONS = new Set([
   'WORKFORCE.START_TRAINING',
+  'WORKFORCE.ASSESS_QUALIFICATION',
   'WORKFORCE.QUALIFY',
   'WORKFORCE.ACTIVATE',
   'WORKFORCE.RESTRICT',
@@ -45,6 +46,15 @@ function validateWorkforcePayload(actionType, payload, errors) {
     return;
   }
   if (!EMPLOYEE_ID.test(String(payload.employeeId || ''))) errors.push('INVALID_DIGITAL_EMPLOYEE_ID');
+
+  if (actionType === 'WORKFORCE.ASSESS_QUALIFICATION') {
+    if (!Number.isInteger(payload.targetLevel) || payload.targetLevel < 1 || payload.targetLevel > 4) {
+      errors.push('INVALID_QUALIFICATION_LEVEL');
+    }
+    if (typeof payload.profileId !== 'string' || !/^[A-Z0-9_]{8,128}$/.test(payload.profileId)) {
+      errors.push('INVALID_QUALIFICATION_PROFILE');
+    }
+  }
 
   if (actionType === 'WORKFORCE.QUALIFY') {
     if (!Number.isInteger(payload.qualificationLevel) || payload.qualificationLevel < 1 || payload.qualificationLevel > 4) {

@@ -252,6 +252,66 @@ function assertDigitalWorkforcePort(digitalWorkforce) {
   return digitalWorkforce;
 }
 
+function assertDigitalWorkforceAssessmentPort(digitalWorkforce) {
+  if (!digitalWorkforce
+      || typeof digitalWorkforce.assessDigitalEmployeeQualification !== 'function'
+      || typeof digitalWorkforce.getQualificationAssessment !== 'function') {
+    throw terminalError('DOMAIN_PORT_REQUIRED:digitalWorkforceAssessment');
+  }
+  return digitalWorkforce;
+}
+
+function digitalWorkforceAssessmentAdapter(digitalWorkforce) {
+  return adapter('supabase.digital-workforce-qualification.v1', async (job) => {
+    const employeeId = requiredText(job.payload, 'employeeId');
+    const profileId = requiredText(job.payload, 'profileId');
+    const targetLevel = Number(job.payload?.targetLevel);
+    if (!Number.isInteger(targetLevel) || targetLevel < 1 || targetLevel > 4) {
+      throw terminalError('WORKFORCE_INVALID_QUALIFICATION_LEVEL');
+    }
+
+    const port = assertDigitalWorkforceAssessmentPort(digitalWorkforce);
+    const assessed = await port.assessDigitalEmployeeQualification(job, { employeeId, targetLevel, profileId });
+    if (!assessed || !['CREATED','REPLAY'].includes(assessed.outcome)) {
+      throw terminalError(`WORKFORCE_${assessed?.outcome || 'ASSESSMENT_FAILED'}`);
+    }
+
+    const record = await port.getQualificationAssessment(job, employeeId);
+    const verified = Boolean(
+      record
+      && record.id
+      && record.employeeId === employeeId
+      && Number(record.targetLevel) === targetLevel
+      && record.profileId === profileId
+      && ['PASS','FAIL'].includes(record.status)
+    );
+    if (!verified) throw terminalError('WORKFORCE_ASSESSMENT_VERIFICATION_MISMATCH');
+
+    return {
+      adapterId: 'supabase.digital-workforce-qualification.v1',
+      effect: {
+        effectType: 'WORKFORCE.QUALIFICATION_ASSESSED',
+        resourceType: 'QUALIFICATION_ASSESSMENT',
+        resourceId: record.id,
+        state: record.status,
+        employeeId,
+        targetLevel,
+        profileId,
+        domainOutcome: assessed.outcome,
+      },
+      verification: {
+        verified: true,
+        resourceType: 'QUALIFICATION_ASSESSMENT',
+        resourceId: record.id,
+        expectedState: record.status,
+        employeeId,
+        targetLevel,
+        evidenceSource: 'vaos_private.digital_employee_qualification_assessments',
+      },
+    };
+  });
+}
+
 function digitalWorkforceAdapter(digitalWorkforce, actionType) {
   return adapter('supabase.digital-workforce-lifecycle.v2', async (job) => {
     const employeeId = requiredText(job.payload, 'employeeId');
@@ -314,6 +374,7 @@ export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, proj
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
     ['PROJECT.ESCALATE_RISK', projectRiskAdapter(projectRisk)],
     ['DIGITAL_THREAD.CREATE_LINK', digitalThreadLinkAdapter(digitalThread)],
+    ['WORKFORCE.ASSESS_QUALIFICATION', digitalWorkforceAssessmentAdapter(digitalWorkforce)],
     ...Object.keys(WORKFORCE_TARGET_STATUS).map((actionType) => [actionType, digitalWorkforceAdapter(digitalWorkforce, actionType)]),
   ]);
 

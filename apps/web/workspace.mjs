@@ -525,7 +525,10 @@ function renderOperationalWorkspace(module) {
                 data-workforce-risk="${esc(action.risk)}"
                 data-workforce-label="${esc(action.label)}"
                 data-workforce-qualification="${action.qualificationEvidence ? 'true' : 'false'}"
-                data-workforce-recommended-q="${esc(action.recommendedQualificationLevel || '')}">
+                data-workforce-recommended-q="${esc(action.recommendedQualificationLevel || '')}"
+                data-workforce-target-level="${esc(action.targetLevel || '')}"
+                data-workforce-profile-id="${esc(action.profileId || '')}"
+                data-workforce-evidence-refs="${esc(JSON.stringify(action.evidenceRefs || []))}">
                 ${esc(action.label)}
               </button>
             `).join('') || '<span class="workforce-terminal-state">No further lifecycle actions.</span>'}
@@ -829,13 +832,19 @@ function openWorkforceActionDialog(button) {
     risk: button.dataset.workforceRisk,
     qualificationEvidence: button.dataset.workforceQualification === 'true',
     recommendedQualificationLevel: Number(button.dataset.workforceRecommendedQ || 1),
+    targetLevel: Number(button.dataset.workforceTargetLevel || 0),
+    profileId: button.dataset.workforceProfileId || '',
+    evidenceRefs: (() => {
+      try { return JSON.parse(button.dataset.workforceEvidenceRefs || '[]'); }
+      catch { return []; }
+    })(),
   };
   workforceActionKey = null;
   workforceActionTitle.textContent = `${workforceActionContext.label} · ${workforceActionContext.employeeName}`;
   workforceActionCopy.textContent = `${workforceActionContext.actionType} · human approval required before execution`;
   workforceActionReason.value = '';
   workforceActionStatus.textContent = '';
-  workforceEvidenceRefs.value = '';
+  workforceEvidenceRefs.value = (workforceActionContext.evidenceRefs || []).join('\n');
   workforceQualificationFields.hidden = !workforceActionContext.qualificationEvidence;
   if (workforceActionContext.qualificationEvidence) {
     workforceQualificationLevel.value = String(Math.max(1, Math.min(4, workforceActionContext.recommendedQualificationLevel || 1)));
@@ -861,6 +870,10 @@ async function submitWorkforceLifecycle(event) {
   }
 
   const payload = { employeeId: workforceActionContext.employeeId };
+  if (workforceActionContext.actionType === 'WORKFORCE.ASSESS_QUALIFICATION') {
+    payload.targetLevel = workforceActionContext.targetLevel;
+    payload.profileId = workforceActionContext.profileId;
+  }
   if (workforceActionContext.qualificationEvidence) {
     payload.qualificationLevel = Number(workforceQualificationLevel.value);
     payload.evidenceRefs = workforceEvidenceRefs.value

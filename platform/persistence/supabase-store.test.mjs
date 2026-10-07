@@ -216,3 +216,36 @@ test('Digital Workforce reads and lifecycle transitions use typed Edge bridge op
     evidenceRefs: ['evidence:benchmark:1'],
   });
 });
+
+
+test('Digital Workforce qualification assessment uses typed Edge bridge operations', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', assessment: { id: 'assessment-1', employeeId: 'vibpe', targetLevel: 3, status: 'PASS' } } },
+    { body: { id: 'assessment-1', employeeId: 'vibpe', targetLevel: 3, status: 'PASS' } },
+  ]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+  const job = { id: 'job-assess-1', leaseToken: 'lease-assess-1', actionType: 'WORKFORCE.ASSESS_QUALIFICATION' };
+
+  const assessed = await store.assessDigitalEmployeeQualification(job, {
+    employeeId: 'vibpe',
+    targetLevel: 3,
+    profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+  });
+  const record = await store.getQualificationAssessment(job, 'vibpe');
+
+  assert.equal(assessed.assessment.status, 'PASS');
+  assert.equal(record.id, 'assessment-1');
+  assert.equal(fake.calls[0].body.operation, 'assessDigitalEmployeeQualification');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-assess-1',
+    leaseToken: 'lease-assess-1',
+    employeeId: 'vibpe',
+    targetLevel: 3,
+    profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+  });
+  assert.equal(fake.calls[1].body.operation, 'getQualificationAssessment');
+});

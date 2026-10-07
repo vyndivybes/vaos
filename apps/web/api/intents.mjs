@@ -42,7 +42,7 @@ export default async function handler(req, res) {
         }
       : rawPayload;
 
-    const result = await getDurableControlService().proposeIntent({
+    const result = await getDurableControlService(req.env).proposeIntent({
       idempotencyKey,
       agentId: body.agentId,
       actionType: body.actionType,
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
 
     let execution = null;
     if (result.status === 'AUTHORIZED') {
-      try { execution = await getExecutionEngine().processOne(); }
+      try { execution = await getExecutionEngine(req.env).processOne(); }
       catch { execution = { status: 'QUEUED' }; }
     }
     return res.status(result.status === 'AWAIT_APPROVAL' ? 202 : 200).json({ data: { ...result, execution } });

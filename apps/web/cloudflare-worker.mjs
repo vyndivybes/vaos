@@ -42,6 +42,7 @@ function isLegacyRoute(pathname) {
 export function createCloudflareApp({
   apiHandlers = DEFAULT_API_HANDLERS,
   assetFetcher,
+  runtimeEnv,
 } = {}) {
   if (typeof assetFetcher !== 'function') {
     throw new Error('CLOUDFLARE_ASSET_FETCHER_REQUIRED');
@@ -59,7 +60,7 @@ export function createCloudflareApp({
       if (path === '/api' || path.startsWith('/api/')) {
         const handler = apiHandlers[path];
         if (!handler) return jsonError(404, 'NOT_FOUND', 'API route not found');
-        return invokeVercelHandler(handler, request);
+        return invokeVercelHandler(handler, request, runtimeEnv);
       }
 
       const assetResponse = await assetFetcher(request);
@@ -79,6 +80,7 @@ export default {
     return createCloudflareApp({
       apiHandlers: DEFAULT_API_HANDLERS,
       assetFetcher: (assetRequest) => env.ASSETS.fetch(assetRequest),
+      runtimeEnv: env,
     }).fetch(request);
   },
 };

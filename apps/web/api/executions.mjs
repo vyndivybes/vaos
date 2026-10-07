@@ -27,7 +27,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const result = await getExecutionEngine().drain({ limit });
+    const result = await getExecutionEngine(req.env).drain({ limit });
     return res.status(200).json({ data: result });
   } catch {
     return res.status(503).json(apiError('EXECUTION_ENGINE_UNAVAILABLE', 'Unable to process execution queue'));

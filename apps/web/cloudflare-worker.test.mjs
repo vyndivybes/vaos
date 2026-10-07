@@ -61,3 +61,28 @@ test('Cloudflare app serves known assets and fails closed to login for unknown r
   assert.equal(unknown.status, 307);
   assert.equal(new URL(unknown.headers.get('location')).pathname, '/login');
 });
+
+
+test('Cloudflare app forwards explicit runtime bindings to API handlers', async () => {
+  const runtimeEnv = {
+    SUPABASE_URL: 'https://project.supabase.co',
+    VAOS_DB_RPC_SECRET: 'server-secret',
+  };
+  const app = createCloudflareApp({
+    apiHandlers: {
+      '/api/runtime-env': (req, res) => res.status(200).json({
+        url: req.env?.SUPABASE_URL || null,
+        hasSecret: Boolean(req.env?.VAOS_DB_RPC_SECRET),
+      }),
+    },
+    assetFetcher,
+    runtimeEnv,
+  });
+
+  const response = await app.fetch(new Request('https://vaos.example/api/runtime-env'));
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), {
+    url: 'https://project.supabase.co',
+    hasSecret: true,
+  });
+});

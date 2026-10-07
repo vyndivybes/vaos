@@ -43,3 +43,53 @@ test('qualification recovery mode executes normally after the retry', async () =
   assert.equal(result.verification.verified, true);
   assert.equal(result.verification.resourceId, 'RSK-015');
 });
+
+test('second recovery attempt creates a governed Risk to Engineering trace when explicitly requested', async () => {
+  const calls = [];
+  const projectRisk = {
+    async escalateRisk(job, input) {
+      calls.push({ operation: 'escalate', job, input });
+      return { outcome: 'CREATED', record: { riskId: input.riskId, status: 'ESCALATED', executionJobId: job.id, intentId: job.intentId } };
+    },
+    async getRiskEscalation(job, riskId) {
+      calls.push({ operation: 'read', job, riskId });
+      return { riskId, status: 'ESCALATED', executionJobId: job.id, intentId: job.intentId };
+    },
+    async linkQualificationTrace(job, input) {
+      calls.push({ operation: 'link', job, input });
+      return {
+        outcome: 'CREATED',
+        link: {
+          id: 'link-risk-q3',
+          sourceDomain: 'PROJECT_RISK',
+          targetDomain: input.targetDomain,
+          targetResourceId: input.targetResourceId,
+          relationType: input.relationType,
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ projectRisk }).get('PROJECT.ESCALATE_RISK').execute({
+    id: 'job-3',
+    intentId: 'intent-3',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    attemptCount: 2,
+    payload: {
+      riskId: 'RSK-015',
+      qualificationMode: true,
+      qualificationRecoveryDrill: true,
+      qualificationTrace: {
+        targetDomain: 'ENGINEERING_BASELINE',
+        targetResourceId: '5.3.9',
+        relationType: 'MITIGATES_RISK',
+      },
+    },
+  });
+
+  assert.equal(result.effect.qualificationTraceLinkId, 'link-risk-q3');
+  assert.deepEqual(calls.map((call) => call.operation), ['escalate', 'read', 'link']);
+});
+

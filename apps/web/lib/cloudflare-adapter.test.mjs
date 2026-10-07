@@ -1,10 +1,10 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { invokeVercelHandler } from './cloudflare-adapter.mjs';
+import { invokeCloudflareHandler } from './cloudflare-adapter.mjs';
 
 test('Cloudflare adapter maps Request into the existing handler contract', async () => {
-  const response = await invokeVercelHandler(
+  const response = await invokeCloudflareHandler(
     async (req, res) => {
       return res.status(201).json({
         method: req.method,
@@ -31,7 +31,7 @@ test('Cloudflare adapter maps Request into the existing handler contract', async
 });
 
 test('Cloudflare adapter preserves response headers and status semantics', async () => {
-  const response = await invokeVercelHandler(
+  const response = await invokeCloudflareHandler(
     (req, res) => {
       res.setHeader('Cache-Control', 'no-store');
       res.setHeader('Set-Cookie', 'vaos_session=abc; Path=/; HttpOnly');
@@ -47,7 +47,7 @@ test('Cloudflare adapter preserves response headers and status semantics', async
 });
 
 test('Cloudflare adapter treats malformed JSON as an empty request body', async () => {
-  const response = await invokeVercelHandler(
+  const response = await invokeCloudflareHandler(
     (req, res) => res.status(200).json({ body: req.body }),
     new Request('https://vaos.example/api/test', {
       method: 'POST',

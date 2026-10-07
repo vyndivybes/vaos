@@ -32,7 +32,7 @@ function manifest(overrides = {}) {
       idempotency: 'hybrid',
       retrySemantics: 'conditional',
       verificationStrategy: 'provider-readback',
-      healthProbe: 'required',
+      healthProbe: 'optional',
       rollbackMethod: 'disable-provider',
     },
     operations: {
@@ -110,6 +110,13 @@ test('routing enforces data classification, risk class, licensing and health fre
         dataClassifications: ['public', 'internal'],
         riskClasses: ['low', 'medium'],
         licensingAllowed: true,
+      },
+      execution: {
+        idempotency: 'hybrid',
+        retrySemantics: 'conditional',
+        verificationStrategy: 'provider-readback',
+        healthProbe: 'required',
+        rollbackMethod: 'disable-provider',
       },
     })],
     now: () => new Date('2026-10-08T00:00:00.000Z'),

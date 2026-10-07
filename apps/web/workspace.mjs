@@ -174,7 +174,7 @@ function renderDomainWorkspace(module) {
 
   const list = document.querySelector('#domain-record-list');
   list.innerHTML = domain.records.length ? domain.records.map((record) => `
-    <article class="domain-record-row" role="button" tabindex="0" data-domain-record-id="${esc(record.id)}" data-domain-module="${esc(module.id)}" aria-label="Open digital thread for ${esc(record.resourceId)}">
+    <article class="domain-record-row" role="button" tabindex="0" data-domain-record-id="${esc(record.id)}" data-domain-module="${esc(module.id)}" aria-label="Open operational record for ${esc(record.resourceId)}">
       <div class="domain-record-primary">
         <small>${esc(domain.resourceLabel)}</small>
         <strong>${esc(record.resourceId)}</strong>
@@ -212,15 +212,92 @@ function lineageCell(label, value, tone = 'neutral', detail = '') {
   `;
 }
 
+function recordFact(label, value, note = '') {
+  return `
+    <article class="record-fact">
+      <small>${esc(label)}</small>
+      <strong>${esc(value ?? '—')}</strong>
+      ${note ? `<span>${esc(note)}</span>` : ''}
+    </article>
+  `;
+}
+
+function recordSummaryCard(label, value, tone = 'neutral', note = '') {
+  return `
+    <article class="record-summary-card">
+      <small>${esc(label)}</small>
+      <strong class="domain-status domain-status--${tone}">${esc(value || '—')}</strong>
+      ${note ? `<span>${esc(note)}</span>` : ''}
+    </article>
+  `;
+}
+
+function riskTone(value) {
+  const risk = String(value || '').toLowerCase();
+  if (risk === 'critical' || risk === 'high') return 'danger';
+  if (risk === 'medium') return 'warning';
+  if (risk === 'low') return 'success';
+  return 'neutral';
+}
+
+function recordEventFacts(payload = {}) {
+  const candidates = [
+    ['Status', payload.status],
+    ['Decision', payload.decision],
+    ['Action', payload.actionType],
+    ['Risk', payload.risk],
+    ['Attempt', payload.attempt],
+    ['Resource', payload.resourceId],
+    ['Verified', payload.verified === true ? 'Yes' : payload.verified === false ? 'No' : null],
+    ['Error', payload.error?.code],
+  ].filter(([, value]) => value !== undefined && value !== null && value !== '');
+  return candidates.length
+    ? candidates.slice(0, 4).map(([label, value]) => recordFact(label, value)).join('')
+    : recordFact('Audit state', 'Persisted', 'No additional business fields were emitted for this event.');
+}
+
+function setRecordDetailTab(tab = 'overview') {
+  document.querySelectorAll('[data-record-tab]').forEach((button) => {
+    const active = button.dataset.recordTab === tab;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+  document.querySelectorAll('[data-record-panel]').forEach((panel) => {
+    panel.hidden = panel.dataset.recordPanel !== tab;
+  });
+}
+
 function openDomainThread(moduleId, recordId) {
   const domain = model.domainWorkspaces?.[moduleId];
   const record = domain?.records.find((item) => item.id === recordId);
   const traceDialog = document.querySelector('#domain-thread-dialog');
   if (!record || !traceDialog) return;
 
+  const effect = record.thread.effect || {};
+  const verification = record.thread.verification || {};
+  const latestEvent = record.latestEvent.type || 'No event recorded';
+  const resourceType = verification.resourceType || effect.resourceType || domain.resourceLabel;
+  const outcome = effect.domainOutcome || effect.state || verification.expectedState || record.status;
+
   document.querySelector('#domain-thread-title').textContent = `${domain.resourceLabel} · ${record.resourceId}`;
   document.querySelector('#domain-thread-subtitle').textContent =
-    `${domain.title} · persisted governance and execution lineage`;
+    `${domain.title} · operational record with governed traceability`;
+
+  document.querySelector('#record-overview-summary').innerHTML = [
+    recordSummaryCard('State', record.status, statusTone(record.status), outcome),
+    recordSummaryCard('Risk', record.intent.risk ? String(record.intent.risk).toUpperCase() : '—', riskTone(record.intent.risk)),
+    recordSummaryCard('Execution', record.execution.status, statusTone(record.execution.status), `${record.execution.attempts}/${record.execution.maxAttempts || '—'} attempt(s)`),
+    recordSummaryCard('Evidence', record.evidence.count ? 'VERIFIED' : 'NONE', record.evidence.count ? 'success' : 'neutral', `${record.evidence.count} object(s)`),
+  ].join('');
+
+  document.querySelector('#record-overview-facts').innerHTML = [
+    recordFact('Resource ID', record.resourceId),
+    recordFact('Resource type', resourceType),
+    recordFact('Recorded', record.recordedAt ? new Date(record.recordedAt).toLocaleString() : '—'),
+    recordFact('Latest event', latestEvent, record.latestEvent.occurredAt ? new Date(record.latestEvent.occurredAt).toLocaleString() : ''),
+    recordFact('Outcome', outcome),
+    recordFact('Adapter', record.execution.adapterId || '—'),
+  ].join('');
 
   document.querySelector('#domain-thread-lineage').innerHTML = [
     lineageCell('Domain state', record.status, statusTone(record.status), record.recordedAt ? new Date(record.recordedAt).toLocaleString() : ''),
@@ -230,10 +307,26 @@ function openDomainThread(moduleId, recordId) {
     lineageCell('Evidence', record.evidence.count ? 'VERIFIED' : 'NONE', record.evidence.count ? 'success' : 'neutral', record.evidence.verifiedAt ? new Date(record.evidence.verifiedAt).toLocaleString() : ''),
   ].join('');
 
+  document.querySelector('#record-evidence-summary').innerHTML = [
+    recordSummaryCard('Verification', verification.verified === true ? 'VERIFIED' : record.evidence.count ? 'PRESENT' : 'NONE', verification.verified === true || record.evidence.count ? 'success' : 'neutral'),
+    recordSummaryCard('Expected state', verification.expectedState || record.status, statusTone(verification.expectedState || record.status)),
+    recordSummaryCard('Evidence objects', String(record.evidence.count), record.evidence.count ? 'success' : 'neutral'),
+  ].join('');
+
+  document.querySelector('#record-evidence-detail').innerHTML = [
+    recordFact('Evidence source', verification.evidenceSource || 'VAOS durable evidence ledger'),
+    recordFact('Verified at', record.evidence.verifiedAt ? new Date(record.evidence.verifiedAt).toLocaleString() : '—'),
+    recordFact('Resource', verification.resourceId || record.resourceId),
+    recordFact('Resource type', verification.resourceType || resourceType),
+    recordFact('Adapter', record.execution.adapterId || '—'),
+    recordFact('Approval', record.approval.status, record.approval.decidedBy || ''),
+  ].join('');
+
   document.querySelector('#domain-thread-effect').textContent = jsonForDisplay(record.thread.effect);
   document.querySelector('#domain-thread-evidence').textContent = jsonForDisplay(record.thread.verification);
 
   const events = record.thread.events || [];
+  document.querySelector('#domain-thread-events-raw').textContent = JSON.stringify(events, null, 2);
   document.querySelector('#domain-thread-event-count').textContent = events.length;
   document.querySelector('#domain-thread-timeline').innerHTML = events.length ? events.map((item) => `
     <article class="thread-event">
@@ -244,11 +337,12 @@ function openDomainThread(moduleId, recordId) {
           <small>#${esc(item.sequence)} · ${esc(item.occurredAt ? new Date(item.occurredAt).toLocaleString() : '—')}</small>
         </div>
         <p>${esc(item.source)}</p>
-        <pre>${esc(JSON.stringify(item.payload || {}, null, 2))}</pre>
+        <div class="thread-event__facts">${recordEventFacts(item.payload)}</div>
       </div>
     </article>
   `).join('') : '<p class="empty-state">No related persisted events were found for this record.</p>';
 
+  setRecordDetailTab('overview');
   traceDialog.showModal();
 }
 
@@ -674,6 +768,9 @@ async function submitTraceLinkProposal(event) {
 
 function wireInteractions() {
   document.addEventListener('click', (event) => {
+    const recordTab = event.target.closest('[data-record-tab]');
+    if (recordTab) { setRecordDetailTab(recordTab.dataset.recordTab); return; }
+
     const approval = event.target.closest('[data-approval-id][data-decision]');
     if (approval) { decideApproval(approval); return; }
 

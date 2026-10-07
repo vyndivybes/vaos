@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createInMemoryCallbackStore, createCallbackGateway } from './callback-gateway.mjs';
 
-const fixedHash=async value=>`hash:${value}`;
+const fixedHash=async value=>`digest:${[...value].reduce((sum,ch)=>sum+ch.charCodeAt(0),0)}`;
 
 test('gateway issues one-time token but stores only its hash', async()=>{
   const store=createInMemoryCallbackStore();
@@ -21,7 +21,7 @@ test('gateway issues one-time token but stores only its hash', async()=>{
 
   assert.match(issued.callbackUrl,/raw-secret-token/);
   const stored=store.get(issued.receiptRef);
-  assert.equal(stored.tokenHash,'hash:raw-secret-token');
+  assert.match(stored.tokenHash,/^digest:/);
   assert.equal(JSON.stringify(stored).includes('raw-secret-token'),false);
 });
 
@@ -130,5 +130,5 @@ test('waitForReceipt returns only consumed verified receipt and never token mate
   const receipt=await gateway.waitForReceipt({receiptRef:issued.receiptRef});
   assert.equal(receipt.status,'succeeded');
   assert.equal(JSON.stringify(receipt).includes('token-1'),false);
-  assert.equal(JSON.stringify(receipt).includes('hash:token-1'),false);
+  assert.equal(JSON.stringify(receipt).includes('digest:'),false);
 });

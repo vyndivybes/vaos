@@ -217,8 +217,8 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] provider manifest schema
 - [x] capability/provider candidate map
 - [x] staged implementation roadmap
-- [ ] capability registry tests
-- [ ] capability registry implementation
+- [x] capability registry tests
+- [x] capability registry implementation
 - [ ] credential broker interface
 - [ ] provider adapters
 - [ ] deployment

@@ -5,7 +5,7 @@ import controlPlane from './api/control-plane.mjs';
 import intents from './api/intents.mjs';
 import approvals from './api/approvals.mjs';
 import executions from './api/executions.mjs';
-import { invokeVercelHandler } from './lib/cloudflare-adapter.mjs';
+import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 
 export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/login': login,
@@ -60,7 +60,7 @@ export function createCloudflareApp({
       if (path === '/api' || path.startsWith('/api/')) {
         const handler = apiHandlers[path];
         if (!handler) return jsonError(404, 'NOT_FOUND', 'API route not found');
-        return invokeVercelHandler(handler, request, runtimeEnv);
+        return invokeCloudflareHandler(handler, request, runtimeEnv);
       }
 
       const assetResponse = await assetFetcher(request);

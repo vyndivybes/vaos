@@ -1,18 +1,32 @@
 {
-  "schemaVersion": "vaos.provider.v1",
+  "schemaVersion": "vaos.provider.v2",
   "providerId": "zapier",
   "displayName": "Zapier",
-  "description": "Managed SaaS integration provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "adapterVersion": "1.0.0",
+  "description": "Managed long-tail SaaS integration provider behind the governed VAOS fabric.",
   "capabilities": [
     "integration.saas"
   ],
   "deploymentModes": [
     "managed-saas"
   ],
+  "enabled": false,
   "qualification": {
     "state": "evaluation",
+    "qualifiedCapabilities": [],
     "evidenceRefs": [],
-    "qualifiedCapabilities": []
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
   },
   "security": {
     "secretBinding": "required",
@@ -26,12 +40,20 @@
     "idempotency": "not-supported",
     "retrySemantics": "conditional",
     "verificationStrategy": "callback-evidence",
-    "healthProbe": "optional"
+    "healthProbe": "optional",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "provider-default",
+    "dataResidency": [
+      "provider-qualified"
+    ],
+    "costControl": "task-budget"
   },
   "licensing": {
-    "model": "Managed SaaS; plan, task-usage, app-access and redistribution review required before production activation",
+    "model": "Managed SaaS; plan/task/app-access review required",
     "redistributionReviewRequired": true,
-    "notes": "Initial AF-5 scope uses a predefined Zap with a Catch Hook trigger and a VAOS callback receipt. The Catch Hook URL is treated as a secret binding."
+    "notes": "Catch Hook URL is secret material; verified VAOS callback receipt is required."
   },
-  "notes": "Production qualification is blocked until duplicate-delivery behavior, callback authenticity, task-limit/held-run behavior, disabled/retired hook behavior, rate limiting, app-access policy and cost controls are evidenced."
+  "notes": "Disabled/evaluation-only until callback gateway, held-run/task-limit, replay and cost-control qualification pass."
 }

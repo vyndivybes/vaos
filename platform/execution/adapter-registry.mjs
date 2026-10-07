@@ -136,6 +136,18 @@ function projectRiskAdapter(projectRisk) {
     const riskId = requiredText(job.payload, 'riskId');
     const port = assertProjectRiskPort(projectRisk);
 
+    if (job.payload?.qualificationRecoveryDrill === true) {
+      if (job.payload?.qualificationMode !== true) {
+        throw terminalError('QUALIFICATION_MODE_REQUIRED');
+      }
+      if (Number(job.attemptCount) === 1) {
+        const error = new Error('QUALIFICATION_RECOVERY_DRILL_RETRY');
+        error.code = 'QUALIFICATION_RECOVERY_DRILL_RETRY';
+        error.retryable = true;
+        throw error;
+      }
+    }
+
     const escalated = await port.escalateRisk(job, { riskId });
     if (!escalated || !['CREATED', 'REPLAY'].includes(escalated.outcome)) {
       throw new Error(`PROJECT_RISK_DOMAIN_WRITE_FAILED:${escalated?.outcome || 'UNKNOWN'}`);

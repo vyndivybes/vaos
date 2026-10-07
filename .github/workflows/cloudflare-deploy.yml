@@ -1,0 +1,53 @@
+name: cloudflare-deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  qualify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run VAOS qualification
+        run: npm test
+
+      - name: Verify Cloudflare bundle
+        run: npx --yes wrangler@4.136.3 deploy --dry-run --config wrangler.jsonc --outdir .wrangler-dry-run
+
+  deploy:
+    needs: qualify
+    runs-on: ubuntu-latest
+    environment: cloudflare-development
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Deploy VAOS development Worker
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "4.136.3"
+          command: deploy --config wrangler.jsonc
+          secrets: |
+            VAOS_DB_RPC_SECRET
+          vars: |
+            SUPABASE_URL
+          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        env:
+          VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
+          SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+
+      - name: Publish deployment URL
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: echo "VAOS Cloudflare deployment: $DEPLOYMENT_URL"

@@ -246,33 +246,69 @@
   </dialog>
 
   <dialog class="digital-thread-dialog metallic-gold-rim" id="domain-thread-dialog">
-    <div class="digital-thread-shell">
-      <header class="digital-thread-header">
+    <div class="digital-thread-shell record-inspector">
+      <header class="digital-thread-header record-inspector__header">
         <div>
-          <span class="panel-kicker">DIGITAL THREAD</span>
-          <h2 id="domain-thread-title">Record trace</h2>
-          <p id="domain-thread-subtitle">Governed lineage from intent through verification evidence.</p>
+          <span class="panel-kicker">OPERATIONAL RECORD</span>
+          <h2 id="domain-thread-title">Record detail</h2>
+          <p id="domain-thread-subtitle">Business view first. Audit evidence remains one click away.</p>
         </div>
-        <button type="button" id="domain-thread-close" aria-label="Close digital thread">×</button>
+        <button type="button" id="domain-thread-close" aria-label="Close record detail">×</button>
       </header>
 
-      <div class="digital-thread-lineage" id="domain-thread-lineage"></div>
+      <nav class="record-detail-tabs" aria-label="Record detail sections" role="tablist">
+        <button type="button" data-record-tab="overview" class="is-active" role="tab" aria-selected="true">Overview</button>
+        <button type="button" data-record-tab="governance" role="tab" aria-selected="false">Governance</button>
+        <button type="button" data-record-tab="evidence" role="tab" aria-selected="false">Evidence</button>
+        <button type="button" data-record-tab="thread" role="tab" aria-selected="false">Digital Thread</button>
+        <button type="button" data-record-tab="raw" role="tab" aria-selected="false">Raw Data</button>
+      </nav>
 
-      <div class="digital-thread-grid">
-        <section class="digital-thread-panel">
-          <div class="panel-heading"><h3>Executed effect</h3><span class="live-badge">persisted</span></div>
-          <pre id="domain-thread-effect"></pre>
+      <div class="record-detail-body">
+        <section class="record-detail-panel" id="record-overview-panel" data-record-panel="overview">
+          <div class="record-overview-summary" id="record-overview-summary"></div>
+          <div class="record-fact-grid" id="record-overview-facts"></div>
         </section>
-        <section class="digital-thread-panel">
-          <div class="panel-heading"><h3>Verification evidence</h3><span class="live-badge">evidence</span></div>
-          <pre id="domain-thread-evidence"></pre>
+
+        <section class="record-detail-panel" id="record-governance-panel" data-record-panel="governance" hidden>
+          <div class="section-heading">
+            <div><span class="panel-kicker">GOVERNED LIFECYCLE</span><h3>Authority and execution state</h3></div>
+          </div>
+          <div class="digital-thread-lineage" id="domain-thread-lineage"></div>
+        </section>
+
+        <section class="record-detail-panel" id="record-evidence-panel" data-record-panel="evidence" hidden>
+          <div class="section-heading">
+            <div><span class="panel-kicker">ASSURANCE</span><h3>Verification evidence</h3></div>
+          </div>
+          <div class="record-evidence-summary" id="record-evidence-summary"></div>
+          <div class="record-fact-grid" id="record-evidence-detail"></div>
+        </section>
+
+        <section class="record-detail-panel" id="record-thread-panel" data-record-panel="thread" hidden>
+          <section class="digital-thread-panel digital-thread-panel--timeline">
+            <div class="panel-heading"><h3>Governance & execution history</h3><span class="count-badge" id="domain-thread-event-count">0</span></div>
+            <div class="digital-thread-timeline" id="domain-thread-timeline"></div>
+          </section>
+        </section>
+
+        <section class="record-detail-panel" id="record-raw-panel" data-record-panel="raw" hidden>
+          <div class="digital-thread-grid">
+            <section class="digital-thread-panel">
+              <div class="panel-heading"><h3>Executed effect</h3><span class="live-badge">persisted</span></div>
+              <pre id="domain-thread-effect"></pre>
+            </section>
+            <section class="digital-thread-panel">
+              <div class="panel-heading"><h3>Verification object</h3><span class="live-badge">evidence</span></div>
+              <pre id="domain-thread-evidence"></pre>
+            </section>
+          </div>
+          <section class="digital-thread-panel">
+            <div class="panel-heading"><h3>Raw event payloads</h3><span class="live-badge">audit</span></div>
+            <pre id="domain-thread-events-raw"></pre>
+          </section>
         </section>
       </div>
-
-      <section class="digital-thread-panel digital-thread-panel--timeline">
-        <div class="panel-heading"><h3>Governance & execution event history</h3><span class="count-badge" id="domain-thread-event-count">0</span></div>
-        <div class="digital-thread-timeline" id="domain-thread-timeline"></div>
-      </section>
     </div>
   </dialog>
 

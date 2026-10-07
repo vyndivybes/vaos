@@ -7,7 +7,7 @@ export function resolveDurableControlConfig(runtimeEnv = undefined, processEnv =
   const explicit = runtimeEnv && typeof runtimeEnv === 'object' ? runtimeEnv : {};
   const fallback = processEnv && typeof processEnv === 'object' ? processEnv : {};
   return {
-    url: explicit.SUPABASE_URL || fallback.SUPABASE_URL,
+    url: explicit.SUPABASE_URL || explicit.SUPABASE || explicit.SUPABASE_PROJECT_URL || fallback.SUPABASE_URL || fallback.SUPABASE || fallback.SUPABASE_PROJECT_URL,
     serverSecret: explicit.VAOS_DB_RPC_SECRET || fallback.VAOS_DB_RPC_SECRET,
   };
 }

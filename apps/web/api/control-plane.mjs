@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const payload = await getControlPlanePayload(req.headers.cookie || '');
+    const payload = await getControlPlanePayload(req.headers.cookie || '', null, req.env);
     if (!payload) return res.status(401).json(apiError('UNAUTHENTICATED', 'Authentication required'));
     return res.status(200).json(payload);
   } catch {

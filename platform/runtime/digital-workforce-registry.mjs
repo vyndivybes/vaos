@@ -2,7 +2,9 @@ import {
   DIGITAL_EMPLOYEE_STATUS,
   QUALIFICATION_LEVEL,
   createDigitalEmployeeDefinition,
+  createResponsibilityContract,
 } from '../../packages/contracts/digital-employee.mjs';
+import { AUTHORITY } from '../../packages/contracts/agent.mjs';
 import { createEventBus } from './event-bus.mjs';
 
 const RETIREABLE = new Set([
@@ -51,11 +53,27 @@ export function createDigitalWorkforceRegistry({
 } = {}) {
   const events = eventBus || createEventBus({ now });
   const employees = new Map();
+  const responsibilityContracts = new Map();
 
   function requireEmployee(employeeId) {
     const employee = employees.get(employeeId);
     if (!employee) throw new Error('DIGITAL_EMPLOYEE_NOT_FOUND');
     return employee;
+  }
+
+  function registerResponsibilityContract(input) {
+    const contract = createResponsibilityContract(input);
+    if (responsibilityContracts.has(contract.id)) {
+      throw new Error('RESPONSIBILITY_CONTRACT_REGISTRATION_CONFLICT');
+    }
+    responsibilityContracts.set(contract.id, contract);
+    return contract;
+  }
+
+  function requireResponsibilityContract(contractId) {
+    const contract = responsibilityContracts.get(contractId);
+    if (!contract) throw new Error('RESPONSIBILITY_CONTRACT_NOT_FOUND');
+    return contract;
   }
 
   function setEmployee(employee) {
@@ -91,6 +109,11 @@ export function createDigitalWorkforceRegistry({
     });
 
     if (employees.has(normalized.id)) throw new Error('DIGITAL_EMPLOYEE_REGISTRATION_CONFLICT');
+
+    if (normalized.responsibilityContractId) {
+      const contract = requireResponsibilityContract(normalized.responsibilityContractId);
+      if (contract.role !== normalized.role) throw new Error('RESPONSIBILITY_CONTRACT_ROLE_MISMATCH');
+    }
 
     const employee = setEmployee(normalized);
     emit('WORKFORCE.DIGITAL_EMPLOYEE.PROPOSED', employee);
@@ -222,6 +245,40 @@ export function createDigitalWorkforceRegistry({
     return updated;
   }
 
+  function authorizeAction(employeeId, actionType) {
+    const employee = requireEmployee(employeeId);
+    if (employee.status !== DIGITAL_EMPLOYEE_STATUS.ACTIVE) {
+      return { decision: 'DENY', reason: 'DIGITAL_EMPLOYEE_NOT_ACTIVE' };
+    }
+    if (!employee.responsibilityContractId) {
+      return { decision: 'DENY', reason: 'RESPONSIBILITY_CONTRACT_REQUIRED' };
+    }
+
+    const contract = requireResponsibilityContract(employee.responsibilityContractId);
+    const authority = employee.capabilities[actionType];
+    if (authority === undefined) {
+      return { decision: 'DENY', reason: 'CAPABILITY_NOT_GRANTED' };
+    }
+
+    if (contract.prohibitedActions.includes(actionType)) {
+      return { decision: 'DENY', reason: 'RESPONSIBILITY_ACTION_PROHIBITED' };
+    }
+    if (contract.approvalRequiredActions.includes(actionType)) {
+      if (authority < AUTHORITY.APPROVED_EXECUTION) {
+        return { decision: 'DENY', reason: 'RESPONSIBILITY_AUTHORITY_CONFLICT' };
+      }
+      return { decision: 'AWAIT_APPROVAL', reason: 'RESPONSIBILITY_APPROVAL_REQUIRED' };
+    }
+    if (contract.autonomousActions.includes(actionType)) {
+      if (authority < AUTHORITY.AUTONOMOUS_EXECUTION) {
+        return { decision: 'DENY', reason: 'RESPONSIBILITY_AUTHORITY_CONFLICT' };
+      }
+      return { decision: 'ALLOW', reason: 'RESPONSIBILITY_AUTONOMOUS' };
+    }
+
+    return { decision: 'DENY', reason: 'RESPONSIBILITY_ACTION_UNDECLARED' };
+  }
+
   function get(employeeId) {
     return cloneEmployee(requireEmployee(employeeId));
   }
@@ -245,6 +302,8 @@ export function createDigitalWorkforceRegistry({
   }
 
   return Object.freeze({
+    registerResponsibilityContract,
+    authorizeAction,
     propose,
     startTraining,
     qualify,

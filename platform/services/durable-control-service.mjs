@@ -3,6 +3,15 @@ import { AGENT_DEFINITIONS } from '../runtime/development-runtime.mjs';
 import { stableHash } from '../runtime/idempotency.mjs';
 import { evaluateActionPolicy, POLICY_DECISION } from '../runtime/policy-engine.mjs';
 
+const WORKFORCE_LIFECYCLE_ACTIONS = new Set([
+  'WORKFORCE.START_TRAINING',
+  'WORKFORCE.QUALIFY',
+  'WORKFORCE.ACTIVATE',
+  'WORKFORCE.RESTRICT',
+  'WORKFORCE.START_RETRAINING',
+  'WORKFORCE.RETIRE',
+]);
+
 function eventTypeFor(status) {
   if (status === 'AWAIT_APPROVAL') return 'GOVERNANCE.APPROVAL_REQUIRED';
   if (status === 'AUTHORIZED') return 'GOVERNANCE.ACTION_AUTHORIZED';
@@ -45,11 +54,23 @@ export function createDurableControlService({
       result = { status: 'DENIED', reason: 'CAPABILITY_NOT_GRANTED', effectExecuted: false, authority: null };
     } else {
       authority = agent.capabilities[intent.actionType];
-      result = resultFromPolicy(evaluateActionPolicy({
-        actionType: intent.actionType,
-        authority,
-        risk: intent.risk,
-      }), authority);
+
+      if (!WORKFORCE_LIFECYCLE_ACTIONS.has(intent.actionType)) {
+        const employee = await store.getDigitalEmployee(agent.id);
+        if (!employee) {
+          result = { status: 'DENIED', reason: 'DIGITAL_EMPLOYEE_NOT_REGISTERED', effectExecuted: false, authority };
+        } else if (employee.status !== 'ACTIVE' || Number(employee.qualificationLevel || 0) < 1) {
+          result = { status: 'DENIED', reason: 'DIGITAL_EMPLOYEE_NOT_ACTIVE', effectExecuted: false, authority };
+        }
+      }
+
+      if (!result) {
+        result = resultFromPolicy(evaluateActionPolicy({
+          actionType: intent.actionType,
+          authority,
+          risk: intent.risk,
+        }), authority);
+      }
     }
 
     const requestHash = stableHash({

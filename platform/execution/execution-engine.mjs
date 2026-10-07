@@ -1,8 +1,10 @@
 function errorEnvelope(error, code = 'ADAPTER_EXECUTION_FAILED', retryable = true) {
+  const resolvedCode = typeof error?.code === 'string' && error.code ? error.code : code;
+  const resolvedRetryable = typeof error?.retryable === 'boolean' ? error.retryable : retryable;
   return {
-    code,
-    retryable,
-    message: typeof error?.message === 'string' ? error.message.slice(0, 240) : code,
+    code: resolvedCode,
+    retryable: resolvedRetryable,
+    message: typeof error?.message === 'string' ? error.message.slice(0, 240) : resolvedCode,
   };
 }
 

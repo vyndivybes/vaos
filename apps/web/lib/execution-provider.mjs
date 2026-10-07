@@ -29,9 +29,14 @@ export function getExecutionEngine(runtimeEnv = undefined) {
       getDomainLink(job, input) { return store.getDomainLink(job, input); },
     });
 
+    const digitalWorkforce = Object.freeze({
+      transitionDigitalEmployee(job, input) { return store.transitionDigitalEmployee(job, input); },
+      getDigitalEmployee(employeeId) { return store.getDigitalEmployee(employeeId); },
+    });
+
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread }),
+      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread, digitalWorkforce }),
       workerId: 'vaos-vercel-worker',
     });
   }

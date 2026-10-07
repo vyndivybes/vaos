@@ -113,3 +113,31 @@ test('drain stops cleanly when queue becomes empty', async () => {
   assert.equal(result.succeeded, 1);
   assert.equal(result.remainingCapacity, 4);
 });
+
+
+test('engine preserves terminal adapter classification so invalid lifecycle transitions dead-letter immediately', async () => {
+  const store = makeStore([{
+    id: 'job-workforce-1',
+    intentId: 'intent-workforce-1',
+    actionType: 'QA.OPEN_CAPA',
+    payload: {},
+    leaseToken: 'lease-workforce-1',
+  }]);
+  store.failExecution = async (job, error) => {
+    store.failed.push({ job, error });
+    return { outcome: error.retryable === false ? 'DEAD_LETTER' : 'RETRY_SCHEDULED', jobId: job.id };
+  };
+  const terminal = new Error('Invalid lifecycle transition');
+  terminal.code = 'WORKFORCE_INVALID_TRANSITION';
+  terminal.retryable = false;
+
+  const engine = createExecutionEngine({
+    store,
+    registry: makeRegistry({ async execute() { throw terminal; } }),
+  });
+  const result = await engine.processOne();
+
+  assert.equal(result.status, 'DEAD_LETTER');
+  assert.equal(store.failed[0].error.code, 'WORKFORCE_INVALID_TRANSITION');
+  assert.equal(store.failed[0].error.retryable, false);
+});

@@ -183,3 +183,36 @@ test('governed domain link writes and readback are bound to the execution lease'
   });
   assert.equal(fake.calls[1].body.operation, 'getDomainLink');
 });
+
+
+test('Digital Workforce reads and lifecycle transitions use typed Edge bridge operations', async () => {
+  const fake = fakeFetch([
+    { body: { id: 'vibpe', status: 'TRAINING', qualificationLevel: 0 } },
+    { body: { outcome: 'CREATED', employee: { id: 'vibpe', status: 'QUALIFIED', qualificationLevel: 3 } } },
+  ]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+
+  const employee = await store.getDigitalEmployee('vibpe');
+  const transitioned = await store.transitionDigitalEmployee(
+    { id: 'job-wf-1', leaseToken: 'lease-wf-1', actionType: 'WORKFORCE.QUALIFY' },
+    { employeeId: 'vibpe', qualificationLevel: 3, evidenceRefs: ['evidence:benchmark:1'] },
+  );
+
+  assert.equal(employee.status, 'TRAINING');
+  assert.equal(transitioned.employee.status, 'QUALIFIED');
+  assert.equal(fake.calls[0].body.operation, 'getDigitalEmployee');
+  assert.deepEqual(fake.calls[0].body.payload, { employeeId: 'vibpe' });
+  assert.equal(fake.calls[1].body.operation, 'transitionDigitalEmployee');
+  assert.deepEqual(fake.calls[1].body.payload, {
+    jobId: 'job-wf-1',
+    leaseToken: 'lease-wf-1',
+    employeeId: 'vibpe',
+    actionType: 'WORKFORCE.QUALIFY',
+    qualificationLevel: 3,
+    evidenceRefs: ['evidence:benchmark:1'],
+  });
+});

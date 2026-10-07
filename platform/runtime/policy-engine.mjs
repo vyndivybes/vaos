@@ -28,6 +28,36 @@ export const ACTION_POLICIES = Object.freeze({
     requiresApproval: true,
     defaultRisk: 'medium',
   }),
+  'WORKFORCE.START_TRAINING': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'medium',
+  }),
+  'WORKFORCE.QUALIFY': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'WORKFORCE.ACTIVATE': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'WORKFORCE.RESTRICT': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'WORKFORCE.START_RETRAINING': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'medium',
+  }),
+  'WORKFORCE.RETIRE': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
   'EVIDENCE.DELETE': Object.freeze({
     prohibited: true,
     minimumAuthority: AUTHORITY.AUTONOMOUS_EXECUTION,

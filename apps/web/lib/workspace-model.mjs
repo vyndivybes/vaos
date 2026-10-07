@@ -51,6 +51,12 @@ const APPROVAL_TITLES = Object.freeze({
   'ENGINEERING.BASELINE_CHANGE': 'Approve engineering baseline change',
   'PROJECT.ESCALATE_RISK': 'Escalate project risk',
   'DIGITAL_THREAD.CREATE_LINK': 'Create digital-thread relationship',
+  'WORKFORCE.START_TRAINING': 'Start Digital Employee training',
+  'WORKFORCE.QUALIFY': 'Qualify Digital Employee',
+  'WORKFORCE.ACTIVATE': 'Activate Digital Employee',
+  'WORKFORCE.RESTRICT': 'Restrict Digital Employee',
+  'WORKFORCE.START_RETRAINING': 'Start Digital Employee retraining',
+  'WORKFORCE.RETIRE': 'Retire Digital Employee',
 });
 
 const EVENT_SEVERITY = Object.freeze({
@@ -68,6 +74,7 @@ const EVENT_SEVERITY = Object.freeze({
   'ENGINEERING.BASELINE_CHANGE_RECORDED': 'success',
   'PROJECT.RISK_ESCALATION_RECORDED': 'success',
   'DIGITAL_THREAD.LINK_CREATED': 'success',
+  'WORKFORCE.DIGITAL_EMPLOYEE.TRANSITIONED': 'success',
   'AGENT.REGISTERED': 'info',
   'AGENT.ACTION_PREPARED': 'info',
 });
@@ -116,6 +123,7 @@ function eventSummary(event, names) {
     case 'ENGINEERING.BASELINE_CHANGE_RECORDED': return `Baseline ${payload.baseline || ''} change persisted`;
     case 'PROJECT.RISK_ESCALATION_RECORDED': return `Risk ${payload.riskId || ''} escalation persisted`;
     case 'DIGITAL_THREAD.LINK_CREATED': return `${payload.sourceDomain || 'record'} ${payload.relationType || 'linked'} ${payload.targetDomain || 'record'}`;
+    case 'WORKFORCE.DIGITAL_EMPLOYEE.TRANSITIONED': return `${payload.employeeId || 'Digital Employee'} transitioned ${payload.fromStatus || 'UNKNOWN'} → ${payload.toStatus || 'UNKNOWN'}`;
     case 'AGENT.ACTION_PREPARED': return `${payload.actionType} was prepared without executing an effect`;
     default: return event.type;
   }
@@ -267,6 +275,41 @@ function summaryItem(label, value, note = '') {
   return { label, value, note };
 }
 
+const WORKFORCE_ACTION_CONFIG = Object.freeze({
+  'WORKFORCE.START_TRAINING': { label: 'Start training', risk: 'medium' },
+  'WORKFORCE.QUALIFY': { label: 'Qualify', risk: 'high', qualificationEvidence: true },
+  'WORKFORCE.ACTIVATE': { label: 'Activate', risk: 'high' },
+  'WORKFORCE.RESTRICT': { label: 'Restrict', risk: 'high' },
+  'WORKFORCE.START_RETRAINING': { label: 'Start retraining', risk: 'medium' },
+  'WORKFORCE.RETIRE': { label: 'Retire', risk: 'high' },
+});
+
+const WORKFORCE_TRANSITIONS = Object.freeze({
+  PROPOSED: ['WORKFORCE.START_TRAINING','WORKFORCE.RETIRE'],
+  TRAINING: ['WORKFORCE.QUALIFY','WORKFORCE.RETIRE'],
+  QUALIFIED: ['WORKFORCE.ACTIVATE','WORKFORCE.RETIRE'],
+  ACTIVE: ['WORKFORCE.RESTRICT','WORKFORCE.RETIRE'],
+  RESTRICTED: ['WORKFORCE.START_RETRAINING','WORKFORCE.RETIRE'],
+  RETRAINING: ['WORKFORCE.QUALIFY','WORKFORCE.RETIRE'],
+  RETIRED: [],
+});
+
+function minimumQualificationLevel(employee) {
+  const value = String(employee?.modelRequirements?.minimumQualification || '');
+  const match = value.match(/^Q([1-4])(?:_|$)/);
+  return match ? Number(match[1]) : Math.max(1, Number(employee?.qualificationLevel) || 1);
+}
+
+function workforceLifecycleActions(employee) {
+  return (WORKFORCE_TRANSITIONS[employee.lifecycleStatus] || []).map((actionType) => ({
+    actionType,
+    ...WORKFORCE_ACTION_CONFIG[actionType],
+    recommendedQualificationLevel: actionType === 'WORKFORCE.QUALIFY'
+      ? minimumQualificationLevel(employee)
+      : null,
+  }));
+}
+
 function operationalRow({
   id,
   title,
@@ -278,8 +321,9 @@ function operationalRow({
   kind = 'record',
   responsibilities = [],
   contract = null,
+  actions = [],
 }) {
-  return { id, title, resourceId, status, subtitle, detail, meta, kind, responsibilities, contract };
+  return { id, title, resourceId, status, subtitle, detail, meta, kind, responsibilities, contract, actions };
 }
 
 function normalizeWorkforce(runtimeSnapshot, agents) {
@@ -400,11 +444,13 @@ function buildOperationalViews({ agents, approvals, events, domainWorkspaces, ru
   const workforceRows = workforce.digitalEmployees.map((employee) => operationalRow({
     id: `digital-employee:${employee.id}`,
     title: employee.name,
+    resourceId: employee.id,
     status: employee.lifecycleStatus,
     subtitle: `${employee.role} · ${employee.department}`,
     detail: employee.mission,
     kind: 'digital-employee',
     responsibilities: employee.responsibilities,
+    actions: workforceLifecycleActions(employee),
     contract: employee.contract ? {
       id: employee.contract.id,
       outcomes: employee.contract.outcomes,

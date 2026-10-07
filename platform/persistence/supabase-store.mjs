@@ -116,5 +116,18 @@ export function createSupabaseControlStore({
         targetRecordId: input.targetRecordId,
       });
     },
+    getDigitalEmployee(employeeId) {
+      return invoke('getDigitalEmployee', { employeeId });
+    },
+    transitionDigitalEmployee(job, input) {
+      return invoke('transitionDigitalEmployee', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        employeeId: input.employeeId,
+        actionType: job.actionType,
+        qualificationLevel: input.qualificationLevel ?? null,
+        evidenceRefs: input.evidenceRefs || [],
+      });
+    },
   });
 }

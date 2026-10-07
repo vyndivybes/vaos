@@ -1,0 +1,41 @@
+name: cloudflare-deploy
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: cloudflare-development
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Run VAOS qualification
+        run: npm test
+
+      - name: Verify Cloudflare bundle
+        run: npx --yes wrangler@4.136.3 deploy --dry-run --config wrangler.jsonc --outdir .wrangler-dry-run
+
+      - name: Deploy VAOS development Worker
+        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
+
+      - name: Bind VAOS runtime secrets
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
+        run: |
+          node -e "process.stdout.write(JSON.stringify({SUPABASE_URL:process.env.SUPABASE_URL,VAOS_DB_RPC_SECRET:process.env.VAOS_DB_RPC_SECRET}))" | npx --yes wrangler@4.136.3 secret bulk --config wrangler.jsonc
+
+      - name: Deployment complete
+        run: |
+          echo "VAOS Cloudflare Worker deployment completed."

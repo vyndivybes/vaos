@@ -554,3 +554,52 @@ test('VIBPE Q3 training requires a PASS assessment before Qualify is exposed', (
   assert.equal(row.actions[0].recommendedQualificationLevel, 3);
   assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:assessment-1']);
 });
+
+test('QA Q3 training requires a CAPA governance PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'qa',
+      name: 'QA / CAPA Agent',
+      role: 'Quality Assurance',
+      department: 'Quality',
+      mission: 'Protect product and process quality.',
+      responsibilities: ['Prepare CAPA', 'Verify closure evidence'],
+      responsibilityContractId: 'qa-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'QA.OPEN_CAPA': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 4,
+      currentAssignment: 'Qualification',
+      priority: 'HIGH',
+      confidence: 94,
+      modelRequirements: { minimumQualification: 'Q3_ENGINEERING' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'QA_Q3_CAPA_GOVERNANCE_V1');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'qa-assessment-1',
+    targetLevel: 3,
+    profileId: 'QA_Q3_CAPA_GOVERNANCE_V1',
+    scope: 'CAPA_GOVERNANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 3);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:qa-assessment-1']);
+});
+

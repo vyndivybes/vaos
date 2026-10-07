@@ -306,6 +306,7 @@ function minimumQualificationLevel(employee) {
 const QUALIFICATION_PROFILES = Object.freeze({
   vibpe: Object.freeze({ 3: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1' }),
   qa: Object.freeze({ 3: 'QA_Q3_CAPA_GOVERNANCE_V1' }),
+  risk: Object.freeze({ 3: 'RISK_Q3_ENTERPRISE_RISK_GOVERNANCE_V1' }),
 });
 
 function workforceLifecycleActions(employee) {

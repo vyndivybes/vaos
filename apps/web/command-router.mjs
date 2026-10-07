@@ -57,6 +57,34 @@ export function resolveCommand(input) {
     };
   }
 
+  const linkedRecoveryPrefix = 'qualification risk recovery ';
+  const linkedRecoverySeparator = ' link baseline ';
+  const linkedRecoveryLower = query.toLowerCase();
+  if (linkedRecoveryLower.startsWith(linkedRecoveryPrefix) && linkedRecoveryLower.includes(linkedRecoverySeparator)) {
+    const separatorIndex = linkedRecoveryLower.indexOf(linkedRecoverySeparator);
+    const riskId = query.slice(linkedRecoveryPrefix.length, separatorIndex).trim();
+    const baselineId = query.slice(separatorIndex + linkedRecoverySeparator.length).trim();
+    if (riskId && baselineId) {
+      return {
+        kind: 'intent',
+        targetView: 'risk',
+        agentId: 'risk',
+        actionType: 'PROJECT.ESCALATE_RISK',
+        risk: 'medium',
+        payload: {
+          riskId,
+          qualificationMode: true,
+          qualificationRecoveryDrill: true,
+          qualificationTrace: {
+            targetDomain: 'ENGINEERING_BASELINE',
+            targetResourceId: baselineId,
+            relationType: 'MITIGATES_RISK',
+          },
+        },
+      };
+    }
+  }
+
   const qualificationRecoveryRisk = query.match(/^qualification\s+risk\s+recovery\s+(.+)$/i);
   if (qualificationRecoveryRisk) {
     return {

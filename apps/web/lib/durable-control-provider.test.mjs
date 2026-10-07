@@ -29,3 +29,15 @@ test('durable control config falls back to process env outside Cloudflare', () =
     serverSecret: 'process-secret',
   });
 });
+
+test('durable control config accepts legacy SUPABASE runtime binding alias', () => {
+  const config = resolveDurableControlConfig({
+    SUPABASE: 'https://alias.supabase.co',
+    VAOS_DB_RPC_SECRET: 'runtime-secret',
+  }, {});
+
+  assert.deepEqual(config, {
+    url: 'https://alias.supabase.co',
+    serverSecret: 'runtime-secret',
+  });
+});

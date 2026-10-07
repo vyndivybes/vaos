@@ -1,17 +1,61 @@
 {
-  "schemaVersion": "vaos.provider.v1",
+  "schemaVersion": "vaos.provider.v2",
   "providerId": "windmill",
   "displayName": "Windmill",
-  "description": "Self-hosted governed script execution provider evaluated behind the VAOS Automation & Integration Fabric.",
-  "capabilities": ["code.execute"],
-  "deploymentModes": ["self-hosted"],
-  "qualification": {"state": "evaluation", "evidenceRefs": [], "qualifiedCapabilities": []},
-  "security": {"secretBinding": "required", "dataEgress": "controlled", "authModes": ["bearer"], "callbackVerification": "none"},
-  "execution": {"idempotency": "not-supported", "retrySemantics": "conditional", "verificationStrategy": "provider-readback", "healthProbe": "required"},
-  "licensing": {
-    "model": "Open-source/self-hostable platform; production deployment, script licensing and service-account policy require qualification.",
-    "redistributionReviewRequired": true,
-    "notes": "VAOS invokes only pre-approved script keys mapped to versioned Windmill paths. Inline or arbitrary script execution is outside AF-7 scope."
+  "adapterVersion": "1.0.0",
+  "description": "Self-hosted governed script execution provider behind the VAOS fabric.",
+  "capabilities": [
+    "code.execute"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
   },
-  "notes": "Production qualification remains blocked until service-account scope, script-version governance, queue/backpressure, timeout/reconciliation, result retention, object-storage handoff, cancellation and cost/resource controls are evidenced."
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "bearer"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "job-policy-bound",
+    "dataResidency": [
+      "IN"
+    ],
+    "costControl": "runtime-and-compute-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hostable platform",
+    "redistributionReviewRequired": true,
+    "notes": "Only approved script keys may map to versioned paths; inline/arbitrary execution is outside scope."
+  },
+  "notes": "Disabled/evaluation-only until service-account, queue/backpressure, cancellation, artifact handoff and compute controls qualify."
 }

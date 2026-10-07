@@ -22,6 +22,7 @@ export function getExecutionEngine(runtimeEnv = undefined) {
     const projectRisk = Object.freeze({
       escalateRisk(job, input) { return store.escalateRisk(job, input); },
       getRiskEscalation(job, riskId) { return store.getRiskEscalation(job, riskId); },
+      linkQualificationTrace(job, input) { return store.linkRiskQualificationTrace(job, input); },
     });
 
     const digitalThread = Object.freeze({

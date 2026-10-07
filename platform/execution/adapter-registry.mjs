@@ -156,11 +156,83 @@ function projectRiskAdapter(projectRisk) {
   });
 }
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk } = {}) {
+function assertDigitalThreadPort(digitalThread) {
+  if (!digitalThread
+      || typeof digitalThread.linkDomainRecords !== 'function'
+      || typeof digitalThread.getDomainLink !== 'function') {
+    throw new Error('DOMAIN_PORT_REQUIRED:digitalThread');
+  }
+  return digitalThread;
+}
+
+function digitalThreadLinkAdapter(digitalThread) {
+  return adapter('supabase.digital-thread-link.v1', async (job) => {
+    const sourceDomain = requiredText(job.payload, 'sourceDomain');
+    const sourceRecordId = requiredText(job.payload, 'sourceRecordId');
+    const relationType = requiredText(job.payload, 'relationType');
+    const targetDomain = requiredText(job.payload, 'targetDomain');
+    const targetRecordId = requiredText(job.payload, 'targetRecordId');
+    const createdBy = requiredText(job.payload, 'proposedBy');
+    const context = job.payload?.context && typeof job.payload.context === 'object' && !Array.isArray(job.payload.context)
+      ? { ...job.payload.context }
+      : {};
+    const port = assertDigitalThreadPort(digitalThread);
+    const input = { sourceDomain, sourceRecordId, relationType, targetDomain, targetRecordId, createdBy, context };
+
+    const linked = await port.linkDomainRecords(job, input);
+    if (!linked || !['CREATED', 'REPLAY'].includes(linked.outcome)) {
+      throw new Error(`DIGITAL_THREAD_LINK_WRITE_FAILED:${linked?.outcome || 'UNKNOWN'}`);
+    }
+
+    const record = await port.getDomainLink(job, input);
+    const verified = Boolean(
+      record
+      && record.id
+      && record.sourceDomain === sourceDomain
+      && record.sourceRecordId === sourceRecordId
+      && record.relationType === relationType
+      && record.targetDomain === targetDomain
+      && record.targetRecordId === targetRecordId
+      && record.createdBy === createdBy
+      && record.executionJobId === job.id
+      && record.intentId === job.intentId
+    );
+
+    if (!verified) throw new Error('DIGITAL_THREAD_LINK_VERIFICATION_MISMATCH');
+
+    return {
+      adapterId: 'supabase.digital-thread-link.v1',
+      effect: {
+        effectType: 'DIGITAL_THREAD.LINK_CREATED',
+        resourceType: 'DIGITAL_THREAD_LINK',
+        resourceId: record.id,
+        state: 'LINKED',
+        domainOutcome: linked.outcome,
+        sourceDomain,
+        sourceRecordId,
+        relationType,
+        targetDomain,
+        targetRecordId,
+      },
+      verification: {
+        verified: true,
+        resourceType: 'DIGITAL_THREAD_LINK',
+        resourceId: record.id,
+        expectedState: 'LINKED',
+        executionJobId: job.id,
+        intentId: job.intentId,
+        evidenceSource: 'vaos_private.digital_thread_links',
+      },
+    };
+  });
+}
+
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
     ['PROJECT.ESCALATE_RISK', projectRiskAdapter(projectRisk)],
+    ['DIGITAL_THREAD.CREATE_LINK', digitalThreadLinkAdapter(digitalThread)],
   ]);
 
   return Object.freeze({

@@ -1,5 +1,30 @@
 const RISK = new Set(['low', 'medium', 'high', 'critical']);
 const ACTION = /^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)+$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const TRACE_DOMAINS = new Set(['QA_CAPA', 'ENGINEERING_BASELINE', 'PROJECT_RISK']);
+const TRACE_RELATIONS = new Set(['DRIVES_CHANGE', 'MITIGATES_RISK', 'TRIGGERS_CAPA', 'RELATED_TO']);
+
+function validateDigitalThreadLinkPayload(payload, errors) {
+  if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+    errors.push('INVALID_DIGITAL_THREAD_PAYLOAD');
+    return;
+  }
+  if (!TRACE_DOMAINS.has(payload.sourceDomain) || !TRACE_DOMAINS.has(payload.targetDomain)) {
+    errors.push('INVALID_DIGITAL_THREAD_DOMAIN');
+  }
+  if (!UUID.test(String(payload.sourceRecordId || '')) || !UUID.test(String(payload.targetRecordId || ''))) {
+    errors.push('INVALID_DIGITAL_THREAD_RECORD_ID');
+  }
+  if (!TRACE_RELATIONS.has(payload.relationType)) {
+    errors.push('INVALID_DIGITAL_THREAD_RELATION');
+  }
+  if (
+    payload.sourceDomain === payload.targetDomain
+    && payload.sourceRecordId === payload.targetRecordId
+  ) {
+    errors.push('DIGITAL_THREAD_SELF_LINK_DENIED');
+  }
+}
 
 export function validateIntentRequest({ idempotencyKey, body } = {}) {
   const errors = [];
@@ -11,6 +36,7 @@ export function validateIntentRequest({ idempotencyKey, body } = {}) {
     if (!RISK.has(String(body.risk || '').toLowerCase())) errors.push('INVALID_RISK');
     if (typeof body.reason !== 'string' || body.reason.trim().length < 3 || body.reason.length > 1000) errors.push('INVALID_REASON');
     if (body.payload !== undefined && (body.payload === null || typeof body.payload !== 'object' || Array.isArray(body.payload))) errors.push('INVALID_PAYLOAD');
+    if (body.actionType === 'DIGITAL_THREAD.CREATE_LINK') validateDigitalThreadLinkPayload(body.payload, errors);
   }
   return { ok: errors.length === 0, errors };
 }

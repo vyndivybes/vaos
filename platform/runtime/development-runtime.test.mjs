@@ -20,3 +20,10 @@ test('development runtime boots the specialist fleet and governed sample intents
   assert.ok(snapshot.events.some((event) => event.type === 'GOVERNANCE.ACTION_AUTHORIZED'));
   assert.equal(snapshot.mode, 'EPHEMERAL_DEVELOPMENT');
 });
+
+
+test('knowledge agent has L4 authority to propose governed digital-thread links', () => {
+  const runtime = createDevelopmentRuntime();
+  const knowledge = runtime.snapshot().agents.find((agent) => agent.id === 'knowledge');
+  assert.equal(knowledge.capabilities['DIGITAL_THREAD.CREATE_LINK'], 4);
+});

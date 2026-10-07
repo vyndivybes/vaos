@@ -36,13 +36,26 @@ Deno.serve(async (req: Request) => {
     rpcName = 'vaos_link_domain_records'
     args = {
       p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
       p_source_domain: payload.sourceDomain,
       p_source_record_id: payload.sourceRecordId,
       p_relation_type: payload.relationType,
       p_target_domain: payload.targetDomain,
       p_target_record_id: payload.targetRecordId,
-      p_created_by: payload.createdBy,
+      p_created_by: payload.proposedBy,
       p_context: payload.context || {},
+    }
+  } else if (operation === 'getDomainLink') {
+    rpcName = 'vaos_get_domain_link'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_source_domain: payload.sourceDomain,
+      p_source_record_id: payload.sourceRecordId,
+      p_relation_type: payload.relationType,
+      p_target_domain: payload.targetDomain,
+      p_target_record_id: payload.targetRecordId,
     }
   } else if (operation === 'submitIntent') {
     rpcName = 'vaos_submit_intent'

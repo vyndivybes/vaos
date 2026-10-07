@@ -47,3 +47,21 @@ test('high-risk or explicitly human-gated effects require approval even at L5', 
   assert.equal(baseline.decision, POLICY_DECISION.AWAIT_APPROVAL);
   assert.equal(ACTION_POLICIES['ENGINEERING.BASELINE_CHANGE'].requiresApproval, true);
 });
+
+
+test('digital-thread relationship creation is human-gated at both L4 and L5', () => {
+  const l4 = evaluateActionPolicy({
+    actionType: 'DIGITAL_THREAD.CREATE_LINK',
+    authority: 4,
+    risk: 'medium',
+  });
+  const l5 = evaluateActionPolicy({
+    actionType: 'DIGITAL_THREAD.CREATE_LINK',
+    authority: 5,
+    risk: 'low',
+  });
+
+  assert.equal(l4.decision, POLICY_DECISION.AWAIT_APPROVAL);
+  assert.equal(l5.decision, POLICY_DECISION.AWAIT_APPROVAL);
+  assert.equal(ACTION_POLICIES['DIGITAL_THREAD.CREATE_LINK'].requiresApproval, true);
+});

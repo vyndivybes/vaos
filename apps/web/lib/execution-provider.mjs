@@ -26,9 +26,14 @@ export function getExecutionEngine() {
       getRiskEscalation(job, riskId) { return store.getRiskEscalation(job, riskId); },
     });
 
+    const digitalThread = Object.freeze({
+      linkDomainRecords(job, input) { return store.linkDomainRecords(job, input); },
+      getDomainLink(job, input) { return store.getDomainLink(job, input); },
+    });
+
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk }),
+      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread }),
       workerId: 'vaos-vercel-worker',
     });
   }

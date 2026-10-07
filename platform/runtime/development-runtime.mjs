@@ -85,9 +85,10 @@ const AGENT_DEFINITIONS = Object.freeze([
     domain: 'Intelligence',
     status: 'observe',
     confidence: 93,
-    task: 'Maintaining source authority graph',
+    task: 'Maintaining source authority and governed digital thread',
     capabilities: {
       'KNOWLEDGE.READ_GRAPH': AUTHORITY.ANALYSE,
+      'DIGITAL_THREAD.CREATE_LINK': AUTHORITY.APPROVED_EXECUTION,
     },
   },
 ]);

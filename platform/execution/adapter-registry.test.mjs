@@ -7,6 +7,7 @@ test('registry resolves only explicitly supported governed effects', () => {
   assert.equal(registry.has('QA.OPEN_CAPA'), true);
   assert.equal(registry.has('ENGINEERING.BASELINE_CHANGE'), true);
   assert.equal(registry.has('PROJECT.ESCALATE_RISK'), true);
+  assert.equal(registry.has('DIGITAL_THREAD.CREATE_LINK'), true);
   assert.equal(registry.has('FINANCE.PAY_INVOICE'), false);
 });
 
@@ -405,4 +406,82 @@ test('Project/Risk adapter refuses malformed risk ID before touching the domain 
     /ADAPTER_PAYLOAD_INVALID:riskId/,
   );
   assert.equal(touched, false);
+});
+
+
+test('Digital Thread adapter creates an explicit durable link and verifies lease-bound provenance', async () => {
+  const calls = [];
+  const digitalThread = {
+    async linkDomainRecords(job, input) {
+      calls.push({ operation: 'link', job, input });
+      return {
+        outcome: 'CREATED',
+        link: {
+          id: 'link-1',
+          ...input,
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+    async getDomainLink(job, input) {
+      calls.push({ operation: 'read', job, input });
+      return {
+        id: 'link-1',
+        sourceDomain: input.sourceDomain,
+        sourceRecordId: input.sourceRecordId,
+        relationType: input.relationType,
+        targetDomain: input.targetDomain,
+        targetRecordId: input.targetRecordId,
+        createdBy: input.createdBy,
+        executionJobId: job.id,
+        intentId: job.intentId,
+      };
+    },
+  };
+
+  const registry = createExecutionAdapterRegistry({ digitalThread });
+  const result = await registry.get('DIGITAL_THREAD.CREATE_LINK').execute({
+    id: 'job-link-1',
+    intentId: 'intent-link-1',
+    actionType: 'DIGITAL_THREAD.CREATE_LINK',
+    payload: {
+      sourceDomain: 'QA_CAPA',
+      sourceRecordId: '6ee7b7d0-8694-47fb-a00c-b3540bb380db',
+      relationType: 'DRIVES_CHANGE',
+      targetDomain: 'ENGINEERING_BASELINE',
+      targetRecordId: 'b51465ef-2777-4e48-90f8-92ad7943317e',
+      proposedBy: 'founder@example.com',
+      context: { reason: 'CAPA requires engineering change' },
+    },
+  });
+
+  assert.equal(result.adapterId, 'supabase.digital-thread-link.v1');
+  assert.equal(result.effect.effectType, 'DIGITAL_THREAD.LINK_CREATED');
+  assert.equal(result.effect.resourceType, 'DIGITAL_THREAD_LINK');
+  assert.equal(result.effect.resourceId, 'link-1');
+  assert.equal(result.effect.state, 'LINKED');
+  assert.equal(result.verification.verified, true);
+  assert.equal(result.verification.evidenceSource, 'vaos_private.digital_thread_links');
+  assert.deepEqual(calls.map((call) => call.operation), ['link', 'read']);
+});
+
+test('Digital Thread adapter fails closed without a durable link port', async () => {
+  const adapter = createExecutionAdapterRegistry().get('DIGITAL_THREAD.CREATE_LINK');
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-link-2',
+      intentId: 'intent-link-2',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      payload: {
+        sourceDomain: 'QA_CAPA',
+        sourceRecordId: '6ee7b7d0-8694-47fb-a00c-b3540bb380db',
+        relationType: 'DRIVES_CHANGE',
+        targetDomain: 'ENGINEERING_BASELINE',
+        targetRecordId: 'b51465ef-2777-4e48-90f8-92ad7943317e',
+        proposedBy: 'founder@example.com',
+      },
+    }),
+    /DOMAIN_PORT_REQUIRED:digitalThread/,
+  );
 });

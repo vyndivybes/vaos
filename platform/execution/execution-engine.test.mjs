@@ -141,3 +141,35 @@ test('engine preserves terminal adapter classification so invalid lifecycle tran
   assert.equal(store.failed[0].error.code, 'WORKFORCE_INVALID_TRANSITION');
   assert.equal(store.failed[0].error.retryable, false);
 });
+
+
+test('engine persists only sanitized machine-readable provider failure metadata', async () => {
+  const store = makeStore([{
+    id: 'job-secret-1',
+    intentId: 'intent-secret-1',
+    actionType: 'QA.OPEN_CAPA',
+    payload: {},
+    leaseToken: 'lease-secret-1',
+  }]);
+  const providerError = new Error('Bearer super-secret at https://provider.example/private');
+  providerError.code = 'PROVIDER_OUTCOME_UNKNOWN';
+  providerError.retryable = false;
+  providerError.outcomeUnknown = true;
+  providerError.providerRunId = 'run-77';
+
+  const engine = createExecutionEngine({
+    store,
+    registry: makeRegistry({ async execute() { throw providerError; } }),
+  });
+  await engine.processOne();
+
+  const saved = store.failed[0].error;
+  assert.deepEqual(saved, {
+    code: 'PROVIDER_OUTCOME_UNKNOWN',
+    retryable: false,
+    outcomeUnknown: true,
+    providerRunId: 'run-77',
+  });
+  assert.equal(JSON.stringify(saved).includes('super-secret'), false);
+  assert.equal(JSON.stringify(saved).includes('provider.example'), false);
+});

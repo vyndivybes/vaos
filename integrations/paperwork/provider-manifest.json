@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "vaos.provider.v1",
+  "providerId": "paperwork",
+  "displayName": "Paperwork",
+  "description": "CloudRaker Paperwork document-intelligence provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "capabilities": [
+    "document.extract"
+  ],
+  "deploymentModes": [
+    "managed-saas"
+  ],
+  "qualification": {
+    "state": "evaluation",
+    "evidenceRefs": [],
+    "qualifiedCapabilities": []
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "external",
+    "authModes": [
+      "bearer"
+    ],
+    "callbackVerification": "public-key"
+  },
+  "execution": {
+    "idempotency": "native",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required"
+  },
+  "licensing": {
+    "model": "External managed API; commercial and data-governance review required before production activation",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS uses Paperwork as a replaceable document-intelligence provider. Production enablement requires live API, cost, data-retention, residency and webhook/JWKS qualification."
+  },
+  "notes": "Initial AF-4 scope is structured extraction with citations. Redact, compose, fill, redline and sign remain separate future capabilities and are not implicitly authorized by this manifest."
+}

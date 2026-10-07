@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, resolve } from "node:path";
 
@@ -27,6 +27,37 @@ assert.equal(existsSync(resolve(root, "api")), false);
 assert.equal(existsSync(resolve(root, "lib")), false);
 assert.doesNotMatch(executionProvider, /vercel/i);
 assert.match(executionProvider, /vaos-cloudflare-worker/);
+
+const cloudflareIdentityMigration = readFileSync(
+  resolve(root, "supabase", "migrations", "20261007193600_cloudflare_runtime_identity_v1.sql"),
+  "utf8",
+);
+assert.match(cloudflareIdentityMigration, /cloudflare-primary/);
+
+const blockedProvider = ["ver", "cel"].join("");
+const ignoredRoots = new Set([".git", "node_modules", ".wrangler-dry-run"]);
+const textExtensions = /\.(?:mjs|js|json|jsonc|md|sql|yml|yaml|toml|txt)$/i;
+const providerFootprints = [];
+
+function scanProviderFootprints(directory) {
+  for (const entry of readdirSync(directory)) {
+    if (ignoredRoots.has(entry)) continue;
+    const absolute = resolve(directory, entry);
+    const relative = absolute.slice(root.length + 1).replaceAll("\\", "/");
+    const info = statSync(absolute);
+    if (info.isDirectory()) {
+      scanProviderFootprints(absolute);
+      continue;
+    }
+    if (relative.toLowerCase().includes(blockedProvider)) providerFootprints.push(relative);
+    if (textExtensions.test(relative)) {
+      const contents = readFileSync(absolute, "utf8").toLowerCase();
+      if (contents.includes(blockedProvider)) providerFootprints.push(relative);
+    }
+  }
+}
+scanProviderFootprints(root);
+assert.deepEqual([...new Set(providerFootprints)], []);
 
 assert.match(html, /vayu-shastr-original\.webp/);
 assert.match(html, /id="login-form"/);

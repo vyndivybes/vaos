@@ -109,3 +109,95 @@ test('retired employee cannot return to service and snapshot exposes workforce s
   assert.equal(snapshot.metrics.retiredDigitalEmployees, 1);
   assert.equal(snapshot.metrics.activeDigitalEmployees, 0);
 });
+
+
+test('responsibility contracts deny undeclared and prohibited Digital Employee actions', () => {
+  const registry = createDigitalWorkforceRegistry();
+  registry.registerResponsibilityContract({
+    id: 'operations-controller-v1',
+    role: 'Operations Controller',
+    mission: 'Maintain operational readiness.',
+    outcomes: ['Operational exceptions are governed'],
+    autonomousActions: ['PROJECT.ESCALATE_RISK'],
+    approvalRequiredActions: ['QA.OPEN_CAPA'],
+    prohibitedActions: ['ENGINEERING.BASELINE_CHANGE'],
+    escalationConditions: ['SAFETY_IMPACT'],
+  });
+
+  registry.propose({
+    ...candidate(),
+    responsibilityContractId: 'operations-controller-v1',
+    capabilities: {
+      'PROJECT.ESCALATE_RISK': AUTHORITY.AUTONOMOUS_EXECUTION,
+      'QA.OPEN_CAPA': AUTHORITY.APPROVED_EXECUTION,
+      'ENGINEERING.BASELINE_CHANGE': AUTHORITY.AUTONOMOUS_EXECUTION,
+      'DIGITAL_THREAD.CREATE_LINK': AUTHORITY.AUTONOMOUS_EXECUTION,
+    },
+  });
+  registry.startTraining('operations-controller');
+  registry.qualify('operations-controller', {
+    level: QUALIFICATION_LEVEL.Q2_BUSINESS,
+    qualifiedBy: 'human:operations-director',
+  });
+  registry.activate('operations-controller');
+
+  assert.deepEqual(
+    registry.authorizeAction('operations-controller', 'PROJECT.ESCALATE_RISK'),
+    { decision: 'ALLOW', reason: 'RESPONSIBILITY_AUTONOMOUS' },
+  );
+  assert.deepEqual(
+    registry.authorizeAction('operations-controller', 'QA.OPEN_CAPA'),
+    { decision: 'AWAIT_APPROVAL', reason: 'RESPONSIBILITY_APPROVAL_REQUIRED' },
+  );
+  assert.deepEqual(
+    registry.authorizeAction('operations-controller', 'ENGINEERING.BASELINE_CHANGE'),
+    { decision: 'DENY', reason: 'RESPONSIBILITY_ACTION_PROHIBITED' },
+  );
+  assert.deepEqual(
+    registry.authorizeAction('operations-controller', 'DIGITAL_THREAD.CREATE_LINK'),
+    { decision: 'DENY', reason: 'RESPONSIBILITY_ACTION_UNDECLARED' },
+  );
+});
+
+test('responsibility enforcement denies inactive employees and authority mismatches', () => {
+  const registry = createDigitalWorkforceRegistry();
+  registry.registerResponsibilityContract({
+    id: 'operations-controller-v1',
+    role: 'Operations Controller',
+    mission: 'Maintain operational readiness.',
+    outcomes: ['Operational exceptions are governed'],
+    autonomousActions: ['PROJECT.ESCALATE_RISK'],
+    approvalRequiredActions: ['QA.OPEN_CAPA'],
+    prohibitedActions: [],
+  });
+
+  registry.propose({
+    ...candidate(),
+    responsibilityContractId: 'operations-controller-v1',
+    capabilities: {
+      'PROJECT.ESCALATE_RISK': AUTHORITY.APPROVED_EXECUTION,
+      'QA.OPEN_CAPA': AUTHORITY.PREPARE,
+    },
+  });
+
+  assert.deepEqual(
+    registry.authorizeAction('operations-controller', 'PROJECT.ESCALATE_RISK'),
+    { decision: 'DENY', reason: 'DIGITAL_EMPLOYEE_NOT_ACTIVE' },
+  );
+
+  registry.startTraining('operations-controller');
+  registry.qualify('operations-controller', {
+    level: QUALIFICATION_LEVEL.Q2_BUSINESS,
+    qualifiedBy: 'human:operations-director',
+  });
+  registry.activate('operations-controller');
+
+  assert.deepEqual(
+    registry.authorizeAction('operations-controller', 'PROJECT.ESCALATE_RISK'),
+    { decision: 'DENY', reason: 'RESPONSIBILITY_AUTHORITY_CONFLICT' },
+  );
+  assert.deepEqual(
+    registry.authorizeAction('operations-controller', 'QA.OPEN_CAPA'),
+    { decision: 'DENY', reason: 'RESPONSIBILITY_AUTHORITY_CONFLICT' },
+  );
+});

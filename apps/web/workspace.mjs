@@ -552,8 +552,12 @@ function renderCommandResults(query = '') {
 async function loadControlPlane() {
   const response = await fetch('/api/control-plane', { credentials: 'same-origin', cache: 'no-store' });
   if (response.status === 401) { window.location.replace('/login'); return null; }
-  if (!response.ok) throw new Error('control_plane_unavailable');
-  return response.json();
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const diagnostic = payload?.error?.details?.diagnostic || 'CONTROL_PLANE_UNAVAILABLE';
+    throw new Error(diagnostic);
+  }
+  return payload;
 }
 
 async function decideApproval(button) {
@@ -719,14 +723,14 @@ async function bootstrap() {
     wireInteractions();
     setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false });
     loading.hidden = true; shell.hidden = false;
-  } catch {
+  } catch (error) {
     controlPlaneStatus.textContent = 'Control plane unavailable';
     controlPlaneStatus.classList.remove('hero-status--connecting');
     controlPlaneStatus.classList.add('hero-status--offline');
     shell.hidden = true;
     loading.hidden = false;
     loading.querySelector('strong').textContent = 'VAOS control plane unavailable';
-    loading.querySelector('span').textContent = 'Refresh to retry. No unauthorised workspace data has been displayed.';
+    loading.querySelector('span').textContent = `Diagnostic: ${error?.message || 'CONTROL_PLANE_UNAVAILABLE'} · No unauthorised workspace data has been displayed.`;
   }
 }
 

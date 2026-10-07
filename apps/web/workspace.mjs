@@ -5,6 +5,7 @@ const loading = document.querySelector('#workspace-loading');
 const nav = document.querySelector('#module-nav');
 const identityEmail = document.querySelector('#identity-email');
 const environmentLabel = document.querySelector('#environment-label');
+const controlPlaneStatus = document.querySelector('#control-plane-status');
 const logout = document.querySelector('#logout-button');
 const commandView = document.querySelector('#command-view');
 const moduleView = document.querySelector('#module-view');
@@ -712,11 +713,18 @@ async function bootstrap() {
     model = payload.model;
     identityEmail.textContent = payload.session.email;
     environmentLabel.textContent = model.environment;
+    controlPlaneStatus.textContent = 'Control plane online';
+    controlPlaneStatus.classList.remove('hero-status--connecting', 'hero-status--offline');
     renderAll();
     wireInteractions();
     setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false });
     loading.hidden = true; shell.hidden = false;
   } catch {
+    controlPlaneStatus.textContent = 'Control plane unavailable';
+    controlPlaneStatus.classList.remove('hero-status--connecting');
+    controlPlaneStatus.classList.add('hero-status--offline');
+    shell.hidden = true;
+    loading.hidden = false;
     loading.querySelector('strong').textContent = 'VAOS control plane unavailable';
     loading.querySelector('span').textContent = 'Refresh to retry. No unauthorised workspace data has been displayed.';
   }

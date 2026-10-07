@@ -30,6 +30,11 @@
     0 14px 42px rgba(0, 0, 0, .22);
 }
 
+.control-shell[hidden],
+.workspace-loading[hidden] {
+  display: none !important;
+}
+
 .control-shell {
   min-height: 100vh;
   display: grid;
@@ -2078,4 +2083,13 @@
   .operational-summary { grid-template-columns: 1fr; }
   .operational-record__heading { display: grid; }
   .operational-record__meta { display: grid; grid-template-columns: 1fr; }
+}
+
+.hero-status--connecting i {
+  background: #d8a24c;
+  box-shadow: 0 0 12px rgba(216,162,76,.42);
+}
+.hero-status--offline i {
+  background: #d86a5c;
+  box-shadow: 0 0 12px rgba(216,106,92,.42);
 }

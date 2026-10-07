@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "vaos.provider.v1",
+  "providerId": "windmill",
+  "displayName": "Windmill",
+  "description": "Self-hosted governed script execution provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "capabilities": ["code.execute"],
+  "deploymentModes": ["self-hosted"],
+  "qualification": {"state": "evaluation", "evidenceRefs": [], "qualifiedCapabilities": []},
+  "security": {"secretBinding": "required", "dataEgress": "controlled", "authModes": ["bearer"], "callbackVerification": "none"},
+  "execution": {"idempotency": "not-supported", "retrySemantics": "conditional", "verificationStrategy": "provider-readback", "healthProbe": "required"},
+  "licensing": {
+    "model": "Open-source/self-hostable platform; production deployment, script licensing and service-account policy require qualification.",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS invokes only pre-approved script keys mapped to versioned Windmill paths. Inline or arbitrary script execution is outside AF-7 scope."
+  },
+  "notes": "Production qualification remains blocked until service-account scope, script-version governance, queue/backpressure, timeout/reconciliation, result retention, object-storage handoff, cancellation and cost/resource controls are evidenced."
+}

@@ -7,6 +7,7 @@ on:
       - "platform/**"
       - "packages/**"
       - "wrangler.jsonc"
+      - "package.json"
       - ".github/workflows/cloudflare-smoke.yml"
   push:
     branches: [main]

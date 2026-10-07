@@ -130,7 +130,7 @@ Evaluate:
 
 Document intelligence, storage, transformation and signature remain separate capabilities.
 
-### AF-9 — Data & Observability — TELEMETRY + OPENTELEMETRY SINK IMPLEMENTED
+### AF-9 — Data & Observability — AIRBYTE + TELEMETRY + OPENTELEMETRY SINK IMPLEMENTED
 
 Evaluate:
 
@@ -220,7 +220,7 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] capability registry tests
 - [x] capability registry implementation
 - [x] credential broker interface
-- [ ] provider adapters (n8n + Paperwork + Zapier + Playwright + Windmill implemented; specialist adapters pending)
+- [ ] provider adapters (n8n + Paperwork + Zapier + Playwright + Windmill + Airbyte implemented; specialist adapters pending)
 - [ ] deployment (no observability backend or provider deployment yet)
 - [ ] production activation
 

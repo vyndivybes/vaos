@@ -603,3 +603,51 @@ test('QA Q3 training requires a CAPA governance PASS assessment before Qualify i
   assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:qa-assessment-1']);
 });
 
+
+test('Risk Q3 training requires an enterprise-risk governance PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'risk',
+      name: 'Risk Agent',
+      role: 'Enterprise Risk',
+      department: 'Governance',
+      mission: 'Monitor enterprise exposure and escalate governed risks.',
+      responsibilities: ['Escalate material risk', 'Track mitigation evidence'],
+      responsibilityContractId: 'risk-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'PROJECT.ESCALATE_RISK': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 4,
+      currentAssignment: 'Qualification',
+      priority: 'HIGH',
+      confidence: 94,
+      modelRequirements: { minimumQualification: 'Q3_ENTERPRISE_RISK' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'RISK_Q3_ENTERPRISE_RISK_GOVERNANCE_V1');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'risk-assessment-1',
+    targetLevel: 3,
+    profileId: 'RISK_Q3_ENTERPRISE_RISK_GOVERNANCE_V1',
+    scope: 'ENTERPRISE_RISK_GOVERNANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 3);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:risk-assessment-1']);
+});

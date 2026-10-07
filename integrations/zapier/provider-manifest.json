@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "vaos.provider.v1",
+  "providerId": "zapier",
+  "displayName": "Zapier",
+  "description": "Managed SaaS integration provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "capabilities": [
+    "integration.saas"
+  ],
+  "deploymentModes": [
+    "managed-saas"
+  ],
+  "qualification": {
+    "state": "evaluation",
+    "evidenceRefs": [],
+    "qualifiedCapabilities": []
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "external",
+    "authModes": [
+      "local"
+    ],
+    "callbackVerification": "provider-specific"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "callback-evidence",
+    "healthProbe": "optional"
+  },
+  "licensing": {
+    "model": "Managed SaaS; plan, task-usage, app-access and redistribution review required before production activation",
+    "redistributionReviewRequired": true,
+    "notes": "Initial AF-5 scope uses a predefined Zap with a Catch Hook trigger and a VAOS callback receipt. The Catch Hook URL is treated as a secret binding."
+  },
+  "notes": "Production qualification is blocked until duplicate-delivery behavior, callback authenticity, task-limit/held-run behavior, disabled/retired hook behavior, rate limiting, app-access policy and cost controls are evidenced."
+}

@@ -39,6 +39,8 @@ assert.match(workspace, /id="trace-author-reason"/);
 assert.match(workspace, /id="module-approval-panel"/);
 assert.match(workspace, /id="module-approval-list"/);
 assert.match(workspace, /id="module-approval-count"/);
+assert.match(workspace, /id="control-plane-status"/);
+assert.match(workspace, /Control plane connecting/);
 assert.match(workspace, /id="operational-workspace"/);
 assert.match(workspace, /id="operational-summary"/);
 assert.match(workspace, /id="operational-record-list"/);
@@ -57,6 +59,9 @@ assert.match(workspaceApp, /DIGITAL_THREAD\.CREATE_LINK/);
 assert.match(workspaceApp, /\/api\/intents/);
 assert.match(workspaceApp, /executeVAOSCommand/);
 assert.match(workspaceApp, /resolveCommand/);
+assert.match(workspaceApp, /controlPlaneStatus/);
+assert.match(workspaceApp, /Control plane online/);
+assert.match(workspaceApp, /Control plane unavailable/);
 assert.match(workspaceApp, /from ['"]\.\/command-router\.mjs['"]/);
 assert.doesNotMatch(workspaceApp, /from ['"]\.\/lib\/command-router\.mjs['"]/);
 assert.equal(existsSync(rootCommandRouter), true);
@@ -79,6 +84,8 @@ assert.match(workspaceCss, /digital-thread-dialog/);
 assert.match(workspaceCss, /digital-thread-timeline/);
 assert.match(workspaceCss, /enterprise-trace-canvas/);
 assert.match(workspaceCss, /trace-author-panel/);
+assert.match(workspaceCss, /\.control-shell\[hidden\]/);
+assert.match(workspaceCss, /\.workspace-loading\[hidden\]/);
 
 for (const table of ["server_credentials","intents","approvals","events"]) {
   assert.match(rlsMigration, new RegExp(`alter table vaos_private\\.${table} enable row level security;`, "i"));

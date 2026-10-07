@@ -64,3 +64,18 @@ test('command router creates explicit approval-gated Risk qualification evidence
   });
 });
 
+test('command router creates explicit Risk recovery qualification drill intent', () => {
+  assert.deepEqual(resolveCommand('qualification risk recovery RSK-015'), {
+    kind: 'intent',
+    targetView: 'risk',
+    agentId: 'risk',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    payload: {
+      riskId: 'RSK-015',
+      qualificationMode: true,
+      qualificationRecoveryDrill: true,
+    },
+  });
+});
+

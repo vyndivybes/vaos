@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vaos.local/schemas/provider-manifest-v1.json",
+  "title": "VAOS Provider Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "providerId",
+    "displayName",
+    "capabilities",
+    "deploymentModes",
+    "qualification",
+    "security",
+    "execution"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "vaos.provider.v1"
+    },
+    "providerId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,79}$"
+    },
+    "displayName": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 500
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"
+      }
+    },
+    "deploymentModes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "enum": ["self-hosted", "managed-saas", "desktop", "edge"]
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state"],
+      "properties": {
+        "state": {
+          "enum": ["candidate", "evaluation", "qualified", "restricted", "rejected"]
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+        },
+        "qualifiedCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "secretBinding",
+        "dataEgress",
+        "authModes",
+        "callbackVerification"
+      ],
+      "properties": {
+        "secretBinding": {
+          "enum": ["required", "not-applicable"]
+        },
+        "dataEgress": {
+          "enum": ["none", "controlled", "external"]
+        },
+        "authModes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "oauth2",
+              "api-key",
+              "bearer",
+              "basic",
+              "jwt",
+              "mtls",
+              "service-account",
+              "session",
+              "local"
+            ]
+          }
+        },
+        "callbackVerification": {
+          "enum": [
+            "none",
+            "shared-secret",
+            "hmac",
+            "jwt",
+            "public-key",
+            "mtls",
+            "provider-specific"
+          ]
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "idempotency",
+        "retrySemantics",
+        "verificationStrategy",
+        "healthProbe"
+      ],
+      "properties": {
+        "idempotency": {
+          "enum": ["native", "vaos-enforced", "hybrid", "not-supported"]
+        },
+        "retrySemantics": {
+          "enum": ["safe", "conditional", "unsafe", "unknown"]
+        },
+        "verificationStrategy": {
+          "enum": [
+            "provider-readback",
+            "callback-evidence",
+            "target-readback",
+            "artifact-hash",
+            "human-verification",
+            "composite"
+          ]
+        },
+        "healthProbe": {
+          "enum": ["required", "optional", "not-applicable"]
+        }
+      }
+    },
+    "licensing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string", "maxLength": 160 },
+        "redistributionReviewRequired": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 500 }
+      }
+    },
+    "notes": {
+      "type": "string",
+      "maxLength": 1000
+    }
+  }
+}

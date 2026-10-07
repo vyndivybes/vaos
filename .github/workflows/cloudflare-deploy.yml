@@ -5,11 +5,14 @@ on:
 
 permissions:
   contents: read
-  deployments: write
 
 jobs:
-  qualify:
+  deploy:
     runs-on: ubuntu-latest
+    environment: cloudflare-development
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v6
 
@@ -23,30 +26,16 @@ jobs:
       - name: Verify Cloudflare bundle
         run: npx --yes wrangler@4.136.3 deploy --dry-run --config wrangler.jsonc --outdir .wrangler-dry-run
 
-  deploy:
-    needs: qualify
-    runs-on: ubuntu-latest
-    environment: cloudflare-development
-    steps:
-      - uses: actions/checkout@v6
-
       - name: Deploy VAOS development Worker
-        id: deploy
-        uses: cloudflare/wrangler-action@v4
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          wranglerVersion: "4.136.3"
-          command: deploy --config wrangler.jsonc
-          secrets: |
-            SUPABASE_URL
-            VAOS_DB_RPC_SECRET
-          gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
+
+      - name: Bind VAOS runtime secrets
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
+        run: |
+          node -e "process.stdout.write(JSON.stringify({SUPABASE_URL:process.env.SUPABASE_URL,VAOS_DB_RPC_SECRET:process.env.VAOS_DB_RPC_SECRET}))" | npx --yes wrangler@4.136.3 secret bulk --config wrangler.jsonc
 
-      - name: Publish deployment URL
-        env:
-          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
-        run: |\n          echo "VAOS Cloudflare deployment: $DEPLOYMENT_URL"
+      - name: Deployment complete
+        run: |
+          echo "VAOS Cloudflare Worker deployment completed."

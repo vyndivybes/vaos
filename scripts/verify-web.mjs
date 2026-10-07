@@ -22,10 +22,11 @@ const workforceQualificationMigration = readFileSync(resolve(root, "supabase", "
 const workspaceModel = readFileSync(resolve(web, "lib", "workspace-model.mjs"), "utf8");
 const executionProvider = readFileSync(resolve(web, "lib", "execution-provider.mjs"), "utf8");
 
-assert.equal(existsSync(resolve(web, "vercel.json")), false);
+const blockedProvider = ["ver", "cel"].join("");
+assert.equal(existsSync(resolve(web, `${blockedProvider}.json`)), false);
 assert.equal(existsSync(resolve(root, "api")), false);
 assert.equal(existsSync(resolve(root, "lib")), false);
-assert.doesNotMatch(executionProvider, /vercel/i);
+assert.equal(executionProvider.toLowerCase().includes(blockedProvider), false);
 assert.match(executionProvider, /vaos-cloudflare-worker/);
 
 const cloudflareIdentityMigration = readFileSync(
@@ -34,7 +35,6 @@ const cloudflareIdentityMigration = readFileSync(
 );
 assert.match(cloudflareIdentityMigration, /cloudflare-primary/);
 
-const blockedProvider = ["ver", "cel"].join("");
 const ignoredRoots = new Set([".git", "node_modules", ".wrangler-dry-run"]);
 const textExtensions = /\.(?:mjs|js|json|jsonc|md|sql|yml|yaml|toml|txt)$/i;
 const providerFootprints = [];

@@ -24,6 +24,7 @@ const SEMVER_PATTERN = /^\d+\.\d+\.\d+$/;
 const VALID_STATUSES = new Set(Object.values(DIGITAL_EMPLOYEE_STATUS));
 const VALID_QUALIFICATIONS = new Set(Object.values(QUALIFICATION_LEVEL));
 const VALID_RISK_CLASSES = new Set(['low', 'medium', 'high', 'critical']);
+const VALID_PRIORITIES = new Set(['LOW', 'NORMAL', 'HIGH', 'CRITICAL']);
 
 function isObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -50,6 +51,10 @@ function normalizeArray(value = []) {
 
 function normalizeCapabilities(value = {}) {
   return Object.freeze({ ...value });
+}
+
+function normalizeObject(value = {}) {
+  return Object.freeze({ ...(isObject(value) ? value : {}) });
 }
 
 function uniqueErrors(errors) {
@@ -107,6 +112,54 @@ export function validateDigitalEmployeeDefinition(input) {
     if (!validateStringArray(input[field])) errors.push(code);
   }
 
+  for (const [field, code] of [
+    ['owner', 'INVALID_DIGITAL_EMPLOYEE_OWNER'],
+    ['supervisor', 'INVALID_DIGITAL_EMPLOYEE_SUPERVISOR'],
+    ['currentAssignment', 'INVALID_CURRENT_ASSIGNMENT'],
+  ]) {
+    if (input[field] !== undefined && !validText(input[field])) errors.push(code);
+  }
+
+  if (
+    input.autonomyLevel !== undefined
+    && (!Number.isInteger(input.autonomyLevel) || input.autonomyLevel < AUTHORITY.OBSERVE || input.autonomyLevel > AUTHORITY.AUTONOMOUS_EXECUTION)
+  ) {
+    errors.push('INVALID_AUTONOMY_LEVEL');
+  }
+  if (input.priority !== undefined && !VALID_PRIORITIES.has(input.priority)) errors.push('INVALID_PRIORITY');
+  if (
+    input.confidence !== undefined
+    && (!Number.isFinite(input.confidence) || input.confidence < 0 || input.confidence > 100)
+  ) {
+    errors.push('INVALID_CONFIDENCE');
+  }
+
+  for (const [field, code] of [
+    ['modelRequirements', 'INVALID_MODEL_REQUIREMENTS'],
+    ['costBudget', 'INVALID_COST_BUDGET'],
+    ['sla', 'INVALID_SLA'],
+    ['memoryPolicy', 'INVALID_MEMORY_POLICY'],
+    ['contextPolicy', 'INVALID_CONTEXT_POLICY'],
+  ]) {
+    if (input[field] !== undefined && !isObject(input[field])) errors.push(code);
+  }
+
+  if (
+    input.heartbeatAt !== undefined
+    && input.heartbeatAt !== null
+    && typeof input.heartbeatAt !== 'string'
+  ) {
+    errors.push('INVALID_HEARTBEAT');
+  }
+  if (
+    input.qualificationRecord !== undefined
+    && input.qualificationRecord !== null
+    && !isObject(input.qualificationRecord)
+  ) {
+    errors.push('INVALID_QUALIFICATION_RECORD');
+  }
+  if (!validateStringArray(input.evidenceRefs)) errors.push('INVALID_EVIDENCE_REFS');
+
   if (
     input.responsibilityContractId !== undefined
     && (typeof input.responsibilityContractId !== 'string' || !ID_PATTERN.test(input.responsibilityContractId))
@@ -123,6 +176,11 @@ export function createDigitalEmployeeDefinition(input) {
     throw new Error(`DIGITAL_EMPLOYEE_DEFINITION_INVALID:${validation.errors.join(',')}`);
   }
 
+  const inferredAutonomy = Math.max(
+    AUTHORITY.OBSERVE,
+    ...Object.values(input.capabilities || {}).map((value) => Number(value) || 0),
+  );
+
   return Object.freeze({
     id: input.id,
     name: input.name.trim(),
@@ -138,6 +196,20 @@ export function createDigitalEmployeeDefinition(input) {
     kpis: normalizeArray(input.kpis),
     escalationPaths: normalizeArray(input.escalationPaths),
     capabilities: normalizeCapabilities(input.capabilities),
+    owner: input.owner?.trim() || 'Unassigned',
+    supervisor: input.supervisor?.trim() || 'Human governance',
+    autonomyLevel: input.autonomyLevel ?? inferredAutonomy,
+    modelRequirements: normalizeObject(input.modelRequirements),
+    costBudget: normalizeObject(input.costBudget),
+    sla: normalizeObject(input.sla),
+    memoryPolicy: normalizeObject(input.memoryPolicy),
+    contextPolicy: normalizeObject(input.contextPolicy),
+    currentAssignment: input.currentAssignment?.trim() || 'Awaiting work',
+    priority: input.priority || 'NORMAL',
+    confidence: input.confidence ?? 0,
+    heartbeatAt: input.heartbeatAt ?? null,
+    qualificationRecord: input.qualificationRecord ? normalizeObject(input.qualificationRecord) : null,
+    evidenceRefs: normalizeArray(input.evidenceRefs),
     version: input.version || '1.0.0',
   });
 }
@@ -174,6 +246,8 @@ export function validateResponsibilityContract(input) {
 
   if (hasActionConflict) errors.push('RESPONSIBILITY_ACTION_CONFLICT');
   if (!validateStringArray(input.escalationConditions)) errors.push('INVALID_ESCALATION_CONDITIONS');
+  if (input.approvalThresholds !== undefined && !isObject(input.approvalThresholds)) errors.push('INVALID_APPROVAL_THRESHOLDS');
+  if (!validateStringArray(input.evidenceRequirements)) errors.push('INVALID_RESPONSIBILITY_EVIDENCE_REQUIREMENTS');
 
   return { ok: errors.length === 0, errors: uniqueErrors(errors) };
 }
@@ -193,6 +267,8 @@ export function createResponsibilityContract(input) {
     approvalRequiredActions: normalizeArray(input.approvalRequiredActions),
     prohibitedActions: normalizeArray(input.prohibitedActions),
     escalationConditions: normalizeArray(input.escalationConditions),
+    approvalThresholds: normalizeObject(input.approvalThresholds),
+    evidenceRequirements: normalizeArray(input.evidenceRequirements),
     version: input.version || '1.0.0',
   });
 }

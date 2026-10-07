@@ -16,6 +16,8 @@ const workspaceCss = readFileSync(resolve(web, "workspace.css"), "utf8");
 const workspaceApp = readFileSync(resolve(web, "workspace.mjs"), "utf8");
 const rootCommandRouter = resolve(web, "command-router.mjs");
 const rlsMigration = readFileSync(resolve(root, "supabase", "migrations", "20261006223142_enable_legacy_control_plane_rls.sql"), "utf8");
+const workforceMigration = readFileSync(resolve(root, "supabase", "migrations", "20261007131344_digital_workforce_v1.sql"), "utf8");
+const workspaceModel = readFileSync(resolve(web, "lib", "workspace-model.mjs"), "utf8");
 
 assert.match(html, /vayu-shastr-original\.webp/);
 assert.match(html, /id="login-form"/);
@@ -97,6 +99,10 @@ assert.match(workspaceCss, /digital-thread-timeline/);
 assert.match(workspaceCss, /record-detail-tabs/);
 assert.match(workspaceCss, /record-detail-panel\[hidden\]/);
 assert.match(workspaceCss, /record-overview-summary/);
+assert.match(workspaceCss, /workforce-contract/);
+assert.match(workspaceApp, /workforce-responsibilities/);
+assert.match(workspaceModel, /Digital Workforce Console/);
+assert.match(workspaceModel, /normalizeWorkforce/);
 assert.match(workspaceCss, /enterprise-trace-canvas/);
 assert.match(workspaceCss, /trace-author-panel/);
 assert.match(workspaceCss, /\.control-shell\[hidden\]/);
@@ -106,6 +112,12 @@ for (const table of ["server_credentials","intents","approvals","events"]) {
   assert.match(rlsMigration, new RegExp(`alter table vaos_private\\.${table} enable row level security;`, "i"));
 }
 assert.doesNotMatch(rlsMigration, /create\s+policy/i);
+assert.match(workforceMigration, /create table if not exists vaos_private\.digital_employees/i);
+assert.match(workforceMigration, /create table if not exists vaos_private\.responsibility_contracts/i);
+assert.match(workforceMigration, /alter table vaos_private\.digital_employees enable row level security/i);
+assert.match(workforceMigration, /revoke all on table vaos_private\.digital_employees from public, anon, authenticated, service_role/i);
+assert.match(workforceMigration, /alter function public\.vaos_control_snapshot\(text\) rename to vaos_control_snapshot_core/i);
+assert.match(workforceMigration, /'workforce'/i);
 
 assert.equal(existsSync(resolve(web, "house")), false);
 assert.equal(existsSync(resolve(web, "range")), false);

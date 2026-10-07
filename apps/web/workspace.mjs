@@ -486,6 +486,24 @@ function renderOperationalWorkspace(module) {
           <span><small>${esc(item.label)}</small><strong>${esc(item.value)}</strong></span>
         `).join('')}
       </div>
+      ${row.kind === 'digital-employee' ? `
+        <div class="workforce-responsibilities">
+          <small>Responsibilities</small>
+          <div>${row.responsibilities.map((item) => `<span>${esc(item)}</span>`).join('') || '<span>Not yet defined</span>'}</div>
+        </div>
+        <div class="workforce-contract">
+          <div>
+            <small>Responsibility contract</small>
+            <strong>${esc(row.contract?.id || 'Not assigned')}</strong>
+          </div>
+          <div class="workforce-contract__counts">
+            <span><b>${esc(row.contract?.autonomousActions?.length ?? 0)}</b> autonomous</span>
+            <span><b>${esc(row.contract?.approvalRequiredActions?.length ?? 0)}</b> approval</span>
+            <span><b>${esc(row.contract?.prohibitedActions?.length ?? 0)}</b> prohibited</span>
+            <span><b>${esc(row.contract?.evidenceRequirements?.length ?? 0)}</b> evidence</span>
+          </div>
+        </div>
+      ` : ''}
     </article>
   `).join('') : '<p class="empty-state">No live control-plane records are available for this workspace yet.</p>';
 

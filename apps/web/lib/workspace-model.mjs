@@ -267,8 +267,92 @@ function summaryItem(label, value, note = '') {
   return { label, value, note };
 }
 
-function operationalRow({ id, title, resourceId = null, status, subtitle = '', detail = '', meta = [] }) {
-  return { id, title, resourceId, status, subtitle, detail, meta };
+function operationalRow({
+  id,
+  title,
+  resourceId = null,
+  status,
+  subtitle = '',
+  detail = '',
+  meta = [],
+  kind = 'record',
+  responsibilities = [],
+  contract = null,
+}) {
+  return { id, title, resourceId, status, subtitle, detail, meta, kind, responsibilities, contract };
+}
+
+function normalizeWorkforce(runtimeSnapshot, agents) {
+  const source = runtimeSnapshot.workforce && typeof runtimeSnapshot.workforce === 'object'
+    ? runtimeSnapshot.workforce
+    : {};
+  const rawContracts = Array.isArray(source.responsibilityContracts) ? source.responsibilityContracts : [];
+  const rawEmployees = Array.isArray(source.digitalEmployees) ? source.digitalEmployees : [];
+  const contractById = new Map(rawContracts.map((contract) => [contract.id, {
+    ...contract,
+    outcomes: Array.isArray(contract.outcomes) ? [...contract.outcomes] : [],
+    autonomousActions: Array.isArray(contract.autonomousActions) ? [...contract.autonomousActions] : [],
+    approvalRequiredActions: Array.isArray(contract.approvalRequiredActions) ? [...contract.approvalRequiredActions] : [],
+    prohibitedActions: Array.isArray(contract.prohibitedActions) ? [...contract.prohibitedActions] : [],
+    escalationConditions: Array.isArray(contract.escalationConditions) ? [...contract.escalationConditions] : [],
+    evidenceRequirements: Array.isArray(contract.evidenceRequirements) ? [...contract.evidenceRequirements] : [],
+    approvalThresholds: contract.approvalThresholds && typeof contract.approvalThresholds === 'object'
+      ? { ...contract.approvalThresholds }
+      : {},
+  }]));
+  const runtimeById = new Map(agents.map((agent) => [agent.id, agent]));
+
+  const digitalEmployees = rawEmployees.map((employee) => {
+    const runtime = runtimeById.get(employee.id);
+    const contract = contractById.get(employee.responsibilityContractId) || null;
+    return {
+      id: employee.id,
+      name: employee.name || runtime?.name || employee.id,
+      role: employee.role || runtime?.domain || 'Unassigned role',
+      department: employee.department || runtime?.domain || 'Unassigned',
+      mission: employee.mission || 'Mission not yet defined',
+      responsibilities: Array.isArray(employee.responsibilities) ? [...employee.responsibilities] : [],
+      responsibilityContractId: employee.responsibilityContractId || null,
+      qualificationLevel: Number(employee.qualificationLevel) || 0,
+      lifecycleStatus: employee.status || 'PROPOSED',
+      autonomyLevel: Number(employee.autonomyLevel) || 0,
+      owner: employee.owner || 'Unassigned',
+      supervisor: employee.supervisor || 'Human governance',
+      currentAssignment: employee.currentAssignment || runtime?.task || 'Awaiting work',
+      priority: employee.priority || 'NORMAL',
+      confidence: Number(employee.confidence ?? runtime?.confidence ?? 0),
+      heartbeatAt: employee.heartbeatAt || null,
+      runtimeStatus: runtime?.status || 'not-loaded',
+      capabilities: Object.entries(employee.capabilities || {}).map(([actionType, authority]) => ({
+        actionType,
+        authority: Number(authority) || 0,
+      })),
+      modelRequirements: employee.modelRequirements && typeof employee.modelRequirements === 'object'
+        ? { ...employee.modelRequirements }
+        : {},
+      costBudget: employee.costBudget && typeof employee.costBudget === 'object' ? { ...employee.costBudget } : {},
+      sla: employee.sla && typeof employee.sla === 'object' ? { ...employee.sla } : {},
+      memoryPolicy: employee.memoryPolicy && typeof employee.memoryPolicy === 'object' ? { ...employee.memoryPolicy } : {},
+      contextPolicy: employee.contextPolicy && typeof employee.contextPolicy === 'object' ? { ...employee.contextPolicy } : {},
+      evidenceRefs: Array.isArray(employee.evidenceRefs) ? [...employee.evidenceRefs] : [],
+      contract,
+    };
+  });
+
+  const computedMetrics = {
+    totalDigitalEmployees: digitalEmployees.length,
+    proposedDigitalEmployees: digitalEmployees.filter((employee) => employee.lifecycleStatus === 'PROPOSED').length,
+    qualifiedDigitalEmployees: digitalEmployees.filter((employee) => ['QUALIFIED','ACTIVE'].includes(employee.lifecycleStatus)).length,
+    activeDigitalEmployees: digitalEmployees.filter((employee) => employee.lifecycleStatus === 'ACTIVE').length,
+    restrictedDigitalEmployees: digitalEmployees.filter((employee) => employee.lifecycleStatus === 'RESTRICTED').length,
+    responsibilityContracts: contractById.size,
+  };
+
+  return {
+    digitalEmployees,
+    responsibilityContracts: [...contractById.values()],
+    metrics: { ...computedMetrics, ...(source.metrics || {}) },
+  };
 }
 
 function domainEvidenceRows(domainWorkspaces) {
@@ -290,7 +374,7 @@ function domainEvidenceRows(domainWorkspaces) {
   );
 }
 
-function buildOperationalViews({ agents, approvals, events, domainWorkspaces, runtimeSnapshot }) {
+function buildOperationalViews({ agents, approvals, events, domainWorkspaces, runtimeSnapshot, workforce }) {
   const metrics = runtimeSnapshot.metrics || {};
   const executions = Array.isArray(runtimeSnapshot.executions) ? runtimeSnapshot.executions : [];
   const engineering = domainWorkspaces.engineering?.records || [];
@@ -301,7 +385,7 @@ function buildOperationalViews({ agents, approvals, events, domainWorkspaces, ru
   const evidenceEvents = events.filter((event) => event.type === 'EVIDENCE.VERIFIED').slice(0, 20);
   const evidenceRows = domainEvidenceRows(domainWorkspaces);
 
-  const agentRows = agents.map((agent) => operationalRow({
+  const legacyAgentRows = agents.map((agent) => operationalRow({
     id: `agent:${agent.id}`,
     title: agent.name,
     status: agent.status.toUpperCase(),
@@ -312,6 +396,37 @@ function buildOperationalViews({ agents, approvals, events, domainWorkspaces, ru
       value: `L${capability.authority}`,
     })),
   }));
+
+  const workforceRows = workforce.digitalEmployees.map((employee) => operationalRow({
+    id: `digital-employee:${employee.id}`,
+    title: employee.name,
+    status: employee.lifecycleStatus,
+    subtitle: `${employee.role} · ${employee.department}`,
+    detail: employee.mission,
+    kind: 'digital-employee',
+    responsibilities: employee.responsibilities,
+    contract: employee.contract ? {
+      id: employee.contract.id,
+      outcomes: employee.contract.outcomes,
+      autonomousActions: employee.contract.autonomousActions,
+      approvalRequiredActions: employee.contract.approvalRequiredActions,
+      prohibitedActions: employee.contract.prohibitedActions,
+      escalationConditions: employee.contract.escalationConditions,
+      evidenceRequirements: employee.contract.evidenceRequirements,
+    } : null,
+    meta: [
+      { label: 'Autonomy', value: `L${employee.autonomyLevel}` },
+      { label: 'Qualification', value: `Q${employee.qualificationLevel}` },
+      { label: 'Runtime', value: employee.runtimeStatus },
+      { label: 'Confidence', value: `${employee.confidence}%` },
+      { label: 'Priority', value: employee.priority },
+      { label: 'Supervisor', value: employee.supervisor },
+      { label: 'Assignment', value: employee.currentAssignment },
+      { label: 'Heartbeat', value: employee.heartbeatAt || 'not established' },
+    ],
+  }));
+
+  const agentRows = workforceRows.length ? workforceRows : legacyAgentRows;
 
   const vibpeAgent = agents.find((agent) => agent.id === 'vibpe');
   const vibpeRows = engineering.length
@@ -426,9 +541,16 @@ function buildOperationalViews({ agents, approvals, events, domainWorkspaces, ru
 
   return {
     agents: {
-      title: 'Live Agent Fleet',
-      copy: 'Registered enterprise agents with current state, assigned task, confidence, capabilities and authority.',
-      summary: [
+      title: workforceRows.length ? 'Digital Workforce Console' : 'Live Agent Fleet',
+      copy: workforceRows.length
+        ? 'Durable digital employees with lifecycle state, qualification, bounded autonomy and responsibility contracts.'
+        : 'Registered enterprise agents with current state, assigned task, confidence, capabilities and authority.',
+      summary: workforceRows.length ? [
+        summaryItem('Digital employees', workforce.metrics.totalDigitalEmployees, 'durable registry'),
+        summaryItem('Proposed / Q0', workforce.metrics.proposedDigitalEmployees, 'requires qualification'),
+        summaryItem('Qualified', workforce.metrics.qualifiedDigitalEmployees, 'qualified or active'),
+        summaryItem('Contracts', workforce.metrics.responsibilityContracts, 'responsibility boundaries'),
+      ] : [
         summaryItem('Registered', agents.length, 'live fleet'),
         summaryItem('Active', agents.filter((agent) => agent.status === 'active').length, 'executing / available'),
         summaryItem('Human-gated', agents.filter((agent) => agent.status === 'approval').length, 'awaiting authority'),
@@ -519,12 +641,14 @@ export function buildWorkspaceModel(runtimeSnapshot) {
   const fleet = summarizeAgentFleet(agents);
   const domainWorkspaces = buildDomainWorkspaces(runtimeSnapshot.domains);
   const traceGraph = buildTraceGraph(domainWorkspaces, runtimeSnapshot.digitalThreadLinks);
+  const workforce = normalizeWorkforce(runtimeSnapshot, agents);
   const operationalViews = buildOperationalViews({
     agents,
     approvals,
     events,
     domainWorkspaces,
     runtimeSnapshot,
+    workforce,
   });
 
   return {
@@ -538,6 +662,7 @@ export function buildWorkspaceModel(runtimeSnapshot) {
     risks: RISKS.map((item) => ({ ...item })),
     domainWorkspaces,
     traceGraph,
+    workforce,
     operationalViews,
     pulse: {
       governance: 'Nominal',

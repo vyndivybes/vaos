@@ -133,3 +133,77 @@ test('skill definitions are versioned, qualified and evidence-aware', () => {
     version: 'latest',
   }).ok, false);
 });
+
+
+test('digital employee passport preserves operational governance metadata without granting qualification', () => {
+  const employee = createDigitalEmployeeDefinition({
+    id: 'finance-controller',
+    name: 'Finance Controller',
+    role: 'Finance Controller',
+    department: 'finance',
+    mission: 'Maintain governed financial visibility and escalation.',
+    responsibilities: ['Monitor financial exposure'],
+    capabilities: { 'FINANCE.ANALYSE_VARIANCE': AUTHORITY.ANALYSE },
+    owner: 'Enterprise',
+    supervisor: 'Human governance',
+    autonomyLevel: AUTHORITY.ANALYSE,
+    modelRequirements: { minimumQualification: 'Q2_BUSINESS' },
+    costBudget: { mode: 'governed', limitConfigured: false },
+    sla: { class: 'standard' },
+    memoryPolicy: { scope: 'role' },
+    contextPolicy: { sourceAuthority: 'required' },
+    currentAssignment: 'Monitor variance',
+    priority: 'HIGH',
+    confidence: 88,
+    heartbeatAt: null,
+    evidenceRefs: ['qualification-plan:finance-controller'],
+  });
+
+  assert.equal(employee.status, DIGITAL_EMPLOYEE_STATUS.PROPOSED);
+  assert.equal(employee.qualificationLevel, QUALIFICATION_LEVEL.Q0_EXPERIMENTAL);
+  assert.equal(employee.autonomyLevel, AUTHORITY.ANALYSE);
+  assert.equal(employee.priority, 'HIGH');
+  assert.equal(employee.confidence, 88);
+  assert.equal(employee.memoryPolicy.scope, 'role');
+  assert.deepEqual(employee.evidenceRefs, ['qualification-plan:finance-controller']);
+  assert.equal(validateDigitalEmployeeDefinition(employee).ok, true);
+});
+
+test('digital employee operational metadata rejects invalid autonomy, priority and governance objects', () => {
+  const result = validateDigitalEmployeeDefinition({
+    id: 'invalid-controller',
+    name: 'Invalid Controller',
+    role: 'Invalid Controller',
+    department: 'test',
+    mission: 'Exercise contract validation.',
+    responsibilities: ['Validate'],
+    capabilities: { 'TEST.READ_STATE': AUTHORITY.OBSERVE },
+    autonomyLevel: 9,
+    priority: 'IMMEDIATE',
+    memoryPolicy: [],
+  });
+
+  assert.equal(result.ok, false);
+  assert.ok(result.errors.includes('INVALID_AUTONOMY_LEVEL'));
+  assert.ok(result.errors.includes('INVALID_PRIORITY'));
+  assert.ok(result.errors.includes('INVALID_MEMORY_POLICY'));
+});
+
+test('responsibility contract carries approval thresholds and evidence requirements', () => {
+  const contract = createResponsibilityContract({
+    id: 'finance-controller-v1',
+    role: 'Finance Controller',
+    mission: 'Maintain governed financial visibility.',
+    outcomes: ['Financial variance is surfaced'],
+    autonomousActions: ['FINANCE.ANALYSE_VARIANCE'],
+    approvalRequiredActions: ['FINANCE.RELEASE_PAYMENT'],
+    prohibitedActions: [],
+    escalationConditions: ['LIMIT_EXCEEDED'],
+    approvalThresholds: { paymentRelease: 'human-approval' },
+    evidenceRequirements: ['SOURCE_REFERENCE', 'DECISION_EVENT'],
+  });
+
+  assert.equal(contract.approvalThresholds.paymentRelease, 'human-approval');
+  assert.deepEqual(contract.evidenceRequirements, ['SOURCE_REFERENCE', 'DECISION_EVENT']);
+  assert.equal(validateResponsibilityContract(contract).ok, true);
+});

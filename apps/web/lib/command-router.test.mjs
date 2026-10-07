@@ -52,3 +52,15 @@ test('command router does not guess unsupported commands', () => {
     query: '',
   });
 });
+
+test('command router creates explicit approval-gated Risk qualification evidence intent', () => {
+  assert.deepEqual(resolveCommand('qualification risk RSK-014'), {
+    kind: 'intent',
+    targetView: 'risk',
+    agentId: 'risk',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    payload: { riskId: 'RSK-014', qualificationMode: true },
+  });
+});
+

@@ -219,7 +219,7 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] staged implementation roadmap
 - [x] capability registry tests
 - [x] capability registry implementation
-- [ ] credential broker interface
+- [x] credential broker interface
 - [ ] provider adapters
 - [ ] deployment
 - [ ] production activation

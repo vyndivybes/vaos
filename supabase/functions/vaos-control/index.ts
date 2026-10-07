@@ -29,6 +29,21 @@ Deno.serve(async (req: Request) => {
   if (operation === 'snapshot') {
     rpcName = 'vaos_control_snapshot'
     args = { p_server_key: serverKey }
+  } else if (operation === 'traceLinks') {
+    rpcName = 'vaos_trace_links_snapshot'
+    args = { p_server_key: serverKey }
+  } else if (operation === 'linkDomainRecords') {
+    rpcName = 'vaos_link_domain_records'
+    args = {
+      p_server_key: serverKey,
+      p_source_domain: payload.sourceDomain,
+      p_source_record_id: payload.sourceRecordId,
+      p_relation_type: payload.relationType,
+      p_target_domain: payload.targetDomain,
+      p_target_record_id: payload.targetRecordId,
+      p_created_by: payload.createdBy,
+      p_context: payload.context || {},
+    }
   } else if (operation === 'submitIntent') {
     rpcName = 'vaos_submit_intent'
     args = {

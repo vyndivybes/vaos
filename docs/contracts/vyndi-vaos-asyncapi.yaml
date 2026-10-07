@@ -1,0 +1,154 @@
+asyncapi: 3.0.0
+info:
+  title: VYNDI ↔ VAOS Governed Integration
+  version: 1.0.0
+  description: >
+    Versioned governed event boundary. VYNDI/domain systems retain canonical
+    business truth; VAOS performs authorized external execution and returns
+    verified evidence/results.
+defaultContentType: application/cloudevents+json
+channels:
+  vyndiIntents:
+    address: vyndi.vaos.intents.v1
+    messages:
+      governedIntent:
+        $ref: '#/components/messages/GovernedIntent'
+  vaosResults:
+    address: vaos.vyndi.results.v1
+    messages:
+      governedResult:
+        $ref: '#/components/messages/GovernedResult'
+  reconciliation:
+    address: vaos.reconciliation.v1
+    messages:
+      reconciliationEvent:
+        $ref: '#/components/messages/ReconciliationEvent'
+operations:
+  receiveVyndiIntent:
+    action: receive
+    channel:
+      $ref: '#/channels/vyndiIntents'
+  sendVaosResult:
+    action: send
+    channel:
+      $ref: '#/channels/vaosResults'
+  publishReconciliation:
+    action: send
+    channel:
+      $ref: '#/channels/reconciliation'
+components:
+  messages:
+    GovernedIntent:
+      name: com.vyndi.vaos.intent.v1
+      payload:
+        type: object
+        required:
+          - specversion
+          - id
+          - source
+          - type
+          - subject
+          - time
+          - datacontenttype
+          - data
+        properties:
+          specversion:
+            const: '1.0'
+          type:
+            const: com.vyndi.vaos.intent.v1
+          data:
+            $ref: '#/components/schemas/IntentData'
+    GovernedResult:
+      name: com.vaos.vyndi.result.v1
+      payload:
+        type: object
+        required:
+          - specversion
+          - id
+          - source
+          - type
+          - subject
+          - time
+          - datacontenttype
+          - data
+        properties:
+          specversion:
+            const: '1.0'
+          type:
+            const: com.vaos.vyndi.result.v1
+          data:
+            $ref: '#/components/schemas/ResultData'
+    ReconciliationEvent:
+      name: com.vaos.reconciliation.v1
+      payload:
+        type: object
+        additionalProperties: false
+        required: [reconciliationId, executionJobId, intentId, providerId, state]
+        properties:
+          reconciliationId: { type: string }
+          executionJobId: { type: string }
+          intentId: { type: string }
+          providerId: { type: string }
+          providerRunId: { type: [string, 'null'] }
+          state:
+            enum: [PENDING, SUCCEEDED, FAILED, MANUAL_REVIEW]
+          evidenceRefs:
+            type: array
+            items: { type: string }
+  schemas:
+    IntentData:
+      type: object
+      additionalProperties: false
+      required:
+        - contractVersion
+        - missionId
+        - intentId
+        - idempotencyKey
+        - actionType
+        - capability
+        - riskClass
+        - dataClassification
+        - authorityRef
+        - input
+      properties:
+        contractVersion: { const: v1 }
+        missionId: { type: string }
+        intentId: { type: string }
+        idempotencyKey: { type: string }
+        actionType: { type: string }
+        capability:
+          type: string
+          pattern: '^[a-z][a-z0-9-]*\.[a-z][a-z0-9-]*$'
+        riskClass:
+          enum: [low, medium, high, critical]
+        dataClassification:
+          enum: [public, internal, confidential, restricted]
+        authorityRef: { type: string }
+        approvalRef: { type: [string, 'null'] }
+        input: { type: object }
+    ResultData:
+      type: object
+      additionalProperties: false
+      required:
+        - contractVersion
+        - missionId
+        - intentId
+        - executionJobId
+        - status
+        - evidenceRefs
+        - canonicalStateUpdated
+      properties:
+        contractVersion: { const: v1 }
+        missionId: { type: string }
+        intentId: { type: string }
+        executionJobId: { type: string }
+        status:
+          enum: [SUCCEEDED, FAILED, UNKNOWN, MANUAL_REVIEW, REJECTED]
+        providerId: { type: [string, 'null'] }
+        providerRunId: { type: [string, 'null'] }
+        effectRef: { type: [string, 'null'] }
+        evidenceRefs:
+          type: array
+          items: { type: string }
+        canonicalStateUpdated:
+          const: false

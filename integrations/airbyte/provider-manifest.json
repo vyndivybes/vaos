@@ -1,17 +1,62 @@
 {
-  "schemaVersion": "vaos.provider.v1",
+  "schemaVersion": "vaos.provider.v2",
   "providerId": "airbyte",
   "displayName": "Airbyte",
-  "description": "Governed data replication provider evaluated behind the VAOS Automation & Integration Fabric.",
-  "capabilities": ["data.replicate"],
-  "deploymentModes": ["self-hosted", "managed-saas"],
-  "qualification": {"state": "evaluation", "evidenceRefs": [], "qualifiedCapabilities": []},
-  "security": {"secretBinding": "required", "dataEgress": "controlled", "authModes": ["bearer"], "callbackVerification": "none"},
-  "execution": {"idempotency": "not-supported", "retrySemantics": "conditional", "verificationStrategy": "provider-readback", "healthProbe": "required"},
-  "licensing": {
-    "model": "Open-source/self-managed or managed service; connector licensing, data-residency and commercial terms require qualification.",
-    "redistributionReviewRequired": true,
-    "notes": "VAOS invokes only pre-approved connection keys mapped to Airbyte connection IDs."
+  "adapterVersion": "1.0.0",
+  "description": "Governed data replication provider behind the VAOS fabric.",
+  "capabilities": [
+    "data.replicate"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
   },
-  "notes": "Production qualification remains blocked until connection-level data classification, source/destination ownership, short-lived token acquisition, busy/rate-limit behavior, status reconciliation, cancellation, schema-change policy and data-residency controls are evidenced."
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "bearer"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider-connection"
+  },
+  "operations": {
+    "retentionClass": "replication-policy-bound",
+    "dataResidency": [
+      "connection-policy-bound"
+    ],
+    "costControl": "connection-and-volume-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-managed or managed service",
+    "redistributionReviewRequired": true,
+    "notes": "Connector licensing, residency and commercial terms require connection-level qualification."
+  },
+  "notes": "Disabled/evaluation-only; governed connection keys, schema-change policy, lineage and data classification apply."
 }

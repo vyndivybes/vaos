@@ -30,7 +30,7 @@ assert.equal(executionProvider.toLowerCase().includes(blockedProvider), false);
 assert.match(executionProvider, /vaos-cloudflare-worker/);
 
 const cloudflareIdentityMigration = readFileSync(
-  resolve(root, "supabase", "migrations", "20261007193600_cloudflare_runtime_identity_v1.sql"),
+  resolve(root, "supabase", "migrations", "20261007193758_cloudflare_runtime_identity_v1.sql"),
   "utf8",
 );
 assert.match(cloudflareIdentityMigration, /cloudflare-primary/);

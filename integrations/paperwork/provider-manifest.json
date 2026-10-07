@@ -1,18 +1,37 @@
 {
-  "schemaVersion": "vaos.provider.v1",
+  "schemaVersion": "vaos.provider.v2",
   "providerId": "paperwork",
   "displayName": "Paperwork",
-  "description": "CloudRaker Paperwork document-intelligence provider evaluated behind the VAOS Automation & Integration Fabric.",
+  "adapterVersion": "1.0.0",
+  "description": "Document-intelligence provider behind the governed VAOS fabric.",
   "capabilities": [
-    "document.extract"
+    "document.extract",
+    "document.classify",
+    "document.fill",
+    "document.redact",
+    "document.redline"
   ],
   "deploymentModes": [
     "managed-saas"
   ],
+  "enabled": false,
   "qualification": {
     "state": "evaluation",
+    "qualifiedCapabilities": [],
     "evidenceRefs": [],
-    "qualifiedCapabilities": []
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
   },
   "security": {
     "secretBinding": "required",
@@ -26,12 +45,20 @@
     "idempotency": "native",
     "retrySemantics": "safe",
     "verificationStrategy": "provider-readback",
-    "healthProbe": "required"
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider-capability"
+  },
+  "operations": {
+    "retentionClass": "document-policy-bound",
+    "dataResidency": [
+      "provider-qualified"
+    ],
+    "costControl": "document-page-budget"
   },
   "licensing": {
-    "model": "External managed API; commercial and data-governance review required before production activation",
+    "model": "External managed API; commercial and data-governance review required",
     "redistributionReviewRequired": true,
-    "notes": "VAOS uses Paperwork as a replaceable document-intelligence provider. Production enablement requires live API, cost, data-retention, residency and webhook/JWKS qualification."
+    "notes": "Extraction is implemented; classify/fill/redact/redline remain capability-specific qualification scopes."
   },
-  "notes": "Initial AF-4 scope is structured extraction with citations. Redact, compose, fill, redline and sign remain separate future capabilities and are not implicitly authorized by this manifest."
+  "notes": "Disabled/evaluation-only. Formal e-signature remains Documenso; deterministic PDF transformation remains Stirling PDF."
 }

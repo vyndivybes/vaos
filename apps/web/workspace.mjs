@@ -687,9 +687,22 @@ async function executeVAOSCommand(rawQuery) {
 }
 
 function renderCommandResults(query = '') {
-  const q = query.trim().toLowerCase();
+  const normalizedQuery = query.trim();
+  const q = normalizedQuery.toLowerCase();
+  const resolved = resolveCommand(normalizedQuery);
   const modules = model.modules.filter((module) => !q || `${module.label} ${module.group} ${module.description}`.toLowerCase().includes(q));
-  commandResults.innerHTML = modules.map((module) => `<button type="button" data-view="${esc(module.id)}"><span class="nav-glyph">${esc(module.glyph)}</span><div><strong>${esc(module.label)}</strong><small>${esc(module.description)}</small></div></button>`).join('') || '<p>No matching module.</p>';
+
+  const commandAction = resolved.kind !== 'unknown'
+    ? `<button type="button" data-command-query="${esc(normalizedQuery)}"><span class="nav-glyph">↗</span><div><strong>${resolved.kind === 'intent' ? 'Run governed command' : 'Execute VAOS command'}</strong><small>${resolved.kind === 'intent' ? esc(`${resolved.actionType} · ${resolved.agentId} · governed execution`) : esc(`Navigate to ${resolved.view}`)}</small></div></button>`
+    : '';
+
+  const moduleActions = modules
+    .map((module) => `<button type="button" data-view="${esc(module.id)}"><span class="nav-glyph">${esc(module.glyph)}</span><div><strong>${esc(module.label)}</strong><small>${esc(module.description)}</small></div></button>`)
+    .join('');
+
+  commandResults.innerHTML = commandAction || moduleActions
+    ? `${commandAction}${moduleActions}`
+    : '<p>No matching VAOS command or module.</p>';
 }
 
 async function loadControlPlane() {
@@ -931,6 +944,14 @@ async function submitWorkforceLifecycle(event) {
 
 function wireInteractions() {
   document.addEventListener('click', (event) => {
+    const commandQuery = event.target.closest('[data-command-query]');
+    if (commandQuery) {
+      if (dialog?.open) dialog.close();
+      commandBarInput.value = commandQuery.dataset.commandQuery;
+      executeVAOSCommand(commandQuery.dataset.commandQuery);
+      return;
+    }
+
     const workforceAction = event.target.closest('[data-workforce-action][data-workforce-employee-id]');
     if (workforceAction) { openWorkforceActionDialog(workforceAction); return; }
 
@@ -972,6 +993,19 @@ function wireInteractions() {
     executeVAOSCommand(commandBarInput.value);
   });
   commandInput?.addEventListener('input', () => renderCommandResults(commandInput.value));
+  commandInput?.addEventListener('keydown', (event) => {
+    if (event.key !== 'Enter') return;
+    event.preventDefault();
+    const query = commandInput.value.trim();
+    const resolved = resolveCommand(query);
+    if (resolved.kind === 'unknown') {
+      renderCommandResults(query);
+      return;
+    }
+    if (dialog?.open) dialog.close();
+    commandBarInput.value = query;
+    executeVAOSCommand(query);
+  });
   window.addEventListener('popstate', () => setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false }));
   window.addEventListener('resize', () => { if (currentView === 'digital-thread') requestAnimationFrame(drawTraceEdges); });
 }

@@ -72,14 +72,16 @@
         </div>
       </section>
 
-      <button class="workspace-search metallic-gold-rim" id="command-button" type="button">
+      <form class="workspace-search metallic-gold-rim" id="command-bar">
         <span class="workspace-search__icon" aria-hidden="true">⌕</span>
-        <span class="workspace-search__copy">
-          <strong>Search modules, governance, approvals and operational controls…</strong>
-          <small>Open the VAOS command launcher</small>
-        </span>
-        <span class="workspace-search__action">Command ↗</span>
-      </button>
+        <label class="workspace-search__copy" for="command-bar-input">
+          <input id="command-bar-input" type="text" autocomplete="off"
+            placeholder="Command VAOS — e.g. open engineering, open CAPA CAPA-025, escalate risk RSK-014" />
+          <small>Navigate instantly or submit a governed action through policy, approval, execution and evidence.</small>
+        </label>
+        <button class="workspace-search__action" id="command-button" type="submit">Run ↗</button>
+      </form>
+      <p class="command-status" id="command-status" aria-live="polite"></p>
 
       <section id="command-view" class="workspace-view">
         <div class="section-strapline">CONTROL PLANE → AUTHORITY → APPROVAL → EXECUTION → EVIDENCE</div>

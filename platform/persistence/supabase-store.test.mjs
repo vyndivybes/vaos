@@ -160,7 +160,7 @@ test('governed domain link writes and readback are bound to the execution lease'
     relationType: 'DRIVES_CHANGE',
     targetDomain: 'ENGINEERING_BASELINE',
     targetRecordId: 'b51465ef-2777-4e48-90f8-92ad7943317e',
-    proposedBy: 'founder@example.com',
+    createdBy: 'founder@example.com',
     context: { reason: 'CAPA requires baseline update' },
   };
 

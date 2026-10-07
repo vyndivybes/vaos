@@ -651,3 +651,50 @@ test('Risk Q3 training requires an enterprise-risk governance PASS assessment be
   assert.equal(row.actions[0].recommendedQualificationLevel, 3);
   assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:risk-assessment-1']);
 });
+
+test('qualification harness records stay in audit evidence but not the live Risk register', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.domains = {
+    qaCapa: [],
+    engineering: [],
+    projectRisk: [
+      {
+        id: 'risk-live',
+        resourceId: 'RSK-013',
+        status: 'ESCALATED',
+        intentId: 'intent-live',
+        intentStatus: 'EXECUTED',
+        approvalId: 'approval-live',
+        approvalStatus: 'APPROVED',
+        decidedBy: 'human@example.com',
+        executionJobId: 'job-live',
+        executionStatus: 'SUCCEEDED',
+        attemptCount: 1,
+        evidenceCount: 1,
+        evidenceVerifiedAt: '2026-10-07T11:19:42.000Z',
+      },
+      {
+        id: 'risk-drill',
+        resourceId: 'QUAL-RISK-001',
+        status: 'ESCALATED',
+        intentId: 'intent-drill',
+        intentStatus: 'EXECUTED',
+        approvalId: 'approval-drill',
+        approvalStatus: 'APPROVED',
+        decidedBy: 'qualification@vaos.local',
+        executionJobId: 'job-drill',
+        executionStatus: 'SUCCEEDED',
+        attemptCount: 2,
+        evidenceCount: 1,
+        evidenceVerifiedAt: '2026-10-06T23:23:24.000Z',
+      },
+    ],
+  };
+
+  const model = buildWorkspaceModel(snapshot);
+  assert.deepEqual(model.domainWorkspaces.risk.records.map((record) => record.resourceId), ['RSK-013']);
+  assert.deepEqual(model.domainWorkspaces.risk.auditRecords.map((record) => record.resourceId), ['RSK-013', 'QUAL-RISK-001']);
+  assert.equal(model.domainWorkspaces.risk.summary.total, 1);
+  assert.ok(model.operationalViews.evidence.rows.some((row) => row.title === 'QUAL-RISK-001'));
+});
+

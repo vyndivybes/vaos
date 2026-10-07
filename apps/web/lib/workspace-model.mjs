@@ -151,11 +151,13 @@ function mapThreadEvent(event = {}) {
 }
 
 function mapDomainRecord(record = {}) {
+  const qualificationDrill = String(record.decidedBy || '').toLowerCase() === 'qualification@vaos.local';
   return {
     id: record.id,
     resourceId: record.resourceId || '—',
     status: record.status || 'UNKNOWN',
     recordedAt: record.recordedAt || null,
+    qualificationDrill,
     intent: {
       id: record.intentId || null,
       status: record.intentStatus || 'UNKNOWN',
@@ -196,13 +198,15 @@ function mapDomainRecord(record = {}) {
 
 function buildDomainWorkspaces(domains = {}) {
   return Object.fromEntries(Object.entries(DOMAIN_WORKSPACE_CONFIG).map(([moduleId, config]) => {
-    const records = Array.isArray(domains?.[config.source]) ? domains[config.source].map(mapDomainRecord) : [];
+    const auditRecords = Array.isArray(domains?.[config.source]) ? domains[config.source].map(mapDomainRecord) : [];
+    const records = auditRecords.filter((record) => !record.qualificationDrill);
     return [moduleId, {
       moduleId,
       title: config.title,
       resourceLabel: config.resourceLabel,
       copy: config.copy,
       records,
+      auditRecords,
       summary: {
         total: records.length,
         succeeded: records.filter((item) => item.execution.status === 'SUCCEEDED').length,
@@ -468,7 +472,7 @@ function normalizeWorkforce(runtimeSnapshot, agents) {
 
 function domainEvidenceRows(domainWorkspaces) {
   return Object.entries(domainWorkspaces).flatMap(([moduleId, workspace]) =>
-    workspace.records
+    (workspace.auditRecords || workspace.records)
       .filter((record) => record.evidence.count > 0)
       .map((record) => operationalRow({
         id: `evidence:${moduleId}:${record.id}`,

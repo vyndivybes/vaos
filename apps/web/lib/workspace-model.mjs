@@ -267,8 +267,8 @@ function summaryItem(label, value, note = '') {
   return { label, value, note };
 }
 
-function operationalRow({ id, title, status, subtitle = '', detail = '', meta = [] }) {
-  return { id, title, status, subtitle, detail, meta };
+function operationalRow({ id, title, resourceId = null, status, subtitle = '', detail = '', meta = [] }) {
+  return { id, title, resourceId, status, subtitle, detail, meta };
 }
 
 function domainEvidenceRows(domainWorkspaces) {
@@ -318,6 +318,7 @@ function buildOperationalViews({ agents, approvals, events, domainWorkspaces, ru
     ? engineering.map((record) => operationalRow({
         id: `vibpe:${record.id}`,
         title: record.resourceId,
+        resourceId: record.resourceId,
         status: record.status,
         subtitle: 'Engineering baseline',
         detail: `${record.intent.status} → ${record.execution.status} → ${record.evidence.count ? 'VERIFIED' : 'NO EVIDENCE'}`,
@@ -341,6 +342,7 @@ function buildOperationalViews({ agents, approvals, events, domainWorkspaces, ru
     ? projectRisk.map((record) => operationalRow({
         id: `project:${record.id}`,
         title: record.resourceId,
+        resourceId: record.resourceId,
         status: record.status,
         subtitle: 'Project / risk escalation',
         detail: `${record.intent.status} → ${record.execution.status}`,

@@ -49,4 +49,4 @@ jobs:
       - name: Publish deployment URL
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
-        run: echo "VAOS Cloudflare deployment: $DEPLOYMENT_URL"
+        run: |\n          echo "VAOS Cloudflare deployment: $DEPLOYMENT_URL"

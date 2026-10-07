@@ -303,23 +303,30 @@ function minimumQualificationLevel(employee) {
   return match ? Number(match[1]) : Math.max(1, Number(employee?.qualificationLevel) || 1);
 }
 
+const QUALIFICATION_PROFILES = Object.freeze({
+  vibpe: Object.freeze({ 3: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1' }),
+  qa: Object.freeze({ 3: 'QA_Q3_CAPA_GOVERNANCE_V1' }),
+});
+
 function workforceLifecycleActions(employee) {
   const base = WORKFORCE_TRANSITIONS[employee.lifecycleStatus] || [];
   if (['TRAINING','RETRAINING'].includes(employee.lifecycleStatus)) {
     const targetLevel = minimumQualificationLevel(employee);
+    const profileId = QUALIFICATION_PROFILES[employee.id]?.[targetLevel] || null;
     const assessment = employee.latestAssessment;
     const passMatches = assessment
       && assessment.status === 'PASS'
-      && Number(assessment.targetLevel) === targetLevel;
+      && Number(assessment.targetLevel) === targetLevel
+      && (!profileId || assessment.profileId === profileId);
 
     if (!passMatches) {
-      if (employee.id === 'vibpe' && targetLevel === 3) {
+      if (profileId) {
         return [
           {
             actionType: 'WORKFORCE.ASSESS_QUALIFICATION',
             ...WORKFORCE_ACTION_CONFIG['WORKFORCE.ASSESS_QUALIFICATION'],
-            targetLevel: 3,
-            profileId: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1',
+            targetLevel,
+            profileId,
           },
           {
             actionType: 'WORKFORCE.RETIRE',

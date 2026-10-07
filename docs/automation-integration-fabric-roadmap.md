@@ -71,7 +71,7 @@ Qualification scenarios:
 
 No n8n workflow may become an alternative approval system.
 
-### AF-4 — Paperwork Provider Adapter
+### AF-4 — Paperwork Provider Adapter — IMPLEMENTED / EVALUATION
 
 Initial document capabilities:
 
@@ -220,7 +220,7 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] capability registry tests
 - [x] capability registry implementation
 - [x] credential broker interface
-- [ ] provider adapters (n8n implemented; Paperwork/Zapier and specialist adapters pending)
+- [ ] provider adapters (n8n + Paperwork implemented; Zapier and specialist adapters pending)
 - [ ] deployment
 - [ ] production activation
 

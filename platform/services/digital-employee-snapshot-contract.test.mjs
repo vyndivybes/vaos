@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const migrationUrl = new URL(
-  '../../supabase/migrations/20261007201200_digital_employee_snapshot_contract_v3.sql',
+  '../../supabase/migrations/20261007201351_digital_employee_snapshot_contract_v3.sql',
   import.meta.url,
 );
 

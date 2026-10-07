@@ -30,5 +30,11 @@ jobs:
         with:
           node-version: "22"
 
+      - name: Test Cloudflare compatibility adapter
+        run: node --test apps/web/cloudflare-worker.test.mjs apps/web/lib/cloudflare-adapter.test.mjs
+
+      - name: Syntax-check Cloudflare entrypoints
+        run: node --check apps/web/cloudflare-worker.mjs && node --check apps/web/lib/cloudflare-adapter.mjs
+
       - name: Bundle Cloudflare Worker without deploying
         run: npx --yes wrangler@4.136.3 deploy --dry-run --config wrangler.jsonc --outdir .wrangler-dry-run

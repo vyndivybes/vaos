@@ -14,6 +14,7 @@ const app = readFileSync(resolve(web, "app.mjs"), "utf8");
 const workspace = readFileSync(resolve(web, "workspace.html"), "utf8");
 const workspaceCss = readFileSync(resolve(web, "workspace.css"), "utf8");
 const workspaceApp = readFileSync(resolve(web, "workspace.mjs"), "utf8");
+const rootCommandRouter = resolve(web, "command-router.mjs");
 const rlsMigration = readFileSync(resolve(root, "supabase", "migrations", "20261006223142_enable_legacy_control_plane_rls.sql"), "utf8");
 
 assert.match(html, /vayu-shastr-original\.webp/);
@@ -56,6 +57,9 @@ assert.match(workspaceApp, /DIGITAL_THREAD\.CREATE_LINK/);
 assert.match(workspaceApp, /\/api\/intents/);
 assert.match(workspaceApp, /executeVAOSCommand/);
 assert.match(workspaceApp, /resolveCommand/);
+assert.match(workspaceApp, /from ['"]\.\/command-router\.mjs['"]/);
+assert.doesNotMatch(workspaceApp, /from ['"]\.\/lib\/command-router\.mjs['"]/);
+assert.equal(existsSync(rootCommandRouter), true);
 const executionsApi = readFileSync(resolve(web, "api", "executions.mjs"), "utf8");
 assert.match(executionsApi, /getExecutionEngine/);
 assert.match(workspaceCss, /max-width: 900px/);

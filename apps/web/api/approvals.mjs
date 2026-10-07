@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   if (!validation.ok) return res.status(422).json(apiError('VALIDATION_ERROR', 'Invalid approval decision', validation.errors));
 
   try {
-    const result = await getDurableControlService().decideApproval(body.approvalId, {
+    const result = await getDurableControlService(req.env).decideApproval(body.approvalId, {
       decision: validation.decision,
       decidedBy: session.email,
     });
@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     let execution = null;
     if (validation.decision === 'APPROVED') {
-      try { execution = await getExecutionEngine().processOne(); }
+      try { execution = await getExecutionEngine(req.env).processOne(); }
       catch { execution = { status: 'QUEUED' }; }
     }
     return res.status(200).json({ data: { ...result, execution } });

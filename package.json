@@ -22,5 +22,8 @@
     "test:platform": "node --test packages/contracts/agent-contract.test.mjs packages/contracts/digital-employee-contract.test.mjs platform/runtime/event-bus.test.mjs platform/runtime/policy-engine.test.mjs platform/runtime/approval-queue.test.mjs platform/runtime/agent-runtime.test.mjs platform/runtime/digital-workforce-registry.test.mjs platform/runtime/development-runtime.test.mjs platform/persistence/supabase-store.test.mjs platform/services/durable-control-service.test.mjs platform/execution/adapter-registry.test.mjs platform/execution/execution-engine.test.mjs platform/services/risk-q3-qualification-profile.test.mjs",
     "verify:web": "node scripts/verify-web.mjs",
     "test": "npm run test:platform && npm run test:web && npm run verify:web && npm run lint"
+  },
+  "devDependencies": {
+    "wrangler": "4.136.3"
   }
 }

@@ -398,3 +398,74 @@ test('live operational workspaces fail safely when durable domain data is empty'
   assert.equal(model.operationalViews.evidence.rows.length >= 1, true);
   assert.equal(model.operationalViews.admin.rows.length >= 1, true);
 });
+
+
+test('durable digital workforce becomes the Agent Control source of truth without falsifying qualification', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'vibpe',
+      name: 'VIBPE Engineering',
+      role: 'Engineering Intelligence',
+      department: 'Engineering',
+      mission: 'Protect engineering baseline integrity.',
+      responsibilities: ['Analyse change impact', 'Protect configuration integrity'],
+      responsibilityContractId: 'vibpe-contract',
+      qualificationLevel: 0,
+      status: 'PROPOSED',
+      capabilities: { 'ENGINEERING.BASELINE_CHANGE': 5 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 4,
+      currentAssignment: 'Monitor engineering baseline changes',
+      priority: 'HIGH',
+      confidence: 94,
+      heartbeatAt: null,
+      modelRequirements: { minimumQualification: 'Q3_ENGINEERING' },
+      costBudget: { mode: 'governed', limitConfigured: false },
+      sla: { class: 'engineering' },
+      memoryPolicy: { scope: 'role' },
+      contextPolicy: { sourceAuthority: 'required' },
+      evidenceRefs: [],
+    }],
+    responsibilityContracts: [{
+      id: 'vibpe-contract',
+      role: 'Engineering Intelligence',
+      mission: 'Protect engineering baseline integrity.',
+      outcomes: ['Engineering changes remain traceable'],
+      autonomousActions: [],
+      approvalRequiredActions: ['ENGINEERING.BASELINE_CHANGE'],
+      prohibitedActions: [],
+      escalationConditions: ['Verification evidence missing'],
+      approvalThresholds: { baselineChange: 'human-approval' },
+      evidenceRequirements: ['Verification evidence'],
+    }],
+    metrics: {
+      totalDigitalEmployees: 1,
+      proposedDigitalEmployees: 1,
+      qualifiedDigitalEmployees: 0,
+      activeDigitalEmployees: 0,
+      restrictedDigitalEmployees: 0,
+      responsibilityContracts: 1,
+    },
+  };
+
+  const model = buildWorkspaceModel(snapshot);
+  const view = model.operationalViews.agents;
+
+  assert.equal(model.workforce.digitalEmployees.length, 1);
+  assert.equal(model.workforce.digitalEmployees[0].lifecycleStatus, 'PROPOSED');
+  assert.equal(model.workforce.digitalEmployees[0].runtimeStatus, 'approval');
+  assert.equal(view.title, 'Digital Workforce Console');
+  assert.equal(view.summary.find((item) => item.label === 'Proposed / Q0').value, 1);
+  assert.equal(view.rows[0].kind, 'digital-employee');
+  assert.equal(view.rows[0].meta.find((item) => item.label === 'Qualification').value, 'Q0');
+  assert.deepEqual(view.rows[0].contract.approvalRequiredActions, ['ENGINEERING.BASELINE_CHANGE']);
+});
+
+test('Agent Control falls back to the legacy runtime fleet when no durable workforce snapshot exists', () => {
+  const model = buildWorkspaceModel(runtimeSnapshot());
+  assert.equal(model.workforce.digitalEmployees.length, 0);
+  assert.equal(model.operationalViews.agents.title, 'Live Agent Fleet');
+  assert.equal(model.operationalViews.agents.rows.length, model.agents.length);
+});

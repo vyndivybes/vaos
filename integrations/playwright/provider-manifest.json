@@ -1,17 +1,61 @@
 {
-  "schemaVersion": "vaos.provider.v1",
+  "schemaVersion": "vaos.provider.v2",
   "providerId": "playwright",
   "displayName": "Playwright",
-  "description": "Self-hosted governed browser automation provider evaluated behind the VAOS Automation & Integration Fabric.",
-  "capabilities": ["browser.automate"],
-  "deploymentModes": ["self-hosted"],
-  "qualification": {"state": "evaluation", "evidenceRefs": [], "qualifiedCapabilities": []},
-  "security": {"secretBinding": "required", "dataEgress": "controlled", "authModes": ["session"], "callbackVerification": "none"},
-  "execution": {"idempotency": "not-supported", "retrySemantics": "conditional", "verificationStrategy": "artifact-hash", "healthProbe": "required"},
-  "licensing": {
-    "model": "Open-source browser automation runtime; browser binaries and deployment posture require qualification.",
-    "redistributionReviewRequired": false,
-    "notes": "Authenticated browser state is treated as secret material and must not be committed or returned as VAOS evidence."
+  "adapterVersion": "1.0.0",
+  "description": "Self-hosted browser automation provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "browser.automate"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
   },
-  "notes": "Initial AF-6 scope requires origin allow-listing, isolated execution, sealed trace/evidence references, downloads disabled by default, and no blind retry after a task may have caused an external side effect."
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "session"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "artifact-hash",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "trace-policy-bound",
+    "dataResidency": [
+      "IN"
+    ],
+    "costControl": "browser-runtime-budget"
+  },
+  "licensing": {
+    "model": "Open-source browser automation runtime",
+    "redistributionReviewRequired": false,
+    "notes": "Authenticated browser state is secret material and must never be committed as evidence."
+  },
+  "notes": "Disabled/evaluation-only; origin allow-list, artifact broker, session isolation and no-blind-retry controls apply."
 }

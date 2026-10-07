@@ -52,7 +52,7 @@ Rules:
 
 Initial candidate: Infisical. Keep the interface vault-neutral.
 
-### AF-3 — n8n Provider Adapter
+### AF-3 — n8n Provider Adapter — IMPLEMENTED / EVALUATION
 
 Use n8n as the initial general workflow provider.
 
@@ -220,7 +220,7 @@ This gives each provider an independent qualification and rollback boundary.
 - [x] capability registry tests
 - [x] capability registry implementation
 - [x] credential broker interface
-- [ ] provider adapters
+- [ ] provider adapters (n8n implemented; Paperwork/Zapier and specialist adapters pending)
 - [ ] deployment
 - [ ] production activation
 

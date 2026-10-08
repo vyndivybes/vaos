@@ -153,6 +153,23 @@ export function createSupabaseControlStore({
         targetRecordId: input.targetRecordId,
       });
     },
+    linkKnowledgeQualification(job, input) {
+      return invoke('linkKnowledgeQualification', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        sourceRiskId: input.sourceRiskId,
+        targetBaseline: input.targetBaseline,
+        relationType: input.relationType,
+      });
+    },
+    getKnowledgeQualificationLink(job, input) {
+      return invoke('getKnowledgeQualificationLink', {
+        jobId: job.id,
+        sourceRiskId: input.sourceRiskId,
+        targetBaseline: input.targetBaseline,
+        relationType: input.relationType,
+      });
+    },
     getDigitalEmployee(employeeId) {
       return invoke('getDigitalEmployee', { employeeId });
     },

@@ -17,17 +17,29 @@ export function createInMemoryReconciliationStore(){
       rows.set(record.reconciliationId,clone(record));
       return {outcome:'CREATED',record:clone(record)};
     },
-    claim({now,includeNotDue=false}={}){
+    async claim({now,includeNotDue=false,workerId='reconciler',leaseSeconds=120}={}){
       const nowMs=new Date(now).getTime();
+      const leaseMs=Number(leaseSeconds)*1000;
+      if(!Number.isFinite(leaseMs)||leaseMs<=0)throw fail('RECONCILIATION_LEASE_INVALID');
       const row=[...rows.values()]
-        .filter(r=>r.state==='PENDING')
+        .filter(r=>r.state==='PENDING'||(r.state==='LEASED'&&r.leaseExpiresAt&&new Date(r.leaseExpiresAt).getTime()<=nowMs))
         .filter(r=>includeNotDue||!r.nextAttemptAt||new Date(r.nextAttemptAt).getTime()<=nowMs)
         .sort((a,b)=>a.createdAt.localeCompare(b.createdAt))[0];
-      return row?clone(row):null;
+      if(!row)return null;
+      const leaseToken=`lease:${row.reconciliationId}:${workerId}:${nowMs}`;
+      const leased={...row,state:'LEASED',leasedBy:String(workerId),leaseToken,leaseExpiresAt:new Date(nowMs+leaseMs).toISOString()};
+      rows.set(row.reconciliationId,leased);
+      return clone(leased);
     },
-    save(id,patch){
+    async save(id,patch,{leaseToken}={}){
       const current=rows.get(id);if(!current)throw fail('RECONCILIATION_NOT_FOUND');
+      if(current.state==='LEASED'&&current.leaseToken!==leaseToken)throw fail('RECONCILIATION_LEASE_MISMATCH');
       const next={...current,...clone(patch)};
+      if(next.state!=='LEASED'){
+        next.leasedBy=null;
+        next.leaseToken=null;
+        next.leaseExpiresAt=null;
+      }
       rows.set(id,next);
       return clone(next);
     },
@@ -42,11 +54,15 @@ export function createReconciliationService({
   recordAudit=async()=>{},
   now=()=>new Date(),
   maxAttempts=5,
+  workerId='reconciler',
+  leaseSeconds=120,
 }={}){
   if(!store||typeof store.enqueue!=='function'||typeof store.claim!=='function'||typeof store.save!=='function')throw fail('RECONCILIATION_STORE_REQUIRED');
   if(!resolvers||typeof resolvers!=='object'||Array.isArray(resolvers))throw fail('RECONCILIATION_RESOLVERS_INVALID');
   if(typeof recordAudit!=='function')throw fail('RECONCILIATION_AUDIT_INVALID');
   if(!Number.isInteger(maxAttempts)||maxAttempts<1||maxAttempts>100)throw fail('RECONCILIATION_MAX_ATTEMPTS_INVALID');
+  if(typeof workerId!=='string'||!workerId.trim())throw fail('RECONCILIATION_WORKER_INVALID');
+  if(!Number.isInteger(leaseSeconds)||leaseSeconds<1||leaseSeconds>3600)throw fail('RECONCILIATION_LEASE_INVALID');
 
   async function enqueue(input){
     const reconciliationId=requiredText(input,'reconciliationId');
@@ -58,10 +74,7 @@ export function createReconciliationService({
     const reasonCode=requiredText(input,'reasonCode');
     const evidenceRefs=refs(input?.evidenceRefs);
     const ts=nowDate(now).toISOString();
-    const record={
-      reconciliationId,providerId,capability,executionJobId,intentId,providerRunId,reasonCode,evidenceRefs,
-      state:'PENDING',attempts:0,nextAttemptAt:ts,createdAt:ts,updatedAt:ts,errorType:null,
-    };
+    const record={reconciliationId,providerId,capability,executionJobId,intentId,providerRunId,reasonCode,evidenceRefs,state:'PENDING',attempts:0,nextAttemptAt:ts,createdAt:ts,updatedAt:ts,errorType:null,leasedBy:null,leaseToken:null,leaseExpiresAt:null};
     record.identity=identity(record);
     const result=await store.enqueue(record);
     await recordAudit({type:'RECONCILIATION.ENQUEUED',reconciliationId,providerId,executionJobId,intentId,outcome:result.outcome,occurredAt:ts});
@@ -70,12 +83,13 @@ export function createReconciliationService({
 
   async function reconcileOne({includeNotDue=false}={}){
     const clock=nowDate(now);
-    const row=await store.claim({now:clock.toISOString(),includeNotDue});
+    const row=await store.claim({now:clock.toISOString(),includeNotDue,workerId:workerId.trim(),leaseSeconds});
     if(!row)return {status:'EMPTY'};
+    const save=(patch)=>store.save(row.reconciliationId,patch,{leaseToken:row.leaseToken});
 
     const resolver=resolvers[row.providerId];
     if(typeof resolver!=='function'){
-      const saved=await store.save(row.reconciliationId,{state:'MANUAL_REVIEW',attempts:row.attempts,updatedAt:clock.toISOString(),errorType:'RECONCILIATION_RESOLVER_NOT_AVAILABLE'});
+      const saved=await save({state:'MANUAL_REVIEW',attempts:row.attempts,updatedAt:clock.toISOString(),errorType:'RECONCILIATION_RESOLVER_NOT_AVAILABLE'});
       await recordAudit({type:'RECONCILIATION.MANUAL_REVIEW',reconciliationId:row.reconciliationId,reason:'RECONCILIATION_RESOLVER_NOT_AVAILABLE',occurredAt:clock.toISOString()});
       return {status:'MANUAL_REVIEW',reconciliationId:saved.reconciliationId};
     }
@@ -83,17 +97,7 @@ export function createReconciliationService({
     const attempts=row.attempts+1;
     let outcome;
     try{
-      outcome=await resolver(Object.freeze({
-        reconciliationId:row.reconciliationId,
-        providerId:row.providerId,
-        capability:row.capability,
-        executionJobId:row.executionJobId,
-        intentId:row.intentId,
-        providerRunId:row.providerRunId,
-        evidenceRefs:row.evidenceRefs.slice(),
-        reasonCode:row.reasonCode,
-        attempts,
-      }));
+      outcome=await resolver(Object.freeze({reconciliationId:row.reconciliationId,providerId:row.providerId,capability:row.capability,executionJobId:row.executionJobId,intentId:row.intentId,providerRunId:row.providerRunId,evidenceRefs:row.evidenceRefs.slice(),reasonCode:row.reasonCode,attempts}));
     }catch{
       outcome={status:'pending',retryAfterSeconds:60,errorType:'RECONCILIATION_RESOLVER_UNAVAILABLE'};
     }
@@ -103,32 +107,29 @@ export function createReconciliationService({
     const base={attempts,evidenceRefs,updatedAt:clock.toISOString()};
 
     if(status==='succeeded'&&outcome?.verification?.verified===true){
-      await store.save(row.reconciliationId,{...base,state:'SUCCEEDED',nextAttemptAt:null,errorType:null});
+      await save({...base,state:'SUCCEEDED',nextAttemptAt:null,errorType:null});
       await recordAudit({type:'RECONCILIATION.RESOLVED',reconciliationId:row.reconciliationId,state:'SUCCEEDED',occurredAt:clock.toISOString()});
       return {status:'SUCCEEDED',reconciliationId:row.reconciliationId};
     }
-
     if(status==='failed'){
       const errorType=typeof outcome?.errorType==='string'&&outcome.errorType.trim()?outcome.errorType.trim():'PROVIDER_RECONCILED_FAILED';
-      await store.save(row.reconciliationId,{...base,state:'FAILED',nextAttemptAt:null,errorType});
+      await save({...base,state:'FAILED',nextAttemptAt:null,errorType});
       await recordAudit({type:'RECONCILIATION.RESOLVED',reconciliationId:row.reconciliationId,state:'FAILED',errorType,occurredAt:clock.toISOString()});
       return {status:'FAILED',reconciliationId:row.reconciliationId};
     }
-
     if(status==='manual_review'){
-      await store.save(row.reconciliationId,{...base,state:'MANUAL_REVIEW',nextAttemptAt:null,errorType:outcome?.errorType||'MANUAL_REVIEW_REQUIRED'});
+      await save({...base,state:'MANUAL_REVIEW',nextAttemptAt:null,errorType:outcome?.errorType||'MANUAL_REVIEW_REQUIRED'});
       return {status:'MANUAL_REVIEW',reconciliationId:row.reconciliationId};
     }
-
     if(attempts>=maxAttempts){
-      await store.save(row.reconciliationId,{...base,state:'MANUAL_REVIEW',nextAttemptAt:null,errorType:outcome?.errorType||'RECONCILIATION_ATTEMPTS_EXHAUSTED'});
+      await save({...base,state:'MANUAL_REVIEW',nextAttemptAt:null,errorType:outcome?.errorType||'RECONCILIATION_ATTEMPTS_EXHAUSTED'});
       await recordAudit({type:'RECONCILIATION.MANUAL_REVIEW',reconciliationId:row.reconciliationId,reason:'ATTEMPTS_EXHAUSTED',occurredAt:clock.toISOString()});
       return {status:'MANUAL_REVIEW',reconciliationId:row.reconciliationId};
     }
 
     const retrySeconds=Number.isFinite(Number(outcome?.retryAfterSeconds))&&Number(outcome.retryAfterSeconds)>=0?Number(outcome.retryAfterSeconds):60;
     const nextAttemptAt=new Date(clock.getTime()+retrySeconds*1000).toISOString();
-    await store.save(row.reconciliationId,{...base,state:'PENDING',nextAttemptAt,errorType:typeof outcome?.errorType==='string'?outcome.errorType:null});
+    await save({...base,state:'PENDING',nextAttemptAt,errorType:typeof outcome?.errorType==='string'?outcome.errorType:null});
     await recordAudit({type:'RECONCILIATION.DEFERRED',reconciliationId:row.reconciliationId,nextAttemptAt,attempts,occurredAt:clock.toISOString()});
     return {status:'DEFERRED',reconciliationId:row.reconciliationId,nextAttemptAt};
   }

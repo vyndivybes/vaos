@@ -37,6 +37,7 @@ const mandatoryCore=[
   'integrations/provider-catalog.json',
   'platform/execution/provider-control-plane.mjs',
   'platform/execution/provider-runtime.mjs',
+  'platform/execution/automation-fabric-runtime.mjs',
   'platform/execution/provider-health-service.mjs',
   'platform/execution/reconciliation-service.mjs',
   'platform/execution/governed-http-transport.mjs',

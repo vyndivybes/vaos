@@ -23,6 +23,47 @@ Deno.serve(async (req: Request) => {
 
   const operation = body?.operation
   const payload = body?.payload || {}
+
+  if (operation === 'signVyndiBridgeRequest') {
+    const canonical = String(payload.canonical || '')
+    const keyId = String(payload.keyId || '')
+    if (!canonical || !keyId || canonical.length > 4096) {
+      return json({ error: { code: 'INVALID_SIGNING_REQUEST' } }, 422)
+    }
+
+    const { data: keyRecord, error: keyError } = await admin.rpc('vaos_get_bridge_signing_key', {
+      p_server_key: serverKey,
+      p_key_id: keyId,
+    })
+    if (keyError) {
+      const invalidKey = String(keyError.message || '').includes('VAOS_SERVER_KEY_INVALID')
+      return json({ error: { code: invalidKey ? 'UNAUTHENTICATED' : 'SIGNING_KEY_UNAVAILABLE' } }, invalidKey ? 401 : 503)
+    }
+
+    const privateJwk = keyRecord?.privateJwk
+    if (!privateJwk || keyRecord?.algorithm !== 'ECDSA_P256_SHA256') {
+      return json({ error: { code: 'SIGNING_KEY_INVALID' } }, 503)
+    }
+
+    const key = await crypto.subtle.importKey(
+      'jwk',
+      privateJwk,
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      false,
+      ['sign'],
+    )
+    const signature = await crypto.subtle.sign(
+      { name: 'ECDSA', hash: 'SHA-256' },
+      key,
+      new TextEncoder().encode(canonical),
+    )
+    const bytes = new Uint8Array(signature)
+    let binary = ''
+    for (const byte of bytes) binary += String.fromCharCode(byte)
+    const encoded = btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+    return json({ keyId: keyRecord.keyId, signature: encoded }, 200)
+  }
+
   let rpcName = ''
   let args: Record<string, unknown> = {}
 

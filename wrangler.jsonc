@@ -8,6 +8,12 @@
   ],
   "workers_dev": true,
   "keep_vars": true,
+  "services": [
+    {
+      "binding": "VYNDI",
+      "service": "vyndios"
+    }
+  ],
   "vars": {
     "SUPABASE_URL": "https://jjzycduoujbmiegqfiud.supabase.co"
   },

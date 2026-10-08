@@ -2,6 +2,7 @@ import { createSupabaseControlStore } from '../../../platform/persistence/supaba
 import { createExecutionAdapterRegistry } from '../../../platform/execution/adapter-registry.mjs';
 import { createExecutionEngine } from '../../../platform/execution/execution-engine.mjs';
 import { resolveDurableControlConfig } from './durable-control-provider.mjs';
+import { createVyndiReadBridgeClient } from '../../../platform/execution/vyndi-read-bridge-client.mjs';
 
 let engine;
 
@@ -45,9 +46,16 @@ export function getExecutionEngine(runtimeEnv = undefined) {
       getQualificationAssessment(job, employeeId) { return store.getQualificationAssessment(job, employeeId); },
     });
 
+    const vyndiBridge = runtimeEnv?.VYNDI
+      ? createVyndiReadBridgeClient({
+          signer: store,
+          serviceBinding: runtimeEnv.VYNDI,
+        })
+      : undefined;
+
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce }),
+      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge }),
       workerId: 'vaos-cloudflare-worker',
     });
   }

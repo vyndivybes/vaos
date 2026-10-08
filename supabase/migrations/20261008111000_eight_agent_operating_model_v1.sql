@@ -26,6 +26,8 @@ create table if not exists vaos_private.work_packages (
   execution_mode text not null,
   human_approval_required boolean not null default false,
   monitoring boolean not null default false,
+  monitoring_interval_minutes integer,
+  minimum_qualification_level smallint not null,
   sla_hours numeric not null,
   kpis text[] not null default '{}'::text[],
   depends_on text[] not null default '{}'::text[],
@@ -38,7 +40,12 @@ create table if not exists vaos_private.work_packages (
     owner_agent_id in ('orchestrator','project','vibpe','qa','risk','security','knowledge','release')
   ),
   constraint work_package_authority_check check (authority between 0 and 5),
+  constraint work_package_qualification_check check (minimum_qualification_level between 1 and 4),
   constraint work_package_risk_check check (risk in ('low','medium','high','critical')),
+  constraint work_package_monitoring_interval_check check (
+    (monitoring=true and monitoring_interval_minutes is not null and monitoring_interval_minutes>0)
+    or (monitoring=false and monitoring_interval_minutes is null)
+  ),
   constraint work_package_sla_check check (sla_hours > 0),
   constraint work_package_status_check check (status in ('PLANNED','READY','IN_PROGRESS','BLOCKED','COMPLETED','FAILED','CANCELLED'))
 );
@@ -181,7 +188,8 @@ begin
 
     insert into vaos_private.work_packages(
       id,mission_id,action_type,owner_agent_id,verifier_agent_ids,authority,risk,
-      execution_mode,human_approval_required,monitoring,sla_hours,kpis,depends_on,status
+      execution_mode,human_approval_required,monitoring,monitoring_interval_minutes,minimum_qualification_level,
+      sla_hours,kpis,depends_on,status
     ) values (
       v_wp->>'id',
       p_mission_id,
@@ -193,6 +201,11 @@ begin
       coalesce(nullif(v_wp->>'executionMode',''),'ANALYSE'),
       coalesce((v_wp->>'humanApprovalRequired')::boolean,false),
       coalesce((v_wp->>'monitoring')::boolean,false),
+      case when coalesce((v_wp->>'monitoring')::boolean,false)
+        then (v_wp->>'monitoringIntervalMinutes')::integer
+        else null
+      end,
+      (v_wp->>'minimumQualificationLevel')::smallint,
       (v_wp->>'slaHours')::numeric,
       coalesce(array(select jsonb_array_elements_text(coalesce(v_wp->'kpis','[]'::jsonb))), '{}'::text[]),
       coalesce(array(select jsonb_array_elements_text(coalesce(v_wp->'dependsOn','[]'::jsonb))), '{}'::text[]),

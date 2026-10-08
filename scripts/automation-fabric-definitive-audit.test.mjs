@@ -54,6 +54,8 @@ const mandatoryCore=[
   'integrations/opentelemetry/provider-manifest.json',
   'packages/contracts/vyndi-vaos-events.mjs',
   'platform/execution/vyndi-intent-ingress.mjs',
+  'platform/persistence/automation-fabric-store.mjs',
+  'supabase/migrations/20261008070000_automation_fabric_durable_state_v1.sql',
   'packages/contracts/execution-telemetry.mjs',
   'packages/contracts/ai-observability.mjs',
   'docs/contracts/vyndi-vaos-asyncapi.yaml',
@@ -138,5 +140,31 @@ test('AsyncAPI preserves VYNDI intents, VAOS results, reconciliation, provider c
   const asyncapi=fs.readFileSync(path.join(root,'docs/contracts/vyndi-vaos-asyncapi.yaml'),'utf8');
   for(const required of ['vyndiIntents:','vaosResults:','reconciliation:','providerCallbacks:','edgeEvents:']){
     assert.equal(asyncapi.includes(required),true,`missing AsyncAPI channel: ${required}`);
+  }
+});
+
+
+test('durable automation fabric persistence remains atomic and restart-safe',()=>{
+  const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261008070000_automation_fabric_durable_state_v1.sql'),'utf8');
+  for(const required of [
+    'vaos_private.provider_control_state',
+    'vaos_private.callback_receipts',
+    'vaos_private.automation_reconciliation',
+    'vaos_provider_state_get',
+    'vaos_provider_state_put',
+    'vaos_callback_consume_once',
+    'vaos_reconciliation_claim',
+    'vaos_reconciliation_save',
+    'for update skip locked',
+    'for update'
+  ]){
+    assert.equal(migration.toLowerCase().includes(required.toLowerCase()),true,`missing durable persistence contract: ${required}`);
+  }
+  const edge=fs.readFileSync(path.join(root,'supabase/functions/vaos-control/index.ts'),'utf8');
+  for(const operation of [
+    'providerStateGet','providerStatePut','callbackCreate','callbackGet','callbackConsumeOnce',
+    'reconciliationEnqueue','reconciliationClaim','reconciliationSave','reconciliationGet','reconciliationList'
+  ]){
+    assert.equal(edge.includes(operation),true,`missing vaos-control operation: ${operation}`);
   }
 });

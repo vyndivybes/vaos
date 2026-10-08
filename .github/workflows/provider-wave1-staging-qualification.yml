@@ -1,0 +1,204 @@
+name: provider-wave1-staging-qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualification/provider-wave-1-live
+    paths:
+      - .github/provider-wave1-staging.trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-wave1-staging-qualification
+  cancel-in-progress: true
+
+jobs:
+  staging-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Governance regression checks
+        run: >-
+          node --test
+          platform/execution/provider-control-plane.test.mjs
+          platform/execution/provider-qualification-engine.test.mjs
+          platform/execution/callback-gateway.test.mjs
+          platform/execution/reconciliation-service.test.mjs
+          platform/qualification/provider-wave-1-profiles.test.mjs
+
+      - name: Install Playwright qualification runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.64.0
+          npx playwright install --only-shell chromium
+          echo "PLAYWRIGHT_VERSION=$(npx playwright --version | sed 's/^Version //')" >> "$GITHUB_ENV"
+
+      - name: Playwright staging auth, artifact sealing, and rollback drill
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification-evidence/provider-wave-1-staging
+          node scripts/qualification/wave1-staging-http-fixture.mjs >/tmp/wave1-staging-http.log 2>&1 &
+          FIXTURE_PID=$!
+          cleanup(){ kill "$FIXTURE_PID" 2>/dev/null || true; }
+          trap cleanup EXIT
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18766/health >/dev/null && break
+            sleep 1
+          done
+          node scripts/qualification/playwright-wave1-staging.mjs
+
+          kill "$FIXTURE_PID"
+          wait "$FIXTURE_PID" 2>/dev/null || true
+          node scripts/qualification/wave1-staging-http-fixture.mjs >/tmp/wave1-staging-http-restart.log 2>&1 &
+          FIXTURE_PID=$!
+          for i in $(seq 1 30); do
+            curl -fsS http://127.0.0.1:18766/health >/dev/null && break
+            sleep 1
+          done
+          node --input-type=module -e "import {chromium} from '@playwright/test'; const b=await chromium.launch({headless:true}); const p=await b.newPage(); const r=await p.goto('http://127.0.0.1:18766/health'); if(r?.status()!==200) process.exit(1); await b.close();"
+
+      - name: Provider kill-switch live drill
+        run: node scripts/qualification/wave1-provider-kill-switch.mjs
+
+      - name: Install Node-RED staging runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false node-red@4.1.7 bcryptjs@2.4.3
+          echo "NODE_RED_VERSION=$(node -p "require('node-red/package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Node-RED authenticated staging, persistent replay, canary, and rollback
+        shell: bash
+        run: |
+          set -euo pipefail
+          USERDIR=/tmp/vaos-node-red-staging
+          rm -rf "$USERDIR"
+          mkdir -p "$USERDIR"
+          cp scripts/qualification/node-red-wave1-staging-flows.json "$USERDIR/flows.json"
+          HASH=$(node -e "console.log(require('bcryptjs').hashSync('wave1-password',8))")
+          cat > "$USERDIR/settings.js" <<EOF
+          module.exports = {
+            uiPort: 1880,
+            adminAuth: {
+              type: "credentials",
+              users: [{username:"admin",password:"$HASH",permissions:"*"}]
+            },
+            contextStorage: {
+              default: {module:"localfilesystem", config:{flushInterval:1}}
+            },
+            credentialSecret: "wave1-qualification-only",
+            logging: {console:{level:"warn",metrics:false,audit:false}}
+          };
+          EOF
+
+          start_nr(){
+            ./node_modules/.bin/node-red --userDir "$USERDIR" --settings "$USERDIR/settings.js" flows.json >/tmp/node-red-wave1-staging.log 2>&1 &
+            NR_PID=$!
+            for i in $(seq 1 60); do
+              curl -fsS http://127.0.0.1:1880/auth/login >/tmp/nr-auth.json && break
+              sleep 1
+            done
+          }
+          stop_nr(){
+            kill "$NR_PID" 2>/dev/null || true
+            wait "$NR_PID" 2>/dev/null || true
+          }
+          trap 'stop_nr' EXIT
+
+          start_nr
+          node -e "const x=require('/tmp/nr-auth.json'); if(x.type!=='credentials') process.exit(1)"
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:1880/flows)
+          test "$STATUS" = "401"
+          curl -fsS -X POST http://127.0.0.1:1880/auth/token             --data 'client_id=node-red-admin&grant_type=password&scope=*&username=admin&password=wave1-password'             >/tmp/nr-token.json
+          TOKEN=$(node -e "const x=require('/tmp/nr-token.json'); if(!x.access_token) process.exit(1); process.stdout.write(x.access_token)")
+          curl -fsS -H "Authorization: Bearer $TOKEN" http://127.0.0.1:1880/flows >/tmp/nr-flows.json
+
+          curl -fsS -X POST http://127.0.0.1:1880/vaos-wave1             -H 'Content-Type: application/json'             -d '{"executionJobId":"job-stage-canary","eventType":"qualification.canary","deviceId":"qualification-device"}'             >/tmp/nr-canary.json
+          node -e "const x=require('/tmp/nr-canary.json'); if(x.ok!==true||x.effectClass!=='observe'||x.executionJobId!=='job-stage-canary'||x.edgeEventId!=='edge-job-stage-canary') process.exit(1)"
+
+          curl -fsS -X POST http://127.0.0.1:1880/vaos-buffer             -H 'Content-Type: application/json'             -d '{"executionJobId":"job-buffer-1","eventType":"qualification.buffer","deviceId":"qualification-device"}'             >/tmp/nr-buffer.json
+          node -e "const x=require('/tmp/nr-buffer.json'); if(x.buffered!==true||x.executionJobId!=='job-buffer-1') process.exit(1)"
+          sleep 2
+
+          stop_nr
+          start_nr
+          curl -fsS -X POST http://127.0.0.1:1880/vaos-replay             -H 'Content-Type: application/json' -d '{}' >/tmp/nr-replay.json
+          node -e "const x=require('/tmp/nr-replay.json'); if(x.replayed!==true||x.event?.executionJobId!=='job-buffer-1') process.exit(1)"
+          curl -fsS -X POST http://127.0.0.1:1880/vaos-wave1             -H 'Content-Type: application/json'             -d '{"executionJobId":"job-after-rollback","eventType":"qualification.rollback","deviceId":"qualification-device"}'             >/tmp/nr-after-rollback.json
+          node -e "const x=require('/tmp/nr-after-rollback.json'); if(x.ok!==true||x.effectClass!=='observe') process.exit(1)"
+
+      - name: Start private OpenTelemetry Collector staging runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name vaos-otel-wave1-staging             -p 127.0.0.1:4318:4318             -p 127.0.0.1:13133:13133             -v "$PWD/scripts/qualification/otel-wave1-staging-config.yaml:/etc/otelcol/config.yaml:ro"             otel/opentelemetry-collector:0.162.0
+          echo "OTEL_VERSION=0.162.0" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:13133/ >/dev/null && break
+            sleep 1
+          done
+          docker port vaos-otel-wave1-staging 4318/tcp | grep -q '^127.0.0.1:4318$'
+
+      - name: OpenTelemetry private-network, egress, backend-routing, and rollback drills
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q '^  debug:' scripts/qualification/otel-wave1-staging-config.yaml
+          if grep -Eq '^  (otlphttp|kafka|prometheusremotewrite|aws|azure|googlecloud):' scripts/qualification/otel-wave1-staging-config.yaml; then
+            echo "unexpected external exporter in qualification config"
+            exit 1
+          fi
+
+          cat >/tmp/otel-wave1-trace.json <<'EOF'
+          {
+            "resourceSpans":[{
+              "resource":{"attributes":[{"key":"service.name","value":{"stringValue":"vaos-wave1"}}]},
+              "scopeSpans":[{
+                "scope":{"name":"vaos-wave1"},
+                "spans":[{
+                  "traceId":"5B8EFFF798038103D269B633813FC60C",
+                  "spanId":"EEE19B7EC3C1B174",
+                  "name":"wave1-staging",
+                  "startTimeUnixNano":"1544712660000000000",
+                  "endTimeUnixNano":"1544712661000000000",
+                  "kind":2
+                }]
+              }]
+            }]
+          }
+          EOF
+          curl -fsS -X POST http://127.0.0.1:4318/v1/traces             -H 'Content-Type: application/json'             --data-binary @/tmp/otel-wave1-trace.json >/tmp/otel-stage-response.json
+          sleep 2
+          docker logs vaos-otel-wave1-staging 2>&1 | grep -q 'wave1-staging'
+
+          docker rm -f vaos-otel-wave1-staging >/dev/null
+          docker run -d --name vaos-otel-wave1-staging             -p 127.0.0.1:4318:4318             -p 127.0.0.1:13133:13133             -v "$PWD/scripts/qualification/otel-wave1-staging-config.yaml:/etc/otelcol/config.yaml:ro"             otel/opentelemetry-collector:0.162.0
+          for i in $(seq 1 60); do
+            curl -fsS http://127.0.0.1:13133/ >/dev/null && break
+            sleep 1
+          done
+
+      - name: Write governed staging and production-safe evidence bundles
+        run: node scripts/qualification/write-wave1-staging-evidence.mjs
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave1-staging-evidence
+          path: qualification-evidence/provider-wave-1-staging/**
+          retention-days: 30
+
+      - name: Cleanup qualification runtimes
+        if: always()
+        run: |
+          docker rm -f vaos-otel-wave1-staging >/dev/null 2>&1 || true

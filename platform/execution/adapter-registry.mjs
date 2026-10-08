@@ -1,4 +1,5 @@
 import { createRiskQualificationTrace } from './risk-qualification-trace.mjs';
+import { createSecurityQualificationTrace } from './security-qualification-trace.mjs';
 
 function requiredText(payload, key) {
   const value = payload?.[key];
@@ -184,6 +185,70 @@ function projectRiskAdapter(projectRisk) {
         resourceId: riskId,
         expectedState: 'ESCALATED',
         evidenceSource: 'vaos_private.project_risk_escalations',
+      },
+    };
+  });
+}
+
+function assertSecurityPort(security) {
+  if (!security
+      || typeof security.observeIdentity !== 'function'
+      || typeof security.getIdentityObservation !== 'function') {
+    throw new Error('DOMAIN_PORT_REQUIRED:security');
+  }
+  return security;
+}
+
+function securityIdentityAdapter(security) {
+  return adapter('supabase.security-identity.v1', async (job) => {
+    const observationId = requiredText(job.payload, 'observationId');
+    const port = assertSecurityPort(security);
+
+    if (job.payload?.qualificationRecoveryDrill === true) {
+      if (job.payload?.qualificationMode !== true) {
+        throw terminalError('QUALIFICATION_MODE_REQUIRED');
+      }
+      if (Number(job.attemptCount) === 1) {
+        const error = new Error('QUALIFICATION_RECOVERY_DRILL_RETRY');
+        error.code = 'QUALIFICATION_RECOVERY_DRILL_RETRY';
+        error.retryable = true;
+        throw error;
+      }
+    }
+
+    const observed = await port.observeIdentity(job, { observationId });
+    if (!observed || !['CREATED', 'REPLAY'].includes(observed.outcome)) {
+      throw new Error(`SECURITY_IDENTITY_DOMAIN_WRITE_FAILED:${observed?.outcome || 'UNKNOWN'}`);
+    }
+
+    const record = await port.getIdentityObservation(job, observationId);
+    const verified = Boolean(
+      record
+      && record.observationId === observationId
+      && record.status === 'OBSERVED'
+      && record.executionJobId === job.id
+      && record.intentId === job.intentId
+    );
+    if (!verified) throw new Error('SECURITY_IDENTITY_VERIFICATION_MISMATCH');
+
+    const qualificationTraceLink = await createSecurityQualificationTrace({ port, job });
+
+    return {
+      adapterId: 'supabase.security-identity.v1',
+      effect: {
+        effectType: 'SECURITY.IDENTITY_OBSERVED',
+        resourceType: 'SECURITY_IDENTITY_OBSERVATION',
+        resourceId: observationId,
+        state: record.status,
+        domainOutcome: observed.outcome,
+        ...(qualificationTraceLink ? { qualificationTraceLinkId: qualificationTraceLink.id } : {}),
+      },
+      verification: {
+        verified: true,
+        resourceType: 'SECURITY_IDENTITY_OBSERVATION',
+        resourceId: observationId,
+        expectedState: 'OBSERVED',
+        evidenceSource: 'vaos_private.security_identity_observations',
       },
     };
   });
@@ -385,11 +450,12 @@ function digitalWorkforceAdapter(digitalWorkforce, actionType) {
   });
 }
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread, digitalWorkforce } = {}) {
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
     ['PROJECT.ESCALATE_RISK', projectRiskAdapter(projectRisk)],
+    ['SECURITY.OBSERVE_IDENTITY', securityIdentityAdapter(security)],
     ['DIGITAL_THREAD.CREATE_LINK', digitalThreadLinkAdapter(digitalThread)],
     ['WORKFORCE.ASSESS_QUALIFICATION', digitalWorkforceAssessmentAdapter(digitalWorkforce)],
     ...Object.keys(WORKFORCE_TARGET_STATUS).map((actionType) => [actionType, digitalWorkforceAdapter(digitalWorkforce, actionType)]),

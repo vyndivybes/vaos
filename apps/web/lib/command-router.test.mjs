@@ -220,3 +220,14 @@ test('command router exposes authenticated execution queue drain command', () =>
   });
 });
 
+test('command router exposes live operational commissioning status', () => {
+  assert.deepEqual(resolveCommand('commissioning status'), {
+    kind: 'commissioning',
+    targetView: 'agents',
+  });
+  assert.deepEqual(resolveCommand('operational commissioning'), {
+    kind: 'commissioning',
+    targetView: 'agents',
+  });
+});
+

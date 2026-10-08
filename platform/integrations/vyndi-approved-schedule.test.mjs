@@ -5,6 +5,7 @@ import {
   evaluateApprovedProgramSchedule,
   prepareScheduleEscalationRecommendation,
   candidateFromVyndiProgramRows,
+  createAuthorityBoundScheduleEvaluator,
 } from './vyndi-approved-schedule.mjs';
 
 const observedAt='2026-10-08T16:00:00.000Z';
@@ -115,4 +116,36 @@ test('VYNDI program row adapter produces only an unapproved candidate, never a f
   assert.equal(candidate.sourceSystem,'VYNDI_OS');
   assert.ok(!('approval' in candidate));
   assert.equal(evaluateApprovedProgramSchedule({baseline:candidate,approval:null,progress:null,observedAt}).status,'WITHHELD');
+});
+
+test('authority-bound evaluator ignores caller-supplied approval and obtains only trusted server approval',async()=>{
+  const f=fixture();
+  const rejected=createAuthorityBoundScheduleEvaluator({
+    loadApprovedManifest:async()=>null,
+  });
+  const bad=await rejected({...f,observedAt});
+  assert.equal(bad.status,'WITHHELD');
+
+  let calls=0;
+  const trusted=createAuthorityBoundScheduleEvaluator({
+    loadApprovedManifest:async({projectId,revision})=>{
+      calls+=1;
+      assert.equal(projectId,f.baseline.projectId);
+      assert.equal(revision,f.baseline.revision);
+      return f.approval;
+    },
+  });
+  const r=await trusted({...f,approval:{...f.approval,approvedBy:'forged'},observedAt});
+  assert.equal(calls,1);
+  assert.equal(r.status,'VERIFIED');
+});
+
+test('approval registry connection failure withholds any schedule assessment',async()=>{
+  const f=fixture();
+  const evaluator=createAuthorityBoundScheduleEvaluator({
+    loadApprovedManifest:async()=>{throw new Error('unavailable');},
+  });
+  const result=await evaluator({...f,observedAt});
+  assert.equal(result.status,'WITHHELD');
+  assert.equal(result.findings.length,0);
 });

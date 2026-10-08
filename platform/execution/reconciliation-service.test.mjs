@@ -130,9 +130,13 @@ test('malformed unknown records fail before persistence', async()=>{
 
 test('reconciliation store claims are leased so concurrent workers cannot claim the same record', async()=>{
   const store=createInMemoryReconciliationStore();
-  const svc=createReconciliationService({store,resolvers:{}});
-  await svc.enqueue(unknown());
   const now='2026-10-08T00:00:00.000Z';
+  const svc=createReconciliationService({
+    store,
+    resolvers:{},
+    now:()=>new Date(now),
+  });
+  await svc.enqueue(unknown());
   const [a,b]=await Promise.all([
     store.claim({now,workerId:'worker-a',leaseSeconds:120}),
     store.claim({now,workerId:'worker-b',leaseSeconds:120}),

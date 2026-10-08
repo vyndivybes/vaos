@@ -38,6 +38,121 @@ export const ACTION_POLICIES = Object.freeze({
     requiresApproval: true,
     defaultRisk: 'medium',
   }),
+  'COMMERCIAL.OBSERVE_PIPELINE': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'COMMERCIAL.COMMIT_ORDER': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'COMMERCIAL.CHANGE_COMMITMENT': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'PROCUREMENT.OBSERVE_SHORTAGE': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'PROCUREMENT.CREATE_PO': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'PROCUREMENT.CHANGE_PO': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'INVENTORY.OBSERVE_STOCK': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'INVENTORY.RESERVE_MATERIAL': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'medium',
+  }),
+  'INVENTORY.ISSUE_MATERIAL': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'PRODUCTION.OBSERVE_WIP': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'PRODUCTION.RELEASE_JOB': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'PRODUCTION.ADVANCE_STAGE': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'medium',
+  }),
+  'MAINTENANCE.OBSERVE_ASSET': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'MAINTENANCE.OPEN_WORK_ORDER': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'medium',
+  }),
+  'MAINTENANCE.RETURN_TO_SERVICE': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'FINANCE.OBSERVE_LEDGER': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'FINANCE.PREPARE_PAYMENT': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'PEOPLE.OBSERVE_WORKFORCE': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'PEOPLE.PREPARE_PAYROLL': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'PEOPLE.CHANGE_EMPLOYEE_MASTER': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'ENGINEERING.OBSERVE_CONFIGURATION': Object.freeze({
+    minimumAuthority: AUTHORITY.RECOMMEND,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
+  'ENGINEERING.CONFIGURATION_CHANGE': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
+  'ENGINEERING.RELEASE_CONFIGURATION': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'critical',
+  }),
   'WORKFORCE.START_TRAINING': Object.freeze({
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,

@@ -144,3 +144,67 @@ test('unknown checks and duplicate profiles are rejected', ()=>{
   const engine=createProviderQualificationEngine({controlPlane:makeControlPlane(),profiles:[profile()]});
   assert.rejects(()=>engine.recordEvidence({providerId:'playwright',capability:'browser.automate',checkId:'unknown',outcome:'pass',evidenceClass:'automated',evidenceRefs:['x'],authorityRef:'a'}),/PROVIDER_QUALIFICATION_CHECK_NOT_FOUND/);
 });
+
+
+test('recorded qualification evidence is durably appended before it becomes assessable', async()=>{
+  const persisted=[];
+  const store={
+    async append(row){persisted.push(structuredClone(row));},
+    async list(){return[];},
+  };
+  const engine=createProviderQualificationEngine({controlPlane:makeControlPlane(),profiles:[profile()],evidenceStore:store,now:()=>new Date('2026-10-08T00:00:00.000Z')});
+  await engine.recordEvidence({
+    providerId:'playwright',capability:'browser.automate',checkId:'manifest-v2',
+    outcome:'pass',evidenceClass:'automated',evidenceRefs:['ci:manifest'],authorityRef:'ci:1',
+  });
+  assert.equal(persisted.length,1);
+  assert.equal(persisted[0].checkId,'manifest-v2');
+  assert.equal(engine.assess('playwright','browser.automate').checks['manifest-v2'].status,'PASSED');
+});
+
+test('persistence failure does not create phantom in-memory qualification evidence', async()=>{
+  const engine=createProviderQualificationEngine({
+    controlPlane:makeControlPlane(),profiles:[profile()],
+    evidenceStore:{async append(){throw new Error('db down')},async list(){return[]}},
+  });
+  await assert.rejects(()=>engine.recordEvidence({
+    providerId:'playwright',capability:'browser.automate',checkId:'manifest-v2',
+    outcome:'pass',evidenceClass:'automated',evidenceRefs:['ci:manifest'],authorityRef:'ci:1',
+  }),/PROVIDER_QUALIFICATION_EVIDENCE_PERSIST_FAILED/);
+  assert.equal(engine.assess('playwright','browser.automate').checks['manifest-v2'].status,'PENDING');
+});
+
+test('restoreEvidence reloads latest durable evidence per check after restart', async()=>{
+  const store={
+    async append(){},
+    async list(providerId,capability){
+      assert.equal(providerId,'playwright');assert.equal(capability,'browser.automate');
+      return[
+        {providerId,capability,stage:'contract',checkId:'manifest-v2',outcome:'pass',evidenceClass:'automated',evidenceRefs:['old'],authorityRef:'ci:old',recordedAt:'2026-10-07T00:00:00.000Z'},
+        {providerId,capability,stage:'contract',checkId:'manifest-v2',outcome:'fail',evidenceClass:'automated',evidenceRefs:['new'],authorityRef:'ci:new',recordedAt:'2026-10-08T00:00:00.000Z'},
+        {providerId,capability,stage:'contract',checkId:'adapter-suite',outcome:'pass',evidenceClass:'automated',evidenceRefs:['suite'],authorityRef:'ci:suite',recordedAt:'2026-10-08T00:00:01.000Z'},
+      ];
+    },
+  };
+  const engine=createProviderQualificationEngine({controlPlane:makeControlPlane(),profiles:[profile()],evidenceStore:store});
+  await engine.restoreEvidence();
+  const assessment=engine.assess('playwright','browser.automate');
+  assert.equal(assessment.checks['manifest-v2'].status,'FAILED');
+  assert.deepEqual(assessment.checks['manifest-v2'].evidenceRefs,['new']);
+  assert.equal(assessment.checks['adapter-suite'].status,'PASSED');
+});
+
+test('restoreEvidence rejects durable rows that violate the profile evidence contract', async()=>{
+  const engine=createProviderQualificationEngine({
+    controlPlane:makeControlPlane(),profiles:[profile()],
+    evidenceStore:{
+      async append(){},
+      async list(providerId,capability){return[{
+        providerId,capability,stage:'ephemeral-live',checkId:'live-health',
+        outcome:'pass',evidenceClass:'automated',evidenceRefs:['bad'],authorityRef:'ci:bad',
+        recordedAt:'2026-10-08T00:00:00.000Z',
+      }]}
+    },
+  });
+  await assert.rejects(()=>engine.restoreEvidence(),/PROVIDER_QUALIFICATION_PERSISTED_EVIDENCE_INVALID/);
+});

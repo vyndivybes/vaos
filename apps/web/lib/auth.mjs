@@ -1,8 +1,10 @@
 import crypto from "node:crypto";
 
+const DEV_MAKER_EMAIL = "shyamsundhar1982@gmail.com";
+const DEV_CHECKER_EMAIL = "kaaviyam1519@gmail.com";
 const DEV_ALLOWED_EMAILS = new Set([
-  "shyamsundhar1982@gmail.com",
-  "kaaviyam1519@gmail.com",
+  DEV_MAKER_EMAIL,
+  DEV_CHECKER_EMAIL,
 ]);
 
 // Development-only credential verifier. Deployment may override the legacy
@@ -10,6 +12,7 @@ const DEV_ALLOWED_EMAILS = new Set([
 // are never committed or stored in source.
 const LEGACY_DEV_PASSWORD_SHA256 = "11c5ab3591e9d8c06eeac2afa5d6639021b569e46ae1efbb74f8dc4b81bf08d1";
 const DEV_PASSWORD_ENV = "VAOS_DEV_LOGIN_PASSWORD_SHA256";
+const DEV_CHECKER_PASSWORD_ENV = "VAOS_DEV_CHECKER_PASSWORD_SHA256";
 const SHA256_HEX = /^[a-f0-9]{64}$/i;
 
 export const SESSION_COOKIE = "vaos_session";
@@ -28,10 +31,24 @@ export function constantTimeEqual(left, right) {
   return crypto.timingSafeEqual(a, b);
 }
 
+function configuredPasswordHash(envName) {
+  const configured = String(process.env[envName] || "").trim();
+  return SHA256_HEX.test(configured) ? configured.toLowerCase() : null;
+}
+
 function developmentPasswordHash() {
-  const configured = String(process.env[DEV_PASSWORD_ENV] || "").trim();
-  if (SHA256_HEX.test(configured)) return configured.toLowerCase();
-  return LEGACY_DEV_PASSWORD_SHA256;
+  return configuredPasswordHash(DEV_PASSWORD_ENV) || LEGACY_DEV_PASSWORD_SHA256;
+}
+
+function checkerPasswordHash() {
+  return configuredPasswordHash(DEV_CHECKER_PASSWORD_ENV);
+}
+
+function developmentCredentialHash(email) {
+  const normalized = String(email || "").trim().toLowerCase();
+  if (normalized === DEV_MAKER_EMAIL) return developmentPasswordHash();
+  if (normalized === DEV_CHECKER_EMAIL) return checkerPasswordHash();
+  return null;
 }
 
 function developmentSessionKey() {
@@ -50,8 +67,10 @@ export function isAllowedEmail(email) {
 }
 
 export function verifyDevelopmentCredential(email, password) {
-  return isAllowedEmail(email)
-    && verifyPasswordAgainstHash(password, developmentPasswordHash());
+  if (!isAllowedEmail(email)) return false;
+  const expectedHash = developmentCredentialHash(email);
+  return Boolean(expectedHash)
+    && verifyPasswordAgainstHash(password, expectedHash);
 }
 
 function signature(payload) {

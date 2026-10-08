@@ -34,6 +34,8 @@ export function getExecutionEngine(runtimeEnv = undefined) {
     const digitalThread = Object.freeze({
       linkDomainRecords(job, input) { return store.linkDomainRecords(job, input); },
       getDomainLink(job, input) { return store.getDomainLink(job, input); },
+      linkKnowledgeQualification(job, input) { return store.linkKnowledgeQualification(job, input); },
+      getKnowledgeQualificationLink(job, input) { return store.getKnowledgeQualificationLink(job, input); },
     });
 
     const digitalWorkforce = Object.freeze({

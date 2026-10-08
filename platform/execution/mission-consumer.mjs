@@ -8,6 +8,7 @@ export const SAFE_MISSION_JOBS = Object.freeze([
   'PROJECT.TRACK_DEPENDENCY',
   'KNOWLEDGE.DETECT_GAP',
   'RELEASE.CHECK_OPEN_ITEMS',
+  'RISK.IDENTIFY',
 ]);
 
 const SAFE = new Set(SAFE_MISSION_JOBS);
@@ -57,6 +58,15 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId) 
   } else if (actionType === 'KNOWLEDGE.DETECT_GAP') {
     findings = dependencies.filter((entry) => entry.state === 'MISSING').map((entry) =>
       `MISSING_DEPENDENCY:${entry.child}:${entry.dependency}`);
+  } else if (actionType === 'RISK.IDENTIFY') {
+    // Strictly a mission-work-package blocker indicator screen.
+    // No risk score, risk register mutation, mitigation or acceptance.
+    findings = [
+      ...external.filter((item) => ['BLOCKED', 'FAILED'].includes(item.status)).map((item) =>
+        `MISSION_BLOCKER:${item.id}:${item.status}`),
+      ...dependencies.filter((entry) => entry.state === 'MISSING').map((entry) =>
+        `MISSING_DEPENDENCY:${entry.child}:${entry.dependency}`),
+    ];
   } else {
     findings = external.filter((item) => OPEN.has(item.status)).map((item) =>
       `OPEN_ITEM:${item.id}:${item.status}`);

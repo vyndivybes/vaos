@@ -57,6 +57,7 @@ jobs:
           -e N8N_DIAGNOSTICS_ENABLED=false
           -e N8N_PERSONALIZATION_ENABLED=false
           -e N8N_SECURE_COOKIE=false
+          -e N8N_PUBLIC_API_DISABLED=false
           n8nio/n8n:2.42.5
       - name: Qualify readiness, auth boundary and kill switch
         shell: bash
@@ -67,15 +68,11 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:5678/healthz >/dev/null
-          curl -fsS -X POST http://127.0.0.1:5678/rest/owner/setup \
-            -H 'Content-Type: application/json' \
-            --data '{"email":"wave3@example.invalid","firstName":"VAOS","lastName":"Qualification","password":"Wave3Synthetic!2026"}' \
-            >/dev/null
-          STATUS=$(curl -sS -o /tmp/n8n-owner-retry -w '%{http_code}' -X POST http://127.0.0.1:5678/rest/owner/setup \
-            -H 'Content-Type: application/json' \
-            --data '{"email":"intruder@example.invalid","firstName":"Unauthorized","lastName":"Retry","password":"Wave3Synthetic!2026"}')
-          echo "Unauthenticated n8n owner reconfiguration status: $STATUS"
-          [[ "$STATUS" -lt 200 || "$STATUS" -ge 300 ]]
+          STATUS=$(curl -sS -o /tmp/n8n-api-response -w '%{http_code}' \
+            -H 'Accept: application/json' \
+            http://127.0.0.1:5678/api/v1/workflows)
+          echo "Unauthenticated n8n public API status: $STATUS"
+          test "$STATUS" = "401" -o "$STATUS" = "403"
           docker stop vaos-wave3-n8n >/dev/null
           if curl -fsS --max-time 2 http://127.0.0.1:5678/healthz >/dev/null 2>&1; then exit 1; fi
       - name: Write governed evidence

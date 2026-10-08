@@ -138,6 +138,9 @@ Deno.serve(async (req: Request) => {
   } else if (operation === 'prepareOperatingMissionClosure') {
     rpcName = 'vaos_prepare_operating_mission_closure'
     args = { p_server_key: serverKey, p_mission_id: payload.missionId }
+  } else if (operation === 'getApprovedProgramBaseline') {
+    rpcName = 'vaos_get_approved_program_baseline'
+    args = { p_server_key: serverKey, p_project_id: payload.projectId }
   } else if (operation === 'operatingMissionSnapshot') {
     rpcName = 'vaos_operating_mission_snapshot'
     args = {

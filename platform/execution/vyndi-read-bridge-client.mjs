@@ -62,6 +62,8 @@ export function createVyndiReadBridgeClient({
         missionId: String(job.payload?.missionId || `ad-hoc:${job.intentId}`),
         input: {
           limit: Number.isInteger(job.payload?.limit) ? job.payload.limit : 50,
+          ...(job.actionType === 'PROJECT.OBSERVE_SCHEDULE'
+            ? { projectId: job.payload?.projectId } : {}),
         },
       });
       const timestamp = String(now());

@@ -223,3 +223,27 @@ test('write qualification client rejects self-approval before signing or contact
   assert.equal(touched,false);
 });
 
+
+test('signed project schedule action binds projectId and rejects source authority forgery',async()=>{
+  let request;
+  const source={async fetch(_url,opts){
+    request=JSON.parse(opts.body);
+    return new Response(JSON.stringify({
+      ok:true,readOnly:true,actionType:request.actionType,sourceAuthority:'readGovernedProgramSchedule',
+      data:{schemaVersion:'vyndi.program.schedule-export.v1',approvalStatus:'UNAPPROVED_SOURCE_EXPORT',tasks:[]},
+    }),{status:200,headers:{'content-type':'application/json'}});
+  }};
+  const client=createVyndiReadBridgeClient({
+    signer:{async signVyndiBridgeRequest(){return {keyId:VYNDI_BRIDGE_KEY_ID,signature:'test-signature'}}},
+    serviceBinding:source,now:()=>1760000000000,nonce:()=> 'project-schedule-signature-nonce',
+  });
+  const result=await client.execute({
+    id:'schedule-job',intentId:'intent-001',actionType:'PROJECT.OBSERVE_SCHEDULE',
+    payload:{projectId:'VYNDI-MASTER-PROGRAM',missionId:'mission-001',limit:100},
+  });
+  assert.equal(result.sourceAuthority,'readGovernedProgramSchedule');
+  assert.equal(result.employeeId,'project');
+  assert.equal(request.input.projectId,'VYNDI-MASTER-PROGRAM');
+  assert.equal(request.purpose,'read-observe');
+  assert.equal(request.approvalId,null);
+});

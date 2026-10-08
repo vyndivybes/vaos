@@ -25,7 +25,7 @@ const url=process.env.SUPABASE_URL||config.vars?.SUPABASE_URL;
 if(!url||!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url))throw Error('INFISICAL_COMMISSION_DATABASE_URL_INVALID');
 const response=await fetch(url+'/functions/v1/vaos-control',{
   method:'POST',
-  headers:{'x-vaos-server-key':required('VAOS_INFISICAL_COMMISSIONING_KEY'),'Content-Type':'application/json','Cache-Control':'no-store'},
+  headers:{'x-vaos-server-key':required('VAOS_INFISICAL_WATCHDOG_KEY'),'Content-Type':'application/json','Cache-Control':'no-store'},
   body:JSON.stringify({operation:'infisicalCommissioningControl',payload:{action,health,authorityRef}})
 });
 if(!response.ok)throw Error('INFISICAL_COMMISSION_RPC_FAILED:HTTP_'+response.status);

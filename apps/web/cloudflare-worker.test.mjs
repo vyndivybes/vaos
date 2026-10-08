@@ -6,7 +6,7 @@ import { createCloudflareApp } from './cloudflare-worker.mjs';
 
 function assetFetcher(request) {
   const path = new URL(request.url).pathname;
-  if (path === '/login' || path === '/workspace') {
+  if (path === '/login' || path === '/workspace' || path === '/mission-status.html') {
     return new Response(`asset:${path}`, {
       status: 200,
       headers: { 'Content-Type': 'text/html', 'Cache-Control': 'public, max-age=3600' },
@@ -98,7 +98,7 @@ test('Cloudflare app forwards explicit runtime bindings to API handlers', async 
 test('Cloudflare app disables browser caching for workspace HTML and executable modules', async () => {
   const app = createCloudflareApp({ apiHandlers: {}, assetFetcher });
 
-  for (const path of ['/workspace', '/workspace.mjs', '/command-router.mjs']) {
+  for (const path of ['/workspace', '/workspace.mjs', '/command-router.mjs', '/mission-status.html']) {
     const response = await app.fetch(new Request(`https://vaos.example${path}`));
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('Cache-Control'), 'no-store, max-age=0');

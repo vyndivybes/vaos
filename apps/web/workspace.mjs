@@ -619,6 +619,36 @@ async function executeVAOSCommand(rawQuery) {
     return;
   }
 
+  if (resolved.kind === 'execution') {
+    commandButton.disabled = true;
+    commandStatus.textContent = 'Processing approved execution queue…';
+    try {
+      const response = await fetch('/api/executions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ limit: resolved.limit || 5 }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result?.error?.code || 'EXECUTION_QUEUE_FAILED');
+
+      const refreshed = await loadControlPlane();
+      if (refreshed) {
+        model = refreshed.model;
+        renderAll();
+      }
+      commandStatus.textContent = `Execution queue processed: ${result?.data?.processed ?? 0} job(s), ${result?.data?.succeeded ?? 0} succeeded.`;
+      setView(resolved.targetView || 'agents');
+      commandBarInput.select();
+      return;
+    } catch (error) {
+      commandStatus.textContent = `Queue processing failed: ${error.message}.`;
+      return;
+    } finally {
+      commandButton.disabled = false;
+    }
+  }
+
   if (resolved.kind === 'unknown') {
     commandStatus.textContent = query
       ? 'Command not recognised. Showing matching workspaces instead.'

@@ -83,3 +83,57 @@ test('client verifies returned canonical source authority', async()=>{
     error=>error.code==='VYNDI_BRIDGE_AUTHORITY_MISMATCH',
   );
 });
+
+test('protocol-v2 signed execution context binds service, audience, route and execution identity', async()=>{
+  let captured;
+  const client=createVyndiReadBridgeClient({
+    signer:{async signVyndiBridgeRequest(){return {keyId:VYNDI_BRIDGE_KEY_ID,signature:'sig-test'}}},
+    serviceBinding:{
+      async fetch(url,options){
+        captured={url,options};
+        const body=JSON.parse(options.body);
+        return new Response(JSON.stringify({
+          ok:true,
+          actionType:body.actionType,
+          readOnly:true,
+          sourceAuthority:'getAuthoritativeInventory',
+          data:{records:[]},
+        }),{status:200,headers:{'content-type':'application/json'}});
+      },
+    },
+    now:()=>1760000000000,
+    nonce:()=> 'nonce-read-context-v2-0001',
+  });
+
+  await client.execute({
+    id:'job-v2-1',
+    intentId:'intent-v2-1',
+    actionType:'INVENTORY.OBSERVE_STOCK',
+    payload:{missionId:'mission-v2-1',limit:1},
+  });
+
+  const body=JSON.parse(captured.options.body);
+  assert.deepEqual({
+    protocolVersion:body.protocolVersion,
+    serviceIdentity:body.serviceIdentity,
+    audience:body.audience,
+    method:body.method,
+    path:body.path,
+    purpose:body.purpose,
+    actionType:body.actionType,
+    intentId:body.intentId,
+    executionJobId:body.executionJobId,
+    approvalId:body.approvalId,
+  },{
+    protocolVersion:'vaos-vyndi-bridge.v2',
+    serviceIdentity:'vaos',
+    audience:'vyndi-os',
+    method:'POST',
+    path:'/api/vaos/bridge',
+    purpose:'read-observe',
+    actionType:'INVENTORY.OBSERVE_STOCK',
+    intentId:'intent-v2-1',
+    executionJobId:'job-v2-1',
+    approvalId:null,
+  });
+});

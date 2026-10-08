@@ -88,12 +88,18 @@ export function createProviderControlPlane({
   recordAudit = async () => {},
   now = () => new Date(),
   healthTtlMs = 300_000,
+  healthTtlOverridesMs = {infisical: 1_200_000},
   stateStore = null,
 } = {}) {
   if (!Array.isArray(providers)) throw fail('PROVIDER_CONTROL_INVALID:providers');
   if (typeof recordAudit !== 'function') throw fail('PROVIDER_CONTROL_INVALID:recordAudit');
   if (typeof now !== 'function') throw fail('PROVIDER_CONTROL_INVALID:now');
   if (!Number.isInteger(healthTtlMs) || healthTtlMs < 1) throw fail('PROVIDER_CONTROL_INVALID:healthTtlMs');
+  if (!healthTtlOverridesMs || typeof healthTtlOverridesMs !== 'object' || Array.isArray(healthTtlOverridesMs)
+      || Object.entries(healthTtlOverridesMs).some(([key,value]) =>
+        !PROVIDER_ID.test(key) || !Number.isInteger(value) || value < 1 || value > 3_600_000)) {
+    throw fail('PROVIDER_CONTROL_INVALID:healthTtlOverridesMs');
+  }
   if (stateStore !== null && (typeof stateStore?.load !== 'function' || typeof stateStore?.save !== 'function')) {
     throw fail('PROVIDER_CONTROL_INVALID:stateStore');
   }
@@ -202,7 +208,9 @@ export function createProviderControlPlane({
     if (state.manifest.execution.healthProbe !== 'required') return true;
     if (!state.health || state.health.status !== 'healthy') return false;
     const age = timestamp().getTime() - new Date(state.health.checkedAt).getTime();
-    return age >= 0 && age <= healthTtlMs;
+    // Infisical: 15-minute probe interval + at most 5 minutes jitter. Other providers retain 5 minutes.
+    const maxAge = healthTtlOverridesMs[state.manifest.providerId] ?? healthTtlMs;
+    return age >= 0 && age <= maxAge;
   }
   function capabilityQualified(state, capability) {
     if (!state.qualifiedCapabilities.has(capability)) return false;

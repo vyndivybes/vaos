@@ -210,6 +210,32 @@ Deno.serve(async (req: Request) => {
       p_status: payload.status,
       p_evidence: payload.evidence || {},
     }
+  } else if (operation === 'reconciliationEnqueue') {
+    rpcName = 'vaos_reconciliation_enqueue'
+    args = { p_server_key: serverKey, p_record: payload.record || {} }
+  } else if (operation === 'reconciliationClaim') {
+    rpcName = 'vaos_reconciliation_claim'
+    args = {
+      p_server_key: serverKey,
+      p_now: payload.now,
+      p_include_not_due: payload.includeNotDue || false,
+      p_worker_id: payload.workerId || 'reconciler',
+      p_lease_seconds: payload.leaseSeconds || 120,
+    }
+  } else if (operation === 'reconciliationSave') {
+    rpcName = 'vaos_reconciliation_save'
+    args = {
+      p_server_key: serverKey,
+      p_reconciliation_id: payload.reconciliationId,
+      p_patch: payload.patch || {},
+      p_lease_token: payload.leaseToken || null,
+    }
+  } else if (operation === 'reconciliationGet') {
+    rpcName = 'vaos_reconciliation_get'
+    args = { p_server_key: serverKey, p_reconciliation_id: payload.reconciliationId }
+  } else if (operation === 'reconciliationList') {
+    rpcName = 'vaos_reconciliation_list'
+    args = { p_server_key: serverKey }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

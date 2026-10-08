@@ -132,3 +132,22 @@ test('waitForReceipt returns only consumed verified receipt and never token mate
   assert.equal(JSON.stringify(receipt).includes('token-123'),false);
   assert.equal(JSON.stringify(receipt).includes('digest:'),false);
 });
+
+
+test('concurrent callback consumption is atomic exactly-once', async()=>{
+  const store=createInMemoryCallbackStore();
+  const gateway=createCallbackGateway({
+    store,tokenFactory:()=> 'token-race',hashToken:fixedHash,
+    now:()=>new Date('2026-10-08T00:00:00.000Z'),baseUrl:'https://vaos.example.test/api/callbacks',
+  });
+  const issued=await gateway.issue({providerId:'zapier',executionJobId:'job-race',intentId:'intent-race',actionKey:'supplier.notify',ttlSeconds:60});
+  const input={
+    receiptRef:issued.receiptRef,token:'token-race',providerId:'zapier',
+    executionJobId:'job-race',intentId:'intent-race',actionKey:'supplier.notify',
+    status:'succeeded',evidence:{externalRecordId:'CRM-RACE'},
+  };
+  const results=await Promise.allSettled([gateway.consume(input),gateway.consume(input)]);
+  assert.equal(results.filter(x=>x.status==='fulfilled').length,1);
+  const rejected=results.find(x=>x.status==='rejected');
+  assert.equal(rejected.reason.code,'CALLBACK_RECEIPT_REPLAY');
+});

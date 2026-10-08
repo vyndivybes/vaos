@@ -110,3 +110,33 @@ test('runtime records provider selection audit without job payload or secrets', 
   assert.equal(audit[0].providerId,'n8n');
   assert.equal(JSON.stringify(audit).includes('do-not-audit'),false);
 });
+
+
+test('runtime supports multiple capability-specific adapters for the same provider', async()=>{
+  const runtime=createProviderRuntime({
+    controlPlane:{
+      resolve(capability){
+        return capability.startsWith('document.')?{providerId:'paperwork'}:null;
+      },
+    },
+    adapters:{
+      'paperwork:document.extract':{
+        providerId:'paperwork',capability:'document.extract',
+        async execute(){return{providerId:'paperwork',capability:'document.extract',verification:{verified:true},effect:{resourceId:'extract-1'}}}
+      },
+      'paperwork:document.fill':{
+        providerId:'paperwork',capability:'document.fill',
+        async execute(){return{providerId:'paperwork',capability:'document.fill',verification:{verified:true},effect:{resourceId:'fill-1'}}}
+      },
+    },
+  });
+
+  const extract=await runtime.execute({
+    capability:'document.extract',dataClassification:'internal',riskClass:'low',executionJob:job(),
+  });
+  const fill=await runtime.execute({
+    capability:'document.fill',dataClassification:'internal',riskClass:'low',executionJob:job(),
+  });
+  assert.equal(extract.effect.resourceId,'extract-1');
+  assert.equal(fill.effect.resourceId,'fill-1');
+});

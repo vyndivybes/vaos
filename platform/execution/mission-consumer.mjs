@@ -9,6 +9,7 @@ export const SAFE_MISSION_JOBS = Object.freeze([
   'KNOWLEDGE.DETECT_GAP',
   'RELEASE.CHECK_OPEN_ITEMS',
   'RISK.IDENTIFY',
+  'PROJECT.DETECT_DELAY',
 ]);
 
 const SAFE = new Set(SAFE_MISSION_JOBS);
@@ -34,10 +35,22 @@ function normalizedPackages(items) {
     id: requiredString(item?.id, 'MISSION_WORK_PACKAGE_ID_REQUIRED'),
     status: requiredString(item?.status, 'MISSION_WORK_PACKAGE_STATUS_REQUIRED'),
     dependsOn: prop(item, 'depends_on', 'dependsOn') || [],
+    createdAt: prop(item, 'created_at', 'createdAt') ?? null,
+    slaHours: prop(item, 'sla_hours', 'slaHours') ?? null,
   }));
 }
 
-export function calculateReadOnlyMissionAudit(actionType, items, workPackageId) {
+function parseObservedAt(value) {
+  if (typeof value !== 'string'
+      || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+      || !Number.isFinite(Date.parse(value))
+      || new Date(Date.parse(value)).toISOString() !== value) {
+    throw new Error('MISSION_SLA_OBSERVATION_INVALID');
+  }
+  return Date.parse(value);
+}
+
+export function calculateReadOnlyMissionAudit(actionType, items, workPackageId, { observedAt = new Date().toISOString() } = {}) {
   if (!SAFE.has(actionType)) throw new Error('MISSION_AUTO_JOB_UNSUPPORTED');
   const workPackages = normalizedPackages(items);
   const own = requiredString(workPackageId, 'MISSION_WORK_PACKAGE_ID_REQUIRED');
@@ -58,6 +71,23 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId) 
   } else if (actionType === 'KNOWLEDGE.DETECT_GAP') {
     findings = dependencies.filter((entry) => entry.state === 'MISSING').map((entry) =>
       `MISSING_DEPENDENCY:${entry.child}:${entry.dependency}`);
+  } else if (actionType === 'PROJECT.DETECT_DELAY') {
+    const observedMs = parseObservedAt(observedAt);
+    findings = external.filter((item) => OPEN.has(item.status)).map((item) => {
+      const startMs = Date.parse(item.createdAt);
+      const sla = item.slaHours;
+      if (typeof item.createdAt !== 'string' || !Number.isFinite(startMs)
+          || typeof sla !== 'number' || !Number.isFinite(sla)
+          || sla <= 0 || startMs > observedMs) {
+        return `SLA_SOURCE_MISSING:${item.id}`;
+      }
+      const deadlineMs = startMs + sla * 3600000;
+      if (!Number.isFinite(deadlineMs) || deadlineMs > 8640000000000000) {
+        return `SLA_SOURCE_MISSING:${item.id}`;
+      }
+      return observedMs > deadlineMs
+        ? `SLA_OVERDUE:${item.id}:${new Date(deadlineMs).toISOString()}` : null;
+    }).filter(Boolean);
   } else if (actionType === 'RISK.IDENTIFY') {
     // Strictly a mission-work-package blocker indicator screen.
     // No risk score, risk register mutation, mitigation or acceptance.
@@ -80,6 +110,10 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId) 
     dependencyCount: dependencies.length,
     findings: findings.sort(compare),
     referencedWorkPackages: workPackages.length,
+    ...(actionType === 'PROJECT.DETECT_DELAY' ? {
+      scope: 'MISSION_CATALOG_SLA_ONLY',
+      observedAt,
+    } : {}),
   };
 }
 
@@ -87,11 +121,17 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId) 
  * Checks each reported field against a fresh authoritative snapshot.
  * This verification is performed under a verifier role different from the maker.
  */
-export function verifyReadOnlyMissionAudit(report, items, workPackageId) {
+export function verifyReadOnlyMissionAudit(report, items, workPackageId, { nowEpochMs = Date.now() } = {}) {
   try {
     if (!report || typeof report !== 'object' || Array.isArray(report)) return false;
     if (!SAFE.has(report.actionType)) return false;
-    const actual = calculateReadOnlyMissionAudit(report.actionType, items, workPackageId);
+    if (report.actionType === 'PROJECT.DETECT_DELAY') {
+      const observedMs = parseObservedAt(report.observedAt);
+      if (!Number.isFinite(nowEpochMs) || observedMs > nowEpochMs
+          || nowEpochMs - observedMs > 10 * 60 * 1000) return false;
+    }
+    const actual = calculateReadOnlyMissionAudit(report.actionType, items, workPackageId,
+      report.actionType === 'PROJECT.DETECT_DELAY' ? { observedAt: report.observedAt } : {});
     if (Object.keys(report).length !== Object.keys(actual).length) return false;
     return Object.entries(actual).every(([key, value]) =>
       JSON.stringify(report[key]) === JSON.stringify(value));

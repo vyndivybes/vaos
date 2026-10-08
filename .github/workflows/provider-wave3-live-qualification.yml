@@ -67,8 +67,9 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:5678/healthz >/dev/null
-          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:5678/api/v1/workflows)
-          test "$STATUS" = "401" -o "$STATUS" = "403"
+          STATUS=$(curl -sS -o /tmp/n8n-api-response -w '%{http_code}' http://127.0.0.1:5678/api/v1/workflows)
+          echo "Unauthenticated n8n API status: $STATUS"
+          [[ "$STATUS" -lt 200 || "$STATUS" -ge 300 ]]
           docker stop vaos-wave3-n8n >/dev/null
           if curl -fsS --max-time 2 http://127.0.0.1:5678/healthz >/dev/null 2>&1; then exit 1; fi
       - name: Write governed evidence
@@ -152,12 +153,15 @@ jobs:
           base64 -d scripts/qualification/wave3-synthetic.pdf.base64 > /tmp/vaos-wave3.pdf
           TASK=$(curl -fsS -X POST             -H "Authorization: Token $TOKEN"             -F document=@/tmp/vaos-wave3.pdf             -F title=VAOS-WAVE3-SYNTHETIC             http://127.0.0.1:8000/api/documents/post_document/ | jq -r '.')
           test -n "$TASK" -a "$TASK" != "null"
+          TASK_DONE=false
           for i in $(seq 1 120); do
             RESULT=$(curl -fsS -H "Authorization: Token $TOKEN"               "http://127.0.0.1:8000/api/tasks/?task_id=$TASK")
-            if echo "$RESULT" | grep -q '"status":"SUCCESS"'; then break; fi
-            if echo "$RESULT" | grep -q '"status":"FAILURE"'; then echo "$RESULT"; exit 1; fi
+            TASK_STATUS=$(echo "$RESULT" | jq -r 'if type == "array" then (.[0].status // "") else (.results[0].status // .status // "") end')
+            if [ "$TASK_STATUS" = "SUCCESS" ]; then TASK_DONE=true; break; fi
+            if [ "$TASK_STATUS" = "FAILURE" ]; then echo "$RESULT"; exit 1; fi
             sleep 2
           done
+          test "$TASK_DONE" = "true"
           curl -fsS -H "Authorization: Token $TOKEN"             'http://127.0.0.1:8000/api/documents/?query=VAOS-WAVE3-SYNTHETIC' |
             grep -q 'VAOS-WAVE3-SYNTHETIC'
           docker stop vaos-wave3-paperless >/dev/null

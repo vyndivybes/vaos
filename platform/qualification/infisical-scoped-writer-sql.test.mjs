@@ -24,6 +24,8 @@ test('commissioning RPC only allows health record or disable and always locks In
   assert.match(sql,/\{health\}/);
   assert.match(sql,/\{enabled\}/);
   assert.match(sql,/to_jsonb\(false\)/);
+  assert.match(sql,/jsonb_set\(v_before,'\{enabled\}',to_jsonb\(false\),true\)/);
+  assert.match(sql,/\{health\}','null'::jsonb,true/);
   assert.doesNotMatch(sql,/\{enabled\}[^;]*to_jsonb\(true\)/s);
   assert.doesNotMatch(sql,/p_action\s*=\s*'activate'/);
 });

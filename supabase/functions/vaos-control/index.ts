@@ -184,6 +184,32 @@ Deno.serve(async (req: Request) => {
       p_job_id: payload.jobId,
       p_employee_id: payload.employeeId,
     }
+  } else if (operation === 'providerStateGet') {
+    rpcName = 'vaos_provider_state_get'
+    args = { p_server_key: serverKey, p_provider_id: payload.providerId }
+  } else if (operation === 'providerStatePut') {
+    rpcName = 'vaos_provider_state_put'
+    args = { p_server_key: serverKey, p_state: payload.state || {} }
+  } else if (operation === 'callbackCreate') {
+    rpcName = 'vaos_callback_create'
+    args = { p_server_key: serverKey, p_record: payload.record || {} }
+  } else if (operation === 'callbackGet') {
+    rpcName = 'vaos_callback_get'
+    args = { p_server_key: serverKey, p_receipt_ref: payload.receiptRef }
+  } else if (operation === 'callbackConsumeOnce') {
+    rpcName = 'vaos_callback_consume_once'
+    args = {
+      p_server_key: serverKey,
+      p_receipt_ref: payload.receiptRef,
+      p_token_hash: payload.tokenHash,
+      p_provider_id: payload.providerId,
+      p_execution_job_id: payload.executionJobId,
+      p_intent_id: payload.intentId,
+      p_action_key: payload.actionKey,
+      p_consumed_at: payload.consumedAt,
+      p_status: payload.status,
+      p_evidence: payload.evidence || {},
+    }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

@@ -616,3 +616,90 @@ test('Security adapter persists and verifies an identity observation', async () 
   assert.equal(result.verification.expectedState, 'OBSERVED');
 });
 
+test('Security qualification recovery drill forces exactly one retry before any identity write', async () => {
+  let touched = false;
+  const security = {
+    async observeIdentity() { touched = true; },
+    async getIdentityObservation() { touched = true; },
+  };
+  const adapter = createExecutionAdapterRegistry({ security }).get('SECURITY.OBSERVE_IDENTITY');
+
+  await assert.rejects(
+    () => adapter.execute({
+      id: 'job-sec-recovery-1',
+      intentId: 'intent-sec-recovery-1',
+      actionType: 'SECURITY.OBSERVE_IDENTITY',
+      attemptCount: 1,
+      payload: {
+        observationId: 'SEC-Q4-003',
+        qualificationMode: true,
+        qualificationRecoveryDrill: true,
+      },
+    }),
+    (error) => error?.code === 'QUALIFICATION_RECOVERY_DRILL_RETRY' && error?.retryable === true,
+  );
+  assert.equal(touched, false);
+});
+
+test('Security qualification recovery second attempt verifies observation and writes governed trace', async () => {
+  const calls = [];
+  const security = {
+    async observeIdentity(job, input) {
+      calls.push('observe');
+      return {
+        outcome: 'CREATED',
+        record: {
+          observationId: input.observationId,
+          status: 'OBSERVED',
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+    async getIdentityObservation(job, observationId) {
+      calls.push('read');
+      return {
+        observationId,
+        status: 'OBSERVED',
+        executionJobId: job.id,
+        intentId: job.intentId,
+      };
+    },
+    async linkQualificationTrace(job, input) {
+      calls.push('link');
+      return {
+        outcome: 'CREATED',
+        link: {
+          id: 'security-link-1',
+          sourceDomain: 'PROJECT_RISK',
+          targetDomain: 'ENGINEERING_BASELINE',
+          relationType: input.relationType,
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ security }).get('SECURITY.OBSERVE_IDENTITY').execute({
+    id: 'job-sec-recovery-2',
+    intentId: 'intent-sec-recovery-2',
+    actionType: 'SECURITY.OBSERVE_IDENTITY',
+    attemptCount: 2,
+    payload: {
+      observationId: 'SEC-Q4-003',
+      qualificationMode: true,
+      qualificationRecoveryDrill: true,
+      qualificationTrace: {
+        sourceRiskId: 'RSK-015',
+        targetBaseline: '5.3.9',
+        relationType: 'RELATED_TO',
+      },
+    },
+  });
+
+  assert.deepEqual(calls, ['observe', 'read', 'link']);
+  assert.equal(result.verification.verified, true);
+  assert.equal(result.effect.qualificationTraceLinkId, 'security-link-1');
+});
+

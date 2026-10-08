@@ -50,7 +50,7 @@ const mandatoryCore=[
   'docs/automation-fabric-single-squash-release-plan.md',
 ];
 const mandatoryAdapters=[
-  'integrations/n8n/webhook-adapter.mjs',
+  'integrations/n8n/workflow-adapter.mjs',
   'integrations/activepieces/workflow-adapter.mjs',
   'integrations/zapier/action-adapter.mjs',
   'integrations/paperwork/extract-adapter.mjs',

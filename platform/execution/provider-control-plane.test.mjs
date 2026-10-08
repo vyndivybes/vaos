@@ -277,3 +277,39 @@ test('routing optionally enforces deployment mode and data residency policy', as
     dataResidency: 'EU',
   }), null);
 });
+
+
+test('kill switch can dynamically restrict provider by data classification and risk class and later recover', async () => {
+  const audit=[];
+  const cp=createProviderControlPlane({
+    providers:[manifest({
+      qualification:{state:'qualified',qualifiedCapabilities:['workflow.orchestrate'],evidenceRefs:['q'],validUntil:null},
+    })],
+    recordAudit:async e=>audit.push(e),
+  });
+
+  assert.equal(cp.resolve('workflow.orchestrate',{dataClassification:'confidential',riskClass:'high'}).providerId,'n8n');
+
+  await cp.setRoutingRestrictions({
+    providerId:'n8n',
+    disabledDataClassifications:['confidential'],
+    disabledRiskClasses:['high'],
+    authorityRef:'approval:restrict-1',
+    reason:'incident containment',
+  });
+
+  assert.equal(cp.resolve('workflow.orchestrate',{dataClassification:'confidential',riskClass:'medium'}),null);
+  assert.equal(cp.resolve('workflow.orchestrate',{dataClassification:'internal',riskClass:'high'}),null);
+  assert.equal(cp.resolve('workflow.orchestrate',{dataClassification:'internal',riskClass:'medium'}).providerId,'n8n');
+
+  await cp.setRoutingRestrictions({
+    providerId:'n8n',
+    disabledDataClassifications:[],
+    disabledRiskClasses:[],
+    authorityRef:'approval:restore-1',
+    reason:'incident closed',
+  });
+
+  assert.equal(cp.resolve('workflow.orchestrate',{dataClassification:'confidential',riskClass:'high'}).providerId,'n8n');
+  assert.equal(audit.filter(x=>x.type==='PROVIDER.ROUTING.RESTRICTIONS.CHANGED').length,2);
+});

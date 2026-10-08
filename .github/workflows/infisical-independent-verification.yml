@@ -3,6 +3,11 @@ on:
   schedule:
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/infisical-independent-verification.yml'
+      - 'scripts/qualification/verify-infisical-watchdog.mjs'
+      - 'platform/qualification/verify-infisical-watchdog.test.mjs'
 
 permissions:
   contents: read
@@ -30,6 +35,7 @@ jobs:
       - name: Evaluate independent verification contract
         run: node --test platform/qualification/verify-infisical-watchdog.test.mjs
       - name: Cross-check scheduled run and production evidence
+        if: github.event_name != 'pull_request'
         run: node scripts/qualification/verify-infisical-watchdog.mjs
       - name: Preserve PASS or FAIL evidence
         if: always()

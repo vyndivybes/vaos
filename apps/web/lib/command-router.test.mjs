@@ -163,3 +163,52 @@ test('command router creates Project Controls Q2 qualification evidence intent',
   });
 });
 
+test('command router creates Release Q2 training and qualification gate observations', () => {
+  assert.deepEqual(resolveCommand('release gate REL-Q2-DENY-001'), {
+    kind: 'intent',
+    targetView: 'governance',
+    agentId: 'release',
+    actionType: 'RELEASE.OBSERVE_GATE',
+    risk: 'low',
+    payload: { gateId: 'REL-Q2-DENY-001' },
+  });
+  assert.deepEqual(resolveCommand('qualification release gate REL-Q2-001'), {
+    kind: 'intent',
+    targetView: 'governance',
+    agentId: 'release',
+    actionType: 'RELEASE.OBSERVE_GATE',
+    risk: 'low',
+    payload: { gateId: 'REL-Q2-001', qualificationMode: true },
+  });
+});
+
+test('command router creates Knowledge Q2 governed risk-to-baseline links', () => {
+  assert.deepEqual(resolveCommand('knowledge link risk PC-Q2-001 baseline 5.3.9'), {
+    kind: 'intent',
+    targetView: 'digital-thread',
+    agentId: 'knowledge',
+    actionType: 'DIGITAL_THREAD.CREATE_LINK',
+    risk: 'medium',
+    payload: {
+      sourceRiskId: 'PC-Q2-001',
+      targetBaseline: '5.3.9',
+      relationType: 'RELATED_TO',
+      qualificationKnowledgeLink: true,
+    },
+  });
+  assert.deepEqual(resolveCommand('qualification knowledge link risk PC-Q2-002 baseline 5.3.9'), {
+    kind: 'intent',
+    targetView: 'digital-thread',
+    agentId: 'knowledge',
+    actionType: 'DIGITAL_THREAD.CREATE_LINK',
+    risk: 'medium',
+    payload: {
+      sourceRiskId: 'PC-Q2-002',
+      targetBaseline: '5.3.9',
+      relationType: 'RELATED_TO',
+      qualificationKnowledgeLink: true,
+      qualificationMode: true,
+    },
+  });
+});
+

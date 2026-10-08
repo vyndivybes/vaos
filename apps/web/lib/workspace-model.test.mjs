@@ -798,3 +798,99 @@ test('Project Controls Q2 training requires PASS assessment before Qualify is ex
   assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:project-assessment-1']);
 });
 
+test('Release Q2 training exposes release-assurance assessment before Qualify', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'release',
+      name: 'Release Agent',
+      role: 'Release Assurance',
+      department: 'Control',
+      mission: 'Observe release readiness and recommend action from governed evidence.',
+      responsibilities: ['Observe release readiness', 'Recommend release action'],
+      responsibilityContractId: 'release-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'RELEASE.OBSERVE_GATE': 2 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 2,
+      currentAssignment: 'Qualification',
+      priority: 'NORMAL',
+      confidence: 90,
+      modelRequirements: { minimumQualification: 'Q2_BUSINESS' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'RELEASE_Q2_RELEASE_ASSURANCE_V1');
+  assert.equal(row.actions[0].targetLevel, 2);
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'release-assessment-1',
+    targetLevel: 2,
+    profileId: 'RELEASE_Q2_RELEASE_ASSURANCE_V1',
+    scope: 'RELEASE_ASSURANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 2);
+});
+
+test('Knowledge Q2 training exposes traceability-governance assessment before Qualify', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'knowledge',
+      name: 'Knowledge Agent',
+      role: 'Knowledge Governance',
+      department: 'Control',
+      mission: 'Maintain source authority and governed digital-thread relationships.',
+      responsibilities: ['Maintain source authority', 'Create governed digital-thread links'],
+      responsibilityContractId: 'knowledge-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'KNOWLEDGE.READ_GRAPH': 1, 'DIGITAL_THREAD.CREATE_LINK': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 2,
+      currentAssignment: 'Qualification',
+      priority: 'NORMAL',
+      confidence: 92,
+      modelRequirements: { minimumQualification: 'Q2_BUSINESS' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'KNOWLEDGE_Q2_TRACEABILITY_GOVERNANCE_V1');
+  assert.equal(row.actions[0].targetLevel, 2);
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'knowledge-assessment-1',
+    targetLevel: 2,
+    profileId: 'KNOWLEDGE_Q2_TRACEABILITY_GOVERNANCE_V1',
+    scope: 'KNOWLEDGE_TRACEABILITY_GOVERNANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 2);
+});
+

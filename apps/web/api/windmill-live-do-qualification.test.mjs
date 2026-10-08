@@ -15,6 +15,7 @@ function input(phase='start'){
         return {
           startQualification:async()=>({status:'STARTED',admission:'PASS',productionActivation:false}),
           finishQualification:async()=>({status:'PASS',timeout:'QUARANTINED',productionActivation:false}),
+          alarmStatus:async()=>({status:'ALARM_OBSERVED',alarmObserved:true,productionActivation:false,windmillCalls:0}),
         };
       },
     }}};
@@ -22,7 +23,7 @@ function input(phase='start'){
 const valid=async()=>({runId,runAttempt});
 test('separately signed GitHub identity routes only to isolated DO namespace',async()=>{
   const h=createWindmillLiveDoQualificationHandler({verifyIdentity:valid});
-  for(const phase of ['start','finish']){
+  for(const phase of ['start','status','finish']){
     const r=res();await h(input(phase),r);
     assert.equal(r.data.code,200);
     assert.equal(r.data.body.data.productionActivation,false);
@@ -62,4 +63,12 @@ test('DO failure does not expose its error or any run ID',async()=>{
   await h(q,r);
   assert.equal(r.data.code,503);
   assert.doesNotMatch(JSON.stringify(r.data.body),/secret payload|37860012345/);
+});
+
+test('OIDC-authorized status poll is read-only and scoped to the identical isolated DO',async()=>{
+  const h=createWindmillLiveDoQualificationHandler({verifyIdentity:valid});
+  const q=input('status'),r=res();await h(q,r);
+  assert.equal(r.data.code,200);
+  assert.equal(r.data.body.data.alarmObserved,true);
+  assert.equal(r.data.body.data.productionActivation,false);
 });

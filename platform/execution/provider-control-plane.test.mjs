@@ -313,3 +313,63 @@ test('kill switch can dynamically restrict provider by data classification and r
   assert.equal(cp.resolve('workflow.orchestrate',{dataClassification:'confidential',riskClass:'high'}).providerId,'n8n');
   assert.equal(audit.filter(x=>x.type==='PROVIDER.ROUTING.RESTRICTIONS.CHANGED').length,2);
 });
+
+
+test('provider control state can restore from durable store without granting undeclared capabilities', async () => {
+  const saved=[];
+  const stateStore={
+    async load(providerId){
+      assert.equal(providerId,'n8n');
+      return {
+        providerId:'n8n',
+        enabled:true,
+        capabilityEnabled:{'workflow.orchestrate':true},
+        qualification:{
+          state:'qualified',
+          qualifiedCapabilities:['workflow.orchestrate'],
+          restrictedCapabilities:[],
+          evidenceRefs:['qualification:durable'],
+          validUntil:null,
+        },
+        routingRestrictions:{disabledDataClassifications:[],disabledRiskClasses:[]},
+        health:{status:'healthy',checkedAt:'2026-10-08T00:00:00.000Z',evidenceRef:'health:durable'},
+      };
+    },
+    async save(snapshot){saved.push(snapshot)},
+  };
+  const cp=createProviderControlPlane({
+    providers:[manifest()],
+    stateStore,
+    now:()=>new Date('2026-10-08T00:00:00.000Z'),
+  });
+  await cp.restore();
+  assert.equal(cp.resolve('workflow.orchestrate',{dataClassification:'internal',riskClass:'medium'}).providerId,'n8n');
+  await cp.setProviderEnabled({providerId:'n8n',enabled:false,authorityRef:'approval:stop',reason:'incident'});
+  assert.equal(saved.at(-1).enabled,false);
+});
+
+test('durable provider state attempting to grant undeclared capability is rejected', async () => {
+  const cp=createProviderControlPlane({
+    providers:[manifest()],
+    stateStore:{
+      async load(){
+        return {
+          providerId:'n8n',
+          enabled:true,
+          capabilityEnabled:{'workflow.orchestrate':true},
+          qualification:{
+            state:'qualified',
+            qualifiedCapabilities:['integration.saas'],
+            restrictedCapabilities:[],
+            evidenceRefs:['bad'],
+            validUntil:null,
+          },
+          routingRestrictions:{disabledDataClassifications:[],disabledRiskClasses:[]},
+          health:null,
+        };
+      },
+      async save(){},
+    },
+  });
+  await assert.rejects(()=>cp.restore(),/PROVIDER_PERSISTED_STATE_INVALID/);
+});

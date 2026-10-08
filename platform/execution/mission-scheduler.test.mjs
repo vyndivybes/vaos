@@ -97,3 +97,31 @@ test('scheduler does not prepare a mission with incomplete verification', async 
   assert.equal(result.preparedForClosure, 0);
   assert.equal(prepared, 0);
 });
+
+test('manual RUN_SAFE completion is recovered by scheduled closure preparation without resubmitting work', async () => {
+  const events = [];
+  const service = {
+    async listRunnableMissions() { return { missionIds: ['risk-qual'] }; },
+    async dispatchMission() { events.push('dispatch'); return { outcome: 'NO_READY_WORK', count: 0 }; },
+    async snapshot() {
+      events.push('snapshot');
+      return { mission: { status: 'ACTIVE' }, metrics: { readyForClosure: true } };
+    },
+    async prepareMissionClosure(missionId) {
+      events.push('prepare:' + missionId);
+      return { outcome: 'PREPARED', status: 'READY_FOR_CLOSURE' };
+    },
+  };
+  const result = await runScheduledMissionSweep({
+    service,
+    createConsumer: () => ({
+      async consume() { events.push('consume'); return { submitted: 0, unsupported: 0 }; },
+      async review() { events.push('review'); return { verified: 0, returned: 0 }; },
+    }),
+  });
+  assert.deepEqual(events, ['consume','review','dispatch','snapshot','prepare:risk-qual']);
+  assert.equal(result.processed, 1);
+  assert.equal(result.preparedForClosure, 1);
+  assert.equal(result.submitted, 0);
+  assert.equal(result.verified, 0);
+});

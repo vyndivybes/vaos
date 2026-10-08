@@ -1,5 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createWindmillDurableLedger } from '../../integrations/windmill/durable-ledger.mjs';
+import { createWindmillIsolatedDrill } from './windmill-isolated-drill.mjs';
 
 /**
  * VAOS singleton Windmill admission coordinator.
@@ -17,6 +18,14 @@ export class WindmillAdmissionCoordinator extends DurableObject {
     }
   }
   async status() { return this.ledger.snapshot(); }
+  isolatedDrill() {
+    return createWindmillIsolatedDrill({
+      store:this.ctx.storage,
+      setAlarm:at=>this.ctx.storage.setAlarm(at),
+    });
+  }
+  async startQualification(runId) { return this.isolatedDrill().start(runId); }
+  async finishQualification(runId) { return this.isolatedDrill().finish(runId); }
   async reserve(request) {
     this.assertEnabled();
     const value = await this.ledger.reserve(request);

@@ -75,6 +75,9 @@ export function createSupabaseControlStore({
     listRunnableMissions({ limit = 8 } = {}) {
       return invoke('listRunnableMissions', { limit });
     },
+    prepareOperatingMissionClosure(missionId) {
+      return invoke('prepareOperatingMissionClosure', { missionId });
+    },
     operatingMissionSnapshot(missionId) {
       return invoke('operatingMissionSnapshot', { missionId });
     },

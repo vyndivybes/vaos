@@ -92,13 +92,21 @@ test('governed handoffs use a closed state machine and preserve lineage', () => 
   assert.equal(accepted.history.length, 2);
   assert.deepEqual(accepted.evidenceRefs, ['REQ-001', 'ACK-001']);
 
-  const completed = transitionGovernedHandoff(accepted, {
-    outcome: HANDOFF_OUTCOME.COMPLETE,
+  const submitted = transitionGovernedHandoff(accepted, {
+    outcome: HANDOFF_OUTCOME.SUBMIT,
     byAgentId: 'vibpe',
     evidenceRefs: ['ENG-ASSESS-001'],
   });
+  assert.equal(submitted.status, 'SUBMITTED');
+
+  const completed = transitionGovernedHandoff(submitted, {
+    outcome: HANDOFF_OUTCOME.VERIFY,
+    byAgentId: 'qa',
+    evidenceRefs: ['QA-REVIEW-001'],
+  });
   assert.equal(completed.status, 'COMPLETED');
-  assert.deepEqual(completed.evidenceRefs, ['REQ-001', 'ACK-001', 'ENG-ASSESS-001']);
+  assert.equal(completed.verifiedByAgentId, 'qa');
+  assert.deepEqual(completed.evidenceRefs, ['REQ-001', 'ACK-001', 'ENG-ASSESS-001', 'QA-REVIEW-001']);
 
   assert.throws(
     () => transitionGovernedHandoff(completed, {

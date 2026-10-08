@@ -25,8 +25,8 @@ BEGIN
   -- Independent GitHub key can only read state/evidence for the Infisical broker,
   -- or append automated/live evidence; it cannot write provider state or manual approval.
   IF p_provider_id IS DISTINCT FROM 'infisical'
-     OR p_operation NOT IN ('providerStateGet','qualificationEvidenceList','qualificationEvidenceAppend')
-     OR (p_operation='qualificationEvidenceAppend' AND p_evidence_class NOT IN ('automated','live'))
+     OR coalesce(p_operation,'') NOT IN ('providerStateGet','qualificationEvidenceList','qualificationEvidenceAppend')
+     OR (p_operation='qualificationEvidenceAppend' AND coalesce(p_evidence_class,'') NOT IN ('automated','live'))
   THEN
     RAISE EXCEPTION 'VAOS_SERVER_KEY_INVALID' USING errcode='28000';
   END IF;

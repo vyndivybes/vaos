@@ -39,6 +39,13 @@ export const VYNDI_BRIDGE_EFFECT=EFFECT;
 
 export const VYNDI_BRIDGE_ROUTES=freeze([
   route({
+    actionType:'PROJECT.OBSERVE_SCHEDULE',employeeId:'project',effectClass:EFFECT.READ,
+    state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/vaos-schedule-export.ts',authority:'readGovernedProgramSchedule',
+    verificationRefs:['vyndi_program_tasks'],
+    description:'Read minimally scoped, unapproved source programme schedule for independent VAOS baseline reconciliation.'
+  }),
+  route({
     actionType:'COMMERCIAL.OBSERVE_PIPELINE',employeeId:'commercial',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/sales-order-authority.ts',authority:'listSalesOrders',
     verificationRefs:['vyndi_sales_orders'],description:'Read canonical sales-order pipeline.'

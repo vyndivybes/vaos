@@ -33,7 +33,7 @@ export async function runScheduledMissionSweep({
     throw new Error('MISSION_QUEUE_DUPLICATE');
   }
   const consumer = createConsumer({ service });
-  let processed = 0, submitted = 0, verified = 0, returned = 0;
+  let processed = 0, submitted = 0, verified = 0, returned = 0, preparedForClosure = 0;
   const failures = [];
 
   for (const missionId of discovered.missionIds) {
@@ -42,6 +42,13 @@ export async function runScheduledMissionSweep({
       const reviewed = await consumer.review(missionId, { maxHandoffs: handoffLimit });
       // Dispatch is assignment only. No domain effects or approval bypass.
       await service.dispatchMission(missionId, { maxAssignments: handoffLimit });
+      if (typeof service.snapshot === 'function' && typeof service.prepareMissionClosure === 'function') {
+        const current = await service.snapshot(missionId);
+        if (current?.mission?.status === 'ACTIVE' && current?.metrics?.readyForClosure === true) {
+          await service.prepareMissionClosure(missionId);
+          preparedForClosure += 1;
+        }
+      }
       processed += 1;
       submitted += consumed.submitted || 0;
       verified += reviewed.verified || 0;
@@ -58,6 +65,7 @@ export async function runScheduledMissionSweep({
     submitted,
     verified,
     returned,
+    preparedForClosure,
     failures,
   };
 }

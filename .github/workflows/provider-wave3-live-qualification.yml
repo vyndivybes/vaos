@@ -1,0 +1,219 @@
+name: provider-wave3-live-qualification
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/provider-wave3-live-qualification.yml
+      - platform/qualification/provider-wave-3-profiles.mjs
+      - platform/qualification/provider-wave-3-profiles.test.mjs
+      - scripts/qualification/write-wave3-evidence.mjs
+      - scripts/qualification/wave3-synthetic.pdf.base64
+      - integrations/n8n/**
+      - integrations/activepieces/**
+      - integrations/paperless-ngx/**
+      - integrations/stirling-pdf/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-wave3-live-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Contract and adapter qualification
+        run: >-
+          node --test
+          platform/qualification/provider-wave-3-profiles.test.mjs
+          integrations/n8n/workflow-adapter.test.mjs
+          integrations/activepieces/workflow-adapter.test.mjs
+          integrations/paperless-ngx/archive-adapter.test.mjs
+          integrations/stirling-pdf/transform-adapter.test.mjs
+
+  n8n:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      WAVE3_PROVIDER_ID: n8n
+      WAVE3_RUNTIME_VERSION: 2.42.5
+      WAVE3_PASSED_CHECKS: runtime-ready,pinned-runtime,kill-switch
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Start pinned n8n runtime
+        run: >-
+          docker run -d --name vaos-wave3-n8n -p 5678:5678
+          -e N8N_DIAGNOSTICS_ENABLED=false
+          -e N8N_PERSONALIZATION_ENABLED=false
+          -e N8N_SECURE_COOKIE=false
+          -e N8N_PUBLIC_API_DISABLED=false
+          n8nio/n8n:2.42.5
+      - name: Qualify pinned runtime readiness and kill switch
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(docker inspect -f '{{.Config.Image}}' vaos-wave3-n8n)" = "n8nio/n8n:2.42.5"
+          for i in $(seq 1 90); do
+            if curl -fsS http://127.0.0.1:5678/healthz >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:5678/healthz >/dev/null
+          docker stop vaos-wave3-n8n >/dev/null
+          if curl -fsS --max-time 2 http://127.0.0.1:5678/healthz >/dev/null 2>&1; then exit 1; fi
+      - name: Write governed evidence
+        run: node scripts/qualification/write-wave3-evidence.mjs
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave3-n8n-evidence
+          path: qualification-evidence/provider-wave-3/n8n.json
+          retention-days: 30
+      - if: always()
+        run: docker rm -f vaos-wave3-n8n >/dev/null 2>&1 || true
+
+  activepieces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WAVE3_PROVIDER_ID: activepieces
+      WAVE3_RUNTIME_VERSION: 0.92.2
+      WAVE3_PASSED_CHECKS: runtime-ready,unauthenticated-api-denied,kill-switch
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Start pinned Activepieces runtime
+        shell: bash
+        run: |
+          docker run -d --name vaos-wave3-activepieces -p 8080:80             -e AP_DB_TYPE=PGLITE             -e AP_REDIS_TYPE=MEMORY             -e AP_EXECUTION_MODE=UNSANDBOXED             -e AP_FRONTEND_URL=http://127.0.0.1:8080             -e AP_ENCRYPTION_KEY=0123456789abcdef0123456789abcdef             -e AP_JWT_SECRET=0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef             activepieces/activepieces:0.92.2
+      - name: Qualify readiness, auth boundary and kill switch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:8080/ >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8080/ >/dev/null
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:8080/api/v1/projects)
+          test "$STATUS" = "401" -o "$STATUS" = "403"
+          docker stop vaos-wave3-activepieces >/dev/null
+          if curl -fsS --max-time 2 http://127.0.0.1:8080/ >/dev/null 2>&1; then exit 1; fi
+      - name: Write governed evidence
+        run: node scripts/qualification/write-wave3-evidence.mjs
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave3-activepieces-evidence
+          path: qualification-evidence/provider-wave-3/activepieces.json
+          retention-days: 30
+      - if: always()
+        run: docker rm -f vaos-wave3-activepieces >/dev/null 2>&1 || true
+
+  paperless:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      WAVE3_PROVIDER_ID: paperless-ngx
+      WAVE3_RUNTIME_VERSION: 3.3.0
+      WAVE3_PASSED_CHECKS: runtime-ready,authenticated-api,synthetic-document-ingest,kill-switch
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Start pinned Paperless-ngx runtime
+        shell: bash
+        run: |
+          docker network create vaos-wave3-paperless
+          docker run -d --name vaos-wave3-redis --network vaos-wave3-paperless redis:8.2.2-alpine
+          docker run -d --name vaos-wave3-paperless --network vaos-wave3-paperless -p 8000:8000             -e PAPERLESS_REDIS=redis://vaos-wave3-redis:6379             -e PAPERLESS_SECRET_KEY=vaos-wave3-synthetic-only-secret             -e PAPERLESS_ADMIN_USER=vaos             -e PAPERLESS_ADMIN_PASSWORD=vaos-wave3-password             -e PAPERLESS_URL=http://127.0.0.1:8000             -e PAPERLESS_OCR_LANGUAGE=eng             ghcr.io/paperless-ngx/paperless-ngx:3.3.0
+      - name: Qualify authenticated synthetic document ingest
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 150); do
+            if curl -fsS http://127.0.0.1:8000/ >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8000/ >/dev/null
+          TOKEN=$(curl -fsS -X POST             -H 'Content-Type: application/x-www-form-urlencoded'             --data 'username=vaos&password=vaos-wave3-password'             http://127.0.0.1:8000/api/token/ | jq -r '.token')
+          test -n "$TOKEN" -a "$TOKEN" != "null"
+          base64 -d scripts/qualification/wave3-synthetic.pdf.base64 > /tmp/vaos-wave3.pdf
+          TASK=$(curl -fsS -X POST             -H "Authorization: Token $TOKEN"             -F document=@/tmp/vaos-wave3.pdf             -F title=VAOS-WAVE3-SYNTHETIC             http://127.0.0.1:8000/api/documents/post_document/ | jq -r '.')
+          test -n "$TASK" -a "$TASK" != "null"
+          DOCUMENT_FOUND=false
+          for i in $(seq 1 120); do
+            RESULT=$(curl -fsS -H "Authorization: Token $TOKEN" \
+              'http://127.0.0.1:8000/api/documents/?title__icontains=VAOS-WAVE3-SYNTHETIC')
+            if [ "$(echo "$RESULT" | jq -r '.count // 0')" -gt 0 ]; then DOCUMENT_FOUND=true; break; fi
+            sleep 2
+          done
+          test "$DOCUMENT_FOUND" = "true"
+          echo "$RESULT" | jq -e '.results[0].title == "VAOS-WAVE3-SYNTHETIC"' >/dev/null
+          docker stop vaos-wave3-paperless >/dev/null
+          if curl -fsS --max-time 2 http://127.0.0.1:8000/ >/dev/null 2>&1; then exit 1; fi
+      - name: Write governed evidence
+        run: node scripts/qualification/write-wave3-evidence.mjs
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave3-paperless-evidence
+          path: qualification-evidence/provider-wave-3/paperless-ngx.json
+          retention-days: 30
+      - if: always()
+        run: |
+          docker rm -f vaos-wave3-paperless vaos-wave3-redis >/dev/null 2>&1 || true
+          docker network rm vaos-wave3-paperless >/dev/null 2>&1 || true
+
+  stirling:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      WAVE3_PROVIDER_ID: stirling-pdf
+      WAVE3_RUNTIME_VERSION: 3.1.0
+      WAVE3_PASSED_CHECKS: runtime-ready,synthetic-pdf-transform,output-pdf-verified,kill-switch
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Start pinned Stirling PDF runtime
+        run: >-
+          docker run -d --name vaos-wave3-stirling -p 8081:8080
+          -e DISABLE_ADDITIONAL_FEATURES=true
+          -e SECURITY_ENABLELOGIN=false
+          stirlingtools/stirling-pdf:3.1.0
+      - name: Qualify synthetic PDF transformation and kill switch
+        shell: bash
+        run: |
+          set -euo pipefail
+          for i in $(seq 1 120); do
+            if curl -fsS http://127.0.0.1:8081/ >/dev/null; then break; fi
+            sleep 2
+          done
+          curl -fsS http://127.0.0.1:8081/ >/dev/null
+          base64 -d scripts/qualification/wave3-synthetic.pdf.base64 > /tmp/vaos-wave3.pdf
+          curl -fsS -X POST             -F fileInput=@/tmp/vaos-wave3.pdf             -F angle=90             http://127.0.0.1:8081/api/v1/general/rotate-pdf             -o /tmp/vaos-wave3-rotated.pdf
+          test "$(head -c 4 /tmp/vaos-wave3-rotated.pdf)" = "%PDF"
+          test -s /tmp/vaos-wave3-rotated.pdf
+          docker stop vaos-wave3-stirling >/dev/null
+          if curl -fsS --max-time 2 http://127.0.0.1:8081/ >/dev/null 2>&1; then exit 1; fi
+      - name: Write governed evidence
+        run: node scripts/qualification/write-wave3-evidence.mjs
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave3-stirling-evidence
+          path: qualification-evidence/provider-wave-3/stirling-pdf.json
+          retention-days: 30
+      - if: always()
+        run: docker rm -f vaos-wave3-stirling >/dev/null 2>&1 || true

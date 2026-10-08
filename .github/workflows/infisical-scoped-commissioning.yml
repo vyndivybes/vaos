@@ -1,0 +1,62 @@
+name: infisical-scoped-commissioning
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Record health after all live canary checks, or emergency disable only"
+        type: choice
+        required: true
+        options:
+          - record-health
+          - disable
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infisical-scoped-commissioning
+  cancel-in-progress: false
+
+jobs:
+  commissioning:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: infisical-commissioning
+    env:
+      VAOS_INFISICAL_COMMISSIONING_KEY: ${{ secrets.VAOS_INFISICAL_COMMISSIONING_KEY }}
+      INFISICAL_COMMISSION_ACTION: ${{ inputs.action }}
+      INFISICAL_DISABLE_CONFIRM: ${{ inputs.action == 'disable' && 'DISABLE-ONLY' || '' }}
+      INFISICAL_BASE_URL: ${{ vars.INFISICAL_BASE_URL }}
+      INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
+      INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      INFISICAL_DENIED_PROJECT_ID: ${{ vars.INFISICAL_DENIED_PROJECT_ID }}
+      INFISICAL_ENVIRONMENT: ${{ vars.INFISICAL_ENVIRONMENT }}
+      INFISICAL_ALLOWED_SECRET_PATH: ${{ vars.INFISICAL_ALLOWED_SECRET_PATH }}
+      INFISICAL_ALLOWED_SECRET_KEY: ${{ vars.INFISICAL_ALLOWED_SECRET_KEY }}
+      INFISICAL_DENIED_SECRET_PATH: ${{ vars.INFISICAL_DENIED_SECRET_PATH }}
+      INFISICAL_DENIED_SECRET_KEY: ${{ vars.INFISICAL_DENIED_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Preflight separate commissioning credential
+        shell: bash
+        run: |
+          if [ -z "${VAOS_INFISICAL_COMMISSIONING_KEY:-}" ]; then
+            echo "::error::Missing dedicated VAOS_INFISICAL_COMMISSIONING_KEY"
+            exit 1
+          fi
+      - name: Live Universal Auth, allowed/denied canary, TTL, kill-switch checks
+        if: ${{ inputs.action == 'record-health' }}
+        run: node scripts/qualification/infisical-wave2-live.mjs
+      - name: Record health or disable, never activate
+        run: node scripts/qualification/record-infisical-commissioning.mjs
+      - uses: actions/upload-artifact@v5
+        if: ${{ inputs.action == 'record-health' }}
+        with:
+          name: infisical-scoped-commissioning-live-evidence
+          path: qualification-evidence/provider-wave-2/infisical.json
+          retention-days: 30

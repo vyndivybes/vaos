@@ -341,6 +341,15 @@ Deno.serve(async (req: Request) => {
   } else if (operation === 'providerStatePut') {
     rpcName = 'vaos_provider_state_put'
     args = { p_server_key: serverKey, p_state: payload.state || {} }
+  } else if (operation === 'infisicalCommissioningControl') {
+    // Scoped SQL RPC: health record or emergency disable only. It cannot enable.
+    rpcName = 'vaos_infisical_commissioning_control'
+    args = {
+      p_server_key: serverKey,
+      p_action: payload.action,
+      p_health: payload.health ?? null,
+      p_authority_ref: payload.authorityRef,
+    }
   } else if (operation === 'callbackCreate') {
     rpcName = 'vaos_callback_create'
     args = { p_server_key: serverKey, p_record: payload.record || {} }

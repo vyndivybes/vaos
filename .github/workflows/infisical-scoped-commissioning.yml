@@ -1,15 +1,15 @@
 name: infisical-scoped-commissioning
 
 on:
+  schedule:
+    - cron: '*/15 * * * *'
   workflow_dispatch:
     inputs:
       action:
-        description: "Record health after all live canary checks, or emergency disable only"
+        description: "Record health after live checks, or emergency disable"
         type: choice
         required: true
-        options:
-          - record-health
-          - disable
+        options: [record-health, disable]
 
 permissions:
   contents: read
@@ -25,8 +25,7 @@ jobs:
     environment: infisical-commissioning
     env:
       VAOS_INFISICAL_COMMISSIONING_KEY: ${{ secrets.VAOS_INFISICAL_COMMISSIONING_KEY }}
-      INFISICAL_COMMISSION_ACTION: ${{ inputs.action }}
-      INFISICAL_DISABLE_CONFIRM: ${{ inputs.action == 'disable' && 'DISABLE-ONLY' || '' }}
+      REQUESTED_ACTION: ${{ github.event_name == 'schedule' && 'record-health' || inputs.action }}
       INFISICAL_BASE_URL: ${{ vars.INFISICAL_BASE_URL }}
       INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_CLIENT_SECRET }}
@@ -42,21 +41,36 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
-      - name: Preflight separate commissioning credential
-        shell: bash
-        run: |
-          if [ -z "${VAOS_INFISICAL_COMMISSIONING_KEY:-}" ]; then
-            echo "::error::Missing dedicated VAOS_INFISICAL_COMMISSIONING_KEY"
-            exit 1
-          fi
-      - name: Live Universal Auth, allowed/denied canary, TTL, kill-switch checks
-        if: ${{ inputs.action == 'record-health' }}
+      - name: Preflight commissioning credential
+        run: test -n "${VAOS_INFISICAL_COMMISSIONING_KEY:-}"
+      - name: Live authentication, canary, TTL and kill-switch checks
+        id: live
+        if: ${{ env.REQUESTED_ACTION == 'record-health' }}
+        continue-on-error: true
         run: node scripts/qualification/infisical-wave2-live.mjs
-      - name: Record health or disable, never activate
+      - name: Persist healthy status without changing routing
+        if: ${{ env.REQUESTED_ACTION == 'record-health' && steps.live.outcome == 'success' }}
+        env:
+          INFISICAL_COMMISSION_ACTION: record-health
         run: node scripts/qualification/record-infisical-commissioning.mjs
+      - name: Fail closed after scheduled live-check failure
+        if: ${{ github.event_name == 'schedule' && steps.live.outcome == 'failure' }}
+        env:
+          INFISICAL_COMMISSION_ACTION: disable
+          INFISICAL_DISABLE_CONFIRM: DISABLE-ONLY
+        run: node scripts/qualification/record-infisical-commissioning.mjs
+      - name: Manual emergency disable
+        if: ${{ github.event_name == 'workflow_dispatch' && env.REQUESTED_ACTION == 'disable' }}
+        env:
+          INFISICAL_COMMISSION_ACTION: disable
+          INFISICAL_DISABLE_CONFIRM: DISABLE-ONLY
+        run: node scripts/qualification/record-infisical-commissioning.mjs
+      - name: Fail manual health request when live checks fail
+        if: ${{ github.event_name == 'workflow_dispatch' && env.REQUESTED_ACTION == 'record-health' && steps.live.outcome == 'failure' }}
+        run: exit 1
       - uses: actions/upload-artifact@v5
-        if: ${{ inputs.action == 'record-health' }}
+        if: ${{ env.REQUESTED_ACTION == 'record-health' && steps.live.outcome == 'success' }}
         with:
-          name: infisical-scoped-commissioning-live-evidence
+          name: infisical-watchdog-evidence
           path: qualification-evidence/provider-wave-2/infisical.json
           retention-days: 30

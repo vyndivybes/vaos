@@ -34,7 +34,7 @@ export function prepareVyndiBridgeEnvelope(input={}){
   return freeze({
     contractVersion:'vyndi-write-bridge.preparation.v1',
     state:'PREPARED',
-    executionEnabled:false,
+    executionEnabled:route.executionEnabled===true,
     employeeId,
     actionType,
     missionId,

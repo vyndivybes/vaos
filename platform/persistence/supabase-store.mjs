@@ -45,6 +45,9 @@ export function createSupabaseControlStore({
         workPackages: plan.workPackages || [],
       });
     },
+    dispatchOperatingMission(missionId, { maxAssignments = 8 } = {}) {
+      return invoke('dispatchOperatingMission', { missionId, maxAssignments });
+    },
     createOperatingHandoff(handoff) {
       return invoke('createOperatingHandoff', {
         handoffId: handoff.id,

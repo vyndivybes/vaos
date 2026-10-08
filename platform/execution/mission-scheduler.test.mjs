@@ -58,3 +58,42 @@ test('Cloudflare schedules bounded worker execution without exposing a public ru
   assert.match(worker, /runScheduledMissionSweep/);
   assert.doesNotMatch(worker, /'\/api\/run-agent'/);
 });
+
+
+test('scheduler prepares a fully verified mission for human closure without marking it complete', async () => {
+  const events = [];
+  const service = {
+    async listRunnableMissions() { return { missionIds: ['mission-001'] }; },
+    async dispatchMission() { events.push('dispatch'); return { count: 0 }; },
+    async snapshot() { events.push('snapshot'); return { mission: { status: 'ACTIVE' }, metrics: { readyForClosure: true } }; },
+    async prepareMissionClosure(id) { events.push('prepare:' + id); return { outcome: 'PREPARED', status: 'READY_FOR_CLOSURE' }; },
+  };
+  const result = await runScheduledMissionSweep({
+    service,
+    createConsumer: () => ({
+      async consume() { return { submitted: 1 }; },
+      async review() { return { verified: 1 }; },
+    }),
+  });
+  assert.deepEqual(events, ['dispatch', 'snapshot', 'prepare:mission-001']);
+  assert.equal(result.preparedForClosure, 1);
+});
+
+test('scheduler does not prepare a mission with incomplete verification', async () => {
+  let prepared = 0;
+  const service = {
+    async listRunnableMissions() { return { missionIds: ['mission-002'] }; },
+    async dispatchMission() { return { count: 0 }; },
+    async snapshot() { return { mission: { status: 'ACTIVE' }, metrics: { readyForClosure: false } }; },
+    async prepareMissionClosure() { prepared++; },
+  };
+  const result = await runScheduledMissionSweep({
+    service,
+    createConsumer: () => ({
+      async consume() { return { submitted: 0 }; },
+      async review() { return { verified: 0 }; },
+    }),
+  });
+  assert.equal(result.preparedForClosure, 0);
+  assert.equal(prepared, 0);
+});

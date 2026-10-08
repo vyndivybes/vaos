@@ -91,7 +91,19 @@ test('all mandatory external providers are committed as disabled evaluation-only
     const manifest=readJson(manifestPaths[id]);
     assert.equal(manifest.schemaVersion,'vaos.provider.v2',`${id}: schemaVersion`);
     assert.equal(manifest.providerId,id,`${id}: providerId`);
+    assert.equal(typeof manifest.adapterVersion,'string',`${id}: adapterVersion`);
+    assert.equal(manifest.adapterVersion.length>0,true,`${id}: adapterVersion empty`);
     assert.equal(manifest.enabled,false,`${id}: enabled must stay false at merge`);
+    assert.equal(Array.isArray(manifest.routing?.dataClassifications),true,`${id}: data classifications`);
+    assert.equal(manifest.routing.dataClassifications.length>0,true,`${id}: data classifications empty`);
+    assert.equal(Array.isArray(manifest.routing?.riskClasses),true,`${id}: risk classes`);
+    assert.equal(manifest.routing.riskClasses.length>0,true,`${id}: risk classes empty`);
+    assert.equal(typeof manifest.routing?.licensingAllowed,'boolean',`${id}: licensing policy`);
+    assert.equal(['required','optional','not-applicable'].includes(manifest.execution?.healthProbe),true,`${id}: healthProbe`);
+    assert.equal(typeof manifest.execution?.rollbackMethod,'string',`${id}: rollbackMethod`);
+    assert.equal(typeof manifest.operations?.retentionClass,'string',`${id}: retentionClass`);
+    assert.equal(Array.isArray(manifest.operations?.dataResidency),true,`${id}: dataResidency`);
+    assert.equal(typeof manifest.operations?.costControl,'string',`${id}: costControl`);
     assert.equal(manifest.qualification.state,'evaluation',`${id}: state`);
     assert.deepEqual(manifest.qualification.qualifiedCapabilities,[],`${id}: committed qualifiedCapabilities must be empty`);
   }
@@ -119,4 +131,12 @@ test('Cloudflare deployment workflows remain present and obsolete Vercel runtime
   assert.equal(exists('.github/workflows/cloudflare-deploy.yml'),true);
   assert.equal(exists('.github/workflows/cloudflare-smoke.yml'),true);
   assert.equal(exists('apps/web/vercel.json'),false);
+});
+
+
+test('AsyncAPI preserves VYNDI intents, VAOS results, reconciliation, provider callbacks and edge events',()=>{
+  const asyncapi=fs.readFileSync(path.join(root,'docs/contracts/vyndi-vaos-asyncapi.yaml'),'utf8');
+  for(const required of ['vyndiIntents:','vaosResults:','reconciliation:','providerCallbacks:','edgeEvents:']){
+    assert.equal(asyncapi.includes(required),true,`missing AsyncAPI channel: ${required}`);
+  }
 });

@@ -19,12 +19,12 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  commissioning:
+  production-watchdog:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment: infisical-commissioning
     env:
-      VAOS_INFISICAL_COMMISSIONING_KEY: ${{ secrets.VAOS_INFISICAL_COMMISSIONING_KEY }}
+      VAOS_INFISICAL_WATCHDOG_KEY: ${{ secrets.VAOS_INFISICAL_COMMISSIONING_KEY }}
       REQUESTED_ACTION: ${{ github.event_name == 'schedule' && 'record-health' || inputs.action }}
       INFISICAL_BASE_URL: ${{ vars.INFISICAL_BASE_URL }}
       INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
@@ -41,8 +41,8 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
-      - name: Preflight commissioning credential
-        run: test -n "${VAOS_INFISICAL_COMMISSIONING_KEY:-}"
+      - name: Preflight durable watchdog identity
+        run: test -n "${VAOS_INFISICAL_WATCHDOG_KEY:-}"
       - name: Live authentication, canary, TTL and kill-switch checks
         id: live
         if: ${{ env.REQUESTED_ACTION == 'record-health' }}

@@ -87,7 +87,7 @@ It does not log in, expose secrets, dispatch jobs or change database state.
 1. Confirm all GitHub workflows green and review the Wrangler new SQLite
    namespace/exports lifecycle change. Changing Durable Object class
    lifecycle may constrain rollback to earlier Worker versions.
-2. Deploy via the existing approved Cloudflare path, not Vercel. No new
+2. Deploy exclusively through the existing approved Cloudflare path. No new
    paid service, local Ubuntu or runner is needed.
 3. Confirm the Windmill provider still reads `enabled:false`.
 4. Set `VAOS_WINDMILL_STATUS_READERS` only when a trusted read operator is

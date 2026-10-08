@@ -31,3 +31,18 @@ test('push-driven evidence ingestion pins verified runs and never qualifies Infi
   assert.match(workflow,/Verify successful source workflow runs/);
   assert.doesNotMatch(workflow,/INFISICAL_CLIENT_SECRET/);
 });
+
+test('Infisical evidence-only key preserves Cloudflare primary and restricts provider and operation',()=>{
+  const sql=read('../../supabase/migrations/20261008142200_infisical_evidence_only_key.sql');
+  assert.match(sql,/credential_id = 'cloudflare-primary'/);
+  assert.match(sql,/credential_id = 'github-infisical-evidence-only'/);
+  assert.match(sql,/p_provider_id IS DISTINCT FROM 'infisical'/);
+  assert.match(sql,/p_operation NOT IN \('providerStateGet','qualificationEvidenceList','qualificationEvidenceAppend'\)/);
+  assert.match(sql,/p_evidence_class NOT IN \('automated','live'\)/);
+  assert.match(sql,/perform vaos_private\.assert_infisical_evidence_ingest_key\(p_server_key, v_provider_id, 'qualificationEvidenceAppend', v_evidence_class\)/);
+  assert.match(sql,/perform vaos_private\.assert_infisical_evidence_ingest_key\(p_server_key, p_provider_id, 'qualificationEvidenceList'\)/);
+  assert.match(sql,/perform vaos_private\.assert_infisical_evidence_ingest_key\(p_server_key, p_provider_id, 'providerStateGet'\)/);
+  assert.doesNotMatch(sql,/CREATE OR REPLACE FUNCTION public\.vaos_provider_state_put/);
+  assert.doesNotMatch(sql,/CREATE OR REPLACE FUNCTION vaos_private\.assert_server_key/);
+  assert.doesNotMatch(sql,/INSERT INTO vaos_private\.server_credentials/);
+});

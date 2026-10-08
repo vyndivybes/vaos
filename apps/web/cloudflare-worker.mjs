@@ -12,7 +12,7 @@ import windmillRuntimeStatus from './api/windmill-runtime-status.mjs';
 import windmillLiveDoQualification from './api/windmill-live-do-qualification.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
-import { dispatchInfisicalWatchdog } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
+import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 
 export const DEFAULT_API_HANDLERS = Object.freeze({
@@ -118,7 +118,7 @@ export default {
     });
     const task = Promise.allSettled([mission, infisical]).then((outcomes) => {
       if (outcomes[0].status === 'rejected') console.error('VAOS_MISSION_SWEEP_FAILED');
-      if (outcomes[1].status === 'rejected') console.error('VAOS_INFISICAL_CRON_DISPATCH_FAILED');
+      if (outcomes[1].status === 'rejected') console.error('VAOS_INFISICAL_CRON_DISPATCH_FAILED', infisicalDispatchFailureCode(outcomes[1].reason));
       if (outcomes.some((outcome) => outcome.status === 'rejected')) {
         throw new Error('VAOS_CLOUDFLARE_SCHEDULED_TASK_FAILED');
       }

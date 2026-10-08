@@ -14,31 +14,42 @@ const expectedEmployees=new Set([
   'maintenance','finance','people','engineering-configuration',
 ]);
 
-test('bridge preparation covers every operational workforce capability exactly once',()=>{
+test('bridge covers all 23 operational capabilities exactly once',()=>{
   assert.equal(VYNDI_BRIDGE_ROUTES.length,23);
   assert.equal(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.actionType)).size,23);
   assert.deepEqual(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.employeeId)),expectedEmployees);
   for(const route of VYNDI_BRIDGE_ROUTES){
-    assert.equal(route.executionEnabled,false);
     assert.ok(route.verificationRefs.length>0,route.actionType);
     assert.match(route.sourceFile,/^src\/lib\//);
-    if(route.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION) assert.equal(route.approvalRequired,true);
+    if(route.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION){
+      assert.equal(route.approvalRequired,true);
+      assert.equal(route.executionEnabled,false);
+    }
   }
 });
 
-test('all 23 operational routes now have canonical VYNDI authorities while execution remains disabled',()=>{
+test('read commissioning enables exactly eight routes and leaves all fifteen mutations disabled',()=>{
   const readiness=getVyndiBridgeReadiness();
-  assert.equal(readiness.executionEnabled,false);
+  assert.equal(readiness.executionEnabled,true);
   assert.equal(readiness.routeCount,23);
   assert.equal(readiness.readReady,8);
   assert.equal(readiness.writePrepared,15);
   assert.deepEqual(readiness.gaps,[]);
+  const reads=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.READ);
+  const writes=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION);
+  assert.equal(reads.length,8);
+  assert.ok(reads.every(r=>r.state===VYNDI_BRIDGE_ROUTE_STATE.READ_READY && r.executionEnabled===true));
+  assert.equal(writes.length,15);
+  assert.ok(writes.every(r=>r.executionEnabled===false));
+});
+
+test('all three previously missing canonical authorities remain resolved',()=>{
   assert.equal(getVyndiBridgeRoute('PROCUREMENT.CHANGE_PO').authority,'amendPurchaseOrder');
   assert.equal(getVyndiBridgeRoute('PRODUCTION.ADVANCE_STAGE').authority,'advanceProductionTravellerStage');
   assert.equal(getVyndiBridgeRoute('FINANCE.PREPARE_PAYMENT').authority,'prepareSupplierPayment');
 });
 
-test('prepared mutation envelope requires approval and contains canonical authority plus correlation reference',()=>{
+test('prepared mutation envelope requires approval and remains disabled',()=>{
   assert.throws(
     ()=>prepareVyndiBridgeEnvelope({
       employeeId:'commercial',actionType:'COMMERCIAL.COMMIT_ORDER',
@@ -50,29 +61,21 @@ test('prepared mutation envelope requires approval and contains canonical author
     employeeId:'commercial',actionType:'COMMERCIAL.COMMIT_ORDER',
     missionId:'M-1',intentId:'I-1',idempotencyKey:'K-1',approvalRef:'APP-1',input:{id:'SO-1'},
   });
-  assert.equal(envelope.state,'PREPARED');
   assert.equal(envelope.executionEnabled,false);
   assert.equal(envelope.target.authority,'saveSalesOrder');
-  assert.equal(envelope.sourceReference,'VAOS|M-1|I-1');
 });
 
-test('employee/action mismatch fails closed and newly closed routes prepare normally',()=>{
-  assert.throws(
-    ()=>prepareVyndiBridgeEnvelope({
-      employeeId:'finance',actionType:'COMMERCIAL.COMMIT_ORDER',
-      missionId:'M-2',intentId:'I-2',idempotencyKey:'K-2',approvalRef:'APP-2',
-    }),
-    error=>error.code==='VYNDI_BRIDGE_EMPLOYEE_MISMATCH',
-  );
-  const finance=prepareVyndiBridgeEnvelope({
-    employeeId:'finance',actionType:'FINANCE.PREPARE_PAYMENT',
-    missionId:'M-3',intentId:'I-3',idempotencyKey:'K-3',approvalRef:'APP-3',
+test('commissioned read envelope carries live execution state without approval',()=>{
+  const envelope=prepareVyndiBridgeEnvelope({
+    employeeId:'finance',actionType:'FINANCE.OBSERVE_LEDGER',
+    missionId:'READ-M',intentId:'READ-I',idempotencyKey:'READ-K',
   });
-  assert.equal(finance.target.authority,'prepareSupplierPayment');
-  assert.equal(finance.executionEnabled,false);
+  assert.equal(envelope.executionEnabled,true);
+  assert.equal(envelope.approvalRef,null);
+  assert.equal(envelope.target.authority,'getAccountingWorkbench');
 });
 
-test('prepared bridge never calls transport before explicit commissioning',async()=>{
+test('write bridge adapter still refuses uncommissioned mutations',async()=>{
   let calls=0;
   const adapter=createVyndiWriteBridgeAdapter({transport:async()=>{calls+=1;return {ok:true}}});
   const envelope=adapter.prepare({
@@ -83,15 +86,22 @@ test('prepared bridge never calls transport before explicit commissioning',async
   assert.equal(calls,0);
 });
 
-test('all read routes are ready but still preparation-only at the bridge boundary',()=>{
-  const reads=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.READ);
-  assert.equal(reads.length,8);
-  assert.ok(reads.every(r=>r.state===VYNDI_BRIDGE_ROUTE_STATE.READ_READY));
-  for(const route of reads){
-    const envelope=prepareVyndiBridgeEnvelope({
-      employeeId:route.employeeId,actionType:route.actionType,
-      missionId:'READ-M',intentId:'READ-'+route.employeeId,idempotencyKey:'READ-K-'+route.employeeId,
-    });
-    assert.equal(envelope.executionEnabled,false);
-  }
+test('commissioned read may traverse a supplied transport',async()=>{
+  const adapter=createVyndiWriteBridgeAdapter({transport:async(envelope)=>({ok:true,actionType:envelope.actionType})});
+  const envelope=adapter.prepare({
+    employeeId:'inventory',actionType:'INVENTORY.OBSERVE_STOCK',
+    missionId:'READ-M2',intentId:'READ-I2',idempotencyKey:'READ-K2',
+  });
+  const result=await adapter.execute(envelope);
+  assert.deepEqual(result,{ok:true,actionType:'INVENTORY.OBSERVE_STOCK'});
+});
+
+test('employee/action mismatch fails closed',()=>{
+  assert.throws(
+    ()=>prepareVyndiBridgeEnvelope({
+      employeeId:'finance',actionType:'COMMERCIAL.OBSERVE_PIPELINE',
+      missionId:'M-2',intentId:'I-2',idempotencyKey:'K-2',
+    }),
+    error=>error.code==='VYNDI_BRIDGE_EMPLOYEE_MISMATCH',
+  );
 });

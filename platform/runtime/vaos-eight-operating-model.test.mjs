@@ -3,6 +3,9 @@ import assert from 'node:assert/strict';
 import { AUTHORITY } from '../../packages/contracts/agent.mjs';
 import {
   ORIGINAL_VAOS_AGENT_IDS,
+  VYNDI_OPERATIONAL_AGENT_IDS,
+  VAOS_WORKFORCE_AGENT_IDS,
+  VAOS_WORKFORCE_QUALIFICATION_FLOOR,
   VAOS_JOB_CATALOG,
   HANDOFF_OUTCOME,
   createGovernedHandoff,
@@ -30,22 +33,28 @@ const EXPECTED_AGENTS = [
   'release',
 ];
 
-test('the definitive operating model covers the original eight VAOS agents only', () => {
+test('original eight identities remain stable while the definitive operating model covers all sixteen employees', () => {
   assert.deepEqual([...ORIGINAL_VAOS_AGENT_IDS], EXPECTED_AGENTS);
-  assert.deepEqual(Object.keys(VAOS_JOB_CATALOG), EXPECTED_AGENTS);
+  assert.equal(VYNDI_OPERATIONAL_AGENT_IDS.length, 8);
+  assert.equal(VAOS_WORKFORCE_AGENT_IDS.length, 16);
+  assert.deepEqual(Object.keys(VAOS_JOB_CATALOG), [...VAOS_WORKFORCE_AGENT_IDS]);
   for (const agentId of EXPECTED_AGENTS) {
-    assert.ok(VAOS_JOB_CATALOG[agentId].length >= 8, `${agentId} must have a real job family`);
+    assert.ok(VAOS_JOB_CATALOG[agentId].length >= 8, `${agentId} must retain its real job family`);
+  }
+  for (const agentId of VYNDI_OPERATIONAL_AGENT_IDS) {
+    assert.ok(VAOS_JOB_CATALOG[agentId].length >= 2, `${agentId} must have an operational job family`);
   }
   for (const jobs of Object.values(VAOS_JOB_CATALOG)) {
     for (const job of jobs) {
       assert.equal(job.ownerAgentId.length > 0, true);
-      assert.equal(job.ownerAgentId, EXPECTED_AGENTS.find((id) => id === job.ownerAgentId));
+      assert.ok(VAOS_WORKFORCE_AGENT_IDS.includes(job.ownerAgentId));
       assert.match(job.actionType, /^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)+$/);
       assert.ok(Number.isInteger(job.authority));
       assert.ok(job.authority >= AUTHORITY.OBSERVE && job.authority <= AUTHORITY.AUTONOMOUS_EXECUTION);
       assert.ok(['low', 'medium', 'high', 'critical'].includes(job.risk));
       assert.ok(Array.isArray(job.kpis) && job.kpis.length > 0);
       assert.ok(typeof job.slaHours === 'number' && job.slaHours > 0);
+      assert.equal(job.minimumQualificationLevel, VAOS_WORKFORCE_QUALIFICATION_FLOOR[job.ownerAgentId]);
     }
   }
 });
@@ -287,6 +296,38 @@ test('qualification drift forces retraining for stale qualification, new job aut
 });
 
 
+test('operational mutation jobs remain approval-bound PREPARE work until the VYNDI bridge is commissioned', () => {
+  const mutationJobs = VYNDI_OPERATIONAL_AGENT_IDS
+    .flatMap((id) => VAOS_JOB_CATALOG[id])
+    .filter((job) => !job.actionType.includes('.OBSERVE_'));
+  assert.equal(mutationJobs.length, 15);
+  for (const job of mutationJobs) {
+    assert.equal(job.executionMode, 'PREPARE', job.actionType);
+    assert.equal(job.humanApprovalRequired, true, job.actionType);
+    assert.equal(job.authority, AUTHORITY.APPROVED_EXECUTION, job.actionType);
+    assert.notEqual(job.executionMode, 'GOVERNED_EXECUTION', job.actionType);
+  }
+});
+
+test('governed handoffs can target an operational employee without granting execution authority', () => {
+  const handoff = createGovernedHandoff({
+    id: 'handoff-production-observe-001',
+    missionId: 'mission-production-observe-001',
+    workPackageId: 'wp-production-observe-001',
+    fromAgentId: 'orchestrator',
+    toAgentId: 'production',
+    requestedJob: 'PRODUCTION.OBSERVE_WIP',
+    reason: 'Production visibility required',
+    requiredOutcome: 'Evidence-supported WIP assessment',
+    acceptanceCriteria: ['canonical WIP evidence referenced'],
+    evidenceRefs: [],
+    priority: 'NORMAL',
+  });
+  assert.equal(handoff.toAgentId, 'production');
+  assert.equal(handoff.status, 'PENDING');
+  assert.equal(routeJob(handoff.requestedJob).executionMode, 'ANALYSE');
+});
+
 test('expanded job families do not silently grant new effect execution authority', () => {
   const qualifiedEffectActions = new Set([
     'PROJECT.ESCALATE_RISK',
@@ -345,7 +386,7 @@ test('dispatcher releases only dependency-complete work and avoids duplicate ope
   assert.equal(withOpenHandoff.some((item) => item.id === risk.id), false);
 });
 
-test('existing qualification floors cover every original-eight job family without changing Release authority', () => {
+test('qualification floors cover all sixteen active employees without expanding Release authority', () => {
   const workforce = [
     { id: 'knowledge', status: 'ACTIVE', qualificationLevel: 2 },
     { id: 'orchestrator', status: 'ACTIVE', qualificationLevel: 2 },
@@ -355,21 +396,28 @@ test('existing qualification floors cover every original-eight job family withou
     { id: 'risk', status: 'ACTIVE', qualificationLevel: 3 },
     { id: 'security', status: 'ACTIVE', qualificationLevel: 4 },
     { id: 'vibpe', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'commercial', status: 'ACTIVE', qualificationLevel: 2 },
+    { id: 'procurement', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'inventory', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'production', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'maintenance', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'finance', status: 'ACTIVE', qualificationLevel: 4 },
+    { id: 'people', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'engineering-configuration', status: 'ACTIVE', qualificationLevel: 4 },
   ];
   const assessment = assessOperatingModelQualification(workforce);
   assert.equal(assessment.qualified, true);
-  assert.equal(assessment.qualifiedAgents, 8);
+  assert.equal(assessment.qualifiedAgents, 16);
   assert.equal(assessment.qualifiedJobs, Object.values(VAOS_JOB_CATALOG).flat().length);
 
   const degraded = assessOperatingModelQualification(
-    workforce.map((employee) => employee.id === 'security'
+    workforce.map((employee) => employee.id === 'finance'
       ? { ...employee, qualificationLevel: 3 }
       : employee),
   );
   assert.equal(degraded.qualified, false);
-  assert.ok(degraded.gaps.some((gap) => gap.agentId === 'security'));
+  assert.ok(degraded.gaps.some((gap) => gap.agentId === 'finance'));
 });
-
 
 test('mission plans preserve database-required qualification floors and monitoring cadence', () => {
   const mission = buildMissionPlan({

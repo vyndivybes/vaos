@@ -94,10 +94,15 @@ test('dispatch is operator-controlled and limited to bounded batches', async () 
   assert.equal(r.result.code, 200);
   assert.deepEqual(f.calls, [['dispatch', 'mission-001', { maxAssignments: 4 }]]);
 
+  const full = response();
+  await f.handler(req('POST', { body: { operation: 'DISPATCH', missionId: 'mission-001', maxAssignments: 16 } }), full.res);
+  assert.equal(full.result.code, 200);
+  assert.deepEqual(f.calls[1], ['dispatch', 'mission-001', { maxAssignments: 16 }]);
+
   const invalid = response();
-  await f.handler(req('POST', { body: { operation: 'DISPATCH', missionId: 'mission-001', maxAssignments: 100 } }), invalid.res);
+  await f.handler(req('POST', { body: { operation: 'DISPATCH', missionId: 'mission-001', maxAssignments: 17 } }), invalid.res);
   assert.equal(invalid.result.code, 422);
-  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls.length, 2);
 });
 
 test('agent impersonation and unknown mission operations are denied', async () => {

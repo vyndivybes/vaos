@@ -45,7 +45,7 @@ function validDispatch(body) {
     && (body.maxAssignments === undefined || (
       Number.isInteger(body.maxAssignments)
       && body.maxAssignments >= 1
-      && body.maxAssignments <= 8
+      && body.maxAssignments <= 16
     ));
 }
 
@@ -98,7 +98,7 @@ export function createMissionsHandler({
     if (body.operation === 'DISPATCH' && validDispatch(body)) {
       try {
         const result = await getService(req.env).dispatchMission(body.missionId, {
-          maxAssignments: body.maxAssignments ?? 8,
+          maxAssignments: body.maxAssignments ?? 16,
         });
         return res.status(200).json({ data: result });
       } catch {

@@ -25,6 +25,12 @@ export function getExecutionEngine(runtimeEnv = undefined) {
       linkQualificationTrace(job, input) { return store.linkRiskQualificationTrace(job, input); },
     });
 
+    const security = Object.freeze({
+      observeIdentity(job, input) { return store.observeIdentity(job, input); },
+      getIdentityObservation(job, observationId) { return store.getIdentityObservation(job, observationId); },
+      linkQualificationTrace(job, input) { return store.linkSecurityQualificationTrace(job, input); },
+    });
+
     const digitalThread = Object.freeze({
       linkDomainRecords(job, input) { return store.linkDomainRecords(job, input); },
       getDomainLink(job, input) { return store.getDomainLink(job, input); },
@@ -39,7 +45,7 @@ export function getExecutionEngine(runtimeEnv = undefined) {
 
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread, digitalWorkforce }),
+      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce }),
       workerId: 'vaos-cloudflare-worker',
     });
   }

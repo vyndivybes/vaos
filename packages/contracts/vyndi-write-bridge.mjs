@@ -28,7 +28,7 @@ function route(input){
   }
   return freeze({
     ...structuredClone(input),
-    executionEnabled:false,
+    executionEnabled,
     approvalRequired:input.effectClass===EFFECT.MUTATION ? input.approvalRequired!==false : false,
     verificationRefs:[...(input.verificationRefs||[])],
   });

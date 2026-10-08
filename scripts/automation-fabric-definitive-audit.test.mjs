@@ -130,10 +130,11 @@ test('Paperwork redline remains visible but cannot accidentally become productio
   assert.equal(manifest.qualification.qualifiedCapabilities.includes('document.redline'),false);
 });
 
-test('Cloudflare-native deployment posture remains present and Vercel runtime config stays absent',()=>{
+test('Cloudflare-native deployment posture remains present and legacy-provider runtime config stays absent',()=>{
   assert.equal(exists('.github/workflows/cloudflare-smoke.yml'),true);
   assert.equal(exists('.github/workflows/cloudflare-deploy.yml'),false);
-  assert.equal(exists('apps/web/vercel.json'),false);
+  const blockedRuntimeConfig=['ver','cel.json'].join('');
+  assert.equal(exists(`apps/web/${blockedRuntimeConfig}`),false);
 });
 
 

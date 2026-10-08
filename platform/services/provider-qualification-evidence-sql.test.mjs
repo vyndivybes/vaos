@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 
-const migration=fs.readFileSync(new URL('../../supabase/migrations/20261008085000_provider_qualification_evidence_v1.sql',import.meta.url),'utf8');
+const migration=fs.readFileSync(new URL('../../supabase/migrations/20261008092213_provider_qualification_evidence_v1.sql',import.meta.url),'utf8');
 const edge=fs.readFileSync(new URL('../../supabase/functions/vaos-control/index.ts',import.meta.url),'utf8');
 
 test('qualification evidence migration creates append-only private table with RLS',()=>{

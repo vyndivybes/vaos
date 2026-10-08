@@ -619,6 +619,32 @@ async function executeVAOSCommand(rawQuery) {
     return;
   }
 
+  if (resolved.kind === 'commissioning') {
+    commandButton.disabled = true;
+    commandStatus.textContent = 'Assessing VAOS operational commissioning…';
+    try {
+      const response = await fetch('/api/commissioning', {
+        method: 'GET',
+        credentials: 'same-origin',
+        cache: 'no-store',
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(result?.error?.code || 'COMMISSIONING_FAILED');
+
+      const state = result?.data?.state || 'UNKNOWN';
+      const providers = result?.data?.externalProviderState || 'UNKNOWN';
+      commandStatus.textContent = `Commissioning: ${state} · external providers: ${providers}.`;
+      setView(resolved.targetView || 'agents');
+      commandBarInput.select();
+      return;
+    } catch (error) {
+      commandStatus.textContent = `Commissioning check failed: ${error.message}.`;
+      return;
+    } finally {
+      commandButton.disabled = false;
+    }
+  }
+
   if (resolved.kind === 'execution') {
     commandButton.disabled = true;
     commandStatus.textContent = 'Processing approved execution queue…';

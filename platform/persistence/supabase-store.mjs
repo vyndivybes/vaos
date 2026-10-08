@@ -35,6 +35,7 @@ export function createSupabaseControlStore({
       ]);
       return { ...snapshot, digitalThreadLinks: Array.isArray(digitalThreadLinks) ? digitalThreadLinks : [] };
     },
+    operationalCommissioningSnapshot() { return invoke('operationalCommissioningSnapshot'); },
     submitIntent(input) { return invoke('submitIntent', input); },
     decideApproval(approvalId, input) { return invoke('decideApproval', { approvalId, ...input }); },
     claimExecution(input) { return invoke('claimExecution', input); },

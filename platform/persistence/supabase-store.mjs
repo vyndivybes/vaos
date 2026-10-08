@@ -36,6 +36,36 @@ export function createSupabaseControlStore({
       return { ...snapshot, digitalThreadLinks: Array.isArray(digitalThreadLinks) ? digitalThreadLinks : [] };
     },
     operationalCommissioningSnapshot() { return invoke('operationalCommissioningSnapshot'); },
+    createOperatingMission(plan) {
+      return invoke('createOperatingMission', {
+        missionId: plan.id,
+        objective: plan.objective,
+        catalogVersion: plan.catalogVersion,
+        createdByAgentId: plan.createdByAgentId,
+        workPackages: plan.workPackages || [],
+      });
+    },
+    createOperatingHandoff(handoff) {
+      return invoke('createOperatingHandoff', {
+        handoffId: handoff.id,
+        missionId: handoff.missionId,
+        workPackageId: handoff.workPackageId,
+        fromAgentId: handoff.fromAgentId,
+        toAgentId: handoff.toAgentId,
+        requestedJob: handoff.requestedJob,
+        reason: handoff.reason,
+        requiredOutcome: handoff.requiredOutcome,
+        acceptanceCriteria: handoff.acceptanceCriteria || [],
+        evidenceRefs: handoff.evidenceRefs || [],
+        priority: handoff.priority || 'NORMAL',
+      });
+    },
+    transitionOperatingHandoff(input) {
+      return invoke('transitionOperatingHandoff', input);
+    },
+    operatingMissionSnapshot(missionId) {
+      return invoke('operatingMissionSnapshot', { missionId });
+    },
     submitIntent(input) { return invoke('submitIntent', input); },
     decideApproval(approvalId, input) { return invoke('decideApproval', { approvalId, ...input }); },
     claimExecution(input) { return invoke('claimExecution', input); },

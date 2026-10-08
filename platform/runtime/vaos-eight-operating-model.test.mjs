@@ -369,3 +369,29 @@ test('existing qualification floors cover every original-eight job family withou
   assert.equal(degraded.qualified, false);
   assert.ok(degraded.gaps.some((gap) => gap.agentId === 'security'));
 });
+
+
+test('mission plans preserve database-required qualification floors and monitoring cadence', () => {
+  const mission = buildMissionPlan({
+    missionId: 'mission-qualification-001',
+    objective: 'Audit agent mission cadence and qualifications',
+    requestedJobs: [
+      'SECURITY.DETECT_ANOMALY',
+      'PROJECT.TRACK_DEPENDENCY',
+      'ENGINEERING.ASSESS_REQUIREMENT',
+      'RELEASE.ASSESS_GATE',
+    ],
+  });
+  assert.ok(mission.workPackages.length > 3);
+  for (const workPackage of mission.workPackages) {
+    const route = routeJob(workPackage.actionType);
+    assert.equal(workPackage.minimumQualificationLevel, route.minimumQualificationLevel);
+    assert.ok(Number.isInteger(workPackage.minimumQualificationLevel));
+    assert.equal(workPackage.monitoringIntervalMinutes, route.monitoringIntervalMinutes);
+    if (workPackage.monitoring) {
+      assert.ok(workPackage.monitoringIntervalMinutes > 0);
+    } else {
+      assert.equal(workPackage.monitoringIntervalMinutes, null);
+    }
+  }
+});

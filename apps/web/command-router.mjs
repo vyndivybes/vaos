@@ -33,6 +33,10 @@ export function resolveCommand(input) {
   const query = normalized(input);
   if (!query) return { kind: 'unknown', query: '' };
 
+  if (/^(?:process|drain)\s+execution\s+queue$/i.test(query)) {
+    return { kind: 'execution', limit: 5, targetView: 'agents' };
+  }
+
   const capa = query.match(/^open\s+capa\s+(.+)$/i);
   if (capa) {
     return {

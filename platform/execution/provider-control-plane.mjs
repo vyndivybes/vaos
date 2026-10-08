@@ -88,11 +88,15 @@ export function createProviderControlPlane({
   recordAudit = async () => {},
   now = () => new Date(),
   healthTtlMs = 300_000,
+  stateStore = null,
 } = {}) {
   if (!Array.isArray(providers)) throw fail('PROVIDER_CONTROL_INVALID:providers');
   if (typeof recordAudit !== 'function') throw fail('PROVIDER_CONTROL_INVALID:recordAudit');
   if (typeof now !== 'function') throw fail('PROVIDER_CONTROL_INVALID:now');
   if (!Number.isInteger(healthTtlMs) || healthTtlMs < 1) throw fail('PROVIDER_CONTROL_INVALID:healthTtlMs');
+  if (stateStore !== null && (typeof stateStore?.load !== 'function' || typeof stateStore?.save !== 'function')) {
+    throw fail('PROVIDER_CONTROL_INVALID:stateStore');
+  }
 
   const states = new Map();
   const histories = new Map();
@@ -131,6 +135,64 @@ export function createProviderControlPlane({
     histories.get(providerId).push(clean);
     await recordAudit(clean);
     return clean;
+  }
+  async function persist(providerId) {
+    if (!stateStore) return snapshot(providerId);
+    const current = snapshot(providerId);
+    await stateStore.save(current);
+    return current;
+  }
+  function applyPersisted(providerId, persisted) {
+    if (!persisted) return;
+    const state = getState(providerId);
+    if (!persisted || persisted.providerId !== providerId || typeof persisted.enabled !== 'boolean') throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+    const capEnabled = persisted.capabilityEnabled;
+    if (!capEnabled || typeof capEnabled !== 'object' || Array.isArray(capEnabled)) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+    for (const [cap,value] of Object.entries(capEnabled)) {
+      if (!state.manifest.capabilities.includes(cap) || typeof value !== 'boolean') throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+    }
+    const q = persisted.qualification;
+    if (!q || !QUALIFICATION_STATES.has(q.state)) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+    const qualified = Array.isArray(q.qualifiedCapabilities) ? q.qualifiedCapabilities : [];
+    const restricted = Array.isArray(q.restrictedCapabilities) ? q.restrictedCapabilities : [];
+    const evidence = Array.isArray(q.evidenceRefs) ? q.evidenceRefs : [];
+    if (qualified.some(cap => !state.manifest.capabilities.includes(cap)) || restricted.some(cap => !state.manifest.capabilities.includes(cap))) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+    if (evidence.some(ref => typeof ref !== 'string' || !ref.trim())) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+    const validUntil = validDateOrNull(q.validUntil, 'PROVIDER_PERSISTED_STATE_INVALID');
+    const rr = persisted.routingRestrictions || {};
+    const disabledData = Array.isArray(rr.disabledDataClassifications) ? rr.disabledDataClassifications : [];
+    const disabledRisk = Array.isArray(rr.disabledRiskClasses) ? rr.disabledRiskClasses : [];
+    if (disabledData.some(value => !DATA_CLASSES.has(value)) || disabledRisk.some(value => !RISK_CLASSES.has(value))) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+    let health = null;
+    if (persisted.health !== null && persisted.health !== undefined) {
+      if (!HEALTH_STATES.has(persisted.health.status)) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+      const checkedAt = validDateOrNull(persisted.health.checkedAt, 'PROVIDER_PERSISTED_STATE_INVALID');
+      if (!checkedAt) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+      const evidenceRef = persisted.health.evidenceRef;
+      if (evidenceRef !== null && evidenceRef !== undefined && (typeof evidenceRef !== 'string' || !evidenceRef.trim())) throw fail('PROVIDER_PERSISTED_STATE_INVALID');
+      health = Object.freeze({status:persisted.health.status,checkedAt,evidenceRef:evidenceRef||null});
+    }
+    state.enabled = persisted.enabled;
+    state.capabilityEnabled = new Map(state.manifest.capabilities.map(cap => [cap, capEnabled[cap] !== false]));
+    state.qualificationState = q.state;
+    state.qualifiedCapabilities = new Set(qualified);
+    state.restrictedCapabilities = new Set(restricted);
+    state.qualificationEvidenceRefs = [...new Set(evidence)];
+    state.validUntil = validUntil;
+    state.disabledDataClassifications = new Set(disabledData);
+    state.disabledRiskClasses = new Set(disabledRisk);
+    state.health = health;
+  }
+  async function restore() {
+    if (!stateStore) return listSnapshots();
+    for (const providerId of [...states.keys()].sort()) {
+      const persisted = await stateStore.load(providerId);
+      applyPersisted(providerId,persisted);
+    }
+    return listSnapshots();
+  }
+  function listSnapshots() {
+    return [...states.keys()].sort().map(snapshot);
   }
   function qualificationFresh(state) {
     if (!state.validUntil) return true;
@@ -247,7 +309,7 @@ export function createProviderControlPlane({
       reason,
       validUntil: state.validUntil,
     });
-    return snapshot(providerId);
+    return persist(providerId);
   }
 
   async function setProviderEnabled({ providerId, enabled, authorityRef, reason } = {}) {
@@ -257,7 +319,7 @@ export function createProviderControlPlane({
     text(reason, 'PROVIDER_CONTROL_REASON_REQUIRED');
     state.enabled = enabled;
     await audit(providerId, { type:'PROVIDER.ENABLED.CHANGED', enabled, authorityRef, reason });
-    return snapshot(providerId);
+    return persist(providerId);
   }
 
   async function setCapabilityEnabled({ providerId, capability, enabled, authorityRef, reason } = {}) {
@@ -268,7 +330,7 @@ export function createProviderControlPlane({
     text(reason, 'PROVIDER_CONTROL_REASON_REQUIRED');
     state.capabilityEnabled.set(capability, enabled);
     await audit(providerId, { type:'PROVIDER.CAPABILITY.ENABLED.CHANGED', capability, enabled, authorityRef, reason });
-    return snapshot(providerId);
+    return persist(providerId);
   }
 
   async function setRoutingRestrictions({
@@ -296,7 +358,7 @@ export function createProviderControlPlane({
       authorityRef,
       reason,
     });
-    return snapshot(providerId);
+    return persist(providerId);
   }
 
   async function recordHealth({ providerId, status, checkedAt, evidenceRef } = {}) {
@@ -307,6 +369,7 @@ export function createProviderControlPlane({
     if (evidenceRef !== undefined && (typeof evidenceRef !== 'string' || !evidenceRef.trim())) throw fail('PROVIDER_HEALTH_EVIDENCE_INVALID');
     state.health = Object.freeze({ status, checkedAt: normalizedCheckedAt, evidenceRef: evidenceRef || null });
     await audit(providerId, { type:'PROVIDER.HEALTH.RECORDED', status, checkedAt: normalizedCheckedAt, evidenceRef: evidenceRef || null });
+    await persist(providerId);
     return state.health;
   }
 
@@ -332,7 +395,8 @@ export function createProviderControlPlane({
   }
 
   return Object.freeze({
-    list() { return [...states.keys()].sort().map(snapshot); },
+    list() { return listSnapshots(); },
+    restore,
     snapshot,
     history(providerId) { getState(providerId); return histories.get(providerId).slice(); },
     eligible,

@@ -14,7 +14,7 @@ test('closure readiness requires independently verified complete handoffs for ev
   assert.match(sql, /create or replace function public\.vaos_prepare_operating_mission_closure/i);
   assert.match(sql, /perform vaos_private\.assert_server_key\(p_server_key\)/i);
   assert.match(sql, /for update/i);
-  assert.match(sql, /v_total\s*>\s*0/i);
+  assert.match(sql, /v_total\s*<=\s*0/i);
   assert.match(sql, /status\s*<>\s*'COMPLETED'/i);
   assert.match(sql, /verified_by_agent_id/i);
   assert.match(sql, /h\.to_agent_id/i);

@@ -14,11 +14,32 @@ const WORKFORCE_ACTIONS = new Set([
 ]);
 const EMPLOYEE_ID = /^[a-z0-9][a-z0-9-]{1,63}$/;
 
+function validBusinessResourceId(value) {
+  return typeof value === 'string'
+    && value.length >= 1
+    && value.length <= 128
+    && /^[A-Za-z0-9][A-Za-z0-9._:-]*$/.test(value);
+}
+
 function validateDigitalThreadLinkPayload(payload, errors) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     errors.push('INVALID_DIGITAL_THREAD_PAYLOAD');
     return;
   }
+
+  if (payload.qualificationKnowledgeLink === true) {
+    if (!validBusinessResourceId(payload.sourceRiskId)) {
+      errors.push('INVALID_KNOWLEDGE_LINK_SOURCE');
+    }
+    if (!validBusinessResourceId(payload.targetBaseline)) {
+      errors.push('INVALID_KNOWLEDGE_LINK_TARGET');
+    }
+    if (!TRACE_RELATIONS.has(payload.relationType)) {
+      errors.push('INVALID_DIGITAL_THREAD_RELATION');
+    }
+    return;
+  }
+
   if (!TRACE_DOMAINS.has(payload.sourceDomain) || !TRACE_DOMAINS.has(payload.targetDomain)) {
     errors.push('INVALID_DIGITAL_THREAD_DOMAIN');
   }

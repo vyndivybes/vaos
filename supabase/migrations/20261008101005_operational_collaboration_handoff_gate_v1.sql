@@ -225,6 +225,8 @@ begin
     and v_qualification_count=8
     and v_contract_count=8
     and v_governed_agents=8
+    and v_thread_handoff_agents=6
+    and v_orchestrator_handoff_targets=7
     and v_collaboration_coverage=8
     and v_verified_agents=7
     and v_release_prepared>=2

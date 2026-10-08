@@ -13,6 +13,7 @@ function requireStore(store) {
     'createOperatingHandoff',
     'transitionOperatingHandoff',
     'operatingMissionSnapshot',
+    'prepareOperatingMissionClosure',
     'recordWorkEvidence',
     'getWorkEvidence',
     'listRunnableMissions',
@@ -98,6 +99,10 @@ export function createEightAgentOperatingService({ store } = {}) {
         throw new Error('MISSION_DISCOVERY_LIMIT_INVALID');
       }
       return durableStore.listRunnableMissions({ limit });
+    },
+
+    async prepareMissionClosure(missionId) {
+      return durableStore.prepareOperatingMissionClosure(requiredText(missionId, 'MISSION_ID_REQUIRED'));
     },
 
     snapshot(missionId) {

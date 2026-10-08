@@ -115,3 +115,14 @@ test('workspace entrypoints use the current cache-busted module version', async 
   assert.match(html, /\/workspace\.mjs\?v=20261008-q2-workforce/);
   assert.match(workspace, /\.\/command-router\.mjs\?v=20261008-q2-workforce/);
 });
+
+test('Wrangler Worker Previews require an isolated, unreachable database URL', async () => {
+  const config = JSON.parse(await readFile(new URL('../../wrangler.jsonc', import.meta.url), 'utf8'));
+  assert.equal(new URL(config.vars.SUPABASE_URL).hostname.endsWith('.supabase.co'), true);
+  assert.ok(config.previews?.vars, 'previews.vars must be declared for wrangler preview');
+  const previewUrl = new URL(config.previews.vars.SUPABASE_URL);
+  assert.equal(previewUrl.protocol, 'https:');
+  assert.equal(previewUrl.hostname, 'vaos-preview.invalid');
+  assert.notEqual(config.previews.vars.SUPABASE_URL, config.vars.SUPABASE_URL);
+  assert.equal(config.previews.triggers, undefined, 'previews must not schedule production cron triggers');
+});

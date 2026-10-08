@@ -1,0 +1,1 @@
+-- Production follow-up for the definitive eight-agent operating model.\ncreate index if not exists agent_handoffs_work_package_idx\n  on vaos_private.agent_handoffs(work_package_id);\n

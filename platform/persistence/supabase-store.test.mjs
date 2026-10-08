@@ -366,3 +366,58 @@ test('operational commissioning snapshot uses the dedicated Edge operation', asy
   assert.equal(fake.calls[0].body.operation, 'operationalCommissioningSnapshot');
 });
 
+
+
+test('eight-agent operating model uses typed mission and handoff Edge operations', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', mission: { id: 'mission-1' } } },
+    { body: { outcome: 'CREATED', handoff: { id: 'handoff-1', version: 1 } } },
+    { body: { outcome: 'UPDATED', handoff: { id: 'handoff-1', status: 'COMPLETED', version: 2 } } },
+    { body: { mission: { id: 'mission-1' }, workPackages: [], handoffs: [] } },
+  ]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+
+  await store.createOperatingMission({
+    id: 'mission-1',
+    objective: 'Assess release readiness',
+    catalogVersion: '1.0.0',
+    createdByAgentId: 'orchestrator',
+    workPackages: [{ id: 'wp-1', actionType: 'RISK.ASSESS' }],
+  });
+  await store.createOperatingHandoff({
+    id: 'handoff-1',
+    missionId: 'mission-1',
+    workPackageId: 'wp-1',
+    fromAgentId: 'orchestrator',
+    toAgentId: 'risk',
+    requestedJob: 'RISK.ASSESS',
+    reason: 'Risk review required',
+    requiredOutcome: 'Risk assessment',
+    acceptanceCriteria: ['risk scored'],
+    evidenceRefs: ['RISK-SOURCE-1'],
+    priority: 'HIGH',
+  });
+  await store.transitionOperatingHandoff({
+    handoffId: 'handoff-1',
+    expectedVersion: 1,
+    outcome: 'COMPLETE',
+    byAgentId: 'risk',
+    evidenceRefs: ['RISK-ASSESS-1'],
+  });
+  await store.operatingMissionSnapshot('mission-1');
+
+  assert.deepEqual(fake.calls.map((call) => call.body.operation), [
+    'createOperatingMission',
+    'createOperatingHandoff',
+    'transitionOperatingHandoff',
+    'operatingMissionSnapshot',
+  ]);
+  assert.equal(fake.calls[0].body.payload.createdByAgentId, 'orchestrator');
+  assert.equal(fake.calls[1].body.payload.toAgentId, 'risk');
+  assert.equal(fake.calls[2].body.payload.expectedVersion, 1);
+  assert.deepEqual(fake.calls[3].body.payload, { missionId: 'mission-1' });
+});

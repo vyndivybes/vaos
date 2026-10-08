@@ -72,7 +72,7 @@ const AGENT_DEFINITIONS = Object.freeze([
     confidence: 92,
     task: 'Tracking milestone variance',
     capabilities: {
-      'PROJECT.ESCALATE_RISK': AUTHORITY.PREPARE,
+      'PROJECT.ESCALATE_RISK': AUTHORITY.APPROVED_EXECUTION,
     },
   },
   {

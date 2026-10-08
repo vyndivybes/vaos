@@ -1,0 +1,46 @@
+name: infisical-commissioning-readiness
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - commission/infisical-readiness
+    paths:
+      - .github/infisical-commissioning-readiness.trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: infisical-commissioning-readiness
+  cancel-in-progress: false
+
+jobs:
+  safe-hold-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Run read-only commissioning audit tests
+        run: node --test platform/qualification/infisical-commissioning-readiness.test.mjs
+      - name: Verify scoped read credential exists
+        shell: bash
+        run: |
+          if [ -z "${VAOS_DB_RPC_SECRET:-}" ]; then
+            echo "::error::Missing VAOS_DB_RPC_SECRET"
+            exit 1
+          fi
+      - name: Audit durable qualification and provider state without writes
+        run: node scripts/qualification/audit-infisical-commissioning.mjs
+      - uses: actions/upload-artifact@v5
+        if: always()
+        with:
+          name: infisical-commissioning-safe-hold-evidence
+          path: qualification-evidence/provider-wave-2/infisical-commissioning-readiness.json
+          if-no-files-found: ignore
+          retention-days: 30

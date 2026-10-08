@@ -107,6 +107,8 @@ export function createProviderControlPlane({
       qualificationState: manifest.qualification.state,
       qualifiedCapabilities: new Set(manifest.qualification.qualifiedCapabilities),
       restrictedCapabilities: new Set(),
+      disabledDataClassifications: new Set(),
+      disabledRiskClasses: new Set(),
       qualificationEvidenceRefs: manifest.qualification.evidenceRefs.slice(),
       validUntil: manifest.qualification.validUntil,
       health: null,
@@ -169,6 +171,8 @@ export function createProviderControlPlane({
       if (!capabilityQualified(state, capability)) return false;
       if (!m.routing.dataClassifications.includes(dataClassification)) return false;
       if (!m.routing.riskClasses.includes(riskClass)) return false;
+      if (state.disabledDataClassifications.has(dataClassification)) return false;
+      if (state.disabledRiskClasses.has(riskClass)) return false;
       if (!m.routing.licensingAllowed) return false;
       if (deploymentMode && !m.deploymentModes.includes(deploymentMode)) return false;
       if (dataResidency && !m.operations.dataResidency.includes(dataResidency)) return false;
@@ -267,6 +271,34 @@ export function createProviderControlPlane({
     return snapshot(providerId);
   }
 
+  async function setRoutingRestrictions({
+    providerId,
+    disabledDataClassifications = [],
+    disabledRiskClasses = [],
+    authorityRef,
+    reason,
+  } = {}) {
+    const state = getState(providerId);
+    text(authorityRef, 'PROVIDER_CONTROL_AUTHORITY_REQUIRED');
+    text(reason, 'PROVIDER_CONTROL_REASON_REQUIRED');
+    if (!Array.isArray(disabledDataClassifications) || disabledDataClassifications.some(value => !DATA_CLASSES.has(value))) {
+      throw fail('PROVIDER_ROUTING_DATA_CLASS_INVALID');
+    }
+    if (!Array.isArray(disabledRiskClasses) || disabledRiskClasses.some(value => !RISK_CLASSES.has(value))) {
+      throw fail('PROVIDER_ROUTING_RISK_CLASS_INVALID');
+    }
+    state.disabledDataClassifications = new Set(disabledDataClassifications);
+    state.disabledRiskClasses = new Set(disabledRiskClasses);
+    await audit(providerId, {
+      type:'PROVIDER.ROUTING.RESTRICTIONS.CHANGED',
+      disabledDataClassifications:[...state.disabledDataClassifications].sort(),
+      disabledRiskClasses:[...state.disabledRiskClasses].sort(),
+      authorityRef,
+      reason,
+    });
+    return snapshot(providerId);
+  }
+
   async function recordHealth({ providerId, status, checkedAt, evidenceRef } = {}) {
     const state = getState(providerId);
     if (!HEALTH_STATES.has(status)) throw fail('PROVIDER_HEALTH_STATUS_INVALID');
@@ -291,6 +323,10 @@ export function createProviderControlPlane({
         evidenceRefs: state.qualificationEvidenceRefs.slice(),
         validUntil: state.validUntil,
       }),
+      routingRestrictions: Object.freeze({
+        disabledDataClassifications: [...state.disabledDataClassifications].sort(),
+        disabledRiskClasses: [...state.disabledRiskClasses].sort(),
+      }),
       health: state.health ? Object.freeze({ ...state.health }) : null,
     });
   }
@@ -304,6 +340,7 @@ export function createProviderControlPlane({
     transitionQualification,
     setProviderEnabled,
     setCapabilityEnabled,
+    setRoutingRestrictions,
     recordHealth,
   });
 }

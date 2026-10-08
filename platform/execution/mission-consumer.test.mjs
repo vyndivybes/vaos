@@ -127,3 +127,21 @@ test('read-only audit tracks dependencies and validator independently rejects ch
   assert.ok(verifyReadOnlyMissionAudit(report, workPackages, 'wp-2'));
   assert.equal(verifyReadOnlyMissionAudit({ ...report, dependencyCount: 0 }, workPackages, 'wp-2'), false);
 });
+
+
+test('work-package action spoofing cannot trigger the wrong read-only adapter', async () => {
+  const f = fixture();
+  f.service.snapshot = async () => ({
+    mission: { id: 'mission-1', status: 'ACTIVE' },
+    handoffs: [f.handoff],
+    workPackages: [{
+      id: 'wp-1', action_type: 'RISK.ASSESS', owner_agent_id: 'risk',
+      status: 'READY', depends_on: [], human_approval_required: false,
+      execution_mode: 'ANALYSE', authority: 1,
+    }],
+  });
+  const result = await createMissionConsumer({ service: f.service }).consume('mission-1');
+  assert.equal(result.submitted, 0);
+  assert.equal(result.unsupported, 1);
+  assert.equal(f.events.length, 0);
+});

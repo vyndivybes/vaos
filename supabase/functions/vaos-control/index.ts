@@ -29,6 +29,49 @@ Deno.serve(async (req: Request) => {
   if (operation === 'operationalCommissioningSnapshot') {
     rpcName = 'vaos_operational_commissioning_snapshot'
     args = { p_server_key: serverKey }
+  } else if (operation === 'createOperatingMission') {
+    rpcName = 'vaos_create_operating_mission'
+    args = {
+      p_server_key: serverKey,
+      p_mission_id: payload.missionId,
+      p_objective: payload.objective,
+      p_catalog_version: payload.catalogVersion,
+      p_created_by_agent_id: payload.createdByAgentId,
+      p_work_packages: payload.workPackages || [],
+    }
+  } else if (operation === 'createOperatingHandoff') {
+    rpcName = 'vaos_create_operating_handoff'
+    args = {
+      p_server_key: serverKey,
+      p_handoff_id: payload.handoffId,
+      p_mission_id: payload.missionId,
+      p_work_package_id: payload.workPackageId,
+      p_from_agent_id: payload.fromAgentId,
+      p_to_agent_id: payload.toAgentId,
+      p_requested_job: payload.requestedJob,
+      p_reason: payload.reason,
+      p_required_outcome: payload.requiredOutcome,
+      p_acceptance_criteria: payload.acceptanceCriteria || [],
+      p_evidence_refs: payload.evidenceRefs || [],
+      p_priority: payload.priority || 'NORMAL',
+    }
+  } else if (operation === 'transitionOperatingHandoff') {
+    rpcName = 'vaos_transition_operating_handoff'
+    args = {
+      p_server_key: serverKey,
+      p_handoff_id: payload.handoffId,
+      p_expected_version: payload.expectedVersion,
+      p_outcome: payload.outcome,
+      p_by_agent_id: payload.byAgentId,
+      p_reason: payload.reason || null,
+      p_evidence_refs: payload.evidenceRefs || [],
+    }
+  } else if (operation === 'operatingMissionSnapshot') {
+    rpcName = 'vaos_operating_mission_snapshot'
+    args = {
+      p_server_key: serverKey,
+      p_mission_id: payload.missionId,
+    }
   } else if (operation === 'snapshot') {
     rpcName = 'vaos_control_snapshot'
     args = { p_server_key: serverKey }

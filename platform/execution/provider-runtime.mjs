@@ -48,6 +48,8 @@ export function createProviderRuntime({
     riskClass,
     executionJob,
     preferredProviderIds,
+    deploymentMode,
+    dataResidency,
     allowedProviderIds,
     deniedProviderIds,
   }={}){
@@ -61,6 +63,8 @@ export function createProviderRuntime({
       dataClassification,
       riskClass,
       preferredProviderIds,
+      deploymentMode,
+      dataResidency,
       allowedProviderIds,
       deniedProviderIds,
     });

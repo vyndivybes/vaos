@@ -53,6 +53,7 @@ const mandatoryCore=[
   'integrations/langfuse/provider-manifest.json',
   'integrations/opentelemetry/provider-manifest.json',
   'packages/contracts/vyndi-vaos-events.mjs',
+  'platform/execution/vyndi-intent-ingress.mjs',
   'packages/contracts/execution-telemetry.mjs',
   'packages/contracts/ai-observability.mjs',
   'docs/contracts/vyndi-vaos-asyncapi.yaml',

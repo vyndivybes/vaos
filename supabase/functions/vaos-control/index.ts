@@ -168,6 +168,31 @@ Deno.serve(async (req: Request) => {
       p_target_resource_id: payload.targetResourceId,
       p_relation_type: payload.relationType,
     }
+  } else if (operation === 'observeIdentity') {
+    rpcName = 'vaos_observe_identity'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_observation_id: payload.observationId,
+    }
+  } else if (operation === 'getIdentityObservation') {
+    rpcName = 'vaos_get_identity_observation'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_observation_id: payload.observationId,
+    }
+  } else if (operation === 'linkSecurityQualificationTrace') {
+    rpcName = 'vaos_link_security_qualification_trace'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_source_risk_id: payload.sourceRiskId,
+      p_target_baseline: payload.targetBaseline,
+      p_relation_type: payload.relationType,
+    }
   } else if (operation === 'getDigitalEmployee') {
     rpcName = 'vaos_get_digital_employee'
     args = {

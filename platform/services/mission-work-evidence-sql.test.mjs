@@ -48,3 +48,14 @@ test('Edge control routes evidence and runnable mission operations to service-ke
     assert.match(edge, new RegExp('rpcName = '+String.raw`'`+fn+String.raw`'`));
   }
 });
+
+
+test('handoff execution and verification require currently qualified active actors', async () => {
+  const sql = await evidenceMigration();
+  assert.match(sql,/create or replace function vaos_private\.assert_current_handoff_actor/i);
+  assert.match(sql,/create trigger handoff_actor_requalification_guard/i);
+  assert.match(sql,/HANDOFF_ACTOR_REQUALIFICATION_REQUIRED/i);
+  assert.match(sql,/VERIFY','REJECT_VERIFICATION/i);
+  assert.match(sql,/qualification_level/i);
+  assert.match(sql,/responsibility_contracts/i);
+});

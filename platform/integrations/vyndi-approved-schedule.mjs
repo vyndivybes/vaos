@@ -207,3 +207,29 @@ export function candidateFromVyndiProgramRows(rows,{projectId,revision}={}) {
   normalizedBaseline(candidate);
   return candidate;
 }
+
+/**
+ * Server-only authority seam. Callers MUST NOT pass an approval manifest.
+ * `loadApprovedManifest` is implemented against a trusted VAOS governance
+ * source and obtains an approved, independently verified record by project
+ * and revision. A disconnected registry fails closed.
+ */
+export function createAuthorityBoundScheduleEvaluator({loadApprovedManifest}={}) {
+  if(typeof loadApprovedManifest!=='function'){
+    throw new Error('VAOS_TRUSTED_APPROVAL_LOADER_REQUIRED');
+  }
+  return async function evaluate({baseline,progress,observedAt}={}) {
+    let manifest=null;
+    try{
+      manifest=await loadApprovedManifest({
+        projectId:baseline?.projectId,
+        revision:baseline?.revision,
+      });
+    }catch{
+      // Do not fall back to an untrusted caller's approval data.
+    }
+    return evaluateApprovedProgramSchedule({
+      baseline,progress,approval:manifest,observedAt,
+    });
+  };
+}

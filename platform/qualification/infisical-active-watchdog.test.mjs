@@ -7,7 +7,8 @@ const writer=readFileSync(new URL('../../scripts/qualification/record-infisical-
 
 test('active health refresh preserves routing and cannot activate',()=>{
   assert.match(migration,/v_after:=jsonb_set\(v_before,'\{health\}'/);
-  assert.doesNotMatch(migration,/record-health[\s\S]*\{enabled\}.*true/);
+  const healthBranch=migration.split("IF p_action='record-health' THEN")[1].split('  ELSE')[0];
+  assert.doesNotMatch(healthBranch,/\{enabled\}/);
   assert.match(migration,/p_action NOT IN \('record-health','disable'\)/);
   assert.match(migration,/p_action='disable'/);
 });

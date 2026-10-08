@@ -83,7 +83,7 @@
         "telemetry.observe"
       ],
       "tier": "A",
-      "implementation": "sink-implemented",
+      "implementation": "exporter-and-sink-implemented",
       "priority": "primary"
     },
     {
@@ -164,7 +164,7 @@
         "analytics.ops"
       ],
       "tier": "B",
-      "implementation": "boundary-required",
+      "implementation": "sink-implemented",
       "priority": "primary"
     },
     {

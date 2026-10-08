@@ -6,6 +6,20 @@ const isRunId=v=>typeof v==='string'&&/^[1-9][0-9]{6,19}$/.test(v);
  * It never dispatches, reads, or cancels a real Windmill job.
  * Uses a different Durable Object identity for every GitHub run attempt.
  */
+export async function recordWindmillAlarmReceipt({store,runId,outcome,now=()=>Date.now()}={}){
+  if(!isRunId(runId)||typeof store?.get!=='function'||typeof store?.put!=='function'||
+     typeof now!=='function')throw fail('WINDMILL_ISOLATED_ALARM_NOT_CONFIGURED');
+  const started=await store.get('drill:start');
+  if(started?.runId!==runId||outcome?.quarantined!==true||
+     outcome?.active?.state!=='QUARANTINED'||
+     outcome.active.jobId!==started.jobId||
+     outcome.active.epoch!==started.epoch)throw fail('WINDMILL_ISOLATED_ALARM_UNVERIFIED');
+  await store.put('drill:alarm',{
+    runId,epoch:started.epoch,quarantined:true,observedAtMs:now(),
+  });
+  return {recorded:true};
+}
+
 export function createWindmillIsolatedDrill({store,setAlarm,now=()=>Date.now()}={}){
   if(typeof store?.transaction!=='function'||typeof store.get!=='function'||
     typeof store.put!=='function'||typeof setAlarm!=='function'||
@@ -47,13 +61,29 @@ export function createWindmillIsolatedDrill({store,setAlarm,now=()=>Date.now()}=
       productionActivation:false,windmillCalls:0,
     });
   }
+  async function alarmStatus(runId){
+    if(!isRunId(runId))throw fail('WINDMILL_ISOLATED_DRILL_RUN_INVALID');
+    const startRecord=await store.get('drill:start');
+    if(startRecord?.runId!==runId)throw fail('WINDMILL_ISOLATED_DRILL_NOT_STARTED');
+    const receipt=await store.get('drill:alarm');
+    const snapshot=await ledger().snapshot();
+    const observed=receipt?.runId===runId&&receipt?.epoch===startRecord.epoch&&
+      receipt?.quarantined===true&&snapshot.active?.state==='QUARANTINED'&&
+      snapshot.auditCount===3;
+    return Object.freeze({
+      status:observed?'ALARM_OBSERVED':'WAITING',
+      alarmObserved:observed,
+      windmillCalls:0,productionActivation:false,
+    });
+  }
   async function finish(runId){
     if(!isRunId(runId))throw fail('WINDMILL_ISOLATED_DRILL_RUN_INVALID');
     const startRecord=await store.get('drill:start');
     if(startRecord?.runId!==runId)throw fail('WINDMILL_ISOLATED_DRILL_NOT_STARTED');
     if(now()<startRecord.deadlineMs)throw fail('WINDMILL_ISOLATED_DRILL_NOT_EXPIRED');
+    const alarm=await alarmStatus(runId);
+    if(alarm.alarmObserved!==true)throw fail('WINDMILL_ISOLATED_DRILL_ALARM_NOT_OBSERVED');
     const service=ledger();
-    await service.expire();
     const before=await service.snapshot();
     if(before.active?.jobId!==startRecord.jobId||
       before.active?.epoch!==startRecord.epoch||
@@ -71,11 +101,11 @@ export function createWindmillIsolatedDrill({store,setAlarm,now=()=>Date.now()}=
     return Object.freeze({
       schemaVersion:'vaos.windmill.cloud-do-selftest.v1',status:'PASS',
       persistedAcrossRequests:true,blockedWhileQuarantined:true,
-      quarantined:true,auditCount:after.auditCount,
+      quarantined:true,alarmObserved:true,auditCount:after.auditCount,
       productionActivation:false,windmillCalls:0,
       restartEvictionVerified:false,
       cancellationVerified:false,
     });
   }
-  return Object.freeze({start,finish,snapshot:()=>ledger().snapshot()});
+  return Object.freeze({start,alarmStatus,finish,snapshot:()=>ledger().snapshot()});
 }

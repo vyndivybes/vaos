@@ -40,7 +40,7 @@ async function main(){
   if(typeof oidc!=='string'||oidc.length<100)throw fail('GITHUB_OIDC_INVALID');
 
   async function phase(value){
-    // Exactly one POST for each distinct phase. Never retry an ambiguous POST.
+    // Start and finish are sent once. Status is read-only and safe to poll.
     const response=await fetch(ORIGIN+PATH,{
       method:'POST',redirect:'error',
       headers:{Authorization:'Bearer '+oidc,'Content-Type':'application/json',Accept:'application/json'},
@@ -57,11 +57,21 @@ async function main(){
   if(start?.status!=='STARTED'||start.admission!=='PASS'||
      start.blockedCompetingJob!==true||start.auditCount!==2)
     throw fail('CLOUDFLARE_DRILL_START_FAILED');
-  await nap(3000);
+  let alarmObserved=false;
+  for(let poll=0;poll<16;poll++){
+    await nap(5000);
+    const state=await phase('status');
+    if(state?.status==='ALARM_OBSERVED'&&state.alarmObserved===true){
+      alarmObserved=true;break;
+    }
+    if(state?.status!=='WAITING'||state.alarmObserved!==false)
+      throw fail('CLOUDFLARE_ALARM_STATUS_INVALID');
+  }
+  if(!alarmObserved)throw fail('CLOUDFLARE_ALARM_CALLBACK_NOT_OBSERVED');
   const end=await phase('finish');
   if(end?.status!=='PASS'||end.persistedAcrossRequests!==true||
      end.blockedWhileQuarantined!==true||end.quarantined!==true||
-     end.auditCount!==3||end.restartEvictionVerified!==false||
+     end.auditCount!==3||end.alarmObserved!==true||end.restartEvictionVerified!==false||
      end.cancellationVerified!==false)
     throw fail('CLOUDFLARE_DRILL_FINISH_FAILED');
 
@@ -76,6 +86,7 @@ async function main(){
     concurrentAdmission:'PASS',
     persistedAcrossHttpRequests:'PASS',
     timeoutQuarantine:'PASS',
+    cloudflareAlarmCallback:'PASS',
     auditEvents:end.auditCount,
     windmillCalls:0,
     liveWindmillCancellationQualified:false,
@@ -84,7 +95,7 @@ async function main(){
   };
   fs.writeFileSync('qualification-evidence/windmill/cloudflare-do-live.json',
     JSON.stringify(evidence,null,2)+'\n',{mode:0o600});
-  console.log('PASS: signed Cloudflare isolated Durable Object admission, persistence, quarantine and audit drill. Windmill production routing unchanged.');
+  console.log('PASS: Cloudflare isolated Durable Object admission, persisted alarm callback, quarantine and audit verified. Production Windmill routing unchanged.');
 }
 try{await main();}
 catch(e){

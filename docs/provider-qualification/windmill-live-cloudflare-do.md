@@ -38,7 +38,7 @@ Phase 1 (start):
 
 Phase 2 (finish), in a **separate HTTPS request**:
 1. Read the persisted run ID, fence and slot.
-2. Verify real wall-clock expiry, triggering fail-closed quarantine if needed.
+2. Poll the read-only signed status phase until Cloudflare's actual alarm callback has durably recorded the timeout quarantine; no test-driven timeout fallback is accepted.
 3. Require active state QUARANTINED and audit count 3.
 4. Prove a competing reservation is BLOCKED and no implicit release occurs.
 5. Emit sanitized PASS evidence with `windmillCalls=0`.
@@ -56,14 +56,13 @@ GitHub OIDC and performs the two phases. It does not retry uncertain POSTs.
 
 Artifact: `windmill-cloudflare-do-live-evidence`.
 
-A successful result does **not** prove forced process eviction/restart,
-automatic alarm delivery scheduling, nor actual Windmill API cancellation.
+A successful result proves the Cloudflare alarm callback and stored quarantine evidence, but does **not** prove forced process eviction/restart or actual Windmill API cancellation.
 Nor does it prove production routing is safe to enable.
 
 ## Remaining release gates
 
-1. Observe a real Durable Object alarm callback and prove recovery after
-   process eviction/deployment, without clearing an uncertain slot.
+1. Prove recovery after actual Durable Object process eviction/deployment,
+   without clearing an uncertain slot; alarm delivery is now part of the live drill.
 2. Stage a benign, bounded, explicitly approved Windmill cancellation job
    with separately scoped cancel permission and read-only verification.
 3. Independently reconcile real provider terminal state with VAOS audit.

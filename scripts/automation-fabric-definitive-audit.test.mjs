@@ -10,6 +10,7 @@ const exists=relative=>fs.existsSync(path.join(root,relative));
 const requiredProviders=[
   'n8n','activepieces','zapier','paperwork','paperless-ngx','stirling-pdf','documenso',
   'playwright','power-automate-desktop','windmill','airbyte','temporal','camunda','node-red','infisical',
+  'opentelemetry','grafana','langfuse',
 ];
 const manifestPaths={
   n8n:'integrations/n8n/provider-manifest.json',
@@ -27,6 +28,9 @@ const manifestPaths={
   camunda:'integrations/camunda/provider-manifest.json',
   'node-red':'integrations/node-red/provider-manifest.json',
   infisical:'integrations/infisical/provider-manifest.json',
+  opentelemetry:'integrations/opentelemetry/provider-manifest.json',
+  grafana:'integrations/grafana/provider-manifest.json',
+  langfuse:'integrations/langfuse/provider-manifest.json',
 };
 const mandatoryCore=[
   'integrations/provider-manifest-v2.schema.json',
@@ -110,7 +114,8 @@ test('Paperwork redline remains visible but cannot accidentally become productio
   assert.equal(manifest.qualification.qualifiedCapabilities.includes('document.redline'),false);
 });
 
-test('Cloudflare deployment workflows remain present',()=>{
+test('Cloudflare deployment workflows remain present and obsolete Vercel runtime config stays absent',()=>{
   assert.equal(exists('.github/workflows/cloudflare-deploy.yml'),true);
   assert.equal(exists('.github/workflows/cloudflare-smoke.yml'),true);
+  assert.equal(exists('apps/web/vercel.json'),false);
 });

@@ -62,7 +62,7 @@ test('operational commissioning snapshot proves workforce, evidence, queues, tra
   assert.match(sql, /READY_LOCKED/);
   assert.match(sql, /perform vaos_private\.assert_server_key\(p_server_key\)/i);
   assert.match(sql, /revoke all on function public\.vaos_operational_commissioning_snapshot\(text\)/i);
-  assert.match(sql, /grant execute on function public\.vaos_operational_commissioning_snapshot\(text\) to service_role/i);
+  assert.match(sql, /grant execute on function public\.vaos_operational_commissioning_snapshot\(text\)\s+to service_role/i);
 });
 
 test('commissioning snapshot is routed through Edge, authenticated API, store and VAOS command surface', async () => {
@@ -77,7 +77,7 @@ test('commissioning snapshot is routed through Edge, authenticated API, store an
   assert.match(edge, /vaos_operational_commissioning_snapshot/);
   assert.match(worker, /'\/api\/commissioning'/);
   assert.match(store, /operationalCommissioningSnapshot\(\)/);
-  assert.match(router, /commissioning\s+status/);
+  assert.equal(router.includes('commissioning\\s+status'), true);
   assert.match(workspace, /resolved\.kind === 'commissioning'/);
   assert.match(workspace, /fetch\('\/api\/commissioning'/);
 });

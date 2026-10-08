@@ -96,7 +96,7 @@ begin
 
   return jsonb_build_object('outcome','APPENDED','record',p_record);
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.vaos_provider_qualification_evidence_list(p_server_key text, p_provider_id text, p_capability text)
@@ -128,7 +128,7 @@ begin
       and capability=p_capability
   ),'[]'::jsonb);
 end;
-$function$
+$function$;
 
 
 CREATE OR REPLACE FUNCTION public.vaos_provider_state_get(p_server_key text, p_provider_id text)
@@ -146,7 +146,7 @@ begin
   where provider_id = p_provider_id;
   return v_state;
 end;
-$function$
+$function$;
 
 
 -- Existing vaos_private.assert_server_key remains unchanged.

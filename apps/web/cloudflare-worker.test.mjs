@@ -8,7 +8,13 @@ function assetFetcher(request) {
   if (path === '/login' || path === '/workspace') {
     return new Response(`asset:${path}`, {
       status: 200,
-      headers: { 'Content-Type': 'text/html' },
+      headers: { 'Content-Type': 'text/html', 'Cache-Control': 'public, max-age=3600' },
+    });
+  }
+  if (path === '/workspace.mjs' || path === '/command-router.mjs') {
+    return new Response(`asset:${path}`, {
+      status: 200,
+      headers: { 'Content-Type': 'text/javascript', 'Cache-Control': 'public, max-age=3600' },
     });
   }
   return new Response('not found', { status: 404 });
@@ -85,4 +91,15 @@ test('Cloudflare app forwards explicit runtime bindings to API handlers', async 
     url: 'https://project.supabase.co',
     hasSecret: true,
   });
+});
+
+
+test('Cloudflare app disables browser caching for workspace HTML and executable modules', async () => {
+  const app = createCloudflareApp({ apiHandlers: {}, assetFetcher });
+
+  for (const path of ['/workspace', '/workspace.mjs', '/command-router.mjs']) {
+    const response = await app.fetch(new Request(`https://vaos.example${path}`));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store, max-age=0');
+  }
 });

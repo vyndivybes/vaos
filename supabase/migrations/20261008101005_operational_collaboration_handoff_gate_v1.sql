@@ -1,6 +1,7 @@
 -- Operational collaboration handoff gate v1.
 -- Derives eight-agent commissioning coverage from existing execution-bound digital-thread lineage,
 -- verified Orchestrator activation handoffs, and Release prepare-only evidence.
+-- Hard thresholds: 6 execution-bound thread agents, 7 verified peer activations, 2 Release gate preparations.
 
 create or replace function public.vaos_operational_commissioning_snapshot(
   p_server_key text

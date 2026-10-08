@@ -14,6 +14,9 @@ import {
   evaluateWorkSla,
   evaluateAgentRequalification,
   summarizeAgentPerformance,
+  selectReadyWorkPackages,
+  dueMonitoringJobs,
+  assessOperatingModelQualification,
 } from './vaos-eight-operating-model.mjs';
 
 const EXPECTED_AGENTS = [
@@ -273,4 +276,88 @@ test('qualification drift forces retraining for stale qualification, new job aut
     verificationFailureRate: 0.01,
     criticalIncidents: 0,
   }).required, false);
+});
+
+
+test('expanded job families do not silently grant new effect execution authority', () => {
+  const qualifiedEffectActions = new Set([
+    'PROJECT.ESCALATE_RISK',
+    'ENGINEERING.BASELINE_CHANGE',
+    'QA.OPEN_CAPA',
+    'SECURITY.OBSERVE_IDENTITY',
+    'DIGITAL_THREAD.CREATE_LINK',
+  ]);
+  for (const jobs of Object.values(VAOS_JOB_CATALOG)) {
+    for (const job of jobs) {
+      if (job.executionMode === 'GOVERNED_EXECUTION') {
+        assert.ok(qualifiedEffectActions.has(job.actionType), `${job.actionType} must be separately qualified before execution`);
+      }
+    }
+  }
+});
+
+test('monitoring jobs declare cadence and become due deterministically', () => {
+  const monitoringJobs = Object.values(VAOS_JOB_CATALOG).flat().filter((job) => job.monitoring);
+  assert.ok(monitoringJobs.length >= 8);
+  for (const job of monitoringJobs) {
+    assert.ok(Number.isFinite(job.monitoringIntervalMinutes) && job.monitoringIntervalMinutes > 0);
+  }
+
+  const due = dueMonitoringJobs({
+    now: '2026-10-08T12:00:00Z',
+    lastRuns: {
+      'ORCHESTRATOR.MONITOR_MISSION': '2026-10-08T11:00:00Z',
+      'PROJECT.TRACK_DEPENDENCY': '2026-10-08T11:59:00Z',
+    },
+  });
+  assert.ok(due.some((job) => job.actionType === 'ORCHESTRATOR.MONITOR_MISSION'));
+  assert.equal(due.some((job) => job.actionType === 'PROJECT.TRACK_DEPENDENCY'), false);
+});
+
+test('dispatcher releases only dependency-complete work and avoids duplicate open handoffs', () => {
+  const mission = buildMissionPlan({
+    missionId: 'mission-dispatch-001',
+    objective: 'Assess baseline readiness',
+    requestedJobs: ['ENGINEERING.ASSESS_CHANGE', 'RELEASE.ASSESS_GATE'],
+  });
+
+  const first = selectReadyWorkPackages({
+    workPackages: mission.workPackages,
+    handoffs: [],
+  });
+  assert.ok(first.some((item) => item.actionType === 'ENGINEERING.ASSESS_REQUIREMENT'));
+  assert.ok(first.some((item) => item.actionType === 'RISK.ASSESS'));
+  assert.equal(first.some((item) => item.actionType === 'RELEASE.ASSESS_GATE'), false);
+
+  const risk = mission.workPackages.find((item) => item.actionType === 'RISK.ASSESS');
+  const withOpenHandoff = selectReadyWorkPackages({
+    workPackages: mission.workPackages,
+    handoffs: [{ workPackageId: risk.id, status: 'PENDING' }],
+  });
+  assert.equal(withOpenHandoff.some((item) => item.id === risk.id), false);
+});
+
+test('existing qualification floors cover every original-eight job family without changing Release authority', () => {
+  const workforce = [
+    { id: 'knowledge', status: 'ACTIVE', qualificationLevel: 2 },
+    { id: 'orchestrator', status: 'ACTIVE', qualificationLevel: 2 },
+    { id: 'project', status: 'ACTIVE', qualificationLevel: 2 },
+    { id: 'qa', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'release', status: 'ACTIVE', qualificationLevel: 2 },
+    { id: 'risk', status: 'ACTIVE', qualificationLevel: 3 },
+    { id: 'security', status: 'ACTIVE', qualificationLevel: 4 },
+    { id: 'vibpe', status: 'ACTIVE', qualificationLevel: 3 },
+  ];
+  const assessment = assessOperatingModelQualification(workforce);
+  assert.equal(assessment.qualified, true);
+  assert.equal(assessment.qualifiedAgents, 8);
+  assert.equal(assessment.qualifiedJobs, Object.values(VAOS_JOB_CATALOG).flat().length);
+
+  const degraded = assessOperatingModelQualification(
+    workforce.map((employee) => employee.id === 'security'
+      ? { ...employee, qualificationLevel: 3 }
+      : employee),
+  );
+  assert.equal(degraded.qualified, false);
+  assert.ok(degraded.gaps.some((gap) => gap.agentId === 'security'));
 });

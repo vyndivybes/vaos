@@ -44,7 +44,7 @@ const mandatoryCore=[
   'platform/execution/callback-gateway.mjs',
   'platform/execution/artifact-broker.mjs',
   'platform/persistence/automation-fabric-supabase-stores.mjs',
-  'supabase/migrations/20261008071230_automation_fabric_durable_state_v1.sql',
+  'supabase/migrations/20261008092207_automation_fabric_durable_state_v1.sql',
   'platform/execution/credential-broker.mjs',
   'platform/execution/telemetry-recorder.mjs',
   'platform/execution/telemetry-fanout.mjs',
@@ -58,7 +58,7 @@ const mandatoryCore=[
   'packages/contracts/vyndi-vaos-events.mjs',
   'platform/execution/vyndi-intent-ingress.mjs',
   'platform/persistence/automation-fabric-store.mjs',
-  'supabase/migrations/20261008071230_automation_fabric_durable_state_v1.sql',
+  'supabase/migrations/20261008092207_automation_fabric_durable_state_v1.sql',
   'packages/contracts/execution-telemetry.mjs',
   'packages/contracts/ai-observability.mjs',
   'docs/contracts/vyndi-vaos-asyncapi.yaml',
@@ -149,7 +149,7 @@ test('AsyncAPI preserves VYNDI intents, VAOS results, reconciliation, provider c
 
 
 test('durable automation fabric persistence remains atomic and restart-safe',()=>{
-  const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261008071230_automation_fabric_durable_state_v1.sql'),'utf8');
+  const migration=fs.readFileSync(path.join(root,'supabase/migrations/20261008092207_automation_fabric_durable_state_v1.sql'),'utf8');
   for(const required of [
     'vaos_private.provider_control_state',
     'vaos_private.callback_receipts',

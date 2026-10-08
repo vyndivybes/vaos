@@ -4,10 +4,17 @@ import { createDurableControlService } from './durable-control-service.mjs';
 
 function makeStore() {
   const calls = { intents: [], decisions: [], workforceReads: [] };
-  let workforceState = { status: 'ACTIVE', qualificationLevel: 2 };
+  let workforceState = { status: 'ACTIVE', qualificationLevel: 2, responsibilityContractId: 'risk-contract' };
+  let responsibilityContracts = [{
+    id: 'risk-contract',
+    approvalRequiredActions: ['PROJECT.ESCALATE_RISK'],
+    autonomousActions: [],
+    prohibitedActions: [],
+  }];
   return {
     calls,
     setWorkforceState(value) { workforceState = value; },
+    setResponsibilityContracts(value) { responsibilityContracts = value; },
     async getDigitalEmployee(employeeId) {
       calls.workforceReads.push(employeeId);
       return workforceState ? { id: employeeId, ...workforceState } : null;
@@ -30,6 +37,8 @@ function makeStore() {
         approvals: [{ id: 'apr-1', status: 'PENDING', agentId: 'qa', actionType: 'QA.OPEN_CAPA', risk: 'medium', authority: 4, reason: 'Recurring NCR' }],
         events: [{ id: 'evt-1', sequence: 1, type: 'GOVERNANCE.APPROVAL_REQUIRED', source: 'qa', payload: { actionType: 'QA.OPEN_CAPA' } }],
         metrics: { pendingApprovals: 1, eventCount: 1, intentCount: 1 },
+        workforce: { responsibilityContracts },
+        responsibilityContracts,
       };
     },
   };
@@ -196,3 +205,84 @@ test('qualification assessment requires the Orchestrator Digital Employee to be 
   assert.equal(allowed.status, 'AWAIT_APPROVAL');
   assert.equal(allowed.authority, 4);
 });
+
+test('TRAINING employee may produce qualification evidence only when explicitly flagged and contract-declared', async () => {
+  const store = makeStore();
+  store.setWorkforceState({
+    status: 'TRAINING',
+    qualificationLevel: 0,
+    responsibilityContractId: 'risk-contract',
+  });
+  const service = createDurableControlService({ store });
+
+  const result = await service.proposeIntent({
+    idempotencyKey: 'risk:q3:evidence:014',
+    agentId: 'risk',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    reason: 'Q3 qualification evidence: second governed risk escalation',
+    payload: {
+      riskId: 'RSK-014',
+      qualificationMode: true,
+    },
+  });
+
+  assert.equal(result.status, 'AWAIT_APPROVAL');
+  assert.equal(result.reason, 'QUALIFICATION_EVIDENCE_APPROVAL_REQUIRED');
+  assert.equal(result.authority, 4);
+  assert.equal(store.calls.intents[0].eventType, 'GOVERNANCE.APPROVAL_REQUIRED');
+});
+
+test('TRAINING employee remains blocked for ordinary domain work when qualification mode is absent', async () => {
+  const store = makeStore();
+  store.setWorkforceState({
+    status: 'TRAINING',
+    qualificationLevel: 0,
+    responsibilityContractId: 'risk-contract',
+  });
+  const service = createDurableControlService({ store });
+
+  const result = await service.proposeIntent({
+    idempotencyKey: 'risk:ordinary:blocked',
+    agentId: 'risk',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    reason: 'Ordinary work must remain blocked while training',
+    payload: { riskId: 'RSK-BLOCKED' },
+  });
+
+  assert.equal(result.status, 'DENIED');
+  assert.equal(result.reason, 'DIGITAL_EMPLOYEE_NOT_ACTIVE');
+});
+
+test('qualification mode fails closed when the training action is outside the responsibility contract', async () => {
+  const store = makeStore();
+  store.setWorkforceState({
+    status: 'TRAINING',
+    qualificationLevel: 0,
+    responsibilityContractId: 'risk-contract',
+  });
+  store.setResponsibilityContracts([{
+    id: 'risk-contract',
+    approvalRequiredActions: [],
+    autonomousActions: [],
+    prohibitedActions: [],
+  }]);
+  const service = createDurableControlService({ store });
+
+  const result = await service.proposeIntent({
+    idempotencyKey: 'risk:q3:undeclared',
+    agentId: 'risk',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    reason: 'Undeclared qualification action',
+    payload: {
+      riskId: 'RSK-UNDECLARED',
+      qualificationMode: true,
+    },
+  });
+
+  assert.equal(result.status, 'DENIED');
+  assert.equal(result.reason, 'RESPONSIBILITY_ACTION_UNDECLARED');
+});
+

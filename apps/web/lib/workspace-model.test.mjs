@@ -603,3 +603,198 @@ test('QA Q3 training requires a CAPA governance PASS assessment before Qualify i
   assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:qa-assessment-1']);
 });
 
+
+test('Risk Q3 training requires an enterprise-risk governance PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'risk',
+      name: 'Risk Agent',
+      role: 'Enterprise Risk',
+      department: 'Governance',
+      mission: 'Monitor enterprise exposure and escalate governed risks.',
+      responsibilities: ['Escalate material risk', 'Track mitigation evidence'],
+      responsibilityContractId: 'risk-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'PROJECT.ESCALATE_RISK': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 4,
+      currentAssignment: 'Qualification',
+      priority: 'HIGH',
+      confidence: 94,
+      modelRequirements: { minimumQualification: 'Q3_ENTERPRISE_RISK' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'RISK_Q3_ENTERPRISE_RISK_GOVERNANCE_V1');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'risk-assessment-1',
+    targetLevel: 3,
+    profileId: 'RISK_Q3_ENTERPRISE_RISK_GOVERNANCE_V1',
+    scope: 'ENTERPRISE_RISK_GOVERNANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 3);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:risk-assessment-1']);
+});
+
+test('qualification harness records stay in audit evidence but not the live Risk register', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.domains = {
+    qaCapa: [],
+    engineering: [],
+    projectRisk: [
+      {
+        id: 'risk-live',
+        resourceId: 'RSK-013',
+        status: 'ESCALATED',
+        intentId: 'intent-live',
+        intentStatus: 'EXECUTED',
+        approvalId: 'approval-live',
+        approvalStatus: 'APPROVED',
+        decidedBy: 'human@example.com',
+        executionJobId: 'job-live',
+        executionStatus: 'SUCCEEDED',
+        attemptCount: 1,
+        evidenceCount: 1,
+        evidenceVerifiedAt: '2026-10-07T11:19:42.000Z',
+      },
+      {
+        id: 'risk-drill',
+        resourceId: 'QUAL-RISK-001',
+        status: 'ESCALATED',
+        intentId: 'intent-drill',
+        intentStatus: 'EXECUTED',
+        approvalId: 'approval-drill',
+        approvalStatus: 'APPROVED',
+        decidedBy: 'qualification@vaos.local',
+        executionJobId: 'job-drill',
+        executionStatus: 'SUCCEEDED',
+        attemptCount: 2,
+        evidenceCount: 1,
+        evidenceVerifiedAt: '2026-10-06T23:23:24.000Z',
+      },
+    ],
+  };
+
+  const model = buildWorkspaceModel(snapshot);
+  assert.deepEqual(model.domainWorkspaces.risk.records.map((record) => record.resourceId), ['RSK-013']);
+  assert.deepEqual(model.domainWorkspaces.risk.auditRecords.map((record) => record.resourceId), ['RSK-013', 'QUAL-RISK-001']);
+  assert.equal(model.domainWorkspaces.risk.summary.total, 1);
+  assert.ok(model.operationalViews.evidence.rows.some((row) => row.title === 'QUAL-RISK-001'));
+});
+
+test('Security Q4 training requires a high-assurance PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'security',
+      name: 'Security Agent',
+      role: 'Security Assurance',
+      department: 'Security',
+      mission: 'Monitor identity and policy state and escalate material security drift.',
+      responsibilities: ['Monitor identity state', 'Detect policy drift'],
+      responsibilityContractId: 'security-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'SECURITY.OBSERVE_IDENTITY': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 2,
+      currentAssignment: 'Qualification',
+      priority: 'HIGH',
+      confidence: 98,
+      modelRequirements: { minimumQualification: 'Q4_HIGH_ASSURANCE' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'SECURITY_Q4_IDENTITY_ASSURANCE_V1');
+  assert.equal(row.actions[0].targetLevel, 4);
+  assert.equal(row.actions[0].label, 'Run Q4 assessment');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'security-assessment-1',
+    targetLevel: 4,
+    profileId: 'SECURITY_Q4_IDENTITY_ASSURANCE_V1',
+    scope: 'IDENTITY_SECURITY_ASSURANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 4);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:security-assessment-1']);
+});
+
+test('Project Controls Q2 training requires PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'project',
+      name: 'Project Controls',
+      role: 'Project Controls',
+      department: 'Management',
+      mission: 'Track execution variance and prepare governed project-risk escalation.',
+      responsibilities: ['Track schedule variance', 'Escalate governed project risk'],
+      responsibilityContractId: 'project-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'PROJECT.ESCALATE_RISK': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 2,
+      currentAssignment: 'Qualification',
+      priority: 'NORMAL',
+      confidence: 92,
+      modelRequirements: { minimumQualification: 'Q2_BUSINESS' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'PROJECT_Q2_PROJECT_CONTROLS_V1');
+  assert.equal(row.actions[0].targetLevel, 2);
+  assert.equal(row.actions[0].label, 'Run Q2 assessment');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'project-assessment-1',
+    targetLevel: 2,
+    profileId: 'PROJECT_Q2_PROJECT_CONTROLS_V1',
+    scope: 'PROJECT_RISK_CONTROL',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 2);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:project-assessment-1']);
+});
+

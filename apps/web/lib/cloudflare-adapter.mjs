@@ -75,7 +75,7 @@ function createResponseShim() {
   };
 }
 
-export async function invokeVercelHandler(handler, request, runtimeEnv = undefined) {
+export async function invokeCloudflareHandler(handler, request, runtimeEnv = undefined) {
   if (typeof handler !== 'function') throw new Error('CLOUDFLARE_HANDLER_REQUIRED');
   if (!(request instanceof Request)) throw new Error('CLOUDFLARE_REQUEST_REQUIRED');
 

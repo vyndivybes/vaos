@@ -57,6 +57,141 @@ export function resolveCommand(input) {
     };
   }
 
+  const securityRecoveryPrefix = 'qualification security recovery ';
+  const securityRecoverySeparator = ' link risk ';
+  const securityBaselineSeparator = ' baseline ';
+  const securityRecoveryLower = query.toLowerCase();
+  if (securityRecoveryLower.startsWith(securityRecoveryPrefix) && securityRecoveryLower.includes(securityRecoverySeparator) && securityRecoveryLower.includes(securityBaselineSeparator)) {
+    const riskIndex = securityRecoveryLower.indexOf(securityRecoverySeparator);
+    const baselineIndex = securityRecoveryLower.indexOf(securityBaselineSeparator, riskIndex + securityRecoverySeparator.length);
+    const observationId = query.slice(securityRecoveryPrefix.length, riskIndex).trim();
+    const sourceRiskId = query.slice(riskIndex + securityRecoverySeparator.length, baselineIndex).trim();
+    const targetBaseline = query.slice(baselineIndex + securityBaselineSeparator.length).trim();
+    if (observationId && sourceRiskId && targetBaseline) {
+      return {
+        kind: 'intent',
+        targetView: 'governance',
+        agentId: 'security',
+        actionType: 'SECURITY.OBSERVE_IDENTITY',
+        risk: 'high',
+        payload: {
+          observationId,
+          qualificationMode: true,
+          qualificationRecoveryDrill: true,
+          qualificationTrace: {
+            sourceRiskId,
+            targetBaseline,
+            relationType: 'RELATED_TO',
+          },
+        },
+      };
+    }
+  }
+
+  const qualificationSecurity = query.match(/^qualification\s+security\s+(.+)$/i);
+  if (qualificationSecurity) {
+    return {
+      kind: 'intent',
+      targetView: 'governance',
+      agentId: 'security',
+      actionType: 'SECURITY.OBSERVE_IDENTITY',
+      risk: 'high',
+      payload: { observationId: qualificationSecurity[1].trim(), qualificationMode: true },
+    };
+  }
+
+  const observeIdentity = query.match(/^observe\s+identity\s+(.+)$/i);
+  if (observeIdentity) {
+    return {
+      kind: 'intent',
+      targetView: 'governance',
+      agentId: 'security',
+      actionType: 'SECURITY.OBSERVE_IDENTITY',
+      risk: 'high',
+      payload: { observationId: observeIdentity[1].trim() },
+    };
+  }
+
+  const linkedRecoveryPrefix = 'qualification risk recovery ';
+  const linkedRecoverySeparator = ' link baseline ';
+  const linkedRecoveryLower = query.toLowerCase();
+  if (linkedRecoveryLower.startsWith(linkedRecoveryPrefix) && linkedRecoveryLower.includes(linkedRecoverySeparator)) {
+    const separatorIndex = linkedRecoveryLower.indexOf(linkedRecoverySeparator);
+    const riskId = query.slice(linkedRecoveryPrefix.length, separatorIndex).trim();
+    const baselineId = query.slice(separatorIndex + linkedRecoverySeparator.length).trim();
+    if (riskId && baselineId) {
+      return {
+        kind: 'intent',
+        targetView: 'risk',
+        agentId: 'risk',
+        actionType: 'PROJECT.ESCALATE_RISK',
+        risk: 'medium',
+        payload: {
+          riskId,
+          qualificationMode: true,
+          qualificationRecoveryDrill: true,
+          qualificationTrace: {
+            targetDomain: 'ENGINEERING_BASELINE',
+            targetResourceId: baselineId,
+            relationType: 'MITIGATES_RISK',
+          },
+        },
+      };
+    }
+  }
+
+  const qualificationRecoveryRisk = query.match(/^qualification\s+risk\s+recovery\s+(.+)$/i);
+  if (qualificationRecoveryRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'risk',
+      agentId: 'risk',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: {
+        riskId: qualificationRecoveryRisk[1].trim(),
+        qualificationMode: true,
+        qualificationRecoveryDrill: true,
+      },
+    };
+  }
+
+  const qualificationRisk = query.match(/^qualification\s+risk\s+(.+)$/i);
+  if (qualificationRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'risk',
+      agentId: 'risk',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: { riskId: qualificationRisk[1].trim(), qualificationMode: true },
+    };
+  }
+
+  const qualificationProjectRisk = query.match(/^qualification\s+project\s+risk\s+(.+)$/i);
+  if (qualificationProjectRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'projects',
+      agentId: 'project',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: { riskId: qualificationProjectRisk[1].trim(), qualificationMode: true },
+    };
+  }
+
+  const projectRisk = query.match(/^project\s+risk\s+(.+)$/i);
+  if (projectRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'projects',
+      agentId: 'project',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: { riskId: projectRisk[1].trim() },
+    };
+  }
+
   const risk = query.match(/^escalate\s+risk\s+(.+)$/i);
   if (risk) {
     return {

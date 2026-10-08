@@ -38,6 +38,12 @@ export function createSupabaseControlStore({
     submitIntent(input) { return invoke('submitIntent', input); },
     decideApproval(approvalId, input) { return invoke('decideApproval', { approvalId, ...input }); },
     claimExecution(input) { return invoke('claimExecution', input); },
+    claimQualificationRecovery(job, input) {
+      return invoke('claimQualificationRecovery', {
+        jobId: job.id,
+        workerId: input.workerId,
+      });
+    },
     completeExecution(job, result) {
       return invoke('completeExecution', {
         jobId: job.id,
@@ -91,6 +97,37 @@ export function createSupabaseControlStore({
       return invoke('getRiskEscalation', {
         jobId: job.id,
         riskId,
+      });
+    },
+    linkRiskQualificationTrace(job, input) {
+      return invoke('linkRiskQualificationTrace', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        targetDomain: input.targetDomain,
+        targetResourceId: input.targetResourceId,
+        relationType: input.relationType,
+      });
+    },
+    observeIdentity(job, input) {
+      return invoke('observeIdentity', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        observationId: input.observationId,
+      });
+    },
+    getIdentityObservation(job, observationId) {
+      return invoke('getIdentityObservation', {
+        jobId: job.id,
+        observationId,
+      });
+    },
+    linkSecurityQualificationTrace(job, input) {
+      return invoke('linkSecurityQualificationTrace', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        sourceRiskId: input.sourceRiskId,
+        targetBaseline: input.targetBaseline,
+        relationType: input.relationType,
       });
     },
     linkDomainRecords(job, input) {

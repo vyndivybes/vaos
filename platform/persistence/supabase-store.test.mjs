@@ -249,3 +249,86 @@ test('Digital Workforce qualification assessment uses typed Edge bridge operatio
   });
   assert.equal(fake.calls[1].body.operation, 'getQualificationAssessment');
 });
+
+test('Risk Q3 recovery and trace operations use typed Edge bridge calls', async () => {
+  const fake = fakeFetch([
+    { body: { id: 'job-risk-q3', attemptCount: 2, leaseToken: 'lease-2', actionType: 'PROJECT.ESCALATE_RISK', payload: { riskId: 'RSK-015' } } },
+    { body: { outcome: 'CREATED', link: { id: 'link-risk-q3', executionJobId: 'job-risk-q3' } } },
+  ]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+  const job = { id: 'job-risk-q3', leaseToken: 'lease-1' };
+
+  const recovered = await store.claimQualificationRecovery(job, { workerId: 'worker-q3' });
+  const linked = await store.linkRiskQualificationTrace(
+    { ...job, leaseToken: 'lease-2' },
+    {
+      targetDomain: 'ENGINEERING_BASELINE',
+      targetResourceId: '5.3.9',
+      relationType: 'MITIGATES_RISK',
+    },
+  );
+
+  assert.equal(recovered.attemptCount, 2);
+  assert.equal(linked.link.executionJobId, 'job-risk-q3');
+  assert.equal(fake.calls[0].body.operation, 'claimQualificationRecovery');
+  assert.deepEqual(fake.calls[0].body.payload, { jobId: 'job-risk-q3', workerId: 'worker-q3' });
+  assert.equal(fake.calls[1].body.operation, 'linkRiskQualificationTrace');
+  assert.deepEqual(fake.calls[1].body.payload, {
+    jobId: 'job-risk-q3',
+    leaseToken: 'lease-2',
+    targetDomain: 'ENGINEERING_BASELINE',
+    targetResourceId: '5.3.9',
+    relationType: 'MITIGATES_RISK',
+  });
+});
+
+test('Security identity observation writes and readback use dedicated Edge operations bound to the execution lease', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', record: { observationId: 'SEC-Q4-001', status: 'OBSERVED', executionJobId: 'job-sec-1', intentId: 'intent-sec-1' } } },
+    { body: { observationId: 'SEC-Q4-001', status: 'OBSERVED', executionJobId: 'job-sec-1', intentId: 'intent-sec-1' } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-sec-1', intentId: 'intent-sec-1', leaseToken: 'lease-sec-1' };
+
+  const observed = await store.observeIdentity(job, { observationId: 'SEC-Q4-001' });
+  const record = await store.getIdentityObservation(job, 'SEC-Q4-001');
+
+  assert.equal(observed.outcome, 'CREATED');
+  assert.equal(record.status, 'OBSERVED');
+  assert.equal(fake.calls[0].body.operation, 'observeIdentity');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-sec-1',
+    leaseToken: 'lease-sec-1',
+    observationId: 'SEC-Q4-001',
+  });
+  assert.equal(fake.calls[1].body.operation, 'getIdentityObservation');
+});
+
+test('Security qualification trace uses a dedicated lease-bound Edge operation', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', link: { id: 'link-sec-1', executionJobId: 'job-sec-1', intentId: 'intent-sec-1' } } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-sec-1', intentId: 'intent-sec-1', leaseToken: 'lease-sec-1' };
+
+  const result = await store.linkSecurityQualificationTrace(job, {
+    sourceRiskId: 'RSK-015',
+    targetBaseline: '5.3.9',
+    relationType: 'RELATED_TO',
+  });
+
+  assert.equal(result.link.executionJobId, 'job-sec-1');
+  assert.equal(fake.calls[0].body.operation, 'linkSecurityQualificationTrace');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-sec-1',
+    leaseToken: 'lease-sec-1',
+    sourceRiskId: 'RSK-015',
+    targetBaseline: '5.3.9',
+    relationType: 'RELATED_TO',
+  });
+});
+

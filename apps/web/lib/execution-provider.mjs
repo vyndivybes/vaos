@@ -22,6 +22,13 @@ export function getExecutionEngine(runtimeEnv = undefined) {
     const projectRisk = Object.freeze({
       escalateRisk(job, input) { return store.escalateRisk(job, input); },
       getRiskEscalation(job, riskId) { return store.getRiskEscalation(job, riskId); },
+      linkQualificationTrace(job, input) { return store.linkRiskQualificationTrace(job, input); },
+    });
+
+    const security = Object.freeze({
+      observeIdentity(job, input) { return store.observeIdentity(job, input); },
+      getIdentityObservation(job, observationId) { return store.getIdentityObservation(job, observationId); },
+      linkQualificationTrace(job, input) { return store.linkSecurityQualificationTrace(job, input); },
     });
 
     const digitalThread = Object.freeze({
@@ -38,8 +45,8 @@ export function getExecutionEngine(runtimeEnv = undefined) {
 
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, digitalThread, digitalWorkforce }),
-      workerId: 'vaos-vercel-worker',
+      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce }),
+      workerId: 'vaos-cloudflare-worker',
     });
   }
   return engine;

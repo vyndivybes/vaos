@@ -66,6 +66,15 @@ export function createSupabaseControlStore({
     transitionOperatingHandoff(input) {
       return invoke('transitionOperatingHandoff', input);
     },
+    recordWorkEvidence(input) {
+      return invoke('recordOperatingWorkEvidence', input);
+    },
+    getWorkEvidence(evidenceId) {
+      return invoke('getOperatingWorkEvidence', { evidenceId });
+    },
+    listRunnableMissions({ limit = 8 } = {}) {
+      return invoke('listRunnableMissions', { limit });
+    },
     operatingMissionSnapshot(missionId) {
       return invoke('operatingMissionSnapshot', { missionId });
     },

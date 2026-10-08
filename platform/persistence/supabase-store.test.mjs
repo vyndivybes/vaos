@@ -437,3 +437,33 @@ test('dispatch is one durable atomic RPC rather than client-created handoffs', a
   assert.equal(fake.calls[0].body.operation, 'dispatchOperatingMission');
   assert.deepEqual(fake.calls[0].body.payload, { missionId: 'mission-001', maxAssignments: 2 });
 });
+
+
+test('mission evidence writer, retrieval and safe mission discovery use authenticated Edge operations', async () => {
+  const fake = fakeFetch([
+    { body: { evidenceId: 'vaos-evidence:abc', outcome: 'RECORDED' } },
+    { body: { id: 'vaos-evidence:abc', handoff_id: 'handoff-001', report: { kind: 'READ_ONLY_MISSION_AUDIT' } } },
+    { body: { missionIds: ['mission-001'] } },
+  ]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+  const e = await store.recordWorkEvidence({
+    handoffId: 'handoff-001',
+    expectedVersion: 2,
+    byAgentId: 'project',
+    report: { kind: 'READ_ONLY_MISSION_AUDIT' },
+  });
+  assert.equal(e.evidenceId, 'vaos-evidence:abc');
+  const got = await store.getWorkEvidence('vaos-evidence:abc');
+  assert.equal(got.handoff_id, 'handoff-001');
+  const listed = await store.listRunnableMissions({ limit: 3 });
+  assert.deepEqual(listed.missionIds, ['mission-001']);
+  assert.deepEqual(fake.calls.map((item) => item.body.operation), [
+    'recordOperatingWorkEvidence','getOperatingWorkEvidence','listRunnableMissions',
+  ]);
+  assert.equal(fake.calls[0].body.payload.expectedVersion, 2);
+  assert.equal(fake.calls[2].body.payload.limit, 3);
+});

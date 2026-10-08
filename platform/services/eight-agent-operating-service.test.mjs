@@ -6,6 +6,18 @@ function fakeStore() {
   const calls = [];
   return {
     calls,
+    async recordWorkEvidence(input) {
+      calls.push({ type: 'record', input });
+      return { evidenceId: 'vaos-evidence:1' };
+    },
+    async getWorkEvidence(evidenceId) {
+      calls.push({ type: 'retrieve', evidenceId });
+      return { id: evidenceId, report: { kind: 'READ_ONLY_MISSION_AUDIT' } };
+    },
+    async listRunnableMissions({ limit }) {
+      calls.push({ type: 'list', limit });
+      return { missionIds: ['mission-service-001'] };
+    },
     async dispatchOperatingMission(missionId, options) {
       calls.push({ type: 'dispatch', missionId, options });
       return { outcome: 'DISPATCHED', count: 2, handoffs: [] };
@@ -102,4 +114,21 @@ test('service dispatches a bounded batch through the durable database, without c
     () => service.dispatchMission('mission-service-001', { maxAssignments: 50 }),
     /MISSION_DISPATCH_LIMIT_INVALID/,
   );
+});
+
+
+test('operating service persists validated evidence and lists a bounded mission batch', async () => {
+  const store = fakeStore();
+  const service = createEightAgentOperatingService({ store });
+  const report = { kind: 'READ_ONLY_MISSION_AUDIT' };
+  const recorded = await service.recordWorkEvidence({
+    handoffId: 'handoff-service-001',
+    expectedVersion: 2,
+    byAgentId: 'project',
+    report,
+  });
+  assert.equal(recorded.evidenceId, 'vaos-evidence:1');
+  assert.equal((await service.getWorkEvidence('vaos-evidence:1')).id, 'vaos-evidence:1');
+  assert.deepEqual((await service.listRunnableMissions({ limit: 4 })).missionIds, ['mission-service-001']);
+  await assert.rejects(() => service.listRunnableMissions({ limit: 12 }), /MISSION_DISCOVERY_LIMIT_INVALID/);
 });

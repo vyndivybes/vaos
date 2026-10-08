@@ -7,6 +7,8 @@ import approvals from './api/approvals.mjs';
 import executions from './api/executions.mjs';
 import commissioning from './api/commissioning.mjs';
 import missions from './api/missions.mjs';
+import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
+import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 
 export const DEFAULT_API_HANDLERS = Object.freeze({
@@ -92,6 +94,21 @@ export function createCloudflareApp({
 }
 
 export default {
+  async scheduled(_controller, env, ctx) {
+    const task = runScheduledMissionSweep({
+      service: getEightAgentOperatingService(env),
+      maxMissions: 4,
+      maxHandoffs: 4,
+    }).then((summary) => {
+      console.log('VAOS_SAFE_MISSION_SWEEP', JSON.stringify(summary));
+    });
+    if (ctx?.waitUntil) {
+      ctx.waitUntil(task);
+    } else {
+      await task;
+    }
+  },
+
   async fetch(request, env) {
     if (!env?.ASSETS || typeof env.ASSETS.fetch !== 'function') {
       return jsonError(503, 'ASSET_BINDING_UNAVAILABLE', 'Static asset binding is unavailable');

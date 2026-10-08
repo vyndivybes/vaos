@@ -124,3 +124,41 @@ test('unauthenticated mission access is refused before any durable side effect',
   }
   assert.deepEqual(f.calls, []);
 });
+
+
+test('authenticated RUN_SAFE uses bounded consumer and independent review, without agent impersonation fields', async () => {
+  const called = [];
+  const handler = createMissionsHandler({
+    getService: () => ({}),
+    createConsumer: () => ({
+      async consume(missionId, options) {
+        called.push(['consume', missionId, options.maxHandoffs]);
+        return { submitted: 1, unsupported: 0 };
+      },
+      async review(missionId, options) {
+        called.push(['review', missionId, options.maxHandoffs]);
+        return { verified: 1, returned: 0 };
+      },
+    }),
+  });
+  const yes = response();
+  await handler(req('POST', { body: {
+    operation: 'RUN_SAFE',
+    missionId: 'mission-001',
+    maxHandoffs: 2,
+  } }), yes.res);
+  assert.equal(yes.result.code, 200);
+  assert.equal(yes.result.body.data.consumed.submitted, 1);
+  assert.deepEqual(called, [
+    ['consume', 'mission-001', 2],
+    ['review', 'mission-001', 2],
+  ]);
+
+  const no = response();
+  await handler(req('POST', { body: {
+    operation: 'RUN_SAFE', missionId: 'mission-001',
+    maxHandoffs: 2, byAgentId: 'security',
+  } }), no.res);
+  assert.equal(no.result.code, 422);
+  assert.equal(called.length, 2);
+});

@@ -13,7 +13,7 @@ test('mission dispatch is authenticated, atomic, dependency-safe and qualificati
   assert.match(sql, /qualification_level\s*>=\s*minimum_qualification_level/i);
   assert.match(sql, /status\s*=\s*'ACTIVE'/i);
   assert.match(sql, /depends_on/i);
-  assert.match(sql, /status\s*=\s*'COMPLETED'/i);
+  assert.match(sql, /child\.status\s*<>\s*'COMPLETED'/i);
   assert.match(sql, /HANDOFF_DEPENDENCY_NOT_COMPLETE/i);
   assert.match(sql, /revoke all on function public\.vaos_dispatch_operating_mission/i);
   assert.match(sql, /grant execute on function public\.vaos_dispatch_operating_mission.*to service_role/is);

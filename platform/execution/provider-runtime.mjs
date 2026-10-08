@@ -14,9 +14,23 @@ function safeProviderError(error){
   return sanitized;
 }
 
+function createSelectedProviderGate(providerId,capability){
+  return Object.freeze({
+    resolve(requestedCapability,constraints={}){
+      if(requestedCapability!==capability)return null;
+      const allowed=Array.isArray(constraints.allowedProviderIds)?constraints.allowedProviderIds:null;
+      const denied=Array.isArray(constraints.deniedProviderIds)?constraints.deniedProviderIds:[];
+      if(allowed&&!allowed.includes(providerId))return null;
+      if(denied.includes(providerId))return null;
+      return Object.freeze({providerId});
+    },
+  });
+}
+
 export function createProviderRuntime({
   controlPlane,
   adapters={},
+  adapterFactories={},
   reconciliation=null,
   recordAudit=async()=>{},
   idFactory=defaultIdFactory,
@@ -24,6 +38,7 @@ export function createProviderRuntime({
 }={}){
   if(!controlPlane||typeof controlPlane.resolve!=='function')throw fail('PROVIDER_RUNTIME_CONTROL_PLANE_REQUIRED');
   if(!adapters||typeof adapters!=='object'||Array.isArray(adapters))throw fail('PROVIDER_RUNTIME_ADAPTERS_INVALID');
+  if(!adapterFactories||typeof adapterFactories!=='object'||Array.isArray(adapterFactories))throw fail('PROVIDER_RUNTIME_FACTORIES_INVALID');
   if(reconciliation!==null&&typeof reconciliation?.enqueue!=='function')throw fail('PROVIDER_RUNTIME_RECONCILIATION_INVALID');
   if(typeof recordAudit!=='function'||typeof idFactory!=='function'||typeof now!=='function')throw fail('PROVIDER_RUNTIME_CONFIG_INVALID');
 
@@ -53,7 +68,14 @@ export function createProviderRuntime({
 
     const providerId=req(provider,'providerId');
     const adapterKey=`${providerId}:${capability}`;
-    const adapter=adapters[adapterKey] || adapters[providerId];
+    const factory=adapterFactories[adapterKey] || adapterFactories[providerId];
+    const adapter=factory
+      ? factory({
+          capabilityRegistry:createSelectedProviderGate(providerId,capability),
+          providerId,
+          capability,
+        })
+      : (adapters[adapterKey] || adapters[providerId]);
     if(!adapter||adapter.providerId!==providerId||adapter.capability!==capability||typeof adapter.execute!=='function'){
       throw fail('PROVIDER_RUNTIME_ADAPTER_MISMATCH');
     }

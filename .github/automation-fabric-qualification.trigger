@@ -1,2 +1,3 @@
-qualification-run: 2
-scope: definitive-automation-fabric
+automation-fabric qualification trigger
+requested-head=ed315ac8ae379fa5f04a37e62918174adb12ec68
+reason=definitive-post-observability-audit

@@ -39,116 +39,139 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'medium',
   }),
   'COMMERCIAL.OBSERVE_PIPELINE': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'COMMERCIAL.COMMIT_ORDER': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'COMMERCIAL.CHANGE_COMMITMENT': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'PROCUREMENT.OBSERVE_SHORTAGE': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'PROCUREMENT.CREATE_PO': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'PROCUREMENT.CHANGE_PO': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'INVENTORY.OBSERVE_STOCK': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'INVENTORY.RESERVE_MATERIAL': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'medium',
   }),
   'INVENTORY.ISSUE_MATERIAL': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'PRODUCTION.OBSERVE_WIP': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'PRODUCTION.RELEASE_JOB': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'PRODUCTION.ADVANCE_STAGE': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'medium',
   }),
   'MAINTENANCE.OBSERVE_ASSET': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'MAINTENANCE.OPEN_WORK_ORDER': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'medium',
   }),
   'MAINTENANCE.RETURN_TO_SERVICE': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'FINANCE.OBSERVE_LEDGER': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'FINANCE.PREPARE_PAYMENT': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'PEOPLE.OBSERVE_WORKFORCE': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'PEOPLE.PREPARE_PAYROLL': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'PEOPLE.CHANGE_EMPLOYEE_MASTER': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'ENGINEERING.OBSERVE_CONFIGURATION': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
   }),
   'ENGINEERING.CONFIGURATION_CHANGE': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',
   }),
   'ENGINEERING.RELEASE_CONFIGURATION': Object.freeze({
+    commissioningMode: 'prepare_only',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'critical',
@@ -217,6 +240,10 @@ export function evaluateActionPolicy({ actionType, authority, risk } = {}) {
   const normalizedRisk = VALID_RISKS.has(String(risk || '').toLowerCase())
     ? String(risk).toLowerCase()
     : policy.defaultRisk;
+
+  if (policy.commissioningMode === 'prepare_only') {
+    return { decision: POLICY_DECISION.PREPARE_ONLY, reason: 'WORKFORCE_BRIDGE_PREPARE_ONLY', policy, risk: normalizedRisk };
+  }
 
   if (authority <= AUTHORITY.PREPARE) {
     return { decision: POLICY_DECISION.PREPARE_ONLY, reason: 'PREPARE_ONLY', policy, risk: normalizedRisk };

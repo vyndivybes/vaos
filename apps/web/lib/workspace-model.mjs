@@ -312,6 +312,8 @@ const QUALIFICATION_PROFILES = Object.freeze({
   qa: Object.freeze({ 3: 'QA_Q3_CAPA_GOVERNANCE_V1' }),
   risk: Object.freeze({ 3: 'RISK_Q3_ENTERPRISE_RISK_GOVERNANCE_V1' }),
   project: Object.freeze({ 2: 'PROJECT_Q2_PROJECT_CONTROLS_V1' }),
+  release: Object.freeze({ 2: 'RELEASE_Q2_RELEASE_ASSURANCE_V1' }),
+  knowledge: Object.freeze({ 2: 'KNOWLEDGE_Q2_TRACEABILITY_GOVERNANCE_V1' }),
   security: Object.freeze({ 4: 'SECURITY_Q4_IDENTITY_ASSURANCE_V1' }),
 });
 

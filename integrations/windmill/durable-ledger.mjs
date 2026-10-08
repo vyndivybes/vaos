@@ -50,7 +50,7 @@ export function createWindmillDurableLedger({store,now=()=>Date.now()}={}){
       const at=nowMs();
       const record={
         jobId:input.jobId,epoch,state:'RESERVED',
-        providerRunId:null,deadlineMs:at+input.maxRuntimeSeconds*1000,
+        providerRunId:null,cancelRequested:false,deadlineMs:at+input.maxRuntimeSeconds*1000,
       };
       await tx.put('epoch',epoch);
       await tx.put('active',record);
@@ -86,7 +86,7 @@ export function createWindmillDurableLedger({store,now=()=>Date.now()}={}){
   async function requestCancellation(input){
     return update(input,['RUNNING','QUARANTINED'],'WINDMILL.CANCEL.REQUESTED',a=>{
       if(!providerId(a.providerRunId))throw fail('WINDMILL_CANCELLATION_NO_PROVIDER_RUN');
-      return {...a,state:'CANCEL_PENDING'};
+      return {...a,state:'CANCEL_PENDING',cancelRequested:true};
     });
   }
   async function finish(input){
@@ -100,6 +100,7 @@ export function createWindmillDurableLedger({store,now=()=>Date.now()}={}){
       const a=await tx.get('active');
       fence(a,input,['RUNNING','CANCEL_PENDING','QUARANTINED']);
       if(a.providerRunId!==input.providerRunId)throw fail('WINDMILL_TERMINAL_RUN_MISMATCH');
+      if(input.terminalState==='CANCELLED'&&a.cancelRequested!==true)throw fail('WINDMILL_CANCELLATION_NOT_REQUESTED');
       const at=nowMs();
       await audit(tx,'WINDMILL.RUN.'+input.terminalState,a,at);
       await tx.put('lastTerminal',{

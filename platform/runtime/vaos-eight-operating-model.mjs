@@ -14,6 +14,17 @@ export const ORIGINAL_VAOS_AGENT_IDS = Object.freeze([
 ]);
 
 const AGENT_SET = new Set(ORIGINAL_VAOS_AGENT_IDS);
+
+export const ORIGINAL_VAOS_QUALIFICATION_FLOOR = Object.freeze({
+  orchestrator: 2,
+  project: 2,
+  vibpe: 3,
+  qa: 3,
+  risk: 3,
+  security: 4,
+  knowledge: 2,
+  release: 2,
+});
 const VALID_RISKS = new Set(['low', 'medium', 'high', 'critical']);
 const VALID_PRIORITIES = new Set(['LOW', 'NORMAL', 'HIGH', 'CRITICAL']);
 const ACTION_PATTERN = /^[A-Z][A-Z0-9_]*(\.[A-Z][A-Z0-9_]*)+$/;
@@ -24,9 +35,12 @@ function freezeJob(input) {
     verifierAgentIds: [],
     humanApprovalRequired: false,
     monitoring: false,
+    monitoringIntervalMinutes: null,
+    minimumQualificationLevel: ORIGINAL_VAOS_QUALIFICATION_FLOOR[input.ownerAgentId],
     dependsOnActionTypes: [],
     ...input,
   };
+  if (job.monitoring && job.monitoringIntervalMinutes == null) job.monitoringIntervalMinutes = 60;
   if (!AGENT_SET.has(job.ownerAgentId)) throw new Error('VAOS_JOB_OWNER_INVALID');
   if (!ACTION_PATTERN.test(job.actionType)) throw new Error('VAOS_JOB_ACTION_INVALID');
   if (!Number.isInteger(job.authority) || job.authority < AUTHORITY.OBSERVE || job.authority > AUTHORITY.AUTONOMOUS_EXECUTION) {
@@ -39,6 +53,12 @@ function freezeJob(input) {
   if (!Array.isArray(job.kpis) || job.kpis.length === 0) throw new Error('VAOS_JOB_KPI_REQUIRED');
   if (!Number.isFinite(job.slaHours) || job.slaHours <= 0) throw new Error('VAOS_JOB_SLA_INVALID');
   if (!Array.isArray(job.dependsOnActionTypes)) throw new Error('VAOS_JOB_DEPENDENCY_INVALID');
+  if (!Number.isInteger(job.minimumQualificationLevel) || job.minimumQualificationLevel < 1 || job.minimumQualificationLevel > 4) {
+    throw new Error('VAOS_JOB_QUALIFICATION_INVALID');
+  }
+  if (job.monitoring && (!Number.isFinite(job.monitoringIntervalMinutes) || job.monitoringIntervalMinutes <= 0)) {
+    throw new Error('VAOS_JOB_MONITORING_INTERVAL_INVALID');
+  }
   if (
     ['high', 'critical'].includes(job.risk)
     && !job.humanApprovalRequired
@@ -117,7 +137,7 @@ export const VAOS_JOB_CATALOG = Object.freeze({
   ]),
   qa: Object.freeze([
     j('qa', 'QA.VERIFY_RESULT', AUTHORITY.RECOMMEND, 'high', 4, { verifierAgentIds: ['knowledge'], dependsOnActionTypes: ['ENGINEERING.ASSESS_CHANGE'], kpis: ['verification_pass_rate', 'defect_escape_rate'] }),
-    j('qa', 'QA.OPEN_NONCONFORMANCE', AUTHORITY.APPROVED_EXECUTION, 'medium', 2, { verifierAgentIds: ['knowledge'], executionMode: 'GOVERNED_EXECUTION', kpis: ['ncr_open_latency', 'evidence_completeness'] }),
+    j('qa', 'QA.OPEN_NONCONFORMANCE', AUTHORITY.PREPARE, 'medium', 2, { verifierAgentIds: ['knowledge'], executionMode: 'PREPARE', kpis: ['ncr_open_latency', 'evidence_completeness'] }),
     j('qa', 'QA.OPEN_CAPA', AUTHORITY.APPROVED_EXECUTION, 'medium', 2, { verifierAgentIds: ['knowledge'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['capa_open_latency', 'verified_execution'] }),
     j('qa', 'QA.ANALYSE_ROOT_CAUSE', AUTHORITY.RECOMMEND, 'medium', 8, { verifierAgentIds: ['risk'], kpis: ['root_cause_confidence', 'recurrence_rate'] }),
     j('qa', 'QA.DEFINE_CONTAINMENT', AUTHORITY.PREPARE, 'high', 2, { verifierAgentIds: ['risk'], executionMode: 'PREPARE', kpis: ['containment_latency', 'containment_effectiveness'] }),
@@ -126,7 +146,7 @@ export const VAOS_JOB_CATALOG = Object.freeze({
     j('qa', 'QA.AUDIT_PROCESS', AUTHORITY.RECOMMEND, 'medium', 12, { verifierAgentIds: ['knowledge'], monitoring: true, kpis: ['audit_findings', 'audit_cycle_time'] }),
     j('qa', 'QA.AUDIT_EVIDENCE', AUTHORITY.RECOMMEND, 'medium', 6, { verifierAgentIds: ['knowledge'], kpis: ['evidence_gap_rate', 'traceability_coverage'] }),
     j('qa', 'QA.ASSESS_TEST', AUTHORITY.RECOMMEND, 'high', 6, { verifierAgentIds: ['vibpe'], kpis: ['test_acceptance_accuracy', 'anomaly_detection'] }),
-    j('qa', 'QA.CLOSE_CAPA', AUTHORITY.APPROVED_EXECUTION, 'high', 4, { verifierAgentIds: ['risk', 'knowledge'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['capa_cycle_time', 'closure_reopen_rate'] }),
+    j('qa', 'QA.CLOSE_CAPA', AUTHORITY.PREPARE, 'high', 4, { verifierAgentIds: ['risk', 'knowledge'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['capa_cycle_time', 'closure_reopen_rate'] }),
     j('qa', 'QA.REJECT_CLOSURE', AUTHORITY.RECOMMEND, 'medium', 2, { verifierAgentIds: ['release'], kpis: ['invalid_closure_detection', 'return_for_correction_rate'] }),
   ]),
   risk: Object.freeze([
@@ -137,29 +157,29 @@ export const VAOS_JOB_CATALOG = Object.freeze({
     j('risk', 'RISK.RECOMMEND_MITIGATION', AUTHORITY.RECOMMEND, 'high', 4, { verifierAgentIds: ['project'], kpis: ['mitigation_acceptance', 'residual_risk_reduction'] }),
     j('risk', 'RISK.MONITOR', AUTHORITY.ANALYSE, 'medium', 1, { monitoring: true, verifierAgentIds: ['project'], kpis: ['indicator_freshness', 'emerging_risk_detection'] }),
     j('risk', 'RISK.REASSESS', AUTHORITY.RECOMMEND, 'high', 4, { verifierAgentIds: ['project'], kpis: ['reassessment_latency', 'residual_risk_accuracy'] }),
-    j('risk', 'RISK.ACCEPT', AUTHORITY.APPROVED_EXECUTION, 'critical', 2, { humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['approval_traceability', 'accepted_risk_exposure'] }),
-    j('risk', 'RISK.ESCALATE', AUTHORITY.APPROVED_EXECUTION, 'high', 1, { verifierAgentIds: ['project'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['escalation_latency', 'escalation_resolution'] }),
-    j('risk', 'RISK.CLOSE', AUTHORITY.APPROVED_EXECUTION, 'high', 4, { verifierAgentIds: ['project', 'knowledge'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['closure_quality', 'risk_reopen_rate'] }),
+    j('risk', 'RISK.ACCEPT', AUTHORITY.PREPARE, 'critical', 2, { humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['approval_traceability', 'accepted_risk_exposure'] }),
+    j('risk', 'RISK.ESCALATE', AUTHORITY.PREPARE, 'high', 1, { verifierAgentIds: ['project'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['escalation_latency', 'escalation_resolution'] }),
+    j('risk', 'RISK.CLOSE', AUTHORITY.PREPARE, 'high', 4, { verifierAgentIds: ['project', 'knowledge'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['closure_quality', 'risk_reopen_rate'] }),
   ]),
   security: Object.freeze([
     j('security', 'SECURITY.OBSERVE_IDENTITY', AUTHORITY.APPROVED_EXECUTION, 'high', 1, { verifierAgentIds: ['knowledge'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', monitoring: true, kpis: ['identity_observation_latency', 'verified_execution'] }),
-    j('security', 'SECURITY.AUTHORIZE_IDENTITY', AUTHORITY.APPROVED_EXECUTION, 'critical', 1, { humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['authorization_accuracy', 'privilege_exception_rate'] }),
+    j('security', 'SECURITY.AUTHORIZE_IDENTITY', AUTHORITY.PREPARE, 'critical', 1, { humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['authorization_accuracy', 'privilege_exception_rate'] }),
     j('security', 'SECURITY.ASSESS_ACCESS', AUTHORITY.RECOMMEND, 'high', 2, { verifierAgentIds: ['knowledge'], kpis: ['least_privilege_conformance', 'access_review_latency'] }),
     j('security', 'SECURITY.DETECT_ANOMALY', AUTHORITY.ANALYSE, 'high', 1, { verifierAgentIds: ['risk'], monitoring: true, kpis: ['detection_latency', 'false_positive_rate'] }),
     j('security', 'SECURITY.REVIEW_SECRET_USE', AUTHORITY.RECOMMEND, 'critical', 2, { verifierAgentIds: ['risk'], humanApprovalRequired: true, kpis: ['secret_exposure_findings', 'secret_rotation_age'] }),
     j('security', 'SECURITY.REVIEW_PROVIDER', AUTHORITY.RECOMMEND, 'high', 4, { verifierAgentIds: ['risk'], kpis: ['provider_risk_coverage', 'provider_exception_count'] }),
-    j('security', 'SECURITY.RESTRICT_ACCESS', AUTHORITY.APPROVED_EXECUTION, 'critical', 1, { humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['restriction_latency', 'verified_execution'] }),
-    j('security', 'SECURITY.REVOKE_ACCESS', AUTHORITY.APPROVED_EXECUTION, 'critical', 1, { humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['revocation_latency', 'verified_execution'] }),
+    j('security', 'SECURITY.RESTRICT_ACCESS', AUTHORITY.PREPARE, 'critical', 1, { humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['restriction_latency', 'verified_execution'] }),
+    j('security', 'SECURITY.REVOKE_ACCESS', AUTHORITY.PREPARE, 'critical', 1, { humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['revocation_latency', 'verified_execution'] }),
     j('security', 'SECURITY.ASSESS_CHANGE', AUTHORITY.RECOMMEND, 'high', 4, { verifierAgentIds: ['risk'], kpis: ['security_change_coverage', 'security_rework'] }),
     j('security', 'SECURITY.INVESTIGATE_EVENT', AUTHORITY.RECOMMEND, 'high', 4, { verifierAgentIds: ['knowledge'], kpis: ['investigation_cycle_time', 'evidence_completeness'] }),
-    j('security', 'SECURITY.CLOSE_INCIDENT', AUTHORITY.APPROVED_EXECUTION, 'high', 4, { verifierAgentIds: ['risk', 'knowledge'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['incident_cycle_time', 'incident_reopen_rate'] }),
+    j('security', 'SECURITY.CLOSE_INCIDENT', AUTHORITY.PREPARE, 'high', 4, { verifierAgentIds: ['risk', 'knowledge'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['incident_cycle_time', 'incident_reopen_rate'] }),
   ]),
   knowledge: Object.freeze([
     j('knowledge', 'KNOWLEDGE.INGEST_SOURCE', AUTHORITY.PREPARE, 'medium', 2, { verifierAgentIds: ['security'], executionMode: 'PREPARE', kpis: ['ingest_latency', 'source_integrity'] }),
     j('knowledge', 'KNOWLEDGE.CLASSIFY_AUTHORITY', AUTHORITY.RECOMMEND, 'high', 2, { verifierAgentIds: ['qa'], kpis: ['authority_classification_accuracy', 'source_dispute_rate'] }),
     j('knowledge', 'DIGITAL_THREAD.CREATE_LINK', AUTHORITY.APPROVED_EXECUTION, 'medium', 2, { verifierAgentIds: ['qa'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['trace_link_accuracy', 'verified_execution'] }),
     j('knowledge', 'KNOWLEDGE.RESOLVE_CONFLICT', AUTHORITY.RECOMMEND, 'high', 4, { verifierAgentIds: ['qa'], kpis: ['conflict_resolution_rate', 'human_review_rate'] }),
-    j('knowledge', 'KNOWLEDGE.MARK_SUPERSEDED', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['qa'], humanApprovalRequired: true, executionMode: 'GOVERNED_EXECUTION', kpis: ['stale_source_retirement', 'supersession_accuracy'] }),
+    j('knowledge', 'KNOWLEDGE.MARK_SUPERSEDED', AUTHORITY.PREPARE, 'high', 2, { verifierAgentIds: ['qa'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['stale_source_retirement', 'supersession_accuracy'] }),
     j('knowledge', 'KNOWLEDGE.BUILD_CONTEXT', AUTHORITY.RECOMMEND, 'low', 1, { kpis: ['context_relevance', 'retrieval_latency'] }),
     j('knowledge', 'KNOWLEDGE.BUILD_EVIDENCE_PACK', AUTHORITY.RECOMMEND, 'medium', 4, { verifierAgentIds: ['qa'], dependsOnActionTypes: ['QA.VERIFY_RESULT', 'RISK.ASSESS'], kpis: ['evidence_coverage', 'evidence_pack_cycle_time'] }),
     j('knowledge', 'KNOWLEDGE.DETECT_GAP', AUTHORITY.ANALYSE, 'medium', 1, { monitoring: true, verifierAgentIds: ['qa'], kpis: ['evidence_gap_detection', 'gap_age'] }),
@@ -203,6 +223,8 @@ export function routeJob(actionType) {
     executionMode: job.executionMode,
     humanApprovalRequired: job.humanApprovalRequired,
     monitoring: job.monitoring,
+    monitoringIntervalMinutes: job.monitoringIntervalMinutes,
+    minimumQualificationLevel: job.minimumQualificationLevel,
     slaHours: job.slaHours,
     kpis: [...job.kpis],
   };
@@ -520,5 +542,87 @@ export function evaluateAgentRequalification(input = {}) {
     reasons,
     qualificationAgeDays,
     recommendedState: reasons.length > 0 ? 'RETRAINING' : 'ACTIVE',
+  };
+}
+
+
+export function selectReadyWorkPackages({ workPackages = [], handoffs = [] } = {}) {
+  if (!Array.isArray(workPackages) || !Array.isArray(handoffs)) {
+    throw new Error('MISSION_DISPATCH_INPUT_INVALID');
+  }
+  const byId = new Map(workPackages.map((item) => [item.id, item]));
+  const openHandoffStates = new Set([
+    'PENDING',
+    'ACCEPTED',
+    'INFORMATION_REQUIRED',
+    'RETURNED',
+    'ESCALATED',
+  ]);
+  const openWorkPackages = new Set(
+    handoffs
+      .filter((handoff) => openHandoffStates.has(handoff.status))
+      .map((handoff) => handoff.workPackageId),
+  );
+
+  return workPackages.filter((item) => {
+    if (!['PLANNED', 'READY'].includes(item.status)) return false;
+    if (openWorkPackages.has(item.id)) return false;
+    const dependencies = Array.isArray(item.dependsOn) ? item.dependsOn : [];
+    return dependencies.every((dependencyId) => byId.get(dependencyId)?.status === 'COMPLETED');
+  });
+}
+
+export function dueMonitoringJobs({ now = new Date().toISOString(), lastRuns = {} } = {}) {
+  const nowMs = timestamp(now, 'MONITORING_NOW_INVALID');
+  if (!lastRuns || typeof lastRuns !== 'object' || Array.isArray(lastRuns)) {
+    throw new Error('MONITORING_LAST_RUNS_INVALID');
+  }
+
+  return Object.values(VAOS_JOB_CATALOG)
+    .flat()
+    .filter((job) => job.monitoring)
+    .filter((job) => {
+      const lastRun = lastRuns[job.actionType];
+      if (!lastRun) return true;
+      const lastRunMs = timestamp(lastRun, 'MONITORING_LAST_RUN_INVALID');
+      return nowMs - lastRunMs >= job.monitoringIntervalMinutes * 60_000;
+    });
+}
+
+export function assessOperatingModelQualification(workforce = []) {
+  if (!Array.isArray(workforce)) throw new Error('OPERATING_QUALIFICATION_WORKFORCE_INVALID');
+  const byId = new Map(workforce.map((employee) => [employee.id, employee]));
+  const gaps = [];
+  let qualifiedJobs = 0;
+
+  for (const agentId of ORIGINAL_VAOS_AGENT_IDS) {
+    const employee = byId.get(agentId);
+    const requiredLevel = ORIGINAL_VAOS_QUALIFICATION_FLOOR[agentId];
+    const actualLevel = Number(employee?.qualificationLevel || 0);
+    const active = employee?.status === 'ACTIVE';
+    const qualified = active && actualLevel >= requiredLevel;
+
+    if (!qualified) {
+      gaps.push({
+        agentId,
+        requiredLevel,
+        actualLevel,
+        status: employee?.status || 'MISSING',
+      });
+      continue;
+    }
+
+    const jobs = VAOS_JOB_CATALOG[agentId];
+    qualifiedJobs += jobs.filter((job) => job.minimumQualificationLevel <= actualLevel).length;
+  }
+
+  const totalJobs = Object.values(VAOS_JOB_CATALOG).flat().length;
+  return {
+    qualified: gaps.length === 0 && qualifiedJobs === totalJobs,
+    qualifiedAgents: ORIGINAL_VAOS_AGENT_IDS.length - gaps.length,
+    qualifiedJobs,
+    totalJobs,
+    gaps,
+    catalogVersion: VAOS_JOB_CATALOG_VERSION,
   };
 }

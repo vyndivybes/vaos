@@ -70,3 +70,26 @@ test("tampered session token is rejected", () => {
   const tampered = token.slice(0, -1) + (token.endsWith("A") ? "B" : "A");
   assert.equal(verifySessionToken(tampered, 1_001_000), null);
 });
+
+test("checker identity requires a distinct configured credential and never falls back to maker secret", () => {
+  const makerPrevious = process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+  const checkerPrevious = process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256;
+  process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = sha256("maker-secret");
+  delete process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256;
+
+  try {
+    assert.equal(verifyDevelopmentCredential("shyamsundhar1982@gmail.com", "maker-secret"), true);
+    assert.equal(verifyDevelopmentCredential("kaaviyam1519@gmail.com", "maker-secret"), false);
+
+    process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256 = sha256("checker-secret");
+    assert.equal(verifyDevelopmentCredential("kaaviyam1519@gmail.com", "checker-secret"), true);
+    assert.equal(verifyDevelopmentCredential("kaaviyam1519@gmail.com", "maker-secret"), false);
+    assert.equal(verifyDevelopmentCredential("shyamsundhar1982@gmail.com", "checker-secret"), false);
+  } finally {
+    if (makerPrevious === undefined) delete process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+    else process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = makerPrevious;
+    if (checkerPrevious === undefined) delete process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256;
+    else process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256 = checkerPrevious;
+  }
+});
+

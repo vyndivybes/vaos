@@ -216,4 +216,3 @@ revoke all on function public.vaos_operational_commissioning_snapshot(text)
   from public, anon, authenticated;
 grant execute on function public.vaos_operational_commissioning_snapshot(text)
   to service_role;
-$$;

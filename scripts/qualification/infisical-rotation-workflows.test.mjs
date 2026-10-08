@@ -19,3 +19,15 @@ test('production run uses NEXT as current, original repository secret as revoked
   assert.match(workflow,/INFISICAL_REVOKED_CLIENT_ID:\s*\$\{\{\s*secrets\.INFISICAL_CLIENT_ID\s*\}\}/);
   assert.doesNotMatch(workflow,/secrets\.INFISICAL_REVOKED_CLIENT_SECRET/);
 });
+
+test('push-driven evidence ingestion pins verified runs and never qualifies Infisical',()=>{
+  const workflow=read('../../.github/workflows/provider-wave2-infisical-evidence-ingest.yml');
+  assert.match(workflow,/provider-wave2-infisical-evidence-ingest\.trigger/);
+  assert.match(workflow,/37786884419/);
+  assert.match(workflow,/37785525495/);
+  assert.match(workflow,/github\.event_name == 'workflow_dispatch' && inputs\.qualify \|\| false/);
+  assert.match(workflow,/github\.event_name == 'workflow_dispatch' && inputs\.owner_approval_ref \|\| ''/);
+  assert.match(workflow,/Unsafe push-driven qualification attempt/);
+  assert.match(workflow,/Verify successful source workflow runs/);
+  assert.doesNotMatch(workflow,/INFISICAL_CLIENT_SECRET/);
+});

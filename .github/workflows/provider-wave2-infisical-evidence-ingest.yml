@@ -1,6 +1,11 @@
 name: provider-wave2-infisical-evidence-ingest
 
 on:
+  push:
+    branches:
+      - qualify/infisical-live
+    paths:
+      - .github/provider-wave2-infisical-evidence-ingest.trigger
   workflow_dispatch:
     inputs:
       live_run_id:
@@ -36,8 +41,12 @@ jobs:
     env:
       GH_TOKEN: ${{ github.token }}
       VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
-      INFISICAL_OWNER_APPROVAL_REF: ${{ inputs.owner_approval_ref }}
-      VAOS_QUALIFY_INFISICAL: ${{ inputs.qualify }}
+      # Push-based ingestion is strictly record-only. Qualification requires a
+      # separate explicit workflow_dispatch and owner approval ref.
+      INFISICAL_OWNER_APPROVAL_REF: ${{ github.event_name == 'workflow_dispatch' && inputs.owner_approval_ref || '' }}
+      VAOS_QUALIFY_INFISICAL: ${{ github.event_name == 'workflow_dispatch' && inputs.qualify || false }}
+      INFISICAL_LIVE_RUN_ID: ${{ github.event_name == 'push' && '37786884419' || inputs.live_run_id }}
+      INFISICAL_PRODUCTION_RUN_ID: ${{ github.event_name == 'push' && '37785525495' || inputs.production_run_id }}
       INFISICAL_LIVE_EVIDENCE_FILE: qualification-evidence/provider-wave-2/infisical.json
       INFISICAL_PRODUCTION_EVIDENCE_FILE: qualification-evidence/provider-wave-2/infisical-production.json
 
@@ -56,23 +65,44 @@ jobs:
             echo "::error::Missing required repository secret: VAOS_DB_RPC_SECRET"
             exit 1
           fi
+          if [[ ! "${INFISICAL_LIVE_RUN_ID:-}" =~ ^[0-9]+$ ]] || [[ ! "${INFISICAL_PRODUCTION_RUN_ID:-}" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid or missing Infisical evidence run IDs"
+            exit 1
+          fi
+          # A push must not carry owner approval or transition qualification state.
+          if [ "${GITHUB_EVENT_NAME}" = "push" ]; then
+            if [ -n "${INFISICAL_OWNER_APPROVAL_REF:-}" ] || [ "${VAOS_QUALIFY_INFISICAL:-false}" = "true" ]; then
+              echo "::error::Unsafe push-driven qualification attempt"
+              exit 1
+            fi
+          fi
+
+      - name: Verify successful source workflow runs
+        shell: bash
+        run: |
+          set -euo pipefail
+          live_ok=$(gh run view "${INFISICAL_LIVE_RUN_ID}" --repo "${GITHUB_REPOSITORY}" --json conclusion,workflowName --jq '.conclusion == "success" and .workflowName == "provider-wave2-infisical-live-qualification"')
+          production_ok=$(gh run view "${INFISICAL_PRODUCTION_RUN_ID}" --repo "${GITHUB_REPOSITORY}" --json conclusion,workflowName --jq '.conclusion == "success" and .workflowName == "provider-wave2-infisical-production-qualification"')
+          if [ "${live_ok}" != "true" ] || [ "${production_ok}" != "true" ]; then
+            echo "::error::Infisical source workflow evidence must be successful and type-matched"
+            exit 1
+          fi
 
       - name: Download live/staging evidence
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p qualification-evidence/provider-wave-2
-          gh run download "${{ inputs.live_run_id }}" \
+          gh run download "${INFISICAL_LIVE_RUN_ID}" \
             --repo "${GITHUB_REPOSITORY}" \
             --name provider-wave2-infisical-live-evidence \
             --dir qualification-evidence/provider-wave-2
 
       - name: Download production evidence
-        if: ${{ inputs.production_run_id != '' }}
         shell: bash
         run: |
           set -euo pipefail
-          gh run download "${{ inputs.production_run_id }}" \
+          gh run download "${INFISICAL_PRODUCTION_RUN_ID}" \
             --repo "${GITHUB_REPOSITORY}" \
             --name provider-wave2-infisical-production-evidence \
             --dir qualification-evidence/provider-wave-2

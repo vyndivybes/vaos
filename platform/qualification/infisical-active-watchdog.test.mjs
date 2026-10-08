@@ -24,7 +24,7 @@ test('temporary commissioning lease is promoted and revoked',()=>{
 });
 test('scheduled watchdog is every fifteen minutes and fails closed',()=>{
   assert.match(workflow,/cron: '7,22,37,52 \* \* \* \*'/);
-  assert.match(workflow,/schedule:\s*\n\s*- cron:/);
+  assert.match(workflow, /^  schedule:\s*$/m);
   assert.match(workflow,/workflow_dispatch:/);
   assert.match(workflow,/steps\.live\.outcome == 'failure'/);
   assert.match(workflow,/INFISICAL_COMMISSION_ACTION: disable/);

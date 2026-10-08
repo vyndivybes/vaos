@@ -38,11 +38,11 @@ From the owner's PowerShell terminal (requires GitHub CLI authenticated to
 $bytes = New-Object byte[] 32
 $rng = [System.Security.Cryptography.RandomNumberGenerator]::Create()
 $rng.GetBytes($bytes); $rng.Dispose()
-$key = [Convert]::ToHexString($bytes).ToLowerInvariant()
+$key = [BitConverter]::ToString($bytes).Replace('-', '').ToLowerInvariant()
 $sha = [System.Security.Cryptography.SHA256]::Create()
-$hash = [Convert]::ToHexString(
+$hash = [BitConverter]::ToString(
   $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($key))
-).ToLowerInvariant()
+).Replace('-', '').ToLowerInvariant()
 $sha.Dispose()
 gh secret set VAOS_INFISICAL_COMMISSIONING_KEY --repo vyndivybes/vaos --body $key
 if ($LASTEXITCODE -ne 0) { throw "GitHub commissioning secret creation failed" }

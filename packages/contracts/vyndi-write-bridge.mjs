@@ -23,10 +23,12 @@ function route(input){
   if(!Object.values(EFFECT).includes(input.effectClass)) throw new Error('VYNDI_BRIDGE_EFFECT_INVALID');
   if(!Object.values(ROUTE_STATE).includes(input.state)) throw new Error('VYNDI_BRIDGE_STATE_INVALID');
   const executionEnabled=input.executionEnabled===true;
-  if(executionEnabled) throw new Error('VYNDI_BRIDGE_PREPARATION_CANNOT_ENABLE_EXECUTION');
+  if (executionEnabled && !(input.effectClass===EFFECT.READ && input.state===ROUTE_STATE.READ_READY)) {
+    throw new Error('VYNDI_BRIDGE_EXECUTION_SCOPE_INVALID');
+  }
   return freeze({
     ...structuredClone(input),
-    executionEnabled:false,
+    executionEnabled,
     approvalRequired:input.effectClass===EFFECT.MUTATION ? input.approvalRequired!==false : false,
     verificationRefs:[...(input.verificationRefs||[])],
   });
@@ -37,7 +39,7 @@ export const VYNDI_BRIDGE_EFFECT=EFFECT;
 
 export const VYNDI_BRIDGE_ROUTES=freeze([
   route({
-    actionType:'COMMERCIAL.OBSERVE_PIPELINE',employeeId:'commercial',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'COMMERCIAL.OBSERVE_PIPELINE',employeeId:'commercial',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/sales-order-authority.ts',authority:'listSalesOrders',
     verificationRefs:['vyndi_sales_orders'],description:'Read canonical sales-order pipeline.'
   }),
@@ -55,7 +57,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
-    actionType:'PROCUREMENT.OBSERVE_SHORTAGE',employeeId:'procurement',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'PROCUREMENT.OBSERVE_SHORTAGE',employeeId:'procurement',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/production-job-card.ts',authority:'getConfiguredDemandShortages',
     verificationRefs:['master_inventory_items','epr_production_job_cards'],description:'Read governed configured-demand shortages.'
   }),
@@ -72,7 +74,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
-    actionType:'INVENTORY.OBSERVE_STOCK',employeeId:'inventory',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'INVENTORY.OBSERVE_STOCK',employeeId:'inventory',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/inventory-authority.ts',authority:'getAuthoritativeInventory',
     verificationRefs:['vyndi_inventory_balance'],description:'Read canonical shared inventory balance.'
   }),
@@ -90,7 +92,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
-    actionType:'PRODUCTION.OBSERVE_WIP',employeeId:'production',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'PRODUCTION.OBSERVE_WIP',employeeId:'production',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/production-job-card.ts',authority:'getProductionJobCards',
     verificationRefs:['epr_production_job_cards'],description:'Read canonical production job/WIP state.'
   }),
@@ -108,7 +110,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
-    actionType:'MAINTENANCE.OBSERVE_ASSET',employeeId:'maintenance',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'MAINTENANCE.OBSERVE_ASSET',employeeId:'maintenance',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/asset-maintenance-authority.ts',authority:'getAssetMaintenanceState',
     verificationRefs:['epr_equipment','vyndi_maintenance_work_orders'],description:'Read canonical asset and maintenance state.'
   }),
@@ -126,7 +128,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
-    actionType:'FINANCE.OBSERVE_LEDGER',employeeId:'finance',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'FINANCE.OBSERVE_LEDGER',employeeId:'finance',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/finance/accounting-authority.ts',authority:'getAccountingWorkbench',
     verificationRefs:['epr_finance_general_ledger','epr_finance_journals'],description:'Read canonical finance workbench and ledger evidence.'
   }),
@@ -138,7 +140,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
-    actionType:'PEOPLE.OBSERVE_WORKFORCE',employeeId:'people',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'PEOPLE.OBSERVE_WORKFORCE',employeeId:'people',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/people-office-authority.ts',authority:'listPeopleOfficeAuthority',
     verificationRefs:['vyndi_people_records'],description:'Read canonical People & Office authority state.'
   }),
@@ -156,7 +158,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
-    actionType:'ENGINEERING.OBSERVE_CONFIGURATION',employeeId:'engineering-configuration',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,
+    actionType:'ENGINEERING.OBSERVE_CONFIGURATION',employeeId:'engineering-configuration',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/engineering-change-control-authority.ts',authority:'getEngineeringChangeControlState',
     verificationRefs:['vyndi_engineering_change_orders','vyndi_engineering_baselines'],
     description:'Read canonical engineering change/configuration authority state.'

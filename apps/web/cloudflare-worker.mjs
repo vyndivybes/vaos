@@ -33,6 +33,22 @@ function jsonError(status, code, message) {
   });
 }
 
+function uncachedWorkspaceAsset(path, response) {
+  const isWorkspaceHtml = path === '/workspace' || path === '/workspace.html';
+  const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
+  if (!isWorkspaceHtml && !isExecutableModule) return response;
+
+  const headers = new Headers(response.headers);
+  headers.set('Cache-Control', 'no-store, max-age=0');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 function isLegacyRoute(pathname) {
   return ['/house', '/range'].some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
@@ -64,7 +80,7 @@ export function createCloudflareApp({
       }
 
       const assetResponse = await assetFetcher(request);
-      if (assetResponse.status !== 404) return assetResponse;
+      if (assetResponse.status !== 404) return uncachedWorkspaceAsset(path, assetResponse);
 
       return loginRedirect(request);
     },

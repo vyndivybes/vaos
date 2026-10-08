@@ -156,9 +156,9 @@ test('risk identification is strictly a mission-blocker screen, not risk scoring
   ];
   const report = calculateReadOnlyMissionAudit('RISK.IDENTIFY', items, 'risk-screen');
   assert.deepEqual(report.findings, [
+    'MISSING_DEPENDENCY:blocked:unknown-upstream',
     'MISSION_BLOCKER:blocked:BLOCKED',
     'MISSION_BLOCKER:delayed:FAILED',
-    'MISSING_DEPENDENCY:blocked:unknown-upstream',
   ]);
   assert.equal(report.kind, 'READ_ONLY_MISSION_AUDIT');
   assert.equal(report.actionType, 'RISK.IDENTIFY');

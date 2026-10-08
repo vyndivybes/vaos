@@ -39,6 +39,13 @@ Deno.serve(async (req: Request) => {
       p_created_by_agent_id: payload.createdByAgentId,
       p_work_packages: payload.workPackages || [],
     }
+  } else if (operation === 'dispatchOperatingMission') {
+    rpcName = 'vaos_dispatch_operating_mission'
+    args = {
+      p_server_key: serverKey,
+      p_mission_id: payload.missionId,
+      p_max_assignments: payload.maxAssignments ?? 8,
+    }
   } else if (operation === 'createOperatingHandoff') {
     rpcName = 'vaos_create_operating_handoff'
     args = {

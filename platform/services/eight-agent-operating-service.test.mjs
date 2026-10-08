@@ -6,6 +6,10 @@ function fakeStore() {
   const calls = [];
   return {
     calls,
+    async dispatchOperatingMission(missionId, options) {
+      calls.push({ type: 'dispatch', missionId, options });
+      return { outcome: 'DISPATCHED', count: 2, handoffs: [] };
+    },
     async createOperatingMission(plan) {
       calls.push({ type: 'mission', plan });
       return { outcome: 'CREATED', mission: { id: plan.id, status: 'PLANNED' } };
@@ -81,4 +85,21 @@ test('service exposes mission operating snapshots without bypassing the store', 
   const snapshot = await service.snapshot('mission-service-001');
   assert.equal(snapshot.mission.id, 'mission-service-001');
   assert.equal(store.calls[0].type, 'snapshot');
+});
+
+
+test('service dispatches a bounded batch through the durable database, without completing work', async () => {
+  const store = fakeStore();
+  const service = createEightAgentOperatingService({ store });
+  const result = await service.dispatchMission('mission-service-001', { maxAssignments: 3 });
+  assert.equal(result.count, 2);
+  assert.deepEqual(store.calls[0], {
+    type: 'dispatch',
+    missionId: 'mission-service-001',
+    options: { maxAssignments: 3 },
+  });
+  await assert.rejects(
+    () => service.dispatchMission('mission-service-001', { maxAssignments: 50 }),
+    /MISSION_DISPATCH_LIMIT_INVALID/,
+  );
 });

@@ -436,6 +436,8 @@ export function buildMissionPlan(input = {}) {
       executionMode: job.executionMode,
       humanApprovalRequired: job.humanApprovalRequired,
       monitoring: job.monitoring,
+      monitoringIntervalMinutes: job.monitoringIntervalMinutes,
+      minimumQualificationLevel: job.minimumQualificationLevel,
       slaHours: job.slaHours,
       kpis: Object.freeze([...job.kpis]),
       dependsOn: Object.freeze(job.dependsOnActionTypes.map((dependency) => idByAction.get(dependency)).filter(Boolean)),

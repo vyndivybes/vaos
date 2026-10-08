@@ -70,6 +70,29 @@ Expected findings, alphabetical:
 
 **Qualification conclusion:** PASS for source-backed mission blocker identification, independent verification, immutable evidence and closure refusal on incomplete work. This test does not establish enterprise-wide risk scoring, mitigation, acceptance or actual-source ingestion.
 
+## Administrative retirement of the negative fixture
+
+After both independent-verification events were preserved, the synthetic negative
+mission was explicitly retired in a guarded single database transaction at
+**2026-10-08 15:04:06.761723 UTC**. The guard required the exact labelled
+mission ID and objective, the expected two findings, independently verified
+Risk handoff, matching SHA-256, and the original `BLOCKED` work package.
+
+- Mission `VAOS-QUAL-RISK-BLOCKERS-20261008-02`: `ACTIVE` → `CANCELLED` **for test cleanup only**.
+- Synthetic blocked Project work package: `BLOCKED` → `CANCELLED`.
+- Risk work package and handoff remain `COMPLETED`.
+- Risk report, evidence ID/hash and historical ACCEPT, SUBMIT, VERIFY events
+  remain unchanged, with one persistent work-evidence record.
+- Cancellation was **not** a risk acceptance, actual business-item closure,
+  mission release, deletion or approval. It did not change the positive
+  mission's `READY_FOR_CLOSURE` state.
+- The snapshot now reads `CANCELLED` for the negative mission; the
+  authoritative historical evidence at 15:01:13 UTC proves it stayed `ACTIVE`
+  with the blocked package until qualification completed.
+
+This retirement prevents a synthetic test blocker from appearing as an
+unresolved operational mission in normal active-mission queues.
+
 ## Qualification boundary / future gates
 
 This dossier verifies read-only mission-blocker identification only. It does **not** qualify

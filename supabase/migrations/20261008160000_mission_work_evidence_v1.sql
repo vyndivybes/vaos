@@ -173,3 +173,84 @@ grant execute on function public.vaos_get_handoff_work_evidence(text,text)
   to service_role;
 grant execute on function public.vaos_list_runnable_missions(text,integer)
   to service_role;
+
+-- Recheck worker and independent reviewer qualification at the actual transition,
+-- not only at initial assignment. The trigger rolls back an unauthorized event.
+create or replace function vaos_private.assert_current_handoff_actor()
+returns trigger
+language plpgsql
+security definer
+set search_path = ''
+as $$
+declare
+  v_handoff vaos_private.agent_handoffs%rowtype;
+  v_work vaos_private.work_packages%rowtype;
+  v_actor vaos_private.digital_employees%rowtype;
+  v_floor integer;
+  v_allowed text[];
+begin
+  if new.outcome not in ('ACCEPT','SUBMIT','VERIFY','REJECT_VERIFICATION') then
+    return new;
+  end if;
+
+  select * into v_handoff
+  from vaos_private.agent_handoffs where id=new.handoff_id;
+  if not found then raise exception 'HANDOFF_ACTOR_REQUALIFICATION_REQUIRED'; end if;
+
+  select * into v_work
+  from vaos_private.work_packages where id=v_handoff.work_package_id;
+  if not found then raise exception 'HANDOFF_ACTOR_REQUALIFICATION_REQUIRED'; end if;
+
+  select * into v_actor
+  from vaos_private.digital_employees where id=new.by_agent_id;
+
+  v_floor := case new.by_agent_id
+    when 'security' then 4
+    when 'vibpe' then 3
+    when 'risk' then 3
+    when 'qa' then 3
+    when 'orchestrator' then 2
+    when 'project' then 2
+    when 'knowledge' then 2
+    when 'release' then 2
+    else 99
+  end;
+
+  if not found
+     or v_actor.status <> 'ACTIVE'
+     or v_actor.qualification_level < v_floor
+     or not exists (
+       select 1 from vaos_private.responsibility_contracts r
+       where r.id=v_actor.responsibility_contract_id
+     ) then
+    raise exception 'HANDOFF_ACTOR_REQUALIFICATION_REQUIRED';
+  end if;
+
+  if new.outcome in ('ACCEPT','SUBMIT') then
+    if new.by_agent_id <> v_handoff.to_agent_id
+       or v_actor.qualification_level < v_work.minimum_qualification_level then
+      raise exception 'HANDOFF_ACTOR_REQUALIFICATION_REQUIRED';
+    end if;
+  else
+    v_allowed:=case
+      when cardinality(v_work.verifier_agent_ids)>0 then v_work.verifier_agent_ids
+      when v_handoff.to_agent_id='orchestrator' then array['project']::text[]
+      else array['orchestrator']::text[]
+    end;
+    if new.by_agent_id=v_handoff.to_agent_id
+       or not new.by_agent_id=any(v_allowed) then
+      raise exception 'HANDOFF_ACTOR_REQUALIFICATION_REQUIRED';
+    end if;
+  end if;
+
+  return new;
+end;
+$$;
+revoke all on function vaos_private.assert_current_handoff_actor()
+  from public, anon, authenticated, service_role;
+
+drop trigger if exists handoff_actor_requalification_guard
+  on vaos_private.agent_handoff_events;
+create trigger handoff_actor_requalification_guard
+before insert on vaos_private.agent_handoff_events
+for each row execute function vaos_private.assert_current_handoff_actor();

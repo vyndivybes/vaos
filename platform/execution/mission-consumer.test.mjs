@@ -50,7 +50,7 @@ function fixture() {
 
 test('only approved deterministic read-only job types are supported', () => {
   assert.deepEqual([...SAFE_MISSION_JOBS].sort(), [
-    'KNOWLEDGE.DETECT_GAP', 'PROJECT.TRACK_DEPENDENCY', 'RELEASE.CHECK_OPEN_ITEMS',
+    'KNOWLEDGE.DETECT_GAP', 'PROJECT.TRACK_DEPENDENCY', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY',
   ]);
 });
 
@@ -137,6 +137,46 @@ test('work-package action spoofing cannot trigger the wrong read-only adapter', 
     workPackages: [{
       id: 'wp-1', action_type: 'RISK.ASSESS', owner_agent_id: 'risk',
       status: 'READY', depends_on: [], human_approval_required: false,
+      execution_mode: 'ANALYSE', authority: 1,
+    }],
+  });
+  const result = await createMissionConsumer({ service: f.service }).consume('mission-1');
+  assert.equal(result.submitted, 0);
+  assert.equal(result.unsupported, 1);
+  assert.equal(f.events.length, 0);
+});
+
+
+test('risk identification is strictly a mission-blocker screen, not risk scoring or acceptance', () => {
+  const items = [
+    { id: 'risk-screen', status: 'READY', depends_on: [] },
+    { id: 'delayed', status: 'FAILED', depends_on: [] },
+    { id: 'blocked', status: 'BLOCKED', depends_on: ['unknown-upstream'] },
+    { id: 'ok', status: 'COMPLETED', depends_on: [] },
+  ];
+  const report = calculateReadOnlyMissionAudit('RISK.IDENTIFY', items, 'risk-screen');
+  assert.deepEqual(report.findings, [
+    'MISSION_BLOCKER:blocked:BLOCKED',
+    'MISSION_BLOCKER:delayed:FAILED',
+    'MISSING_DEPENDENCY:blocked:unknown-upstream',
+  ]);
+  assert.equal(report.kind, 'READ_ONLY_MISSION_AUDIT');
+  assert.equal(report.actionType, 'RISK.IDENTIFY');
+  assert.equal(verifyReadOnlyMissionAudit(report, items, 'risk-screen'), true);
+  assert.equal(verifyReadOnlyMissionAudit({ ...report, findings: [] }, items, 'risk-screen'), false);
+  assert.ok(report.findings.every(value => !/SCORE|ACCEPT|MITIGATE/.test(value)));
+});
+
+test('risk screen cannot acquire effectful or approval-required authority', async () => {
+  const f = fixture();
+  f.handoff.requested_job = 'RISK.IDENTIFY';
+  f.handoff.to_agent_id = 'risk';
+  f.service.snapshot = async () => ({
+    mission: { id: 'mission-1', status: 'ACTIVE' },
+    handoffs: [f.handoff],
+    workPackages: [{
+      id: 'wp-1', action_type: 'RISK.IDENTIFY', owner_agent_id: 'risk',
+      status: 'READY', depends_on: [], human_approval_required: true,
       execution_mode: 'ANALYSE', authority: 1,
     }],
   });

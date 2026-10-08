@@ -2454,3 +2454,6 @@
   border-top: 1px solid rgba(255,255,255,.045);
 }
 .workforce-action-footer button[type="submit"] { color: #f0ca7e; }
+
+.sidebar-mission-link { color: #f2cb7d; text-decoration: underline; text-underline-offset: 3px; font-size: .76rem; }
+.sidebar-mission-link:focus-visible { outline: 2px solid #ffde9f; outline-offset: 3px; }

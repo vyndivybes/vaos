@@ -38,9 +38,9 @@ export function createEightAgentOperatingService({ store } = {}) {
       return durableStore.createOperatingMission(plan);
     },
 
-    async dispatchMission(missionId, { maxAssignments = 8 } = {}) {
+    async dispatchMission(missionId, { maxAssignments = 16 } = {}) {
       const id = requiredText(missionId, 'MISSION_ID_REQUIRED');
-      if (!Number.isInteger(maxAssignments) || maxAssignments < 1 || maxAssignments > 8) {
+      if (!Number.isInteger(maxAssignments) || maxAssignments < 1 || maxAssignments > 16) {
         throw new Error('MISSION_DISPATCH_LIMIT_INVALID');
       }
       return durableStore.dispatchOperatingMission(id, { maxAssignments });

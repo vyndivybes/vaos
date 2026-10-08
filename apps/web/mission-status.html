@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#101318" />
+  <meta name="description" content="VAOS read-only mission progress and verification status" />
+  <title>VAOS · Mission Status</title>
+  <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/mission-status.css" />
+</head>
+<body class="mission-status-body">
+  <header class="mission-bar">
+    <div class="mission-brand">
+      <img src="/assets/vayu-shastr-original.webp" alt="" />
+      <div><small>VĀYŪ SHASTR PVT. LTD.</small><strong>VAOS · Mission Status</strong></div>
+    </div>
+    <a href="/workspace" class="mission-link">← Control workspace</a>
+  </header>
+  <main class="mission-shell">
+    <div class="mission-overline">GOVERNED OPERATIONS / LIVE EVIDENCE</div>
+    <h1>Mission status</h1>
+    <p class="mission-intro">Read-only progress sourced from the authenticated VAOS mission service. This screen cannot approve work or close a mission.</p>
+    <form id="mission-lookup" class="mission-lookup">
+      <label for="mission-id">Mission ID</label>
+      <div class="mission-lookup-row">
+        <input id="mission-id" type="text" minlength="4" maxlength="96" required autocomplete="off" spellcheck="false" placeholder="Enter an assigned mission ID" />
+        <button type="submit">View mission</button>
+      </div>
+      <p id="mission-message" class="mission-message" role="status" aria-live="polite">Enter a mission ID to inspect its verified progress.</p>
+    </form>
+    <section class="mission-report" id="mission-report" hidden aria-label="Mission verification report">
+      <div class="mission-report-heading">
+        <div><small>AUTHORITATIVE MISSION</small><h2 id="mission-title"></h2></div>
+        <span id="mission-state" class="mission-state"></span>
+      </div>
+      <div class="mission-stats">
+        <div><small>Verified work</small><strong id="mission-completed"></strong></div>
+        <div><small>Progress</small><strong id="mission-percent"></strong></div>
+        <div><small>Last updated</small><strong id="mission-updated"></strong></div>
+      </div>
+      <progress id="mission-progress" max="100" value="0" aria-label="Independently verified work percentage"></progress>
+      <p id="mission-warning" class="mission-warning" hidden></p>
+      <h3>Work packages and independent reviewers</h3>
+      <div class="mission-table-scroll">
+        <table class="mission-table">
+          <thead><tr><th>Job</th><th>Owner</th><th>State</th><th>Verifier</th><th>Evidence reference</th></tr></thead>
+          <tbody id="mission-rows"></tbody>
+        </table>
+      </div>
+      <p class="mission-footnote">A VERIFIED row requires a different reviewer and a matching reviewed-evidence reference. READY_FOR_CLOSURE does not mean final administrative approval.</p>
+    </section>
+  </main>
+  <footer class="mission-footer">VAOS · Read-only operating evidence · Vāyū Shastr Pvt. Ltd.</footer>
+  <script type="module" src="/mission-status.mjs"></script>
+</body>
+</html>

@@ -114,8 +114,14 @@ test('service dispatches a bounded batch through the durable database, without c
     missionId: 'mission-service-001',
     options: { maxAssignments: 3 },
   });
+  await service.dispatchMission('mission-service-001', { maxAssignments: 16 });
+  assert.deepEqual(store.calls[1], {
+    type: 'dispatch',
+    missionId: 'mission-service-001',
+    options: { maxAssignments: 16 },
+  });
   await assert.rejects(
-    () => service.dispatchMission('mission-service-001', { maxAssignments: 50 }),
+    () => service.dispatchMission('mission-service-001', { maxAssignments: 17 }),
     /MISSION_DISPATCH_LIMIT_INVALID/,
   );
 });

@@ -1,6 +1,6 @@
 import { AUTHORITY } from '../../packages/contracts/agent.mjs';
 
-export const VAOS_JOB_CATALOG_VERSION = '1.0.0';
+export const VAOS_JOB_CATALOG_VERSION = '2.0.0';
 
 export const ORIGINAL_VAOS_AGENT_IDS = Object.freeze([
   'orchestrator',
@@ -13,7 +13,23 @@ export const ORIGINAL_VAOS_AGENT_IDS = Object.freeze([
   'release',
 ]);
 
-const AGENT_SET = new Set(ORIGINAL_VAOS_AGENT_IDS);
+export const VYNDI_OPERATIONAL_AGENT_IDS = Object.freeze([
+  'commercial',
+  'procurement',
+  'inventory',
+  'production',
+  'maintenance',
+  'finance',
+  'people',
+  'engineering-configuration',
+]);
+
+export const VAOS_WORKFORCE_AGENT_IDS = Object.freeze([
+  ...ORIGINAL_VAOS_AGENT_IDS,
+  ...VYNDI_OPERATIONAL_AGENT_IDS,
+]);
+
+const AGENT_SET = new Set(VAOS_WORKFORCE_AGENT_IDS);
 
 export const ORIGINAL_VAOS_QUALIFICATION_FLOOR = Object.freeze({
   orchestrator: 2,
@@ -24,6 +40,18 @@ export const ORIGINAL_VAOS_QUALIFICATION_FLOOR = Object.freeze({
   security: 4,
   knowledge: 2,
   release: 2,
+});
+
+export const VAOS_WORKFORCE_QUALIFICATION_FLOOR = Object.freeze({
+  ...ORIGINAL_VAOS_QUALIFICATION_FLOOR,
+  commercial: 2,
+  procurement: 3,
+  inventory: 3,
+  production: 3,
+  maintenance: 3,
+  finance: 4,
+  people: 3,
+  'engineering-configuration': 4,
 });
 const VALID_RISKS = new Set(['low', 'medium', 'high', 'critical']);
 const VALID_PRIORITIES = new Set(['LOW', 'NORMAL', 'HIGH', 'CRITICAL']);
@@ -36,7 +64,7 @@ function freezeJob(input) {
     humanApprovalRequired: false,
     monitoring: false,
     monitoringIntervalMinutes: null,
-    minimumQualificationLevel: ORIGINAL_VAOS_QUALIFICATION_FLOOR[input.ownerAgentId],
+    minimumQualificationLevel: VAOS_WORKFORCE_QUALIFICATION_FLOOR[input.ownerAgentId],
     dependsOnActionTypes: [],
     ...input,
   };
@@ -197,6 +225,46 @@ export const VAOS_JOB_CATALOG = Object.freeze({
     j('release', 'RELEASE.DEFINE_CONDITIONS', AUTHORITY.RECOMMEND, 'high', 2, { verifierAgentIds: ['qa', 'risk'], executionMode: 'PREPARE', kpis: ['condition_traceability', 'condition_closure_rate'] }),
     j('release', 'RELEASE.REASSESS', AUTHORITY.RECOMMEND, 'high', 2, { verifierAgentIds: ['knowledge'], executionMode: 'PREPARE', monitoring: true, kpis: ['reassessment_latency', 'gate_state_accuracy'] }),
     j('release', 'RELEASE.OBSERVE_GATE', AUTHORITY.RECOMMEND, 'low', 1, { executionMode: 'PREPARE', monitoring: true, kpis: ['gate_observation_latency', 'recommendation_freshness'] }),
+  ]),
+
+  commercial: Object.freeze([
+    j('commercial', 'COMMERCIAL.OBSERVE_PIPELINE', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { monitoring: true, executionMode: 'ANALYSE', kpis: ['pipeline_freshness', 'commitment_visibility'] }),
+    j('commercial', 'COMMERCIAL.COMMIT_ORDER', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['production', 'risk'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['commitment_accuracy', 'capacity_alignment'] }),
+    j('commercial', 'COMMERCIAL.CHANGE_COMMITMENT', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['production', 'risk'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['change_traceability', 'commitment_rework'] }),
+  ]),
+  procurement: Object.freeze([
+    j('procurement', 'PROCUREMENT.OBSERVE_SHORTAGE', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { verifierAgentIds: ['inventory'], monitoring: true, executionMode: 'ANALYSE', kpis: ['shortage_freshness', 'material_risk_visibility'] }),
+    j('procurement', 'PROCUREMENT.CREATE_PO', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['inventory', 'risk'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['po_preparation_accuracy', 'supplier_control_compliance'] }),
+    j('procurement', 'PROCUREMENT.CHANGE_PO', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['inventory', 'risk'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['po_revision_traceability', 'reapproval_compliance'] }),
+  ]),
+  inventory: Object.freeze([
+    j('inventory', 'INVENTORY.OBSERVE_STOCK', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { monitoring: true, executionMode: 'ANALYSE', kpis: ['stock_freshness', 'inventory_visibility'] }),
+    j('inventory', 'INVENTORY.RESERVE_MATERIAL', AUTHORITY.APPROVED_EXECUTION, 'medium', 1, { verifierAgentIds: ['production'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['reservation_integrity', 'shortage_prevention'] }),
+    j('inventory', 'INVENTORY.ISSUE_MATERIAL', AUTHORITY.APPROVED_EXECUTION, 'high', 1, { verifierAgentIds: ['production', 'qa'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['fifo_compliance', 'issue_traceability'] }),
+  ]),
+  production: Object.freeze([
+    j('production', 'PRODUCTION.OBSERVE_WIP', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { monitoring: true, executionMode: 'ANALYSE', kpis: ['wip_freshness', 'schedule_visibility'] }),
+    j('production', 'PRODUCTION.RELEASE_JOB', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['qa', 'engineering-configuration'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['release_readiness', 'configuration_conformance'] }),
+    j('production', 'PRODUCTION.ADVANCE_STAGE', AUTHORITY.APPROVED_EXECUTION, 'medium', 1, { verifierAgentIds: ['qa'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['stage_traceability', 'quality_gate_compliance'] }),
+  ]),
+  maintenance: Object.freeze([
+    j('maintenance', 'MAINTENANCE.OBSERVE_ASSET', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { monitoring: true, executionMode: 'ANALYSE', kpis: ['asset_state_freshness', 'maintenance_due_visibility'] }),
+    j('maintenance', 'MAINTENANCE.OPEN_WORK_ORDER', AUTHORITY.APPROVED_EXECUTION, 'medium', 2, { verifierAgentIds: ['qa'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['work_order_quality', 'maintenance_response_time'] }),
+    j('maintenance', 'MAINTENANCE.RETURN_TO_SERVICE', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['qa'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['return_to_service_compliance', 'evidence_completeness'] }),
+  ]),
+  finance: Object.freeze([
+    j('finance', 'FINANCE.OBSERVE_LEDGER', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { monitoring: true, executionMode: 'ANALYSE', kpis: ['ledger_freshness', 'reconciliation_visibility'] }),
+    j('finance', 'FINANCE.PREPARE_PAYMENT', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['risk', 'knowledge'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['payment_preparation_accuracy', 'maker_checker_compliance'] }),
+  ]),
+  people: Object.freeze([
+    j('people', 'PEOPLE.OBSERVE_WORKFORCE', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { monitoring: true, executionMode: 'ANALYSE', kpis: ['workforce_data_freshness', 'people_exception_visibility'] }),
+    j('people', 'PEOPLE.PREPARE_PAYROLL', AUTHORITY.APPROVED_EXECUTION, 'high', 3, { verifierAgentIds: ['finance', 'security'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['payroll_preparation_accuracy', 'privacy_control_compliance'] }),
+    j('people', 'PEOPLE.CHANGE_EMPLOYEE_MASTER', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['security'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['master_data_traceability', 'privacy_exception_rate'] }),
+  ]),
+  'engineering-configuration': Object.freeze([
+    j('engineering-configuration', 'ENGINEERING.OBSERVE_CONFIGURATION', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { verifierAgentIds: ['vibpe'], monitoring: true, executionMode: 'ANALYSE', kpis: ['configuration_freshness', 'baseline_visibility'] }),
+    j('engineering-configuration', 'ENGINEERING.CONFIGURATION_CHANGE', AUTHORITY.APPROVED_EXECUTION, 'high', 4, { verifierAgentIds: ['vibpe', 'qa'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['change_traceability', 'verification_completeness'] }),
+    j('engineering-configuration', 'ENGINEERING.RELEASE_CONFIGURATION', AUTHORITY.APPROVED_EXECUTION, 'critical', 4, { verifierAgentIds: ['qa', 'risk', 'release'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['release_integrity', 'configuration_escape_rate'] }),
   ]),
 });
 
@@ -632,9 +700,9 @@ export function assessOperatingModelQualification(workforce = []) {
   const gaps = [];
   let qualifiedJobs = 0;
 
-  for (const agentId of ORIGINAL_VAOS_AGENT_IDS) {
+  for (const agentId of VAOS_WORKFORCE_AGENT_IDS) {
     const employee = byId.get(agentId);
-    const requiredLevel = ORIGINAL_VAOS_QUALIFICATION_FLOOR[agentId];
+    const requiredLevel = VAOS_WORKFORCE_QUALIFICATION_FLOOR[agentId];
     const actualLevel = Number(employee?.qualificationLevel || 0);
     const active = employee?.status === 'ACTIVE';
     const qualified = active && actualLevel >= requiredLevel;
@@ -656,7 +724,7 @@ export function assessOperatingModelQualification(workforce = []) {
   const totalJobs = Object.values(VAOS_JOB_CATALOG).flat().length;
   return {
     qualified: gaps.length === 0 && qualifiedJobs === totalJobs,
-    qualifiedAgents: ORIGINAL_VAOS_AGENT_IDS.length - gaps.length,
+    qualifiedAgents: VAOS_WORKFORCE_AGENT_IDS.length - gaps.length,
     qualifiedJobs,
     totalJobs,
     gaps,

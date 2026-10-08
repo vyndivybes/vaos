@@ -40,7 +40,7 @@ function jsonError(status, code, message) {
 }
 
 function uncachedWorkspaceAsset(path, response) {
-  const isWorkspaceHtml = path === '/workspace' || path === '/workspace.html';
+  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/mission-status', '/mission-status.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
   if (!isWorkspaceHtml && !isExecutableModule) return response;
 

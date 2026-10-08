@@ -49,3 +49,17 @@ test('database state machine is fail-closed and Release authority is not expande
   assert.match(sql, /owner_agent_id in \('orchestrator','project','vibpe','qa','risk','security','knowledge','release'\)/i);
   assert.doesNotMatch(sql, /update\s+vaos_private\.digital_employees\s+set\s+.*release/is);
 });
+
+
+test('Edge control plane exposes all durable operating-model operations through exact RPC names', async () => {
+  const edge = await readFile(new URL('../../supabase/functions/vaos-control/index.ts', import.meta.url), 'utf8');
+  for (const [operation, rpc] of [
+    ['createOperatingMission', 'vaos_create_operating_mission'],
+    ['createOperatingHandoff', 'vaos_create_operating_handoff'],
+    ['transitionOperatingHandoff', 'vaos_transition_operating_handoff'],
+    ['operatingMissionSnapshot', 'vaos_operating_mission_snapshot'],
+  ]) {
+    assert.match(edge, new RegExp(`operation === '${operation}'`));
+    assert.match(edge, new RegExp(`rpcName = '${rpc}'`));
+  }
+});

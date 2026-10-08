@@ -32,7 +32,7 @@ test('health writes verify status, bounded timestamp and authority reference',()
   assert.match(sql,/status.*NOT IN \('healthy','degraded','unhealthy','unknown'\)/);
   assert.match(sql,/abs\(extract\(epoch from \(clock_timestamp\(\)-v_checked_at\)\)\)/);
   assert.match(sql,/evidenceRef/);
-  assert.match(sql,/github\.com\/vyndivybes\/vaos\/actions\/runs\//);
+  assert.ok(sql.includes('github[.]com/vyndivybes/vaos/actions/runs/'));
 });
 test('commissioning route only maps to narrow RPC, not generic full state write',()=>{
   const src=readFileSync(edgePath,'utf8');

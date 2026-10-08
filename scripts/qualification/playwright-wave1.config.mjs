@@ -10,6 +10,7 @@ export default defineConfig({
   globalTimeout:120_000,
   use:{
     headless:true,
+    channel:process.env.PLAYWRIGHT_CHANNEL||undefined,
     trace:'on',
     screenshot:'only-on-failure',
   },

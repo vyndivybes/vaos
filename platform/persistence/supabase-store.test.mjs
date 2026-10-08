@@ -286,3 +286,49 @@ test('Risk Q3 recovery and trace operations use typed Edge bridge calls', async 
   });
 });
 
+test('Security identity observation writes and readback use dedicated Edge operations bound to the execution lease', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', record: { observationId: 'SEC-Q4-001', status: 'OBSERVED', executionJobId: 'job-sec-1', intentId: 'intent-sec-1' } } },
+    { body: { observationId: 'SEC-Q4-001', status: 'OBSERVED', executionJobId: 'job-sec-1', intentId: 'intent-sec-1' } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-sec-1', intentId: 'intent-sec-1', leaseToken: 'lease-sec-1' };
+
+  const observed = await store.observeIdentity(job, { observationId: 'SEC-Q4-001' });
+  const record = await store.getIdentityObservation(job, 'SEC-Q4-001');
+
+  assert.equal(observed.outcome, 'CREATED');
+  assert.equal(record.status, 'OBSERVED');
+  assert.equal(fake.calls[0].body.operation, 'observeIdentity');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-sec-1',
+    leaseToken: 'lease-sec-1',
+    observationId: 'SEC-Q4-001',
+  });
+  assert.equal(fake.calls[1].body.operation, 'getIdentityObservation');
+});
+
+test('Security qualification trace uses a dedicated lease-bound Edge operation', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', link: { id: 'link-sec-1', executionJobId: 'job-sec-1', intentId: 'intent-sec-1' } } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-sec-1', intentId: 'intent-sec-1', leaseToken: 'lease-sec-1' };
+
+  const result = await store.linkSecurityQualificationTrace(job, {
+    sourceRiskId: 'RSK-015',
+    targetBaseline: '5.3.9',
+    relationType: 'RELATED_TO',
+  });
+
+  assert.equal(result.link.executionJobId, 'job-sec-1');
+  assert.equal(fake.calls[0].body.operation, 'linkSecurityQualificationTrace');
+  assert.deepEqual(fake.calls[0].body.payload, {
+    jobId: 'job-sec-1',
+    leaseToken: 'lease-sec-1',
+    sourceRiskId: 'RSK-015',
+    targetBaseline: '5.3.9',
+    relationType: 'RELATED_TO',
+  });
+});
+

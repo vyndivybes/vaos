@@ -1,6 +1,12 @@
 import { getVyndiBridgeRoute } from '../../packages/contracts/vyndi-write-bridge.mjs';
 
 export const VYNDI_BRIDGE_KEY_ID = 'vyndi-primary-p256-v1';
+export const VYNDI_BRIDGE_PROTOCOL_VERSION = 'vaos-vyndi-bridge.v2';
+export const VYNDI_BRIDGE_SERVICE_IDENTITY = 'vaos';
+export const VYNDI_BRIDGE_AUDIENCE = 'vyndi-os';
+export const VYNDI_BRIDGE_METHOD = 'POST';
+export const VYNDI_BRIDGE_PATH = '/api/vaos/bridge';
+export const VYNDI_BRIDGE_READ_PURPOSE = 'read-observe';
 
 function terminalError(code, message = code) {
   const error = new Error(message);
@@ -42,10 +48,18 @@ export function createVyndiReadBridgeClient({
       }
 
       const body = JSON.stringify({
+        protocolVersion: VYNDI_BRIDGE_PROTOCOL_VERSION,
+        serviceIdentity: VYNDI_BRIDGE_SERVICE_IDENTITY,
+        audience: VYNDI_BRIDGE_AUDIENCE,
+        method: VYNDI_BRIDGE_METHOD,
+        path: VYNDI_BRIDGE_PATH,
+        purpose: VYNDI_BRIDGE_READ_PURPOSE,
+        protocolVersion: VYNDI_BRIDGE_PROTOCOL_VERSION,
         actionType: job.actionType,
         employeeId: route.employeeId,
         intentId: job.intentId,
         executionJobId: job.id,
+        approvalId: null,
         missionId: String(job.payload?.missionId || `ad-hoc:${job.intentId}`),
         input: {
           limit: Number.isInteger(job.payload?.limit) ? job.payload.limit : 50,
@@ -68,8 +82,8 @@ export function createVyndiReadBridgeClient({
         throw terminalError('VYNDI_BRIDGE_SIGNATURE_UNAVAILABLE');
       }
 
-      const response = await serviceBinding.fetch('https://vyndi.service/api/vaos/bridge', {
-        method: 'POST',
+      const response = await serviceBinding.fetch(`https://vyndi.service${VYNDI_BRIDGE_PATH}`, {
+        method: VYNDI_BRIDGE_METHOD,
         headers: {
           'content-type': 'application/json',
           'cache-control': 'no-store',

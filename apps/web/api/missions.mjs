@@ -1,6 +1,7 @@
 import { parseCookies, SESSION_COOKIE, verifySessionToken } from '../lib/auth.mjs';
 import { apiError } from '../lib/api-contracts.mjs';
 import { getEightAgentOperatingService } from '../lib/operating-provider.mjs';
+import { createMissionConsumer } from '../../../platform/execution/mission-consumer.mjs';
 import { VAOS_JOB_CATALOG } from '../../../platform/runtime/vaos-eight-operating-model.mjs';
 
 const JOBS = new Set(Object.values(VAOS_JOB_CATALOG).flat().map((job) => job.actionType));
@@ -48,8 +49,12 @@ function validDispatch(body) {
     ));
 }
 
-export function createMissionsHandler({ getService = getEightAgentOperatingService } = {}) {
+export function createMissionsHandler({
+  getService = getEightAgentOperatingService,
+  createConsumer = ({ service }) => createMissionConsumer({ service }),
+} = {}) {
   if (typeof getService !== 'function') throw new Error('MISSION_SERVICE_FACTORY_REQUIRED');
+  if (typeof createConsumer !== 'function') throw new Error('MISSION_CONSUMER_FACTORY_REQUIRED');
 
   return async function handler(req, res) {
     res.setHeader('Cache-Control', 'no-store');
@@ -98,6 +103,24 @@ export function createMissionsHandler({ getService = getEightAgentOperatingServi
         return res.status(200).json({ data: result });
       } catch {
         return res.status(503).json(apiError('MISSION_UNAVAILABLE', 'Unable to dispatch mission'));
+      }
+    }
+
+    if (body.operation === 'RUN_SAFE'
+      && exactKeys(body, ['operation', 'missionId', 'maxHandoffs'])
+      && validMissionId(body.missionId)
+      && (body.maxHandoffs === undefined || (
+        Number.isInteger(body.maxHandoffs) && body.maxHandoffs >= 1 && body.maxHandoffs <= 8
+      ))) {
+      try {
+        const service = getService(req.env);
+        const consumer = createConsumer({ service });
+        const options = { maxHandoffs: body.maxHandoffs ?? 4 };
+        const consumed = await consumer.consume(body.missionId, options);
+        const reviewed = await consumer.review(body.missionId, options);
+        return res.status(200).json({ data: { consumed, reviewed } });
+      } catch {
+        return res.status(503).json(apiError('MISSION_CONSUMER_UNAVAILABLE', 'Safe mission execution did not complete'));
       }
     }
 

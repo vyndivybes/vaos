@@ -1,7 +1,8 @@
 import { AUTHORITY, createAgentDefinition } from '../../packages/contracts/agent.mjs';
 import { createAgentRuntime } from './agent-runtime.mjs';
+import { VYNDI_OPERATIONAL_DIGITAL_EMPLOYEES } from '../../packages/contracts/vyndi-workforce.mjs';
 
-const AGENT_DEFINITIONS = Object.freeze([
+const ORIGINAL_AGENT_DEFINITIONS = Object.freeze([
   {
     id: 'orchestrator',
     name: 'VAOS Orchestrator',
@@ -98,6 +99,23 @@ const AGENT_DEFINITIONS = Object.freeze([
       'DIGITAL_THREAD.CREATE_LINK': AUTHORITY.APPROVED_EXECUTION,
     },
   },
+]);
+
+const VYNDI_OPERATIONAL_AGENT_DEFINITIONS = Object.freeze(
+  VYNDI_OPERATIONAL_DIGITAL_EMPLOYEES.map((employee) => Object.freeze({
+    id: employee.id,
+    name: employee.name,
+    domain: employee.department || employee.role,
+    status: 'active',
+    confidence: 100,
+    task: 'Governed VYNDI operational capability',
+    capabilities: Object.freeze({ ...employee.capabilities }),
+  })),
+);
+
+const AGENT_DEFINITIONS = Object.freeze([
+  ...ORIGINAL_AGENT_DEFINITIONS,
+  ...VYNDI_OPERATIONAL_AGENT_DEFINITIONS,
 ]);
 
 function registerFleet(runtime) {

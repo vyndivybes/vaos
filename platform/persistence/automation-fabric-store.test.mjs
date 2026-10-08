@@ -91,7 +91,7 @@ test('callback receipt create/get/consume preserve exactly-once interface', asyn
 test('reconciliation adapter preserves enqueue, leased claim and lease-checked save semantics', async()=>{
   const fx=fakeFetch(async ({operation,payload})=>{
     if(operation==='reconciliationEnqueue') return {body:{outcome:'CREATED',record:payload.record}};
-    if(operation==='reconciliationClaim') return {body:{...payload.mock,state:'LEASED',leaseToken:'lease-1',leasedBy:payload.workerId}};
+    if(operation==='reconciliationClaim') return {body:{reconciliationId:'r1',identity:'x',providerId:'zapier',capability:'integration.saas',executionJobId:'j',intentId:'i',providerRunId:'p',reasonCode:'UNKNOWN',evidenceRefs:[],state:'LEASED',attempts:0,nextAttemptAt:'2026-10-08T00:00:00.000Z',createdAt:'2026-10-08T00:00:00.000Z',updatedAt:'2026-10-08T00:00:00.000Z',errorType:null,leaseToken:'lease-1',leasedBy:payload.workerId,leaseExpiresAt:'2026-10-08T00:02:00.000Z'}};
     if(operation==='reconciliationSave') return {body:{outcome:'SAVED',record:{reconciliationId:payload.reconciliationId,...payload.patch}}};
     if(operation==='reconciliationGet') return {body:{reconciliationId:payload.reconciliationId,state:'PENDING'}};
     if(operation==='reconciliationList') return {body:[]};

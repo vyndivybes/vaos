@@ -1,0 +1,107 @@
+name: provider-wave1-live-qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualification/provider-wave-1
+    paths:
+      - .github/provider-wave1-live.trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-wave1-live-qualification
+  cancel-in-progress: true
+
+jobs:
+  live-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Contract qualification checks
+        run: >-
+          node --test
+          platform/execution/provider-qualification-engine.test.mjs
+          platform/qualification/provider-wave-1-profiles.test.mjs
+          integrations/playwright/browser-adapter.test.mjs
+          integrations/node-red/edge-adapter.test.mjs
+          integrations/opentelemetry/otlp-exporter.test.mjs
+
+      - name: Install Playwright qualification runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm install --no-save --package-lock=false @playwright/test@1.64.0
+          if command -v google-chrome >/dev/null 2>&1 || command -v google-chrome-stable >/dev/null 2>&1; then
+            echo "PLAYWRIGHT_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            npx playwright install --only-shell chromium
+          fi
+          echo "PLAYWRIGHT_VERSION=$(npx playwright --version | sed 's/^Version //')" >> "$GITHUB_ENV"
+
+      - name: Playwright ephemeral-live qualification
+        run: npx playwright test --config=scripts/qualification/playwright-wave1.config.mjs
+
+      - name: Install Node-RED qualification runtime
+        run: |
+          npm install --no-save --package-lock=false node-red@4.1.7
+          echo "NODE_RED_VERSION=$(node -p "require('node-red/package.json').version")" >> "$GITHUB_ENV"
+
+      - name: Node-RED ephemeral-live qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/vaos-node-red
+          cp scripts/qualification/node-red-wave1-flows.json /tmp/vaos-node-red/flows.json
+          ./node_modules/.bin/node-red --userDir /tmp/vaos-node-red --port 1880 flows.json >/tmp/node-red-wave1.log 2>&1 &
+          NODERED_PID=$!
+          trap 'kill "$NODERED_PID" 2>/dev/null || true' EXIT
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:1880/ >/dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS -X POST http://127.0.0.1:1880/vaos-wave1             -H 'Content-Type: application/json'             -d '{"executionJobId":"job-wave1","eventType":"qualification.ping","deviceId":"qualification-device"}'             > /tmp/node-red-response.json
+          node -e "const fs=require('fs'); const x=JSON.parse(fs.readFileSync('/tmp/node-red-response.json','utf8')); if(x.ok!==true||x.edgeEventId!=='edge-job-wave1'||x.effectClass!=='observe') process.exit(1)"
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:1880/vaos-unknown)
+          test "$STATUS" = "404"
+
+      - name: Start OpenTelemetry Collector qualification runtime
+        shell: bash
+        run: |
+          set -euo pipefail
+          docker run -d --name vaos-otel-wave1             -p 4318:4318 -p 13133:13133             -v "$PWD/scripts/qualification/otel-wave1-config.yaml:/etc/otelcol/config.yaml:ro"             otel/opentelemetry-collector:0.162.0
+          echo "OTEL_VERSION=0.162.0" >> "$GITHUB_ENV"
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:13133/ >/dev/null; then break; fi
+            sleep 1
+          done
+
+      - name: OpenTelemetry ephemeral-live qualification
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl -fsS -X POST http://127.0.0.1:4318/v1/traces             -H 'Content-Type: application/json'             -d '{"resourceSpans":[]}' >/tmp/otel-ok.json
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' -X POST http://127.0.0.1:4318/v1/traces             -H 'Content-Type: application/json'             --data-binary '{bad-json')
+          test "$STATUS" -ge 400
+
+      - name: Write governed live evidence bundles
+        run: node scripts/qualification/write-wave1-evidence.mjs
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave1-live-evidence
+          path: qualification-evidence/provider-wave-1/*.json
+          retention-days: 30
+
+      - name: Cleanup qualification runtimes
+        if: always()
+        run: |
+          docker rm -f vaos-otel-wave1 >/dev/null 2>&1 || true

@@ -269,6 +269,16 @@ Deno.serve(async (req: Request) => {
   } else if (operation === 'reconciliationList') {
     rpcName = 'vaos_reconciliation_list'
     args = { p_server_key: serverKey }
+  } else if (operation === 'qualificationEvidenceAppend') {
+    rpcName = 'vaos_provider_qualification_evidence_append'
+    args = { p_server_key: serverKey, p_record: payload.record || {} }
+  } else if (operation === 'qualificationEvidenceList') {
+    rpcName = 'vaos_provider_qualification_evidence_list'
+    args = {
+      p_server_key: serverKey,
+      p_provider_id: payload.providerId,
+      p_capability: payload.capability,
+    }
   } else if (operation === 'claimQualificationRecovery') {
     rpcName = 'vaos_claim_qualification_recovery'
     args = {

@@ -1,0 +1,59 @@
+[
+  {
+    "id": "wave1tab",
+    "type": "tab",
+    "label": "VAOS Wave 1",
+    "disabled": false,
+    "info": "Qualification-only nonphysical flow"
+  },
+  {
+    "id": "wave1in",
+    "type": "http in",
+    "z": "wave1tab",
+    "name": "VAOS Wave 1 ingress",
+    "url": "/vaos-wave1",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 180,
+    "y": 120,
+    "wires": [
+      [
+        "wave1fn"
+      ]
+    ]
+  },
+  {
+    "id": "wave1fn",
+    "type": "function",
+    "z": "wave1tab",
+    "name": "Qualification response",
+    "func": "const id=msg.payload?.executionJobId||'unknown'; msg.payload={ok:true,edgeEventId:'edge-'+id,effectClass:'observe'}; return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 120,
+    "wires": [
+      [
+        "wave1out"
+      ]
+    ]
+  },
+  {
+    "id": "wave1out",
+    "type": "http response",
+    "z": "wave1tab",
+    "name": "HTTP response",
+    "statusCode": "200",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "x": 690,
+    "y": 120,
+    "wires": []
+  }
+]

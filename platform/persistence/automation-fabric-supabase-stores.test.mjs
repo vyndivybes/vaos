@@ -93,3 +93,38 @@ test('invalid callback and reconciliation RPC outcomes fail closed',async()=>{
   await assert.rejects(()=>stores.callbacks.consumeOnce('r1',{tokenHash:'h',providerId:'p',executionJobId:'j',intentId:'i',actionKey:'a',consumedAt:'2026-10-08T00:00:00.000Z',status:'succeeded',evidence:{}}),error=>error.code==='CALLBACK_CORRELATION_MISMATCH');
   await assert.rejects(()=>stores.reconciliation.enqueue({reconciliationId:'r1'}),error=>error.code==='RECONCILIATION_IDEMPOTENCY_CONFLICT');
 });
+
+
+test('qualification evidence store appends idempotently and lists ordered evidence',async()=>{
+  const rows=[
+    {providerId:'playwright',capability:'browser.automate',stage:'contract',checkId:'manifest-v2',outcome:'pass',evidenceClass:'automated',evidenceRefs:['ci:1'],authorityRef:'ci',recordedAt:'2026-10-08T00:00:00.000Z'},
+  ];
+  let appended=false;
+  const {calls,fetchImpl}=fakeFetch(async(operation,payload)=>{
+    if(operation==='qualificationEvidenceAppend'){
+      appended=true;
+      return{body:{outcome:'APPENDED',record:payload.record}};
+    }
+    if(operation==='qualificationEvidenceList')return{body:rows};
+    throw new Error(operation);
+  });
+  const stores=createAutomationFabricSupabaseStores({url:'https://supabase.example.test',serverSecret:'server-key',fetchImpl});
+  const saved=await stores.qualificationEvidence.append(rows[0]);
+  assert.equal(saved.checkId,'manifest-v2');
+  assert.equal(appended,true);
+  assert.deepEqual(await stores.qualificationEvidence.list('playwright','browser.automate'),rows);
+  assert.deepEqual(calls.map(x=>x.body.operation),['qualificationEvidenceAppend','qualificationEvidenceList']);
+});
+
+test('qualification evidence replay is accepted but invalid outcome fails closed',async()=>{
+  const record={providerId:'playwright',capability:'browser.automate',stage:'contract',checkId:'manifest-v2',outcome:'pass',evidenceClass:'automated',evidenceRefs:['ci:1'],authorityRef:'ci',recordedAt:'2026-10-08T00:00:00.000Z'};
+  let mode='REPLAY';
+  const {fetchImpl}=fakeFetch(async operation=>{
+    if(operation==='qualificationEvidenceAppend')return{body:{outcome:mode,record}};
+    throw new Error(operation);
+  });
+  const stores=createAutomationFabricSupabaseStores({url:'https://supabase.example.test',serverSecret:'server-key',fetchImpl});
+  assert.equal((await stores.qualificationEvidence.append(record)).checkId,'manifest-v2');
+  mode='INVALID';
+  await assert.rejects(()=>stores.qualificationEvidence.append(record),error=>error.code==='PROVIDER_QUALIFICATION_EVIDENCE_SAVE_FAILED');
+});

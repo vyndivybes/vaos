@@ -63,6 +63,19 @@ export function createAutomationFabricSupabaseStores({
     },
   });
 
+  const qualificationEvidence=Object.freeze({
+    async append(record){
+      const result=await invoke('qualificationEvidenceAppend',{record});
+      if(!['APPENDED','REPLAY'].includes(result?.outcome)||!result.record)throw fail('PROVIDER_QUALIFICATION_EVIDENCE_SAVE_FAILED');
+      return result.record;
+    },
+    async list(providerId,capability){
+      const result=await invoke('qualificationEvidenceList',{providerId,capability});
+      if(!Array.isArray(result))throw fail('PROVIDER_QUALIFICATION_EVIDENCE_LIST_FAILED');
+      return result;
+    },
+  });
+
   const reconciliation=Object.freeze({
     async enqueue(record){
       const result=await invoke('reconciliationEnqueue',{record});
@@ -91,5 +104,5 @@ export function createAutomationFabricSupabaseStores({
     },
   });
 
-  return Object.freeze({providerState,callbacks,reconciliation});
+  return Object.freeze({providerState,callbacks,reconciliation,qualificationEvidence});
 }

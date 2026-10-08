@@ -1,0 +1,235 @@
+{
+  "schemaVersion": "vaos.provider-qualification-wave.v1",
+  "waveId": "provider-wave-1",
+  "description": "Low-risk/self-hosted provider qualification wave. Live CI evidence does not activate production routing.",
+  "profiles": [
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "playwright",
+      "capability": "browser.automate",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "origin-and-secret-boundary",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "live-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "happy-path",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "failure-mode",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "staging-session-auth",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "artifact-sealing",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "node-red",
+      "capability": "event.edge",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "physical-safety-gate",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "live-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "approved-flow-happy-path",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "unknown-route-failure",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "admin-auth",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "callback-correlation",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "buffer-replay-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "nonphysical-production-canary",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "opentelemetry",
+      "capability": "telemetry.observe",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "exporter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "sanitization-boundary",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "collector-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "otlp-http-ingest",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "malformed-payload-failure",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "tls-or-private-network",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "egress-policy",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "backend-routing",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "retention-volume-budget",
+              "requiredEvidenceClass": "manual"
+            },
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

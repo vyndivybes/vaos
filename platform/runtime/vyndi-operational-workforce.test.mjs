@@ -49,7 +49,13 @@ test('responsibility contracts enforce observation autonomy, approval-bound muta
     for(const action of contract.approvalRequiredActions){
       assert.equal(employee.capabilities[action],AUTHORITY.APPROVED_EXECUTION);
       const policy=evaluateActionPolicy({actionType:action,authority:employee.capabilities[action]});
-      assert.equal(policy.decision,POLICY_DECISION.PREPARE_ONLY);
+      if(action==='PEOPLE.CHANGE_EMPLOYEE_MASTER'){
+        assert.equal(policy.decision,POLICY_DECISION.AWAIT_APPROVAL);
+        assert.equal(policy.reason,'HUMAN_APPROVAL_REQUIRED');
+      }else{
+        assert.equal(policy.decision,POLICY_DECISION.PREPARE_ONLY);
+        assert.equal(policy.reason,'WORKFORCE_BRIDGE_PREPARE_ONLY');
+      }
     }
 
     assert.deepEqual(

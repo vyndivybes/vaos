@@ -31,11 +31,22 @@ export default async function handler(req, res) {
     const rawPayload = body.payload || {};
     const writeQualification = body.actionType === 'COMMERCIAL.COMMIT_ORDER'
       && rawPayload?.writeQualification === true;
+    const operationalWrite = body.actionType === 'PEOPLE.CHANGE_EMPLOYEE_MASTER';
     const sanitizedQualificationPayload = writeQualification
       ? Object.fromEntries(Object.entries(rawPayload).filter(([key]) => !['_vaosControl','requestedBy'].includes(key)))
       : null;
+    const sanitizedOperationalPayload = operationalWrite
+      ? Object.fromEntries(Object.entries(rawPayload).filter(([key]) => !['_vaosControl','requestedBy','operationalWrite','operationalWriteProfile'].includes(key)))
+      : null;
     const payload = writeQualification
       ? { ...sanitizedQualificationPayload, requestedBy: session.email }
+      : operationalWrite
+        ? {
+            ...sanitizedOperationalPayload,
+            operationalWrite: true,
+            operationalWriteProfile: 'PEOPLE_DRAFT_MASTER_V1',
+            requestedBy: session.email,
+          }
       : body.actionType === 'DIGITAL_THREAD.CREATE_LINK'
       ? {
           ...rawPayload,

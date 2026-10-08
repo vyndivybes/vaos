@@ -39,8 +39,10 @@ test('eight commissioned VYNDI read actions are live autonomous observations',()
   }
 });
 
-test('all VYNDI mutation actions remain prepare-only until write commissioning',()=>{
-  for(const actionType of writeActions){
+test('fourteen VYNDI mutations remain prepare-only after the first Stage-4 write opens',()=>{
+  const remaining=writeActions.filter(actionType=>actionType!=='PEOPLE.CHANGE_EMPLOYEE_MASTER');
+  assert.equal(remaining.length,14);
+  for(const actionType of remaining){
     const result=evaluateActionPolicy({actionType,authority:5,risk:'low'});
     assert.equal(result.decision,POLICY_DECISION.PREPARE_ONLY,actionType);
     assert.equal(result.reason,'WORKFORCE_BRIDGE_PREPARE_ONLY',actionType);
@@ -67,5 +69,21 @@ test('Stage-3 write qualification policy only opens the synthetic commercial can
 
   const ordinary=evaluateActionPolicy({actionType:'COMMERCIAL.COMMIT_ORDER',authority:4,risk:'low'});
   assert.equal(ordinary.decision,POLICY_DECISION.PREPARE_ONLY);
+});
+
+test('Stage-4 opens only People master draft writes behind human approval',()=>{
+  const opened=evaluateActionPolicy({
+    actionType:'PEOPLE.CHANGE_EMPLOYEE_MASTER',
+    authority:4,
+    risk:'high',
+  });
+  assert.equal(opened.decision,POLICY_DECISION.AWAIT_APPROVAL);
+  assert.equal(opened.reason,'HUMAN_APPROVAL_REQUIRED');
+
+  for(const actionType of writeActions.filter(item=>item!=='PEOPLE.CHANGE_EMPLOYEE_MASTER')){
+    const result=evaluateActionPolicy({actionType,authority:5,risk:'low'});
+    assert.equal(result.decision,POLICY_DECISION.PREPARE_ONLY,actionType);
+    assert.equal(result.reason,'WORKFORCE_BRIDGE_PREPARE_ONLY',actionType);
+  }
 });
 

@@ -117,6 +117,66 @@ function vyndiWriteQualificationAdapter(vyndiWriteQualification) {
   });
 }
 
+function vyndiOperationalWriteAdapter(vyndiOperationalWrite) {
+  return adapter('vyndi.operational-write.v1', async (job) => {
+    if (!vyndiOperationalWrite || typeof vyndiOperationalWrite.execute !== 'function') {
+      throw terminalError('DOMAIN_PORT_REQUIRED:vyndiOperationalWrite');
+    }
+    if (
+      job?.actionType !== 'PEOPLE.CHANGE_EMPLOYEE_MASTER'
+      || job?.payload?.operationalWrite !== true
+      || job?.payload?.operationalWriteProfile !== 'PEOPLE_DRAFT_MASTER_V1'
+    ) {
+      throw terminalError('VYNDI_OPERATIONAL_WRITE_SCOPE_DENIED');
+    }
+
+    const executed = await vyndiOperationalWrite.execute(job);
+    if (
+      !executed
+      || executed.actionType !== job.actionType
+      || executed.sourceAuthority !== 'savePeopleRecordDraft'
+      || executed.operationalWriteProfile !== 'PEOPLE_DRAFT_MASTER_V1'
+      || executed.outcome !== 'EXECUTED'
+      || executed.finalState !== 'draft'
+      || !executed.resourceId
+      || !Number.isInteger(Number(executed.initialRevision))
+      || !Number.isInteger(Number(executed.finalRevision))
+      || Number(executed.finalRevision) <= Number(executed.initialRevision)
+    ) {
+      throw terminalError('VYNDI_OPERATIONAL_WRITE_VERIFICATION_MISMATCH');
+    }
+
+    return {
+      adapterId: 'vyndi.operational-write.v1',
+      effect: {
+        effectType: 'VYNDI.PEOPLE_MASTER_DRAFT_UPDATED',
+        resourceType: 'VYNDI_PEOPLE_RECORD',
+        resourceId: executed.resourceId,
+        state: executed.finalState,
+        sourceAuthority: executed.sourceAuthority,
+        operationalWriteProfile: executed.operationalWriteProfile,
+        domainOutcome: executed.replay ? 'REPLAY' : 'EXECUTED',
+      },
+      verification: {
+        verified: true,
+        resourceType: 'VYNDI_PEOPLE_RECORD',
+        resourceId: executed.resourceId,
+        expectedState: 'draft',
+        actionType: job.actionType,
+        approvalId: executed.approvalId,
+        operationalWriteProfile: executed.operationalWriteProfile,
+        sourceAuthority: executed.sourceAuthority,
+        nonce: executed.nonce,
+        bodySha256: executed.bodySha256,
+        initialRevision: executed.initialRevision,
+        finalRevision: executed.finalRevision,
+        replay: executed.replay === true,
+        evidenceSource: 'vyndi:/api/vaos/bridge',
+      },
+    };
+  });
+}
+
 const WORKFORCE_TARGET_STATUS = Object.freeze({
   'WORKFORCE.START_TRAINING': 'TRAINING',
   'WORKFORCE.QUALIFY': 'QUALIFIED',
@@ -618,7 +678,7 @@ function digitalWorkforceAdapter(digitalWorkforce, actionType) {
   });
 }
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge, vyndiWriteQualification } = {}) {
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge, vyndiWriteQualification, vyndiOperationalWrite } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
@@ -629,6 +689,7 @@ export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, proj
     ...Object.keys(WORKFORCE_TARGET_STATUS).map((actionType) => [actionType, digitalWorkforceAdapter(digitalWorkforce, actionType)]),
     ...VYNDI_READ_ACTIONS.map((actionType) => [actionType, vyndiReadAdapter(vyndiBridge, actionType)]),
     ['COMMERCIAL.COMMIT_ORDER', vyndiWriteQualificationAdapter(vyndiWriteQualification)],
+    ['PEOPLE.CHANGE_EMPLOYEE_MASTER', vyndiOperationalWriteAdapter(vyndiOperationalWrite)],
   ]);
 
   return Object.freeze({

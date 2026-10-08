@@ -23,24 +23,34 @@ test('bridge preserves all 23 operational capabilities and adds exactly one read
     assert.match(route.sourceFile,/^src\/lib\//);
     if(route.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION){
       assert.equal(route.approvalRequired,true);
-      assert.equal(route.executionEnabled,false);
+      if(route.actionType==='PEOPLE.CHANGE_EMPLOYEE_MASTER'){
+        assert.equal(route.executionEnabled,true);
+        assert.equal(route.state,VYNDI_BRIDGE_ROUTE_STATE.WRITE_READY);
+      }else{
+        assert.equal(route.executionEnabled,false);
+      }
     }
   }
 });
 
-test('read commissioning adds a ninth read-only project route while keeping all fifteen mutations disabled',()=>{
+test('Stage-4 keeps nine reads live, opens one approved write, and leaves fourteen mutations disabled',()=>{
   const readiness=getVyndiBridgeReadiness();
   assert.equal(readiness.executionEnabled,true);
   assert.equal(readiness.routeCount,24);
   assert.equal(readiness.readReady,9);
-  assert.equal(readiness.writePrepared,15);
+  assert.equal(readiness.writePrepared,14);
+  assert.equal(readiness.writeReady,1);
   assert.deepEqual(readiness.gaps,[]);
   const reads=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.READ);
   const writes=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION);
   assert.equal(reads.length,9);
   assert.ok(reads.every(r=>r.state===VYNDI_BRIDGE_ROUTE_STATE.READ_READY && r.executionEnabled===true));
   assert.equal(writes.length,15);
-  assert.ok(writes.every(r=>r.executionEnabled===false));
+  assert.deepEqual(
+    writes.filter(r=>r.executionEnabled===true).map(r=>r.actionType),
+    ['PEOPLE.CHANGE_EMPLOYEE_MASTER'],
+  );
+  assert.ok(writes.filter(r=>r.actionType!=='PEOPLE.CHANGE_EMPLOYEE_MASTER').every(r=>r.executionEnabled===false));
 });
 
 test('all three previously missing canonical authorities remain resolved',()=>{
@@ -105,3 +115,32 @@ test('employee/action mismatch fails closed',()=>{
     error=>error.code==='VYNDI_BRIDGE_EMPLOYEE_MISMATCH',
   );
 });
+
+test('Stage-4 marks exactly one mutation WRITE_READY and leaves fourteen WRITE_PREPARED',()=>{
+  const writes=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION);
+  const ready=writes.filter(r=>r.state==='WRITE_READY'&&r.executionEnabled===true);
+  const prepared=writes.filter(r=>r.state===VYNDI_BRIDGE_ROUTE_STATE.WRITE_PREPARED&&r.executionEnabled===false);
+  assert.deepEqual(ready.map(r=>r.actionType),['PEOPLE.CHANGE_EMPLOYEE_MASTER']);
+  assert.equal(prepared.length,14);
+});
+
+test('generic prepared bridge cannot execute the Stage-4 mutation even with a transport',async()=>{
+  let calls=0;
+  const adapter=createVyndiWriteBridgeAdapter({transport:async()=>{calls+=1;return {ok:true}}});
+  const envelope=adapter.prepare({
+    employeeId:'people',
+    actionType:'PEOPLE.CHANGE_EMPLOYEE_MASTER',
+    missionId:'STAGE4-M',
+    intentId:'STAGE4-I',
+    idempotencyKey:'STAGE4-K',
+    approvalRef:'STAGE4-APP',
+    input:{id:'role-temp',expectedRevision:1},
+  });
+  assert.equal(envelope.executionEnabled,true);
+  await assert.rejects(
+    ()=>adapter.execute(envelope),
+    error=>error.code==='VYNDI_OPERATIONAL_WRITE_DEDICATED_ADAPTER_REQUIRED',
+  );
+  assert.equal(calls,0);
+});
+

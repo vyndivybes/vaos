@@ -816,3 +816,33 @@ test('commercial write-qualification adapter is registered but fails closed with
     /DOMAIN_PORT_REQUIRED:vyndiWriteQualification/,
   );
 });
+
+test('People master operational write adapter is the only Stage-4 VYNDI operational mutation adapter', async()=>{
+  const registry=createExecutionAdapterRegistry();
+  assert.equal(registry.has('PEOPLE.CHANGE_EMPLOYEE_MASTER'),true);
+  assert.equal(registry.get('PEOPLE.CHANGE_EMPLOYEE_MASTER').id,'vyndi.operational-write.v1');
+  for(const actionType of [
+    'COMMERCIAL.CHANGE_COMMITMENT','PROCUREMENT.CREATE_PO','PROCUREMENT.CHANGE_PO',
+    'INVENTORY.RESERVE_MATERIAL','INVENTORY.ISSUE_MATERIAL','PRODUCTION.RELEASE_JOB',
+    'PRODUCTION.ADVANCE_STAGE','MAINTENANCE.OPEN_WORK_ORDER','MAINTENANCE.RETURN_TO_SERVICE',
+    'FINANCE.PREPARE_PAYMENT','PEOPLE.PREPARE_PAYROLL','ENGINEERING.CONFIGURATION_CHANGE',
+    'ENGINEERING.RELEASE_CONFIGURATION'
+  ]){
+    assert.equal(registry.has(actionType),false,actionType);
+  }
+  await assert.rejects(
+    ()=>registry.get('PEOPLE.CHANGE_EMPLOYEE_MASTER').execute({
+      id:'job-stage4-1',
+      intentId:'intent-stage4-1',
+      actionType:'PEOPLE.CHANGE_EMPLOYEE_MASTER',
+      payload:{
+        operationalWrite:true,
+        operationalWriteProfile:'PEOPLE_DRAFT_MASTER_V1',
+        id:'role-temp',
+        expectedRevision:1,
+      },
+    }),
+    /DOMAIN_PORT_REQUIRED:vyndiOperationalWrite/,
+  );
+});
+

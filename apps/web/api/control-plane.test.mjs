@@ -23,3 +23,13 @@ test('workspace queue recovery command calls the authenticated execution drain e
   assert.match(source, /resolved\.kind === 'execution'/);
   assert.match(source, /fetch\('\/api\/executions'/);
 });
+
+test('People operational-write ingress strips caller control metadata and stamps authenticated identity', async () => {
+  const source = await readFile(new URL('./intents.mjs', import.meta.url), 'utf8');
+  assert.match(source, /body\.actionType === 'PEOPLE\.CHANGE_EMPLOYEE_MASTER'/);
+  assert.match(source, /!\['_vaosControl','requestedBy','operationalWrite','operationalWriteProfile'\]\.includes\(key\)/);
+  assert.match(source, /operationalWrite:\s*true/);
+  assert.match(source, /operationalWriteProfile:\s*'PEOPLE_DRAFT_MASTER_V1'/);
+  assert.match(source, /requestedBy:\s*session\.email/);
+});
+

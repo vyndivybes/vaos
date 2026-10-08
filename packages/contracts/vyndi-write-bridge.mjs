@@ -1,6 +1,7 @@
 const ROUTE_STATE=Object.freeze({
   READ_READY:'READ_READY',
   WRITE_PREPARED:'WRITE_PREPARED',
+  WRITE_READY:'WRITE_READY',
   GAP:'GAP',
 });
 
@@ -23,7 +24,9 @@ function route(input){
   if(!Object.values(EFFECT).includes(input.effectClass)) throw new Error('VYNDI_BRIDGE_EFFECT_INVALID');
   if(!Object.values(ROUTE_STATE).includes(input.state)) throw new Error('VYNDI_BRIDGE_STATE_INVALID');
   const executionEnabled=input.executionEnabled===true;
-  if (executionEnabled && !(input.effectClass===EFFECT.READ && input.state===ROUTE_STATE.READ_READY)) {
+  const executableRead=input.effectClass===EFFECT.READ && input.state===ROUTE_STATE.READ_READY;
+  const executableWrite=input.effectClass===EFFECT.MUTATION && input.state===ROUTE_STATE.WRITE_READY;
+  if (executionEnabled && !(executableRead||executableWrite)) {
     throw new Error('VYNDI_BRIDGE_EXECUTION_SCOPE_INVALID');
   }
   return freeze({
@@ -158,10 +161,10 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
     description:'Prepare People-side payroll readiness. Finance posting/payment remains a separate authority.'
   }),
   route({
-    actionType:'PEOPLE.CHANGE_EMPLOYEE_MASTER',employeeId:'people',effectClass:EFFECT.MUTATION,state:ROUTE_STATE.WRITE_PREPARED,
+    actionType:'PEOPLE.CHANGE_EMPLOYEE_MASTER',employeeId:'people',effectClass:EFFECT.MUTATION,state:ROUTE_STATE.WRITE_READY,executionEnabled:true,
     sourceFile:'src/lib/people-office-authority.ts',authority:'savePeopleRecordDraft',
-    verificationRefs:['vyndi_people_records','vyndi_audit_events'],
-    description:'Prepare controlled People master draft; approval lifecycle remains separately governed.'
+    verificationRefs:['vyndi_people_records','vyndi_audit_events','vyndi_vaos_operational_writes'],
+    description:'Approved Stage-4 People master draft write with optimistic revision control and immutable VAOS evidence.'
   }),
 
   route({
@@ -196,6 +199,7 @@ export function getVyndiBridgeReadiness(){
     routeCount:routes.length,
     readReady:routes.filter(r=>r.state===ROUTE_STATE.READ_READY).length,
     writePrepared:routes.filter(r=>r.state===ROUTE_STATE.WRITE_PREPARED).length,
+    writeReady:routes.filter(r=>r.state===ROUTE_STATE.WRITE_READY).length,
     gaps:routes.filter(r=>r.state===ROUTE_STATE.GAP).map(r=>({actionType:r.actionType,employeeId:r.employeeId,gap:r.gap})),
     executionEnabled:routes.some(r=>r.executionEnabled),
   });

@@ -35,7 +35,7 @@ export default async function handler(req, res) {
 
     let execution = null;
     if (validation.decision === 'APPROVED') {
-      try { execution = await getExecutionEngine(req.env).processOne(); }
+      try { execution = await getExecutionEngine(req.env).drain({ limit: 5 }); }
       catch { execution = { status: 'QUEUED' }; }
     }
     return res.status(200).json({ data: { ...result, execution } });

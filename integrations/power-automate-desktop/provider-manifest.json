@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "power-automate-desktop",
+  "displayName": "Power Automate Desktop",
+  "adapterVersion": "1.0.0",
+  "description": "Governed Windows desktop/RPA provider for preapproved desktop flows and machine groups.",
+  "capabilities": [
+    "desktop.automate"
+  ],
+  "deploymentModes": [
+    "desktop"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": false
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "session"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-desktop-flow-or-runner"
+  },
+  "operations": {
+    "retentionClass": "desktop-run-policy",
+    "dataResidency": [
+      "machine-group-policy"
+    ],
+    "costControl": "attended-unattended-license-and-run-budget"
+  },
+  "licensing": {
+    "model": "Microsoft Power Automate desktop-flow execution; attended/unattended and hosted capacity licensing must be qualified",
+    "redistributionReviewRequired": true,
+    "notes": "Machine or machine-group registration and configured desktop-flow connection are prerequisites."
+  },
+  "notes": "Disabled/evaluation-only. licensingAllowed remains false until the selected attended/unattended route is validated. Arbitrary OS commands are outside this adapter."
+}

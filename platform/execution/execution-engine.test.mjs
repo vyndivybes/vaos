@@ -142,6 +142,51 @@ test('engine preserves terminal adapter classification so invalid lifecycle tran
   assert.equal(store.failed[0].error.retryable, false);
 });
 
+test('engine deterministically re-leases an approved qualification recovery job and completes attempt two', async () => {
+  const first = {
+    id: 'job-risk-q3',
+    intentId: 'intent-risk-q3',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    payload: { riskId: 'RSK-015', qualificationMode: true, qualificationRecoveryDrill: true },
+    attemptCount: 1,
+    leaseToken: 'lease-1',
+  };
+  const second = { ...first, attemptCount: 2, leaseToken: 'lease-2' };
+  const store = makeStore([first]);
+  store.claimQualificationRecovery = async (job, { workerId }) => {
+    assert.equal(job.id, first.id);
+    assert.equal(workerId, 'vaos-execution-worker');
+    return second;
+  };
+  const registry = {
+    get(actionType) {
+      if (actionType !== 'PROJECT.ESCALATE_RISK') return null;
+      return {
+        async execute(job) {
+          if (job.attemptCount === 1) {
+            const error = new Error('QUALIFICATION_RECOVERY_DRILL_RETRY');
+            error.code = 'QUALIFICATION_RECOVERY_DRILL_RETRY';
+            error.retryable = true;
+            throw error;
+          }
+          return {
+            adapterId: 'supabase.project-risk.v1',
+            effect: { resourceId: 'RSK-015' },
+            verification: { verified: true, resourceId: 'RSK-015' },
+          };
+        },
+      };
+    },
+  };
+
+  const engine = createExecutionEngine({ store, registry });
+  const result = await engine.processOne();
+
+  assert.equal(result.status, 'SUCCEEDED');
+  assert.equal(store.failed.length, 1);
+  assert.equal(store.completed.length, 1);
+  assert.equal(store.completed[0].job.attemptCount, 2);
+});
 
 test('engine persists only sanitized machine-readable provider failure metadata', async () => {
   const store = makeStore([{

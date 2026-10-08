@@ -11,7 +11,7 @@ function fakeTracer(){
       const span={
         name,options,calls,
         setStatus(status){calls.push({op:'setStatus',status})},
-        end(time){calls.push({op:'end',time})},
+        end(endTime){calls.push({op:'end',endTime})},
       };
       spans.push(span);
       return span;

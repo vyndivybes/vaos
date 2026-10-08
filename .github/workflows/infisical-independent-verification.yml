@@ -1,0 +1,41 @@
+name: infisical-independent-verification
+on:
+  schedule:
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: infisical-independent-verification
+  cancel-in-progress: false
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # Separate read-only identity. No watchdog key, Infisical write secret or DB write privilege.
+    environment: infisical-independent-verification
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+      VAOS_INDEPENDENT_READ_TOKEN: ${{ secrets.VAOS_INDEPENDENT_READ_TOKEN }}
+      VAOS_INDEPENDENT_READ_URL: ${{ vars.VAOS_INDEPENDENT_READ_URL }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Evaluate independent verification contract
+        run: node --test platform/qualification/verify-infisical-watchdog.test.mjs
+      - name: Cross-check scheduled run and production evidence
+        run: node scripts/qualification/verify-infisical-watchdog.mjs
+      - name: Preserve PASS or FAIL evidence
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: independent-infisical-watchdog-audit
+          path: qualification-evidence/independent-watchdog/latest.json
+          if-no-files-found: warn
+          retention-days: 90

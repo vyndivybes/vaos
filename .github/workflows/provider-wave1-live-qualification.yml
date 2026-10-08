@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - qualification/provider-wave-1
+      - qualification/provider-wave-1-live
     paths:
       - .github/provider-wave1-live.trigger
 

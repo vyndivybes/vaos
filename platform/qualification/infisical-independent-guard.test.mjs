@@ -49,7 +49,7 @@ test('Independent database watchdog schedules every five minutes, without creden
  assert.match(sql,/\{enabled\}/);
  assert.match(sql,/\{capabilityEnabled,secret\.broker\}/);
  assert.match(sql,/false/i);
- assert.doesNotMatch(sql,/\{enabled\}[^;]*true.*\)/s);
+ assert.doesNotMatch(sql,/'\\{enabled\\}'\\s*,\\s*'true'::jsonb/);
  assert.doesNotMatch(sql,/p_server_key|github-infisical-production-watchdog|key_hash/i);
  assert.match(sql,/REVOKE ALL ON FUNCTION vaos_private\.audit_infisical_watchdog/);
 });

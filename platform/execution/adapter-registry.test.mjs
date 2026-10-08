@@ -753,3 +753,53 @@ test('Knowledge Q2 link resolves business resource IDs through the dedicated gov
   assert.equal(result.verification.evidenceSource, 'vaos_private.digital_thread_links');
 });
 
+
+
+test('Knowledge Q2 duplicate link is accepted as immutable replay evidence instead of dead lettering', async () => {
+  let readbackCalled = false;
+  const digitalThread = {
+    async linkDomainRecords() { throw new Error('generic path must not be used'); },
+    async getDomainLink() { throw new Error('generic path must not be used'); },
+    async linkKnowledgeQualification(job, input) {
+      return {
+        outcome: 'REPLAY',
+        link: {
+          id: 'knowledge-link-existing',
+          sourceRiskId: input.sourceRiskId,
+          targetBaseline: input.targetBaseline,
+          relationType: input.relationType,
+          executionJobId: 'job-original',
+          intentId: 'intent-original',
+        },
+      };
+    },
+    async getKnowledgeQualificationLink() {
+      readbackCalled = true;
+      throw new Error('cross-intent replay must use immutable returned link evidence');
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ digitalThread })
+    .get('DIGITAL_THREAD.CREATE_LINK')
+    .execute({
+      id: 'job-duplicate',
+      intentId: 'intent-duplicate',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      payload: {
+        sourceRiskId: 'PC-Q2-002',
+        targetBaseline: '5.3.9',
+        relationType: 'RELATED_TO',
+        qualificationKnowledgeLink: true,
+        qualificationMode: true,
+      },
+    });
+
+  assert.equal(readbackCalled, false);
+  assert.equal(result.effect.domainOutcome, 'REPLAY');
+  assert.equal(result.effect.resourceId, 'knowledge-link-existing');
+  assert.equal(result.effect.replayedFromExecutionJobId, 'job-original');
+  assert.equal(result.effect.replayedFromIntentId, 'intent-original');
+  assert.equal(result.verification.verified, true);
+  assert.equal(result.verification.replayedFromExecutionJobId, 'job-original');
+  assert.equal(result.verification.replayedFromIntentId, 'intent-original');
+});

@@ -1,3 +1,5 @@
+import { executeQualificationRecovery } from './qualification-recovery.mjs';
+
 function errorEnvelope(error, code = 'ADAPTER_EXECUTION_FAILED', retryable = true) {
   const resolvedCode = typeof error?.code === 'string' && error.code ? error.code : code;
   const resolvedRetryable = typeof error?.retryable === 'boolean' ? error.retryable : retryable;
@@ -49,7 +51,16 @@ export function createExecutionEngine({
       const completed = await store.completeExecution(job, result);
       return { status: completed?.outcome || 'SUCCEEDED', jobId: job.id, adapterId: result.adapterId };
     } catch (error) {
-      const failed = await store.failExecution(job, errorEnvelope(error));
+      const envelope = errorEnvelope(error);
+      const failed = await store.failExecution(job, envelope);
+      if (
+        envelope.code === 'QUALIFICATION_RECOVERY_DRILL_RETRY'
+        && failed?.outcome === 'RETRY_SCHEDULED'
+        && Number(job.attemptCount) === 1
+      ) {
+        const recovered = await executeQualificationRecovery({ store, registry, workerId, failedJob: job });
+        if (recovered) return recovered;
+      }
       return { status: failed?.outcome || 'RETRY_SCHEDULED', jobId: job.id };
     }
   }

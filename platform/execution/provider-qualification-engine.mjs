@@ -45,11 +45,13 @@ export function createProviderQualificationEngine({
   recordAudit=async()=>{},
   now=()=>new Date(),
   healthTtlMs=300_000,
+  evidenceStore=null,
 }={}){
   if(!controlPlane||typeof controlPlane.snapshot!=='function'||typeof controlPlane.transitionQualification!=='function'||typeof controlPlane.setProviderEnabled!=='function'||typeof controlPlane.setCapabilityEnabled!=='function')throw fail('PROVIDER_QUALIFICATION_CONTROL_PLANE_REQUIRED');
   if(!Array.isArray(profiles)||profiles.length===0)throw fail('PROVIDER_QUALIFICATION_PROFILES_REQUIRED');
   if(typeof recordAudit!=='function'||typeof now!=='function')throw fail('PROVIDER_QUALIFICATION_CONFIG_INVALID');
   if(!Number.isInteger(healthTtlMs)||healthTtlMs<1)throw fail('PROVIDER_QUALIFICATION_CONFIG_INVALID:healthTtlMs');
+  if(evidenceStore!==null&&(typeof evidenceStore?.append!=='function'||typeof evidenceStore?.list!=='function'))throw fail('PROVIDER_QUALIFICATION_EVIDENCE_STORE_INVALID');
 
   const normalizedProfiles=new Map();
   const evidence=new Map();
@@ -75,6 +77,45 @@ export function createProviderQualificationEngine({
     throw fail('PROVIDER_QUALIFICATION_CHECK_NOT_FOUND');
   }
 
+  function normalizeEvidenceRow(profile,row,code='PROVIDER_QUALIFICATION_PERSISTED_EVIDENCE_INVALID'){
+    if(!row||typeof row!=='object'||Array.isArray(row))throw fail(code);
+    const providerId=req(row,'providerId',code);
+    const capability=req(row,'capability',code);
+    if(providerId!==profile.providerId||capability!==profile.capability)throw fail(code);
+    const checkId=req(row,'checkId',code);
+    const {stage,check}=getCheck(profile,checkId);
+    if(row.stage!==stage)throw fail(code);
+    if(!OUTCOMES.has(row.outcome))throw fail(code);
+    if(row.evidenceClass!==check.requiredEvidenceClass)throw fail(code);
+    if(!Array.isArray(row.evidenceRefs)||row.evidenceRefs.length===0||row.evidenceRefs.some(v=>typeof v!=='string'||!v.trim()))throw fail(code);
+    const authorityRef=req(row,'authorityRef',code);
+    const recordedAt=req(row,'recordedAt',code);
+    if(Number.isNaN(new Date(recordedAt).getTime()))throw fail(code);
+    return Object.freeze({
+      providerId,capability,stage,checkId,outcome:row.outcome,evidenceClass:row.evidenceClass,
+      evidenceRefs:Object.freeze([...new Set(row.evidenceRefs.map(v=>v.trim()))]),
+      authorityRef,recordedAt:new Date(recordedAt).toISOString(),
+    });
+  }
+
+  async function restoreEvidence(){
+    if(!evidenceStore)return [];
+    const restored=[];
+    for(const [key,profile] of normalizedProfiles.entries()){
+      let rows;
+      try{rows=await evidenceStore.list(profile.providerId,profile.capability)}
+      catch{throw fail('PROVIDER_QUALIFICATION_EVIDENCE_RESTORE_FAILED')}
+      if(!Array.isArray(rows))throw fail('PROVIDER_QUALIFICATION_PERSISTED_EVIDENCE_INVALID');
+      const target=evidence.get(key);
+      target.clear();
+      const normalized=rows.map(row=>normalizeEvidenceRow(profile,row))
+        .sort((a,b)=>a.recordedAt.localeCompare(b.recordedAt));
+      for(const row of normalized)target.set(row.checkId,row);
+      restored.push(...normalized);
+    }
+    return restored;
+  }
+
   async function recordEvidence({
     providerId,capability,checkId,outcome,evidenceClass,evidenceRefs,authorityRef,
   }={}){
@@ -94,6 +135,10 @@ export function createProviderQualificationEngine({
       evidenceRefs:Object.freeze([...new Set(evidenceRefs.map(v=>v.trim()))]),
       authorityRef,recordedAt,
     });
+    if(evidenceStore){
+      try{await evidenceStore.append(clone(row))}
+      catch{throw fail('PROVIDER_QUALIFICATION_EVIDENCE_PERSIST_FAILED')}
+    }
     evidence.get(key).set(checkId,row);
     await recordAudit({
       type:'PROVIDER.QUALIFICATION.EVIDENCE.RECORDED',
@@ -185,5 +230,5 @@ export function createProviderQualificationEngine({
     return Object.freeze({providerId,capability,activated:true,snapshot:controlPlane.snapshot(providerId)});
   }
 
-  return Object.freeze({recordEvidence,assess,qualify,activate});
+  return Object.freeze({recordEvidence,restoreEvidence,assess,qualify,activate});
 }

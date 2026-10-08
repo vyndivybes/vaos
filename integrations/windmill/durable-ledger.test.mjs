@@ -31,7 +31,7 @@ const context = (persist = persistence(), when = {at:Date.parse('2026-10-09T00:0
   ({persist,when,ledger:createWindmillDurableLedger({store:persist,now:()=>when.at})});
 test('atomic global single-slot admission rejects simultaneous different executions', async()=>{
   const {ledger}=context();
-  const r=await Promise.all([ledger.reserve(permit('a')),ledger.reserve(permit('b'))]);
+  const r=await Promise.all([ledger.reserve(permit('job-a')),ledger.reserve(permit('job-b'))]);
   assert.equal(r.filter(x=>x.status==='GRANTED').length,1);
   assert.equal(r.filter(x=>x.status==='BLOCKED').length,1);
   assert.equal((await ledger.snapshot()).maxConcurrentRuns,1);

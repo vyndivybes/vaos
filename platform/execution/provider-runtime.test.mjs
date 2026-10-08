@@ -140,3 +140,53 @@ test('runtime supports multiple capability-specific adapters for the same provid
   assert.equal(extract.effect.resourceId,'extract-1');
   assert.equal(fill.effect.resourceId,'fill-1');
 });
+
+
+test('runtime can construct adapter through a one-selection capability gate after v2 governance resolves', async()=>{
+  let factoryCalls=0;
+  const runtime=createProviderRuntime({
+    controlPlane:{
+      resolve(capability,constraints){
+        assert.equal(capability,'workflow.orchestrate');
+        assert.equal(constraints.dataClassification,'confidential');
+        assert.equal(constraints.riskClass,'high');
+        return {providerId:'n8n'};
+      },
+    },
+    adapterFactories:{
+      n8n({capabilityRegistry}){
+        factoryCalls+=1;
+        assert.equal(capabilityRegistry.resolve('workflow.orchestrate',{allowedProviderIds:['n8n']}).providerId,'n8n');
+        assert.equal(capabilityRegistry.resolve('workflow.orchestrate',{allowedProviderIds:['zapier']}),null);
+        assert.equal(capabilityRegistry.resolve('integration.saas',{allowedProviderIds:['n8n']}),null);
+        return {
+          providerId:'n8n',
+          capability:'workflow.orchestrate',
+          async execute(){
+            return {
+              providerId:'n8n',capability:'workflow.orchestrate',adapterId:'n8n.v1',
+              effect:{resourceId:'run-1'},verification:{verified:true},
+            };
+          },
+        };
+      },
+    },
+  });
+  const result=await runtime.execute({
+    capability:'workflow.orchestrate',dataClassification:'confidential',riskClass:'high',executionJob:job(),
+  });
+  assert.equal(result.providerId,'n8n');
+  assert.equal(factoryCalls,1);
+});
+
+test('adapter factory is never constructed when the v2 control plane rejects routing', async()=>{
+  let factoryCalls=0;
+  const runtime=createProviderRuntime({
+    controlPlane:{resolve(){return null}},
+    adapterFactories:{n8n(){factoryCalls+=1;throw new Error('must not construct')}},
+  });
+  await assert.rejects(()=>runtime.execute({
+    capability:'workflow.orchestrate',dataClassification:'restricted',riskClass:'critical',executionJob:job(),
+  }),/PROVIDER_RUNTIME_NOT_AVAILABLE/);
+  assert.equal(factoryCalls,0);
+});

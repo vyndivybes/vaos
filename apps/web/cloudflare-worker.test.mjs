@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { createCloudflareApp } from './cloudflare-worker.mjs';
 
@@ -102,4 +103,15 @@ test('Cloudflare app disables browser caching for workspace HTML and executable 
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('Cache-Control'), 'no-store, max-age=0');
   }
+});
+
+
+test('workspace entrypoints use the current cache-busted module version', async () => {
+  const [html, workspace] = await Promise.all([
+    readFile(new URL('./workspace.html', import.meta.url), 'utf8'),
+    readFile(new URL('./workspace.mjs', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(html, /\/workspace\.mjs\?v=20261008-q2-workforce/);
+  assert.match(workspace, /\.\/command-router\.mjs\?v=20261008-q2-workforce/);
 });

@@ -42,7 +42,8 @@ export function createProviderRuntime({
     if(!provider)throw fail('PROVIDER_RUNTIME_NOT_AVAILABLE');
 
     const providerId=req(provider,'providerId');
-    const adapter=adapters[providerId];
+    const adapterKey=`${providerId}:${capability}`;
+    const adapter=adapters[adapterKey] || adapters[providerId];
     if(!adapter||adapter.providerId!==providerId||adapter.capability!==capability||typeof adapter.execute!=='function'){
       throw fail('PROVIDER_RUNTIME_ADAPTER_MISMATCH');
     }

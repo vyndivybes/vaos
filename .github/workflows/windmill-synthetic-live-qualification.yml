@@ -1,0 +1,71 @@
+name: windmill-synthetic-live-qualification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/windmill-synthetic-live-qualification.yml'
+      - 'integrations/windmill/synthetic-qualification.mjs'
+      - 'integrations/windmill/synthetic-qualification.test.mjs'
+      - 'integrations/windmill/synthetic-http-transport.mjs'
+      - 'integrations/windmill/synthetic-http-transport.test.mjs'
+      - 'scripts/qualification/windmill-synthetic-live.mjs'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Type RUN_ONE_SYNTHETIC to execute exactly one approved qualification script'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windmill-synthetic-live-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  contract-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Windmill adapter and security checks
+        run: >-
+          node --test
+          integrations/windmill/code-adapter.test.mjs
+          integrations/windmill/credential-preflight.test.mjs
+          integrations/windmill/synthetic-qualification.test.mjs
+          integrations/windmill/synthetic-http-transport.test.mjs
+      - name: Check live runner syntax
+        run: node --check scripts/qualification/windmill-synthetic-live.mjs
+
+  one-synthetic-job:
+    # Secrets are never available to pull requests or unmerged branches.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm == 'RUN_ONE_SYNTHETIC'
+    needs: contract-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WINDMILL_SYNTHETIC_CONFIRM: ${{ inputs.confirm }}
+      INFISICAL_BASE_URL: ${{ vars.INFISICAL_BASE_URL }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      WINDMILL_INFISICAL_PROJECT_ID: ${{ vars.WINDMILL_INFISICAL_PROJECT_ID }}
+      WINDMILL_INFISICAL_CLIENT_ID: ${{ secrets.WINDMILL_INFISICAL_CLIENT_ID }}
+      WINDMILL_INFISICAL_CLIENT_SECRET: ${{ secrets.WINDMILL_INFISICAL_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Run exactly one Windmill qualification script
+        run: node scripts/qualification/windmill-synthetic-live.mjs
+      - name: Upload sanitized, non-sensitive evidence
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windmill-synthetic-live-evidence
+          path: qualification-evidence/windmill/synthetic-live.json
+          retention-days: 30

@@ -748,3 +748,53 @@ test('Security Q4 training requires a high-assurance PASS assessment before Qual
   assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:security-assessment-1']);
 });
 
+test('Project Controls Q2 training requires PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'project',
+      name: 'Project Controls',
+      role: 'Project Controls',
+      department: 'Management',
+      mission: 'Track execution variance and prepare governed project-risk escalation.',
+      responsibilities: ['Track schedule variance', 'Escalate governed project risk'],
+      responsibilityContractId: 'project-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'PROJECT.ESCALATE_RISK': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 2,
+      currentAssignment: 'Qualification',
+      priority: 'NORMAL',
+      confidence: 92,
+      modelRequirements: { minimumQualification: 'Q2_BUSINESS' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'PROJECT_Q2_PROJECT_CONTROLS_V1');
+  assert.equal(row.actions[0].targetLevel, 2);
+  assert.equal(row.actions[0].label, 'Run Q2 assessment');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'project-assessment-1',
+    targetLevel: 2,
+    profileId: 'PROJECT_Q2_PROJECT_CONTROLS_V1',
+    scope: 'PROJECT_RISK_CONTROL',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 2);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:project-assessment-1']);
+});
+

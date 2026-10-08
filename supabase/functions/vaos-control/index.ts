@@ -211,7 +211,11 @@ Deno.serve(async (req: Request) => {
       p_evidence_refs: payload.evidenceRefs || [],
     }
   } else if (operation === 'assessDigitalEmployeeQualification') {
-    rpcName = 'vaos_assess_digital_employee_qualification'
+    rpcName = payload.employeeId === 'project'
+      && payload.targetLevel === 2
+      && payload.profileId === 'PROJECT_Q2_PROJECT_CONTROLS_V1'
+      ? 'vaos_assess_project_q2_qualification'
+      : 'vaos_assess_digital_employee_qualification'
     args = {
       p_server_key: serverKey,
       p_job_id: payload.jobId,

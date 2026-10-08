@@ -141,3 +141,25 @@ test('command router exposes ordinary Security observation so training fail-clos
   });
 });
 
+test('command router exposes ordinary Project Controls escalation for fail-closed training proof', () => {
+  assert.deepEqual(resolveCommand('project risk PC-Q2-DENY-001'), {
+    kind: 'intent',
+    targetView: 'projects',
+    agentId: 'project',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    payload: { riskId: 'PC-Q2-DENY-001' },
+  });
+});
+
+test('command router creates Project Controls Q2 qualification evidence intent', () => {
+  assert.deepEqual(resolveCommand('qualification project risk PC-Q2-001'), {
+    kind: 'intent',
+    targetView: 'projects',
+    agentId: 'project',
+    actionType: 'PROJECT.ESCALATE_RISK',
+    risk: 'medium',
+    payload: { riskId: 'PC-Q2-001', qualificationMode: true },
+  });
+});
+

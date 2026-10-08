@@ -168,6 +168,30 @@ export function resolveCommand(input) {
     };
   }
 
+  const qualificationProjectRisk = query.match(/^qualification\s+project\s+risk\s+(.+)$/i);
+  if (qualificationProjectRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'projects',
+      agentId: 'project',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: { riskId: qualificationProjectRisk[1].trim(), qualificationMode: true },
+    };
+  }
+
+  const projectRisk = query.match(/^project\s+risk\s+(.+)$/i);
+  if (projectRisk) {
+    return {
+      kind: 'intent',
+      targetView: 'projects',
+      agentId: 'project',
+      actionType: 'PROJECT.ESCALATE_RISK',
+      risk: 'medium',
+      payload: { riskId: projectRisk[1].trim() },
+    };
+  }
+
   const risk = query.match(/^escalate\s+risk\s+(.+)$/i);
   if (risk) {
     return {

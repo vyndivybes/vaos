@@ -27,3 +27,10 @@ test('knowledge agent has L4 authority to propose governed digital-thread links'
   const knowledge = runtime.snapshot().agents.find((agent) => agent.id === 'knowledge');
   assert.equal(knowledge.capabilities['DIGITAL_THREAD.CREATE_LINK'], 4);
 });
+
+test('Project Controls has L4 authority matching its human-approved responsibility contract', () => {
+  const runtime = createDevelopmentRuntime();
+  const project = runtime.snapshot().agents.find((agent) => agent.id === 'project');
+  assert.equal(project.capabilities['PROJECT.ESCALATE_RISK'], 4);
+});
+

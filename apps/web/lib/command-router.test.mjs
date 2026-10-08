@@ -99,3 +99,45 @@ test('command router can bind the Risk recovery drill to an explicit engineering
   });
 });
 
+test('command router supports Security Q4 qualification observations', () => {
+  assert.deepEqual(resolveCommand('qualification security SEC-Q4-001'), {
+    kind: 'intent',
+    targetView: 'governance',
+    agentId: 'security',
+    actionType: 'SECURITY.OBSERVE_IDENTITY',
+    risk: 'high',
+    payload: { observationId: 'SEC-Q4-001', qualificationMode: true },
+  });
+});
+
+test('command router supports final Security Q4 recovery and cross-domain trace drill', () => {
+  assert.deepEqual(resolveCommand('qualification security recovery SEC-Q4-003 link risk RSK-015 baseline 5.3.9'), {
+    kind: 'intent',
+    targetView: 'governance',
+    agentId: 'security',
+    actionType: 'SECURITY.OBSERVE_IDENTITY',
+    risk: 'high',
+    payload: {
+      observationId: 'SEC-Q4-003',
+      qualificationMode: true,
+      qualificationRecoveryDrill: true,
+      qualificationTrace: {
+        sourceRiskId: 'RSK-015',
+        targetBaseline: '5.3.9',
+        relationType: 'RELATED_TO',
+      },
+    },
+  });
+});
+
+test('command router exposes ordinary Security observation so training fail-closed behavior can be proven', () => {
+  assert.deepEqual(resolveCommand('observe identity SEC-DENY-001'), {
+    kind: 'intent',
+    targetView: 'governance',
+    agentId: 'security',
+    actionType: 'SECURITY.OBSERVE_IDENTITY',
+    risk: 'high',
+    payload: { observationId: 'SEC-DENY-001' },
+  });
+});
+

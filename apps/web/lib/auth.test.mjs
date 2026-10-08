@@ -93,3 +93,21 @@ test("checker identity requires a distinct configured credential and never falls
   }
 });
 
+test("checker secret cannot equal maker secret even when separately configured", () => {
+  const makerPrevious = process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+  const checkerPrevious = process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256;
+  const shared = sha256("shared-secret-is-forbidden");
+  process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = shared;
+  process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256 = shared;
+
+  try {
+    assert.equal(verifyDevelopmentCredential("shyamsundhar1982@gmail.com", "shared-secret-is-forbidden"), true);
+    assert.equal(verifyDevelopmentCredential("kaaviyam1519@gmail.com", "shared-secret-is-forbidden"), false);
+  } finally {
+    if (makerPrevious === undefined) delete process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+    else process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = makerPrevious;
+    if (checkerPrevious === undefined) delete process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256;
+    else process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256 = checkerPrevious;
+  }
+});
+

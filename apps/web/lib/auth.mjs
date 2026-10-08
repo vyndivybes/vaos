@@ -41,7 +41,9 @@ function developmentPasswordHash() {
 }
 
 function checkerPasswordHash() {
-  return configuredPasswordHash(DEV_CHECKER_PASSWORD_ENV);
+  const configured = configuredPasswordHash(DEV_CHECKER_PASSWORD_ENV);
+  if (!configured || configured === developmentPasswordHash()) return null;
+  return configured;
 }
 
 function developmentCredentialHash(email) {

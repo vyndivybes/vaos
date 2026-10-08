@@ -579,3 +579,40 @@ test('Digital Workforce assessment adapter records and verifies PASS or FAIL as 
   assert.equal(result.verification.verified, true);
   assert.equal(result.verification.evidenceSource, 'vaos_private.digital_employee_qualification_assessments');
 });
+
+test('registry exposes governed Security identity observation execution', () => {
+  assert.equal(createExecutionAdapterRegistry().has('SECURITY.OBSERVE_IDENTITY'), true);
+});
+
+test('Security adapter persists and verifies an identity observation', async () => {
+  const security = {
+    async observeIdentity(job, input) {
+      return {
+        outcome: 'CREATED',
+        record: {
+          observationId: input.observationId,
+          status: 'OBSERVED',
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+    async getIdentityObservation(job, observationId) {
+      return { observationId, status: 'OBSERVED', executionJobId: job.id, intentId: job.intentId };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ security }).get('SECURITY.OBSERVE_IDENTITY').execute({
+    id: 'job-sec-1',
+    intentId: 'intent-sec-1',
+    actionType: 'SECURITY.OBSERVE_IDENTITY',
+    attemptCount: 1,
+    payload: { observationId: 'SEC-Q4-001' },
+  });
+
+  assert.equal(result.adapterId, 'supabase.security-identity.v1');
+  assert.equal(result.effect.resourceId, 'SEC-Q4-001');
+  assert.equal(result.verification.verified, true);
+  assert.equal(result.verification.expectedState, 'OBSERVED');
+});
+

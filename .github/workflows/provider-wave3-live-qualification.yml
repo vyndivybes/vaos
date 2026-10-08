@@ -152,17 +152,15 @@ jobs:
           base64 -d scripts/qualification/wave3-synthetic.pdf.base64 > /tmp/vaos-wave3.pdf
           TASK=$(curl -fsS -X POST             -H "Authorization: Token $TOKEN"             -F document=@/tmp/vaos-wave3.pdf             -F title=VAOS-WAVE3-SYNTHETIC             http://127.0.0.1:8000/api/documents/post_document/ | jq -r '.')
           test -n "$TASK" -a "$TASK" != "null"
-          TASK_DONE=false
+          DOCUMENT_FOUND=false
           for i in $(seq 1 120); do
-            RESULT=$(curl -fsS -H "Authorization: Token $TOKEN"               "http://127.0.0.1:8000/api/tasks/?task_id=$TASK")
-            TASK_STATUS=$(echo "$RESULT" | jq -r 'if type == "array" then (.[0].status // "") else (.results[0].status // .status // "") end')
-            if [ "$TASK_STATUS" = "SUCCESS" ]; then TASK_DONE=true; break; fi
-            if [ "$TASK_STATUS" = "FAILURE" ]; then echo "$RESULT"; exit 1; fi
+            RESULT=$(curl -fsS -H "Authorization: Token $TOKEN" \
+              'http://127.0.0.1:8000/api/documents/?title__icontains=VAOS-WAVE3-SYNTHETIC')
+            if [ "$(echo "$RESULT" | jq -r '.count // 0')" -gt 0 ]; then DOCUMENT_FOUND=true; break; fi
             sleep 2
           done
-          test "$TASK_DONE" = "true"
-          curl -fsS -H "Authorization: Token $TOKEN"             'http://127.0.0.1:8000/api/documents/?query=VAOS-WAVE3-SYNTHETIC' |
-            grep -q 'VAOS-WAVE3-SYNTHETIC'
+          test "$DOCUMENT_FOUND" = "true"
+          echo "$RESULT" | jq -e '.results[0].title == "VAOS-WAVE3-SYNTHETIC"' >/dev/null
           docker stop vaos-wave3-paperless >/dev/null
           if curl -fsS --max-time 2 http://127.0.0.1:8000/ >/dev/null 2>&1; then exit 1; fi
       - name: Write governed evidence

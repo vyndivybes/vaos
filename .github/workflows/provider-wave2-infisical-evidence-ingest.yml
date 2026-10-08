@@ -1,0 +1,81 @@
+name: provider-wave2-infisical-evidence-ingest
+
+on:
+  workflow_dispatch:
+    inputs:
+      live_run_id:
+        description: GitHub Actions run ID for provider-wave2-infisical-live-qualification
+        required: true
+        type: string
+      production_run_id:
+        description: GitHub Actions run ID for provider-wave2-infisical-production-qualification
+        required: false
+        type: string
+      owner_approval_ref:
+        description: Explicit owner approval evidence reference; required only when qualifying
+        required: false
+        type: string
+      qualify:
+        description: Mark secret.broker qualified after all evidence passes; does not activate
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: provider-wave2-infisical-evidence-ingest
+  cancel-in-progress: false
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+      VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
+      INFISICAL_OWNER_APPROVAL_REF: ${{ inputs.owner_approval_ref }}
+      VAOS_QUALIFY_INFISICAL: ${{ inputs.qualify }}
+      INFISICAL_LIVE_EVIDENCE_FILE: qualification-evidence/provider-wave-2/infisical.json
+      INFISICAL_PRODUCTION_EVIDENCE_FILE: qualification-evidence/provider-wave-2/infisical-production.json
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Durable store preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -z "${VAOS_DB_RPC_SECRET:-}" ]; then
+            echo "::error::Missing required repository secret: VAOS_DB_RPC_SECRET"
+            exit 1
+          fi
+
+      - name: Download live/staging evidence
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p qualification-evidence/provider-wave-2
+          gh run download "${{ inputs.live_run_id }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name provider-wave2-infisical-live-evidence \
+            --dir qualification-evidence/provider-wave-2
+
+      - name: Download production evidence
+        if: ${{ inputs.production_run_id != '' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          gh run download "${{ inputs.production_run_id }}" \
+            --repo "${GITHUB_REPOSITORY}" \
+            --name provider-wave2-infisical-production-evidence \
+            --dir qualification-evidence/provider-wave-2
+
+      - name: Ingest governed evidence
+        run: node scripts/qualification/ingest-infisical-wave2.mjs

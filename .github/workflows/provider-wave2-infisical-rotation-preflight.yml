@@ -1,0 +1,57 @@
+name: provider-wave2-infisical-rotation-preflight
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualify/infisical-live
+    paths:
+      - .github/provider-wave2-infisical-rotation-preflight.trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-wave2-infisical-rotation-preflight
+  cancel-in-progress: true
+
+jobs:
+  rotation-preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      INFISICAL_BASE_URL: ${{ vars.INFISICAL_BASE_URL }}
+      INFISICAL_PROJECT_ID: ${{ vars.INFISICAL_PROJECT_ID }}
+      INFISICAL_DENIED_PROJECT_ID: ${{ vars.INFISICAL_DENIED_PROJECT_ID }}
+      INFISICAL_ENVIRONMENT: ${{ vars.INFISICAL_ENVIRONMENT }}
+      INFISICAL_ALLOWED_SECRET_PATH: ${{ vars.INFISICAL_ALLOWED_SECRET_PATH }}
+      INFISICAL_ALLOWED_SECRET_KEY: ${{ vars.INFISICAL_ALLOWED_SECRET_KEY }}
+      INFISICAL_DENIED_SECRET_PATH: ${{ vars.INFISICAL_DENIED_SECRET_PATH }}
+      INFISICAL_DENIED_SECRET_KEY: ${{ vars.INFISICAL_DENIED_SECRET_KEY }}
+      INFISICAL_MIN_TOKEN_TTL_SECONDS: ${{ vars.INFISICAL_MIN_TOKEN_TTL_SECONDS }}
+      INFISICAL_MAX_TOKEN_TTL_SECONDS: ${{ vars.INFISICAL_MAX_TOKEN_TTL_SECONDS }}
+      INFISICAL_CLIENT_ID: ${{ secrets.INFISICAL_CLIENT_ID }}
+      # Deliberately test NEXT while original remains valid.
+      INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_NEXT_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Credential presence preflight
+        shell: bash
+        run: |
+          set -euo pipefail
+          for name in INFISICAL_CLIENT_ID INFISICAL_CLIENT_SECRET INFISICAL_PROJECT_ID INFISICAL_DENIED_PROJECT_ID INFISICAL_ENVIRONMENT; do
+            if [ -z "${!name:-}" ]; then
+              echo "::error::Missing required rotation preflight configuration: $name"
+              exit 1
+            fi
+          done
+      - name: Verify next credential and project isolation
+        run: node scripts/qualification/infisical-wave2-live.mjs
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave2-infisical-rotation-preflight-evidence
+          path: qualification-evidence/provider-wave-2/infisical.json
+          retention-days: 30

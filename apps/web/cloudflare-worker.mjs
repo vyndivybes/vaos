@@ -22,6 +22,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/executions': executions,
   '/api/commissioning': commissioning,
   '/api/missions': missions,
+  '/api/project-schedule': projectSchedule,
 });
 
 function loginRedirect(request) {

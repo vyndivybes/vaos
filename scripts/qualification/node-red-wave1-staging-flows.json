@@ -1,0 +1,159 @@
+[
+  {
+    "id": "wave1stagingtab",
+    "type": "tab",
+    "label": "VAOS Wave 1 Staging",
+    "disabled": false,
+    "info": "Qualification-only authenticated nonphysical staging flow"
+  },
+  {
+    "id": "canaryin",
+    "type": "http in",
+    "z": "wave1stagingtab",
+    "name": "Canary ingress",
+    "url": "/vaos-wave1",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 170,
+    "y": 80,
+    "wires": [
+      [
+        "canaryfn"
+      ]
+    ]
+  },
+  {
+    "id": "canaryfn",
+    "type": "function",
+    "z": "wave1stagingtab",
+    "name": "Observe-only canary",
+    "func": "const id=msg.payload?.executionJobId||'unknown'; msg.payload={ok:true,edgeEventId:'edge-'+id,effectClass:'observe',executionJobId:id}; return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 420,
+    "y": 80,
+    "wires": [
+      [
+        "canaryout"
+      ]
+    ]
+  },
+  {
+    "id": "canaryout",
+    "type": "http response",
+    "z": "wave1stagingtab",
+    "name": "Canary response",
+    "statusCode": "200",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "x": 680,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "bufferin",
+    "type": "http in",
+    "z": "wave1stagingtab",
+    "name": "Buffer ingress",
+    "url": "/vaos-buffer",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 170,
+    "y": 160,
+    "wires": [
+      [
+        "bufferfn"
+      ]
+    ]
+  },
+  {
+    "id": "bufferfn",
+    "type": "function",
+    "z": "wave1stagingtab",
+    "name": "Persist buffer",
+    "func": "flow.set('bufferedEvent',msg.payload); msg.payload={buffered:true,executionJobId:msg.payload?.executionJobId||null}; return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 410,
+    "y": 160,
+    "wires": [
+      [
+        "bufferout"
+      ]
+    ]
+  },
+  {
+    "id": "bufferout",
+    "type": "http response",
+    "z": "wave1stagingtab",
+    "name": "Buffer response",
+    "statusCode": "200",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "x": 670,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "replayin",
+    "type": "http in",
+    "z": "wave1stagingtab",
+    "name": "Replay ingress",
+    "url": "/vaos-replay",
+    "method": "post",
+    "upload": false,
+    "swaggerDoc": "",
+    "x": 170,
+    "y": 240,
+    "wires": [
+      [
+        "replayfn"
+      ]
+    ]
+  },
+  {
+    "id": "replayfn",
+    "type": "function",
+    "z": "wave1stagingtab",
+    "name": "Replay persisted buffer",
+    "func": "const event=flow.get('bufferedEvent')||null; msg.payload={replayed:!!event,event}; return msg;",
+    "outputs": 1,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 430,
+    "y": 240,
+    "wires": [
+      [
+        "replayout"
+      ]
+    ]
+  },
+  {
+    "id": "replayout",
+    "type": "http response",
+    "z": "wave1stagingtab",
+    "name": "Replay response",
+    "statusCode": "200",
+    "headers": {
+      "content-type": "application/json"
+    },
+    "x": 690,
+    "y": 240,
+    "wires": []
+  }
+]

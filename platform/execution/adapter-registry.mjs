@@ -263,8 +263,66 @@ function assertDigitalThreadPort(digitalThread) {
   return digitalThread;
 }
 
+function assertKnowledgeThreadPort(digitalThread) {
+  if (!digitalThread
+      || typeof digitalThread.linkKnowledgeQualification !== 'function'
+      || typeof digitalThread.getKnowledgeQualificationLink !== 'function') {
+    throw new Error('DOMAIN_PORT_REQUIRED:knowledgeDigitalThread');
+  }
+  return digitalThread;
+}
+
 function digitalThreadLinkAdapter(digitalThread) {
   return adapter('supabase.digital-thread-link.v1', async (job) => {
+    if (job.payload?.qualificationKnowledgeLink === true) {
+      const sourceRiskId = requiredText(job.payload, 'sourceRiskId');
+      const targetBaseline = requiredText(job.payload, 'targetBaseline');
+      const relationType = requiredText(job.payload, 'relationType');
+      const port = assertKnowledgeThreadPort(digitalThread);
+      const input = { sourceRiskId, targetBaseline, relationType };
+
+      const linked = await port.linkKnowledgeQualification(job, input);
+      if (!linked || !['CREATED', 'REPLAY'].includes(linked.outcome)) {
+        throw new Error(`KNOWLEDGE_LINK_WRITE_FAILED:${linked?.outcome || 'UNKNOWN'}`);
+      }
+
+      const record = await port.getKnowledgeQualificationLink(job, input);
+      const verified = Boolean(
+        record
+        && record.id
+        && record.sourceRiskId === sourceRiskId
+        && record.targetBaseline === targetBaseline
+        && record.relationType === relationType
+        && record.executionJobId === job.id
+        && record.intentId === job.intentId
+      );
+
+      if (!verified) throw new Error('KNOWLEDGE_LINK_VERIFICATION_MISMATCH');
+
+      return {
+        adapterId: 'supabase.knowledge-trace.v1',
+        effect: {
+          effectType: 'DIGITAL_THREAD.LINK_CREATED',
+          resourceType: 'DIGITAL_THREAD_LINK',
+          resourceId: record.id,
+          state: 'LINKED',
+          domainOutcome: linked.outcome,
+          sourceRiskId,
+          targetBaseline,
+          relationType,
+        },
+        verification: {
+          verified: true,
+          resourceType: 'DIGITAL_THREAD_LINK',
+          resourceId: record.id,
+          expectedState: 'LINKED',
+          executionJobId: job.id,
+          intentId: job.intentId,
+          evidenceSource: 'vaos_private.digital_thread_links',
+        },
+      };
+    }
+
     const sourceDomain = requiredText(job.payload, 'sourceDomain');
     const sourceRecordId = requiredText(job.payload, 'sourceRecordId');
     const relationType = requiredText(job.payload, 'relationType');

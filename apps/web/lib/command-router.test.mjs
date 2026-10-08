@@ -212,3 +212,11 @@ test('command router creates Knowledge Q2 governed risk-to-baseline links', () =
   });
 });
 
+test('command router exposes authenticated execution queue drain command', () => {
+  assert.deepEqual(resolveCommand('process execution queue'), {
+    kind: 'execution',
+    limit: 5,
+    targetView: 'agents',
+  });
+});
+

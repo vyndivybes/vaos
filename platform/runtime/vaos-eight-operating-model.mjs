@@ -236,7 +236,10 @@ export const HANDOFF_OUTCOME = Object.freeze({
   REJECT_INVALID: 'REJECT_INVALID',
   RETURN_FOR_CORRECTION: 'RETURN_FOR_CORRECTION',
   ESCALATE: 'ESCALATE',
-  COMPLETE: 'COMPLETE',
+  COMPLETE: 'COMPLETE', // Legacy transition deliberately unsupported
+  SUBMIT: 'SUBMIT',
+  VERIFY: 'VERIFY',
+  REJECT_VERIFICATION: 'REJECT_VERIFICATION',
   RESUBMIT: 'RESUBMIT',
   RESOLVE_ESCALATION: 'RESOLVE_ESCALATION',
 });
@@ -248,10 +251,14 @@ const HANDOFF_TRANSITIONS = Object.freeze({
     [HANDOFF_OUTCOME.REJECT_INVALID]: 'REJECTED',
   }),
   ACCEPTED: Object.freeze({
-    [HANDOFF_OUTCOME.COMPLETE]: 'COMPLETED',
+    [HANDOFF_OUTCOME.SUBMIT]: 'SUBMITTED',
     [HANDOFF_OUTCOME.REQUEST_INFORMATION]: 'INFORMATION_REQUIRED',
     [HANDOFF_OUTCOME.RETURN_FOR_CORRECTION]: 'RETURNED',
     [HANDOFF_OUTCOME.ESCALATE]: 'ESCALATED',
+  }),
+  SUBMITTED: Object.freeze({
+    [HANDOFF_OUTCOME.VERIFY]: 'COMPLETED',
+    [HANDOFF_OUTCOME.REJECT_VERIFICATION]: 'RETURNED',
   }),
   INFORMATION_REQUIRED: Object.freeze({
     [HANDOFF_OUTCOME.RESUBMIT]: 'PENDING',
@@ -277,7 +284,19 @@ function uniqueStrings(values = []) {
 }
 
 function handoffActorAllowed(handoff, outcome, byAgentId) {
-  if ([HANDOFF_OUTCOME.RESUBMIT].includes(outcome)) return byAgentId === handoff.fromAgentId;
+  if (outcome === HANDOFF_OUTCOME.RESUBMIT) {
+    const last = handoff.history?.at(-1);
+    return byAgentId === (last?.event === HANDOFF_OUTCOME.REJECT_VERIFICATION
+      ? handoff.toAgentId
+      : handoff.fromAgentId);
+  }
+  if ([HANDOFF_OUTCOME.VERIFY, HANDOFF_OUTCOME.REJECT_VERIFICATION].includes(outcome)) {
+    const job = JOB_BY_ACTION.get(handoff.requestedJob);
+    const verifierIds = job?.verifierAgentIds?.length
+      ? job.verifierAgentIds
+      : [handoff.toAgentId === 'orchestrator' ? 'project' : 'orchestrator'];
+    return byAgentId !== handoff.toAgentId && verifierIds.includes(byAgentId);
+  }
   if ([HANDOFF_OUTCOME.RESOLVE_ESCALATION].includes(outcome)) {
     return byAgentId === 'orchestrator' || byAgentId === handoff.fromAgentId;
   }
@@ -336,7 +355,22 @@ export function transitionGovernedHandoff(handoff, input = {}) {
   const byAgentId = requiredText(input.byAgentId, 'HANDOFF_ACTOR_REQUIRED');
   const nextStatus = HANDOFF_TRANSITIONS[handoff.status]?.[outcome];
   if (!nextStatus) throw new Error('HANDOFF_TRANSITION_INVALID');
-  if (!handoffActorAllowed(handoff, outcome, byAgentId)) throw new Error('HANDOFF_ACTOR_NOT_AUTHORIZED');
+  if (!handoffActorAllowed(handoff, outcome, byAgentId)) {
+    throw new Error(
+      [HANDOFF_OUTCOME.VERIFY, HANDOFF_OUTCOME.REJECT_VERIFICATION].includes(outcome)
+        ? 'HANDOFF_VERIFIER_NOT_AUTHORIZED'
+        : 'HANDOFF_ACTOR_NOT_AUTHORIZED',
+    );
+  }
+  if (outcome === HANDOFF_OUTCOME.SUBMIT && (!Array.isArray(input.evidenceRefs) || input.evidenceRefs.length < 1)) {
+    throw new Error('HANDOFF_SUBMISSION_EVIDENCE_REQUIRED');
+  }
+  if (outcome === HANDOFF_OUTCOME.VERIFY && (!Array.isArray(input.evidenceRefs) || input.evidenceRefs.length < 1)) {
+    throw new Error('HANDOFF_VERIFICATION_EVIDENCE_REQUIRED');
+  }
+  if (outcome === HANDOFF_OUTCOME.REJECT_VERIFICATION && !String(input.reason || '').trim()) {
+    throw new Error('HANDOFF_VERIFICATION_REJECTION_REASON_REQUIRED');
+  }
 
   const evidenceRefs = uniqueStrings([...(handoff.evidenceRefs || []), ...(input.evidenceRefs || [])]);
   const event = Object.freeze({
@@ -350,6 +384,7 @@ export function transitionGovernedHandoff(handoff, input = {}) {
   return Object.freeze({
     ...handoff,
     status: nextStatus,
+    ...(outcome === HANDOFF_OUTCOME.VERIFY ? { verifiedByAgentId: byAgentId } : {}),
     evidenceRefs: Object.freeze(evidenceRefs),
     history: Object.freeze([...(handoff.history || []), event]),
   });

@@ -91,8 +91,8 @@ begin
     from vaos_private.agent_handoff_events
     where handoff_id=p_handoff_id
     order by id desc limit 1;
-    if p_by_agent_id <> case when v_previous_event='REJECT_VERIFICATION'
-      then v_handoff.to_agent_id else v_handoff.from_agent_id end then
+    if p_by_agent_id <> (case when v_previous_event='REJECT_VERIFICATION'
+      then v_handoff.to_agent_id else v_handoff.from_agent_id end) then
       raise exception 'HANDOFF_ACTOR_NOT_AUTHORIZED';
     end if;
   elsif p_outcome in ('VERIFY','REJECT_VERIFICATION') then

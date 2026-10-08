@@ -26,7 +26,7 @@ function evidence(){
       ? 'https://github.com/vyndivybes/vaos/pull/46#issuecomment-6062907623'
       : 'github-actions:37786884419',
     recordedAt:'2026-10-08T15:45:00.000Z',
-    evidenceRefs:['github-actions:evidence-'+i]}));
+    evidenceRefs:x.id==='owner-approval' ? ['https://github.com/vyndivybes/vaos/pull/46#issuecomment-6062907623'] : ['github-actions:evidence-'+i]}));
 }
 const assess=(s=snapshot(),e=evidence(),extra={})=>assessInfisicalCommissioning({
   snapshot:s,evidence:e,profile,now:new Date(now),...extra});

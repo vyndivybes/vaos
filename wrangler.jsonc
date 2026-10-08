@@ -25,5 +25,10 @@
     "crons": [
       "*/15 * * * *"
     ]
+  },
+  "previews": {
+    "vars": {
+      "SUPABASE_URL": "https://vaos-preview.invalid"
+    }
   }
 }

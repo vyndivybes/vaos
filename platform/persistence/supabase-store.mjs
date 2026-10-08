@@ -81,6 +81,9 @@ export function createSupabaseControlStore({
     operatingMissionSnapshot(missionId) {
       return invoke('operatingMissionSnapshot', { missionId });
     },
+    getApprovedProgramBaseline(projectId) {
+      return invoke('getApprovedProgramBaseline', { projectId });
+    },
     submitIntent(input) { return invoke('submitIntent', input); },
     decideApproval(approvalId, input) { return invoke('decideApproval', { approvalId, ...input }); },
     claimExecution(input) { return invoke('claimExecution', input); },

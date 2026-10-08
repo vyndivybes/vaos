@@ -2,7 +2,9 @@ name: infisical-scoped-commissioning
 
 on:
   schedule:
-    - cron: '*/15 * * * *'
+    # Every 15 minutes at off-peak UTC minutes to avoid crowded quarter-hours.
+    # GitHub schedules are best-effort; independent missed-run checks remain required.
+    - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
     inputs:
       action:

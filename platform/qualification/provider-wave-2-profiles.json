@@ -1,0 +1,95 @@
+{
+  "schemaVersion": "vaos.provider-qualification-wave.v1",
+  "waveId": "provider-wave-2",
+  "description": "Secret-broker qualification wave for Infisical. Live CI evidence cannot activate production routing.",
+  "profiles": [
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "infisical",
+      "capability": "secret.broker",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "secret-resolver-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "least-privilege-binding",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "secret-nondisclosure",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "universal-auth-login",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "allowed-secret-read",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "denied-scope-read",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "token-ttl-bounded",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "credential-broker-integration",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "secret-value-nondisclosure",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "health-and-expiry",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "bootstrap-credential-rotation",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

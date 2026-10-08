@@ -70,6 +70,7 @@ jobs:
           curl -fsS http://127.0.0.1:5678/healthz >/dev/null
           STATUS=$(curl -sS -o /tmp/n8n-api-response -w '%{http_code}' \
             -H 'Accept: application/json' \
+            -H 'X-N8N-API-KEY: invalid-wave3-synthetic-key' \
             http://127.0.0.1:5678/api/v1/workflows)
           echo "Unauthenticated n8n public API status: $STATUS"
           test "$STATUS" = "401" -o "$STATUS" = "403"

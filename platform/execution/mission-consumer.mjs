@@ -101,29 +101,20 @@ function handoffWorkPackage(handoff) { return prop(handoff, 'work_package_id', '
 function handoffEvidence(handoff) { return prop(handoff, 'evidence_refs', 'evidenceRefs') || []; }
 function packageHumanApproval(item) { return prop(item, 'human_approval_required', 'humanApprovalRequired') === true; }
 
-function safeJob(handoff, item) {
+function safeJobValidated(handoff, item) {
   const actionType = handoffAction(handoff);
   if (!SAFE.has(actionType) || !item || item.id !== handoffWorkPackage(handoff)) return false;
   const route = routeJob(actionType);
-  return route.ownerAgentId === handoffOwner(handoff)
+  const mode = prop(item, 'execution_mode', 'executionMode');
+  return prop(item, 'action_type', 'actionType') === actionType
+    && route.ownerAgentId === handoffOwner(handoff)
+    && prop(item, 'owner_agent_id', 'ownerAgentId') === handoffOwner(handoff)
     && !route.humanApprovalRequired
     && !packageHumanApproval(item)
-    && route.executionMode === 'ANALYSE' || (
-      route.ownerAgentId === handoffOwner(handoff)
-      && !route.humanApprovalRequired
-      && !packageHumanApproval(item)
-      && route.executionMode === 'PREPARE'
-      && route.authority <= 2
-      && Number(prop(item, 'authority', 'authority')) <= 2
-    );
-}
-
-function safeJobValidated(handoff, item) {
-  if (!safeJob(handoff, item)) return false;
-  const route = routeJob(handoffAction(handoff));
-  return route.authority <= 2
+    && route.authority <= 2
     && Number(item.authority) <= 2
-    && !['GOVERNED_EXECUTION', 'EXECUTE'].includes(prop(item, 'execution_mode', 'executionMode') || route.executionMode);
+    && ['ANALYSE', 'PREPARE'].includes(route.executionMode)
+    && mode === route.executionMode;
 }
 
 function requiredSnapshot(snapshot, missionId) {

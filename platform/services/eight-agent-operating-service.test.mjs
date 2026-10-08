@@ -18,6 +18,10 @@ function fakeStore() {
       calls.push({ type: 'list', limit });
       return { missionIds: ['mission-service-001'] };
     },
+    async prepareOperatingMissionClosure(missionId) {
+      calls.push({ type: 'closure', missionId });
+      return { outcome: 'PREPARED', missionId, status: 'READY_FOR_CLOSURE' };
+    },
     async dispatchOperatingMission(missionId, options) {
       calls.push({ type: 'dispatch', missionId, options });
       return { outcome: 'DISPATCHED', count: 2, handoffs: [] };
@@ -131,4 +135,14 @@ test('operating service persists validated evidence and lists a bounded mission 
   assert.equal((await service.getWorkEvidence('vaos-evidence:1')).id, 'vaos-evidence:1');
   assert.deepEqual((await service.listRunnableMissions({ limit: 4 })).missionIds, ['mission-service-001']);
   await assert.rejects(() => service.listRunnableMissions({ limit: 12 }), /MISSION_DISCOVERY_LIMIT_INVALID/);
+});
+
+
+test('operating service prepares closure only through durable gated store', async () => {
+  const store = fakeStore();
+  const service = createEightAgentOperatingService({ store });
+  const ready = await service.prepareMissionClosure('mission-service-001');
+  assert.equal(ready.status, 'READY_FOR_CLOSURE');
+  assert.deepEqual(store.calls, [{ type: 'closure', missionId: 'mission-service-001' }]);
+  await assert.rejects(() => service.prepareMissionClosure(''), /MISSION_ID_REQUIRED/);
 });

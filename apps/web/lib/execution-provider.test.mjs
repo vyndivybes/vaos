@@ -24,3 +24,11 @@ test('Security execution provider exposes identity observation and qualification
   assert.match(source, /store\.linkSecurityQualificationTrace\(job, input\)/);
 });
 
+test('Knowledge execution provider exposes dedicated qualification-link bridges', async () => {
+  const source = await readFile(providerUrl, 'utf8');
+  assert.match(source, /linkKnowledgeQualification\(job, input\)/);
+  assert.match(source, /store\.linkKnowledgeQualification\(job, input\)/);
+  assert.match(source, /getKnowledgeQualificationLink\(job, input\)/);
+  assert.match(source, /store\.getKnowledgeQualificationLink\(job, input\)/);
+});
+

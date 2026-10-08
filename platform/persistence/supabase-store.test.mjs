@@ -332,3 +332,21 @@ test('Security qualification trace uses a dedicated lease-bound Edge operation',
   });
 });
 
+test('Knowledge Q2 links use dedicated typed Edge operations with business resource IDs', async () => {
+  const fake = fakeFetch([
+    { body: { outcome: 'CREATED', link: { id: 'knowledge-link-1', executionJobId: 'job-k1', intentId: 'intent-k1' } } },
+    { body: { id: 'knowledge-link-1', sourceRiskId: 'PC-Q2-001', targetBaseline: '5.3.9', relationType: 'RELATED_TO', executionJobId: 'job-k1', intentId: 'intent-k1' } },
+  ]);
+  const store = createSupabaseControlStore({ url: 'https://example.supabase.co', serverSecret: 'server-secret', fetchImpl: fake.fetchImpl });
+  const job = { id: 'job-k1', intentId: 'intent-k1', leaseToken: 'lease-k1' };
+  const input = { sourceRiskId: 'PC-Q2-001', targetBaseline: '5.3.9', relationType: 'RELATED_TO' };
+
+  const created = await store.linkKnowledgeQualification(job, input);
+  const record = await store.getKnowledgeQualificationLink(job, input);
+
+  assert.equal(created.outcome, 'CREATED');
+  assert.equal(record.id, 'knowledge-link-1');
+  assert.equal(fake.calls[0].body.operation, 'linkKnowledgeQualification');
+  assert.equal(fake.calls[1].body.operation, 'getKnowledgeQualificationLink');
+});
+

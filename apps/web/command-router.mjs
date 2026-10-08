@@ -168,6 +168,65 @@ export function resolveCommand(input) {
     };
   }
 
+  const qualificationReleaseGate = query.match(/^qualification\s+release\s+gate\s+(.+)$/i);
+  if (qualificationReleaseGate) {
+    return {
+      kind: 'intent',
+      targetView: 'governance',
+      agentId: 'release',
+      actionType: 'RELEASE.OBSERVE_GATE',
+      risk: 'low',
+      payload: { gateId: qualificationReleaseGate[1].trim(), qualificationMode: true },
+    };
+  }
+
+  const releaseGate = query.match(/^release\s+gate\s+(.+)$/i);
+  if (releaseGate) {
+    return {
+      kind: 'intent',
+      targetView: 'governance',
+      agentId: 'release',
+      actionType: 'RELEASE.OBSERVE_GATE',
+      risk: 'low',
+      payload: { gateId: releaseGate[1].trim() },
+    };
+  }
+
+  const qualificationKnowledgeLink = query.match(/^qualification\s+knowledge\s+link\s+risk\s+(\S+)\s+baseline\s+(.+)$/i);
+  if (qualificationKnowledgeLink) {
+    return {
+      kind: 'intent',
+      targetView: 'digital-thread',
+      agentId: 'knowledge',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      risk: 'medium',
+      payload: {
+        sourceRiskId: qualificationKnowledgeLink[1].trim(),
+        targetBaseline: qualificationKnowledgeLink[2].trim(),
+        relationType: 'RELATED_TO',
+        qualificationKnowledgeLink: true,
+        qualificationMode: true,
+      },
+    };
+  }
+
+  const knowledgeLink = query.match(/^knowledge\s+link\s+risk\s+(\S+)\s+baseline\s+(.+)$/i);
+  if (knowledgeLink) {
+    return {
+      kind: 'intent',
+      targetView: 'digital-thread',
+      agentId: 'knowledge',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      risk: 'medium',
+      payload: {
+        sourceRiskId: knowledgeLink[1].trim(),
+        targetBaseline: knowledgeLink[2].trim(),
+        relationType: 'RELATED_TO',
+        qualificationKnowledgeLink: true,
+      },
+    };
+  }
+
   const qualificationProjectRisk = query.match(/^qualification\s+project\s+risk\s+(.+)$/i);
   if (qualificationProjectRisk) {
     return {

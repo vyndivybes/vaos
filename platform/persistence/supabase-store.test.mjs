@@ -350,3 +350,19 @@ test('Knowledge Q2 links use dedicated typed Edge operations with business resou
   assert.equal(fake.calls[1].body.operation, 'getKnowledgeQualificationLink');
 });
 
+test('operational commissioning snapshot uses the dedicated Edge operation', async () => {
+  const fake = fakeFetch([
+    { body: { schemaVersion: 'vaos.operational-commissioning.v1', state: 'COMMISSIONED', externalProviderState: 'READY_LOCKED' } },
+  ]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+
+  const result = await store.operationalCommissioningSnapshot();
+
+  assert.equal(result.state, 'COMMISSIONED');
+  assert.equal(fake.calls[0].body.operation, 'operationalCommissioningSnapshot');
+});
+

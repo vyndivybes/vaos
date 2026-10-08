@@ -1,3 +1,3 @@
 provider-wave1 live qualification trigger
-requested-head=9d9219f3e3c343c73b215ed087a75133927d2970
-reason=retry-after-lockfile-free-ci-fix
+requested-head=79e7886e50bfb050f5e4c86ae04ac77cff6b72f0
+reason=runner-chrome-optimized-live-qualification

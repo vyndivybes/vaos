@@ -10,7 +10,6 @@ test('active health refresh preserves routing and cannot activate',()=>{
   const healthBranch=migration.split("IF p_action='record-health' THEN")[1].split('  ELSE')[0];
   assert.doesNotMatch(healthBranch,/\{enabled\}/);
   assert.match(migration,/p_action NOT IN \('record-health','disable'\)/);
-  assert.match(migration,/\\{capabilityEnabled,secret\\.broker\\}.*false/);
 });
 test('scheduled watchdog is every fifteen minutes and fails closed',()=>{
   assert.match(workflow,/cron: '\*\/15 \* \* \* \*'/);

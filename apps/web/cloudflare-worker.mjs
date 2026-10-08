@@ -6,6 +6,7 @@ import intents from './api/intents.mjs';
 import approvals from './api/approvals.mjs';
 import executions from './api/executions.mjs';
 import commissioning from './api/commissioning.mjs';
+import missions from './api/missions.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 
 export const DEFAULT_API_HANDLERS = Object.freeze({
@@ -17,6 +18,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/approvals': approvals,
   '/api/executions': executions,
   '/api/commissioning': commissioning,
+  '/api/missions': missions,
 });
 
 function loginRedirect(request) {

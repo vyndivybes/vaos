@@ -26,7 +26,10 @@ Deno.serve(async (req: Request) => {
   let rpcName = ''
   let args: Record<string, unknown> = {}
 
-  if (operation === 'snapshot') {
+  if (operation === 'operationalCommissioningSnapshot') {
+    rpcName = 'vaos_operational_commissioning_snapshot'
+    args = { p_server_key: serverKey }
+  } else if (operation === 'snapshot') {
     rpcName = 'vaos_control_snapshot'
     args = { p_server_key: serverKey }
   } else if (operation === 'traceLinks') {

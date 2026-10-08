@@ -152,6 +152,12 @@ export function createProviderControlPlane({
     const riskClass = constraints.riskClass;
     if (!DATA_CLASSES.has(dataClassification) || !RISK_CLASSES.has(riskClass)) return [];
 
+    const deploymentMode = typeof constraints.deploymentMode === 'string' && constraints.deploymentMode.trim()
+      ? constraints.deploymentMode.trim()
+      : null;
+    const dataResidency = typeof constraints.dataResidency === 'string' && constraints.dataResidency.trim()
+      ? constraints.dataResidency.trim()
+      : null;
     const allowed = Array.isArray(constraints.allowedProviderIds) ? new Set(constraints.allowedProviderIds) : null;
     const denied = new Set(Array.isArray(constraints.deniedProviderIds) ? constraints.deniedProviderIds : []);
     const preferred = Array.isArray(constraints.preferredProviderIds) ? constraints.preferredProviderIds : [];
@@ -164,6 +170,8 @@ export function createProviderControlPlane({
       if (!m.routing.dataClassifications.includes(dataClassification)) return false;
       if (!m.routing.riskClasses.includes(riskClass)) return false;
       if (!m.routing.licensingAllowed) return false;
+      if (deploymentMode && !m.deploymentModes.includes(deploymentMode)) return false;
+      if (dataResidency && !m.operations.dataResidency.includes(dataResidency)) return false;
       if (!healthEligible(state)) return false;
       if (allowed && !allowed.has(m.providerId)) return false;
       if (denied.has(m.providerId)) return false;

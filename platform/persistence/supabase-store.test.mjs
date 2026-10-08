@@ -421,3 +421,19 @@ test('eight-agent operating model uses typed mission and handoff Edge operations
   assert.equal(fake.calls[2].body.payload.expectedVersion, 1);
   assert.deepEqual(fake.calls[3].body.payload, { missionId: 'mission-1' });
 });
+
+
+test('dispatch is one durable atomic RPC rather than client-created handoffs', async () => {
+  const fake = fakeFetch([{ body: { outcome: 'DISPATCHED', count: 2, handoffs: [] } }]);
+  const store = createSupabaseControlStore({
+    url: 'https://example.supabase.co',
+    serverSecret: 'server-secret',
+    fetchImpl: fake.fetchImpl,
+  });
+
+  const result = await store.dispatchOperatingMission('mission-001', { maxAssignments: 2 });
+  assert.equal(result.count, 2);
+  assert.equal(fake.calls.length, 1);
+  assert.equal(fake.calls[0].body.operation, 'dispatchOperatingMission');
+  assert.deepEqual(fake.calls[0].body.payload, { missionId: 'mission-001', maxAssignments: 2 });
+});

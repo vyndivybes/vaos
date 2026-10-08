@@ -9,6 +9,7 @@ const VALID_OUTCOMES = new Set(Object.values(HANDOFF_OUTCOME));
 function requireStore(store) {
   const required = [
     'createOperatingMission',
+    'dispatchOperatingMission',
     'createOperatingHandoff',
     'transitionOperatingHandoff',
     'operatingMissionSnapshot',
@@ -31,6 +32,14 @@ export function createEightAgentOperatingService({ store } = {}) {
     async planMission(input = {}) {
       const plan = buildMissionPlan(input);
       return durableStore.createOperatingMission(plan);
+    },
+
+    async dispatchMission(missionId, { maxAssignments = 8 } = {}) {
+      const id = requiredText(missionId, 'MISSION_ID_REQUIRED');
+      if (!Number.isInteger(maxAssignments) || maxAssignments < 1 || maxAssignments > 8) {
+        throw new Error('MISSION_DISPATCH_LIMIT_INVALID');
+      }
+      return durableStore.dispatchOperatingMission(id, { maxAssignments });
     },
 
     async createHandoff(input = {}) {

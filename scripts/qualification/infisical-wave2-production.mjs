@@ -8,6 +8,7 @@ import { validateProviderLiveEvidence } from '../../platform/qualification/provi
 const required=name=>{const value=process.env[name];if(!value)throw new Error('missing env: '+name);return value};
 const baseUrl=process.env.INFISICAL_BASE_URL||'https://us.infisical.com';
 const clientId=required('INFISICAL_CLIENT_ID');
+const revokedClientId=required('INFISICAL_REVOKED_CLIENT_ID');
 const currentClientSecret=required('INFISICAL_CLIENT_SECRET');
 const revokedClientSecret=required('INFISICAL_REVOKED_CLIENT_SECRET');
 const projectId=required('INFISICAL_PROJECT_ID');
@@ -28,7 +29,7 @@ const qualificationManifest={
 };
 const controlPlane=createProviderControlPlane({providers:[qualificationManifest]});
 const result=await runInfisicalProductionQualification({
-  transport,clientId,currentClientSecret,revokedClientSecret,
+  transport,clientId,revokedClientId,currentClientSecret,revokedClientSecret,
   allowedProbe:{projectId,environment,secretPath:allowedSecretPath,secretKey:allowedSecretKey},
   controlPlane,
 });

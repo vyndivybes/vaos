@@ -74,3 +74,34 @@ test('production qualification fails closed when next and revoked credentials ar
   }),/INFISICAL_PRODUCTION_CREDENTIALS_NOT_ROTATED/);
   assert.equal(authCalls,0);
 });
+
+test('production qualification uses next and revoked client IDs independently',async()=>{
+  const observed=[];
+  const transport={
+    async universalLogin({clientId,clientSecret}){
+      observed.push({clientId,clientSecret});
+      if(clientId==='old-id'&&clientSecret==='old-secret'){
+        const e=new Error('unauthorized');e.code='INFISICAL_AUTH_FAILED';throw e;
+      }
+      if(clientId==='next-id'&&clientSecret==='next-secret')return{accessToken:'next-token',expiresIn:900};
+      throw new Error('wrong credential pairing');
+    },
+    async readSecret(){return{secretValue:'canary'}},
+  };
+  let enabled=true;
+  const controlPlane={
+    async setProviderEnabled({enabled:v}){enabled=v},
+    resolve(){return enabled?{providerId:'infisical'}:null},
+  };
+  const result=await runInfisicalProductionQualification({
+    transport,clientId:'next-id',revokedClientId:'old-id',
+    currentClientSecret:'next-secret',revokedClientSecret:'old-secret',
+    allowedProbe:probe(),controlPlane,
+  });
+  assert.equal(result.checks.length,2);
+  assert.deepEqual(observed,[
+    {clientId:'next-id',clientSecret:'next-secret'},
+    {clientId:'old-id',clientSecret:'old-secret'},
+  ]);
+  assert.equal(enabled,false);
+});

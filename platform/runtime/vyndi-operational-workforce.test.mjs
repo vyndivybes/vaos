@@ -44,7 +44,7 @@ test('responsibility contracts enforce observation autonomy, approval-bound muta
     for(const action of contract.autonomousActions){
       assert.equal(employee.capabilities[action],AUTHORITY.AUTONOMOUS_EXECUTION);
       const policy=evaluateActionPolicy({actionType:action,authority:employee.capabilities[action]});
-      assert.equal(policy.decision,POLICY_DECISION.PREPARE_ONLY);
+      assert.equal(policy.decision,POLICY_DECISION.ALLOW);
     }
     for(const action of contract.approvalRequiredActions){
       assert.equal(employee.capabilities[action],AUTHORITY.APPROVED_EXECUTION);

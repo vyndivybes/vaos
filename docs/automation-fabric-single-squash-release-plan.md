@@ -342,8 +342,8 @@ No new unrelated features after definitive checklist completion.
 Resolve conflicts against current architecture; do not repeatedly rebase during parallel work.
 
 ### Gate E — Cloudflare-only audit
-- no Vercel runtime/config/workflow/documentation dependency;
-- repository homepage must no longer point to Vercel;
+- no legacy deployment provider runtime/config/workflow/documentation dependency;
+- repository homepage must no longer point to legacy deployment provider;
 - Cloudflare remains deployment target.
 
 ### Gate F — Full qualification
@@ -392,6 +392,6 @@ PR #30 is complete only when:
 - P1–P15 are implemented to evaluation-grade boundaries;
 - catalog and enterprise backlog are complete;
 - full reconciliation/qualification/audit is green;
-- Vercel cleanup is complete;
+- legacy deployment provider cleanup is complete;
 - one squash commit lands on `main`;
 - no provider is accidentally production-enabled.

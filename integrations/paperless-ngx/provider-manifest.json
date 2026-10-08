@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "paperless-ngx",
+  "displayName": "Paperless-ngx",
+  "adapterVersion": "1.0.0",
+  "description": "Self-hosted document archive/OCR/index provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "document.archive"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "token"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "document-policy-bound",
+    "dataResidency": [
+      "IN",
+      "self-hosted-policy-bound"
+    ],
+    "costControl": "storage-and-ocr-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hosted document management",
+    "redistributionReviewRequired": true,
+    "notes": "API v10 preferred; duplicate-consumption policy and OCR/storage behavior require deployment qualification."
+  },
+  "notes": "Disabled/evaluation-only. VAOS verifies consumption task and created document checksum; Paperless remains archive/index evidence, not canonical enterprise truth."
+}

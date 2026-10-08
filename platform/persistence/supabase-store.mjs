@@ -108,6 +108,28 @@ export function createSupabaseControlStore({
         relationType: input.relationType,
       });
     },
+    observeIdentity(job, input) {
+      return invoke('observeIdentity', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        observationId: input.observationId,
+      });
+    },
+    getIdentityObservation(job, observationId) {
+      return invoke('getIdentityObservation', {
+        jobId: job.id,
+        observationId,
+      });
+    },
+    linkSecurityQualificationTrace(job, input) {
+      return invoke('linkSecurityQualificationTrace', {
+        jobId: job.id,
+        leaseToken: job.leaseToken,
+        sourceRiskId: input.sourceRiskId,
+        targetBaseline: input.targetBaseline,
+        relationType: input.relationType,
+      });
+    },
     linkDomainRecords(job, input) {
       return invoke('linkDomainRecords', {
         jobId: job.id,

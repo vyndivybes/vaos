@@ -82,3 +82,15 @@ test('every Digital Workforce lifecycle mutation is human-gated', () => {
     assert.equal(ACTION_POLICIES[actionType].requiresApproval, true, actionType);
   }
 });
+
+test('Security identity observation is explicit high-risk human-gated authority', () => {
+  const result = evaluateActionPolicy({
+    actionType: 'SECURITY.OBSERVE_IDENTITY',
+    authority: 4,
+    risk: 'high',
+  });
+
+  assert.equal(result.decision, POLICY_DECISION.AWAIT_APPROVAL);
+  assert.equal(ACTION_POLICIES['SECURITY.OBSERVE_IDENTITY'].requiresApproval, true);
+});
+

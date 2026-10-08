@@ -57,6 +57,61 @@ export function resolveCommand(input) {
     };
   }
 
+  const securityRecoveryPrefix = 'qualification security recovery ';
+  const securityRecoverySeparator = ' link risk ';
+  const securityBaselineSeparator = ' baseline ';
+  const securityRecoveryLower = query.toLowerCase();
+  if (securityRecoveryLower.startsWith(securityRecoveryPrefix) && securityRecoveryLower.includes(securityRecoverySeparator) && securityRecoveryLower.includes(securityBaselineSeparator)) {
+    const riskIndex = securityRecoveryLower.indexOf(securityRecoverySeparator);
+    const baselineIndex = securityRecoveryLower.indexOf(securityBaselineSeparator, riskIndex + securityRecoverySeparator.length);
+    const observationId = query.slice(securityRecoveryPrefix.length, riskIndex).trim();
+    const sourceRiskId = query.slice(riskIndex + securityRecoverySeparator.length, baselineIndex).trim();
+    const targetBaseline = query.slice(baselineIndex + securityBaselineSeparator.length).trim();
+    if (observationId && sourceRiskId && targetBaseline) {
+      return {
+        kind: 'intent',
+        targetView: 'governance',
+        agentId: 'security',
+        actionType: 'SECURITY.OBSERVE_IDENTITY',
+        risk: 'high',
+        payload: {
+          observationId,
+          qualificationMode: true,
+          qualificationRecoveryDrill: true,
+          qualificationTrace: {
+            sourceRiskId,
+            targetBaseline,
+            relationType: 'RELATED_TO',
+          },
+        },
+      };
+    }
+  }
+
+  const qualificationSecurity = query.match(/^qualification\s+security\s+(.+)$/i);
+  if (qualificationSecurity) {
+    return {
+      kind: 'intent',
+      targetView: 'governance',
+      agentId: 'security',
+      actionType: 'SECURITY.OBSERVE_IDENTITY',
+      risk: 'high',
+      payload: { observationId: qualificationSecurity[1].trim(), qualificationMode: true },
+    };
+  }
+
+  const observeIdentity = query.match(/^observe\s+identity\s+(.+)$/i);
+  if (observeIdentity) {
+    return {
+      kind: 'intent',
+      targetView: 'governance',
+      agentId: 'security',
+      actionType: 'SECURITY.OBSERVE_IDENTITY',
+      risk: 'high',
+      payload: { observationId: observeIdentity[1].trim() },
+    };
+  }
+
   const linkedRecoveryPrefix = 'qualification risk recovery ';
   const linkedRecoverySeparator = ' link baseline ';
   const linkedRecoveryLower = query.toLowerCase();

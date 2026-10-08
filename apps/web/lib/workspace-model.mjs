@@ -311,6 +311,7 @@ const QUALIFICATION_PROFILES = Object.freeze({
   vibpe: Object.freeze({ 3: 'VIBPE_Q3_ENGINEERING_BASELINE_GOVERNANCE_V1' }),
   qa: Object.freeze({ 3: 'QA_Q3_CAPA_GOVERNANCE_V1' }),
   risk: Object.freeze({ 3: 'RISK_Q3_ENTERPRISE_RISK_GOVERNANCE_V1' }),
+  security: Object.freeze({ 4: 'SECURITY_Q4_IDENTITY_ASSURANCE_V1' }),
 });
 
 function workforceLifecycleActions(employee) {
@@ -330,6 +331,7 @@ function workforceLifecycleActions(employee) {
           {
             actionType: 'WORKFORCE.ASSESS_QUALIFICATION',
             ...WORKFORCE_ACTION_CONFIG['WORKFORCE.ASSESS_QUALIFICATION'],
+            label: `Run Q${targetLevel} assessment`,
             targetLevel,
             profileId,
           },

@@ -698,3 +698,53 @@ test('qualification harness records stay in audit evidence but not the live Risk
   assert.ok(model.operationalViews.evidence.rows.some((row) => row.title === 'QUAL-RISK-001'));
 });
 
+test('Security Q4 training requires a high-assurance PASS assessment before Qualify is exposed', () => {
+  const snapshot = runtimeSnapshot();
+  snapshot.workforce = {
+    digitalEmployees: [{
+      id: 'security',
+      name: 'Security Agent',
+      role: 'Security Assurance',
+      department: 'Security',
+      mission: 'Monitor identity and policy state and escalate material security drift.',
+      responsibilities: ['Monitor identity state', 'Detect policy drift'],
+      responsibilityContractId: 'security-contract',
+      qualificationLevel: 0,
+      status: 'TRAINING',
+      capabilities: { 'SECURITY.OBSERVE_IDENTITY': 4 },
+      owner: 'Enterprise',
+      supervisor: 'Human governance',
+      autonomyLevel: 2,
+      currentAssignment: 'Qualification',
+      priority: 'HIGH',
+      confidence: 98,
+      modelRequirements: { minimumQualification: 'Q4_HIGH_ASSURANCE' },
+      evidenceRefs: [],
+      latestAssessment: null,
+    }],
+    responsibilityContracts: [],
+    metrics: { totalDigitalEmployees: 1, proposedDigitalEmployees: 0, qualifiedDigitalEmployees: 0, activeDigitalEmployees: 0, restrictedDigitalEmployees: 0, responsibilityContracts: 0 },
+  };
+
+  let row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.ASSESS_QUALIFICATION');
+  assert.equal(row.actions[0].profileId, 'SECURITY_Q4_IDENTITY_ASSURANCE_V1');
+  assert.equal(row.actions[0].targetLevel, 4);
+  assert.equal(row.actions[0].label, 'Run Q4 assessment');
+
+  snapshot.workforce.digitalEmployees[0].latestAssessment = {
+    id: 'security-assessment-1',
+    targetLevel: 4,
+    profileId: 'SECURITY_Q4_IDENTITY_ASSURANCE_V1',
+    scope: 'IDENTITY_SECURITY_ASSURANCE',
+    status: 'PASS',
+    criteria: [],
+    results: {},
+    evidenceRefs: [],
+  };
+  row = buildWorkspaceModel(snapshot).operationalViews.agents.rows[0];
+  assert.equal(row.actions[0].actionType, 'WORKFORCE.QUALIFY');
+  assert.equal(row.actions[0].recommendedQualificationLevel, 4);
+  assert.deepEqual(row.actions[0].evidenceRefs, ['qualification_assessment:security-assessment-1']);
+});
+

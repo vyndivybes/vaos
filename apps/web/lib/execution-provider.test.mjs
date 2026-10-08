@@ -11,3 +11,16 @@ test('Risk execution provider exposes the qualification trace bridge', async () 
   assert.match(source, /linkQualificationTrace\(job, input\)/);
   assert.match(source, /store\.linkRiskQualificationTrace\(job, input\)/);
 });
+
+test('Security execution provider exposes identity observation and qualification trace bridges', async () => {
+  const source = await readFile(providerUrl, 'utf8');
+
+  assert.match(source, /const security = Object\.freeze\(\{/);
+  assert.match(source, /observeIdentity\(job, input\)/);
+  assert.match(source, /store\.observeIdentity\(job, input\)/);
+  assert.match(source, /getIdentityObservation\(job, observationId\)/);
+  assert.match(source, /store\.getIdentityObservation\(job, observationId\)/);
+  assert.match(source, /linkQualificationTrace\(job, input\)/);
+  assert.match(source, /store\.linkSecurityQualificationTrace\(job, input\)/);
+});
+

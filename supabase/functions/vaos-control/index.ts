@@ -73,6 +73,27 @@ Deno.serve(async (req: Request) => {
       p_reason: payload.reason || null,
       p_evidence_refs: payload.evidenceRefs || [],
     }
+  } else if (operation === 'recordOperatingWorkEvidence') {
+    rpcName = 'vaos_record_handoff_work_evidence'
+    args = {
+      p_server_key: serverKey,
+      p_handoff_id: payload.handoffId,
+      p_expected_version: payload.expectedVersion,
+      p_by_agent_id: payload.byAgentId,
+      p_report: payload.report,
+    }
+  } else if (operation === 'getOperatingWorkEvidence') {
+    rpcName = 'vaos_get_handoff_work_evidence'
+    args = {
+      p_server_key: serverKey,
+      p_evidence_id: payload.evidenceId,
+    }
+  } else if (operation === 'listRunnableMissions') {
+    rpcName = 'vaos_list_runnable_missions'
+    args = {
+      p_server_key: serverKey,
+      p_limit: payload.limit ?? 8,
+    }
   } else if (operation === 'operatingMissionSnapshot') {
     rpcName = 'vaos_operating_mission_snapshot'
     args = {

@@ -1,6 +1,6 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createWindmillDurableLedger } from '../../integrations/windmill/durable-ledger.mjs';
-import { createWindmillIsolatedDrill } from './windmill-isolated-drill.mjs';
+import { createWindmillIsolatedDrill, recordWindmillAlarmReceipt } from './windmill-isolated-drill.mjs';
 
 /**
  * VAOS singleton Windmill admission coordinator.
@@ -25,6 +25,7 @@ export class WindmillAdmissionCoordinator extends DurableObject {
     });
   }
   async startQualification(runId) { return this.isolatedDrill().start(runId); }
+  async alarmStatus(runId) { return this.isolatedDrill().alarmStatus(runId); }
   async finishQualification(runId) { return this.isolatedDrill().finish(runId); }
   async reserve(request) {
     this.assertEnabled();
@@ -36,5 +37,13 @@ export class WindmillAdmissionCoordinator extends DurableObject {
   async recordProviderRun(request) { this.assertEnabled(); return this.ledger.recordProviderRun(request); }
   async requestCancellation(request) { this.assertEnabled(); return this.ledger.requestCancellation(request); }
   async finish(request) { this.assertEnabled(); return this.ledger.finish(request); }
-  async alarm() { await this.ledger.expire(); }
+  async alarm() {
+    const outcome=await this.ledger.expire();
+    const isolated=await this.ctx.storage.get('drill:start');
+    if(isolated) {
+      await recordWindmillAlarmReceipt({
+        store:this.ctx.storage,runId:isolated.runId,outcome,
+      });
+    }
+  }
 }

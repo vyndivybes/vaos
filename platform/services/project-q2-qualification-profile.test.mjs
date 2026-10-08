@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
 const migrationUrl = new URL(
-  '../../supabase/migrations/20261008072000_project_q2_project_controls_v1.sql',
+  '../../supabase/migrations/20261008070623_project_q2_project_controls_v1.sql',
   import.meta.url,
 );
 const edgeUrl = new URL(

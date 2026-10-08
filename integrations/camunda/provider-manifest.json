@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "camunda",
+  "displayName": "Camunda",
+  "adapterVersion": "1.0.0",
+  "description": "Formal BPMN/process orchestration provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "process.orchestrate"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "riskClasses": [
+      "medium",
+      "high",
+      "critical"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "bearer",
+      "oauth2"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "cancel-process-instance-or-disable-provider"
+  },
+  "operations": {
+    "retentionClass": "process-history-policy",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "process-instance-budget"
+  },
+  "licensing": {
+    "model": "Self-managed or managed enterprise process platform",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS pins approved process definition ID and version; create-process commands are not blindly retried."
+  },
+  "notes": "Disabled/evaluation-only. Camunda user-task completion is not exposed by this adapter; human approval remains governed by VAOS."
+}

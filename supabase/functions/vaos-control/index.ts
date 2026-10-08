@@ -168,7 +168,11 @@ Deno.serve(async (req: Request) => {
       p_evidence_refs: payload.evidenceRefs || [],
     }
   } else if (operation === 'assessDigitalEmployeeQualification') {
-    rpcName = 'vaos_assess_digital_employee_qualification'
+    rpcName = payload.employeeId === 'project'
+      && payload.targetLevel === 2
+      && payload.profileId === 'PROJECT_Q2_PROJECT_CONTROLS_V1'
+      ? 'vaos_assess_project_q2_qualification'
+      : 'vaos_assess_digital_employee_qualification'
     args = {
       p_server_key: serverKey,
       p_job_id: payload.jobId,
@@ -236,6 +240,49 @@ Deno.serve(async (req: Request) => {
   } else if (operation === 'reconciliationList') {
     rpcName = 'vaos_reconciliation_list'
     args = { p_server_key: serverKey }
+  } else if (operation === 'claimQualificationRecovery') {
+    rpcName = 'vaos_claim_qualification_recovery'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_worker_id: payload.workerId,
+      p_lease_seconds: payload.leaseSeconds || 120,
+    }
+  } else if (operation === 'linkRiskQualificationTrace') {
+    rpcName = 'vaos_link_risk_qualification_trace'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_target_domain: payload.targetDomain,
+      p_target_resource_id: payload.targetResourceId,
+      p_relation_type: payload.relationType,
+    }
+  } else if (operation === 'observeIdentity') {
+    rpcName = 'vaos_observe_identity'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_observation_id: payload.observationId,
+    }
+  } else if (operation === 'getIdentityObservation') {
+    rpcName = 'vaos_get_identity_observation'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_observation_id: payload.observationId,
+    }
+  } else if (operation === 'linkSecurityQualificationTrace') {
+    rpcName = 'vaos_link_security_qualification_trace'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_source_risk_id: payload.sourceRiskId,
+      p_target_baseline: payload.targetBaseline,
+      p_relation_type: payload.relationType,
+    }
   } else {
     return json({ error: { code: 'INVALID_OPERATION' } }, 422)
   }

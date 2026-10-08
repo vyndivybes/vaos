@@ -54,7 +54,6 @@ export function createVyndiReadBridgeClient({
         method: VYNDI_BRIDGE_METHOD,
         path: VYNDI_BRIDGE_PATH,
         purpose: VYNDI_BRIDGE_READ_PURPOSE,
-        protocolVersion: VYNDI_BRIDGE_PROTOCOL_VERSION,
         actionType: job.actionType,
         employeeId: route.employeeId,
         intentId: job.intentId,

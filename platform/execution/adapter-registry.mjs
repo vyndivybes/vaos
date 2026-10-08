@@ -63,6 +63,60 @@ function vyndiReadAdapter(vyndiBridge, actionType) {
   });
 }
 
+function vyndiWriteQualificationAdapter(vyndiWriteQualification) {
+  return adapter('vyndi.write-qualification.v1', async (job) => {
+    if (!vyndiWriteQualification || typeof vyndiWriteQualification.execute !== 'function') {
+      throw terminalError('DOMAIN_PORT_REQUIRED:vyndiWriteQualification');
+    }
+    if (
+      job?.actionType !== 'COMMERCIAL.COMMIT_ORDER'
+      || job?.payload?.writeQualification !== true
+      || job?.payload?.qualificationProfile !== 'COMMERCIAL_WRITE_CANARY_V1'
+    ) {
+      throw terminalError('VYNDI_WRITE_QUALIFICATION_SCOPE_DENIED');
+    }
+
+    const qualified = await vyndiWriteQualification.execute(job);
+    if (
+      !qualified
+      || qualified.actionType !== job.actionType
+      || qualified.sourceAuthority !== 'saveSalesOrder'
+      || qualified.qualificationProfile !== 'COMMERCIAL_WRITE_CANARY_V1'
+      || qualified.outcome !== 'COMPENSATED'
+      || qualified.finalState !== 'cancelled'
+    ) {
+      throw terminalError('VYNDI_WRITE_QUALIFICATION_VERIFICATION_MISMATCH');
+    }
+
+    return {
+      adapterId: 'vyndi.write-qualification.v1',
+      effect: {
+        effectType: 'VYNDI.WRITE_QUALIFICATION_COMPENSATED',
+        resourceType: 'VYNDI_WRITE_QUALIFICATION',
+        resourceId: qualified.canaryId,
+        state: 'COMPENSATED',
+        finalState: qualified.finalState,
+        sourceAuthority: qualified.sourceAuthority,
+      },
+      verification: {
+        verified: true,
+        resourceType: 'VYNDI_WRITE_QUALIFICATION',
+        resourceId: qualified.canaryId,
+        expectedState: 'cancelled',
+        actionType: job.actionType,
+        approvalId: qualified.approvalId,
+        qualificationProfile: qualified.qualificationProfile,
+        sourceAuthority: qualified.sourceAuthority,
+        nonce: qualified.nonce,
+        bodySha256: qualified.bodySha256,
+        initialRevision: qualified.initialRevision,
+        finalRevision: qualified.finalRevision,
+        evidenceSource: 'vyndi:/api/vaos/bridge',
+      },
+    };
+  });
+}
+
 const WORKFORCE_TARGET_STATUS = Object.freeze({
   'WORKFORCE.START_TRAINING': 'TRAINING',
   'WORKFORCE.QUALIFY': 'QUALIFIED',
@@ -564,7 +618,7 @@ function digitalWorkforceAdapter(digitalWorkforce, actionType) {
   });
 }
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge } = {}) {
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge, vyndiWriteQualification } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
@@ -574,6 +628,7 @@ export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, proj
     ['WORKFORCE.ASSESS_QUALIFICATION', digitalWorkforceAssessmentAdapter(digitalWorkforce)],
     ...Object.keys(WORKFORCE_TARGET_STATUS).map((actionType) => [actionType, digitalWorkforceAdapter(digitalWorkforce, actionType)]),
     ...VYNDI_READ_ACTIONS.map((actionType) => [actionType, vyndiReadAdapter(vyndiBridge, actionType)]),
+    ['COMMERCIAL.COMMIT_ORDER', vyndiWriteQualificationAdapter(vyndiWriteQualification)],
   ]);
 
   return Object.freeze({

@@ -31,6 +31,7 @@ export default async function handler(req, res) {
       decidedBy: session.email,
     });
     if (result?.outcome === 'NOT_FOUND') return res.status(404).json(apiError('NOT_FOUND', 'Approval not found'));
+    if (result?.outcome === 'MAKER_CHECKER_REQUIRED') return res.status(409).json(apiError('MAKER_CHECKER_REQUIRED', 'Write qualification requires a different authenticated approver'));
     if (result?.outcome === 'CONFLICT') return res.status(409).json(apiError('APPROVAL_ALREADY_DECIDED', 'Approval already has a different terminal decision'));
 
     let execution = null;

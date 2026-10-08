@@ -803,3 +803,16 @@ test('Knowledge Q2 duplicate link is accepted as immutable replay evidence inste
   assert.equal(result.verification.replayedFromExecutionJobId, 'job-original');
   assert.equal(result.verification.replayedFromIntentId, 'intent-original');
 });
+
+test('commercial write-qualification adapter is registered but fails closed without its dedicated port', async () => {
+  const registry=createExecutionAdapterRegistry();
+  assert.equal(registry.has('COMMERCIAL.COMMIT_ORDER'),true);
+  assert.equal(registry.get('COMMERCIAL.COMMIT_ORDER').id,'vyndi.write-qualification.v1');
+  await assert.rejects(
+    ()=>registry.get('COMMERCIAL.COMMIT_ORDER').execute({
+      id:'job-stage3-1',intentId:'intent-stage3-1',actionType:'COMMERCIAL.COMMIT_ORDER',
+      payload:{writeQualification:true,qualificationProfile:'COMMERCIAL_WRITE_CANARY_V1'},
+    }),
+    /DOMAIN_PORT_REQUIRED:vyndiWriteQualification/,
+  );
+});

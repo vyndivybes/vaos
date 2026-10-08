@@ -324,3 +324,38 @@ test('VYNDI operational mutation intent remains preparation-only through the def
   assert.equal(result.authority, 4);
   assert.equal(store.calls.intents[0].eventType, 'AGENT.ACTION_PREPARED');
 });
+
+test('Stage-3 commercial write qualification is approval-gated while ordinary writes remain prepare-only', async () => {
+  const store = makeStore();
+  const service = createDurableControlService({ store });
+
+  const qualified = await service.proposeIntent({
+    idempotencyKey: 'stage3:commercial:write-canary:001',
+    agentId: 'commercial',
+    actionType: 'COMMERCIAL.COMMIT_ORDER',
+    risk: 'low',
+    reason: 'Stage-3 controlled write qualification canary',
+    payload: {
+      writeQualification: true,
+      qualificationProfile: 'COMMERCIAL_WRITE_CANARY_V1',
+      requestedBy: 'maker@example.com',
+    },
+  });
+
+  assert.equal(qualified.status, 'AWAIT_APPROVAL');
+  assert.equal(qualified.reason, 'WRITE_QUALIFICATION_APPROVAL_REQUIRED');
+  assert.equal(qualified.authority, 4);
+  assert.equal(store.calls.intents[0].eventType, 'GOVERNANCE.APPROVAL_REQUIRED');
+
+  const ordinary = await service.proposeIntent({
+    idempotencyKey: 'stage3:commercial:ordinary:guard',
+    agentId: 'commercial',
+    actionType: 'COMMERCIAL.COMMIT_ORDER',
+    risk: 'low',
+    reason: 'Ordinary write remains fail-closed',
+    payload: {},
+  });
+
+  assert.equal(ordinary.status, 'PREPARED');
+  assert.equal(ordinary.reason, 'WORKFORCE_BRIDGE_PREPARE_ONLY');
+});

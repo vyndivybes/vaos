@@ -29,7 +29,14 @@ export default async function handler(req, res) {
   try {
     const reason = body.reason.trim();
     const rawPayload = body.payload || {};
-    const payload = body.actionType === 'DIGITAL_THREAD.CREATE_LINK'
+    const writeQualification = body.actionType === 'COMMERCIAL.COMMIT_ORDER'
+      && rawPayload?.writeQualification === true;
+    const sanitizedQualificationPayload = writeQualification
+      ? Object.fromEntries(Object.entries(rawPayload).filter(([key]) => !['_vaosControl','requestedBy'].includes(key)))
+      : null;
+    const payload = writeQualification
+      ? { ...sanitizedQualificationPayload, requestedBy: session.email }
+      : body.actionType === 'DIGITAL_THREAD.CREATE_LINK'
       ? {
           ...rawPayload,
           proposedBy: session.email,

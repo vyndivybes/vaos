@@ -8,7 +8,7 @@ function response(){
  const res={setHeader(k,v){state.headers[k]=v;return res},status(n){state.status=n;return res},json(v){state.body=v;return res}};
  return {res,state};
 }
-function req({method='GET',url='https://vaos.test/api/project-schedule?projectId=VYNDI-MASTER-PROGRAM',email='operator@example.com',allowlist='operator@example.com'}={}){
+function req({method='GET',url='https://vaos.test/api/project-schedule?projectId=VYNDI-MASTER-PROGRAM',email='kaaviyam1519@gmail.com',allowlist='kaaviyam1519@gmail.com'}={}){
  return {method,url,headers:{cookie:email?`${SESSION_COOKIE}=${createSessionToken(email)}`:''},env:{VAOS_SCHEDULE_READERS:allowlist}};
 }
 test('route registered and requires authenticated explicitly allowlisted schedule reader',async()=>{

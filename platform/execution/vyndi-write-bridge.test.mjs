@@ -11,12 +11,12 @@ import { createVyndiWriteBridgeAdapter, prepareVyndiBridgeEnvelope } from './vyn
 
 const expectedEmployees=new Set([
   'commercial','procurement','inventory','production',
-  'maintenance','finance','people','engineering-configuration',
+  'maintenance','finance','people','engineering-configuration','project',
 ]);
 
-test('bridge covers all 23 operational capabilities exactly once',()=>{
-  assert.equal(VYNDI_BRIDGE_ROUTES.length,23);
-  assert.equal(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.actionType)).size,23);
+test('bridge preserves all 23 operational capabilities and adds exactly one read-only project schedule route',()=>{
+  assert.equal(VYNDI_BRIDGE_ROUTES.length,24);
+  assert.equal(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.actionType)).size,24);
   assert.deepEqual(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.employeeId)),expectedEmployees);
   for(const route of VYNDI_BRIDGE_ROUTES){
     assert.ok(route.verificationRefs.length>0,route.actionType);
@@ -28,16 +28,16 @@ test('bridge covers all 23 operational capabilities exactly once',()=>{
   }
 });
 
-test('read commissioning enables exactly eight routes and leaves all fifteen mutations disabled',()=>{
+test('read commissioning adds a ninth read-only project route while keeping all fifteen mutations disabled',()=>{
   const readiness=getVyndiBridgeReadiness();
   assert.equal(readiness.executionEnabled,true);
-  assert.equal(readiness.routeCount,23);
-  assert.equal(readiness.readReady,8);
+  assert.equal(readiness.routeCount,24);
+  assert.equal(readiness.readReady,9);
   assert.equal(readiness.writePrepared,15);
   assert.deepEqual(readiness.gaps,[]);
   const reads=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.READ);
   const writes=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION);
-  assert.equal(reads.length,8);
+  assert.equal(reads.length,9);
   assert.ok(reads.every(r=>r.state===VYNDI_BRIDGE_ROUTE_STATE.READ_READY && r.executionEnabled===true));
   assert.equal(writes.length,15);
   assert.ok(writes.every(r=>r.executionEnabled===false));

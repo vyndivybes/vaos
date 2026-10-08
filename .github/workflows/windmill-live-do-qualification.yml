@@ -1,0 +1,75 @@
+name: windmill-live-do-qualification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/windmill-live-do-qualification.yml'
+      - 'platform/security/windmill-github-oidc*'
+      - 'platform/execution/windmill-isolated-drill*'
+      - 'platform/execution/windmill-admission-object.mjs'
+      - 'apps/web/api/windmill-live-do-qualification*'
+      - 'apps/web/cloudflare-worker.mjs'
+      - 'scripts/qualification/windmill-live-do-cloudflare.mjs'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/windmill-live-do-qualification.yml'
+      - 'platform/security/windmill-github-oidc*'
+      - 'platform/execution/windmill-isolated-drill*'
+      - 'platform/execution/windmill-admission-object.mjs'
+      - 'apps/web/api/windmill-live-do-qualification*'
+      - 'apps/web/cloudflare-worker.mjs'
+      - 'scripts/qualification/windmill-live-do-cloudflare.mjs'
+
+concurrency:
+  group: windmill-live-do-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-contracts:
+    permissions:
+      contents: read
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Signed OIDC, isolated persistence and API authority tests
+        run: >-
+          node --test
+          platform/security/windmill-github-oidc.test.mjs
+          platform/execution/windmill-isolated-drill.test.mjs
+          apps/web/api/windmill-live-do-qualification.test.mjs
+      - name: Full VAOS regression suite
+        run: npm test
+      - name: Cloudflare bundled Worker compatibility
+        run: npx --yes wrangler@4.136.3 deploy --dry-run --config wrangler.jsonc --outdir .wrangler-dry-run
+      - name: Verify qualification never enables real Windmill routing
+        run: >-
+          node --input-type=module -e
+          "import fs from 'node:fs';const m=JSON.parse(fs.readFileSync('integrations/windmill/provider-manifest.json'));const w=JSON.parse(fs.readFileSync('wrangler.jsonc'));if(m.enabled!==false||m.qualification.state!=='evaluation'||w.vars.WINDMILL_ADMISSION_ENABLED==='true')process.exit(1);"
+
+  cloudflare-live-drill:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: offline-contracts
+    permissions:
+      contents: read
+      id-token: write
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Wait for deployed Cloudflare endpoint and execute signed isolated DO drill
+        run: node scripts/qualification/windmill-live-do-cloudflare.mjs
+      - name: Upload non-sensitive live Cloudflare evidence
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windmill-cloudflare-do-live-evidence
+          path: qualification-evidence/windmill/cloudflare-do-live.json
+          retention-days: 30

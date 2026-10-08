@@ -1,0 +1,88 @@
+name: windmill-durable-cloudflare-qualification
+
+on:
+  pull_request:
+    paths:
+      - 'integrations/windmill/durable-ledger*'
+      - 'integrations/windmill/execution-supervisor*'
+      - 'integrations/windmill/cancellation-controller*'
+      - 'platform/execution/windmill-admission-object.mjs'
+      - 'apps/web/cloudflare-entry.mjs'
+      - 'apps/web/api/windmill-runtime-status*'
+      - 'apps/web/cloudflare-worker.mjs'
+      - 'wrangler.jsonc'
+      - '.github/workflows/windmill-durable-cloudflare-qualification.yml'
+  workflow_dispatch:
+    inputs:
+      verify_remote:
+        type: boolean
+        required: true
+        default: false
+        description: 'Opt-in read-only remote endpoint check after Cloudflare deployment'
+
+permissions:
+  contents: read
+
+jobs:
+  durable-security-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Durable admission, cancellation, timeout and Cloudflare-auth tests
+        run: >-
+          node --test
+          integrations/windmill/durable-ledger.test.mjs
+          integrations/windmill/execution-supervisor.test.mjs
+          integrations/windmill/cancellation-controller.test.mjs
+          apps/web/api/windmill-runtime-status.test.mjs
+          integrations/windmill/operational-gates.test.mjs
+      - name: Static syntax checks
+        run: >-
+          node --check integrations/windmill/durable-ledger.mjs
+          && node --check integrations/windmill/execution-supervisor.mjs
+          && node --check integrations/windmill/cancellation-controller.mjs
+          && node --check platform/execution/windmill-admission-object.mjs
+          && node --check apps/web/cloudflare-entry.mjs
+          && node --check apps/web/api/windmill-runtime-status.mjs
+      - name: Full VAOS regression suite
+        run: npm test
+      - name: Cloudflare Worker build and SQLite Durable Object compatibility
+        run: npx --yes wrangler@4.136.3 deploy --dry-run --config wrangler.jsonc --outdir .wrangler-windmill-dry-run
+      - name: Assert provider stays disabled by default
+        run: >-
+          node --input-type=module -e
+          "import fs from 'node:fs';const m=JSON.parse(fs.readFileSync('integrations/windmill/provider-manifest.json'));const w=JSON.parse(fs.readFileSync('wrangler.jsonc'));if(m.enabled!==false||m.qualification.state!=='evaluation'||w.vars.WINDMILL_ADMISSION_ENABLED==='true')process.exit(1);if(w.exports?.WindmillAdmissionCoordinator?.storage!=='sqlite'||!w.durable_objects?.bindings?.some(b=>b.name==='WINDMILL_ADMISSION'))process.exit(2);"
+
+  cloudflare-remote-route-read-only:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.verify_remote == true
+    needs: durable-security-contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Confirm live Cloudflare endpoint denies unauthenticated access
+        env:
+          VAOS_BASE_URL: https://vaos.vayushastr.workers.dev
+        run: |
+          node --input-type=module <<'JS'
+          const root=process.env.VAOS_BASE_URL;
+          const res=await fetch(root+'/api/windmill-runtime-status',{
+            method:'GET',redirect:'manual',headers:{Accept:'application/json'},
+            signal:AbortSignal.timeout(10000)
+          });
+          if(res.status!==401){
+            console.error('CLOUDFLARE_WINDMILL_ROUTE_NOT_AUTHENTICATED: '+res.status);
+            process.exit(1);
+          }
+          if(res.headers.get('cache-control')!=='no-store'){
+            console.error('CLOUDFLARE_WINDMILL_CACHE_POLICY_FAILED');
+            process.exit(1);
+          }
+          console.log('PASS: deployed Cloudflare Windmill status route is auth protected, no business execution');
+          JS

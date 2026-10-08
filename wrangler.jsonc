@@ -1,7 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vaos",
-  "main": "./apps/web/cloudflare-worker.mjs",
+  "main": "./apps/web/cloudflare-entry.mjs",
   "compatibility_date": "2026-10-07",
   "compatibility_flags": [
     "nodejs_compat"
@@ -35,6 +35,20 @@
   "previews": {
     "vars": {
       "SUPABASE_URL": "https://vaos-preview.invalid"
+    }
+  },
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "WINDMILL_ADMISSION",
+        "class_name": "WindmillAdmissionCoordinator"
+      }
+    ]
+  },
+  "exports": {
+    "WindmillAdmissionCoordinator": {
+      "type": "durable-object",
+      "storage": "sqlite"
     }
   }
 }

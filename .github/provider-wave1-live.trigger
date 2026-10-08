@@ -1,3 +1,3 @@
 provider-wave1 live qualification trigger
-requested-head=79e7886e50bfb050f5e4c86ae04ac77cff6b72f0
-reason=runner-chrome-optimized-live-qualification
+requested-head=bb2bde254ffced2b79cfbead34d6a4ac2ff1c628
+reason=final-wave1-live-after-durable-evidence-and-playwright-path-fix

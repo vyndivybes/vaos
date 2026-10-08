@@ -56,7 +56,7 @@ export function createCallbackGateway({
       tokenHash,issuedAt:issuedAt.toISOString(),expiresAt,consumedAt:null,
       status:null,evidence:null,
     };
-    store.create(record);
+    await store.create(record);
     await recordAudit({type:'CALLBACK.RECEIPT.ISSUED',receiptRef,providerId,executionJobId,intentId,actionKey,expiresAt,occurredAt:issuedAt.toISOString()});
     const callbackUrl=`${root}/${encodeURIComponent(receiptRef)}?token=${encodeURIComponent(token)}`;
     return Object.freeze({receiptRef,callbackUrl,expiresAt});
@@ -69,7 +69,7 @@ export function createCallbackGateway({
     const executionJobId=requiredText(input,'executionJobId');
     const intentId=requiredText(input,'intentId');
     const actionKey=requiredText(input,'actionKey');
-    const row=store.get(receiptRef);
+    const row=await store.get(receiptRef);
     if(!row)throw fail('CALLBACK_RECEIPT_NOT_FOUND');
     if(row.consumedAt)throw fail('CALLBACK_RECEIPT_REPLAY');
 
@@ -102,7 +102,7 @@ export function createCallbackGateway({
     }
 
     const consumedAt=clock.toISOString();
-    const saved=store.save(receiptRef,{
+    const saved=await store.save(receiptRef,{
       consumedAt,
       status:normalized.status,
       evidence:clone(normalized.evidence),
@@ -123,7 +123,7 @@ export function createCallbackGateway({
 
   async function waitForReceipt({receiptRef}={}){
     receiptRef=requiredText({receiptRef},'receiptRef');
-    const row=store.get(receiptRef);
+    const row=await store.get(receiptRef);
     if(!row)throw fail('CALLBACK_RECEIPT_NOT_FOUND');
     if(!row.consumedAt)throw fail('CALLBACK_RECEIPT_PENDING');
     return Object.freeze({

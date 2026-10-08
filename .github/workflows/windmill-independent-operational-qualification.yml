@@ -1,0 +1,82 @@
+name: windmill-independent-operational-qualification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/windmill-independent-operational-qualification.yml'
+      - 'integrations/windmill/independent-verifier*'
+      - 'integrations/windmill/operational-gates*'
+      - 'scripts/qualification/windmill-independent-live.mjs'
+      - 'docs/provider-qualification/windmill-independent-gates.md'
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Successful main-branch Windmill synthetic execution workflow run ID'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: windmill-independent-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  offline-safety-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Offline independent-readback and operational-policy tests
+        run: >-
+          node --test
+          integrations/windmill/independent-verifier.test.mjs
+          integrations/windmill/operational-gates.test.mjs
+      - name: Verify independent runner syntax
+        run: node --check scripts/qualification/windmill-independent-live.mjs
+
+  independent-readback:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
+    needs: offline-safety-tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      WINDMILL_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+      WINDMILL_VERIFIER_READ_TOKEN: ${{ secrets.WINDMILL_VERIFIER_READ_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Validate source run and separate token preconditions
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ ! "${WINDMILL_SOURCE_RUN_ID}" =~ ^[0-9]{6,20}$ ]]; then
+            echo '::error::Invalid source run ID'; exit 1
+          fi
+          if [ -z "${WINDMILL_VERIFIER_READ_TOKEN:-}" ]; then
+            echo '::error::Missing separate read-only Windmill verifier credential'; exit 1
+          fi
+      - name: Retrieve prior GitHub execution evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: windmill-synthetic-live-evidence
+          repository: vyndivybes/vaos
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: source-evidence/qualification-evidence/windmill
+      - name: Independently verify Windmill job using GET only
+        run: node scripts/qualification/windmill-independent-live.mjs
+      - name: Upload independent verification evidence
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windmill-independent-verification-evidence
+          path: qualification-evidence/windmill/independent.json
+          retention-days: 30

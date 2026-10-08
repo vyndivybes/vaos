@@ -26,7 +26,7 @@ permissions:
 jobs:
   durable-security-contracts:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -48,6 +48,8 @@ jobs:
           && node --check platform/execution/windmill-admission-object.mjs
           && node --check apps/web/cloudflare-entry.mjs
           && node --check apps/web/api/windmill-runtime-status.mjs
+      - name: Full VAOS regression suite
+        run: npm test
       - name: Cloudflare Worker build and SQLite Durable Object compatibility
         run: npx --yes wrangler@4.136.3 deploy --dry-run --config wrangler.jsonc --outdir .wrangler-windmill-dry-run
       - name: Assert provider stays disabled by default

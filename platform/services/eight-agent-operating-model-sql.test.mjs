@@ -17,6 +17,10 @@ test('durable operating model persists missions, work packages, handoffs and imm
     assert.match(sql, new RegExp(`alter table vaos_private\\.${table} enable row level security`, 'i'));
   }
   assert.match(sql, /catalog_version text not null/i);
+  assert.match(sql, /minimum_qualification_level smallint not null/i);
+  assert.match(sql, /monitoring_interval_minutes integer/i);
+  assert.match(sql, /work_package_qualification_check check \(minimum_qualification_level between 1 and 4\)/i);
+  assert.match(sql, /work_package_monitoring_interval_check/i);
   assert.match(sql, /version integer not null default 1/i);
   assert.match(sql, /foreign key \(mission_id\)/i);
   assert.match(sql, /foreign key \(work_package_id\)/i);

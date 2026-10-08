@@ -1,0 +1,62 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "stirling-pdf",
+  "displayName": "Stirling PDF",
+  "adapterVersion": "1.0.0",
+  "description": "Self-hosted deterministic PDF transformation provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "document.transform"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "api-key"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "vaos-enforced",
+    "retrySemantics": "safe",
+    "verificationStrategy": "artifact-hash",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider-operation"
+  },
+  "operations": {
+    "retentionClass": "ephemeral-transform",
+    "dataResidency": [
+      "IN",
+      "self-hosted-policy-bound"
+    ],
+    "costControl": "document-unit-budget"
+  },
+  "licensing": {
+    "model": "Self-hosted PDF processing with API usage allowances depending deployment/license",
+    "redistributionReviewRequired": true,
+    "notes": "Only allow-listed deterministic tool endpoints are exposed through VAOS."
+  },
+  "notes": "Disabled/evaluation-only. Remote-fetch style operations are excluded; source and output must pass through governed artifact references."
+}

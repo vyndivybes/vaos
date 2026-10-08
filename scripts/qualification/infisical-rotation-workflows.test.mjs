@@ -37,8 +37,8 @@ test('Infisical evidence-only key preserves Cloudflare primary and restricts pro
   assert.match(sql,/credential_id = 'cloudflare-primary'/);
   assert.match(sql,/credential_id = 'github-infisical-evidence-only'/);
   assert.match(sql,/p_provider_id IS DISTINCT FROM 'infisical'/);
-  assert.match(sql,/p_operation NOT IN \('providerStateGet','qualificationEvidenceList','qualificationEvidenceAppend'\)/);
-  assert.match(sql,/p_evidence_class NOT IN \('automated','live'\)/);
+  assert.match(sql,/coalesce\(p_operation,''\) NOT IN \('providerStateGet','qualificationEvidenceList','qualificationEvidenceAppend'\)/);
+  assert.match(sql,/coalesce\(p_evidence_class,''\) NOT IN \('automated','live'\)/);
   assert.match(sql,/perform vaos_private\.assert_infisical_evidence_ingest_key\(p_server_key, v_provider_id, 'qualificationEvidenceAppend', v_evidence_class\)/);
   assert.match(sql,/perform vaos_private\.assert_infisical_evidence_ingest_key\(p_server_key, p_provider_id, 'qualificationEvidenceList'\)/);
   assert.match(sql,/perform vaos_private\.assert_infisical_evidence_ingest_key\(p_server_key, p_provider_id, 'providerStateGet'\)/);

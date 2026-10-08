@@ -57,6 +57,25 @@ Deno.serve(async (req: Request) => {
       p_target_domain: payload.targetDomain,
       p_target_record_id: payload.targetRecordId,
     }
+  } else if (operation === 'linkKnowledgeQualification') {
+    rpcName = 'vaos_link_knowledge_qualification'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_lease_token: payload.leaseToken,
+      p_source_risk_id: payload.sourceRiskId,
+      p_target_baseline: payload.targetBaseline,
+      p_relation_type: payload.relationType,
+    }
+  } else if (operation === 'getKnowledgeQualificationLink') {
+    rpcName = 'vaos_get_knowledge_qualification_link'
+    args = {
+      p_server_key: serverKey,
+      p_job_id: payload.jobId,
+      p_source_risk_id: payload.sourceRiskId,
+      p_target_baseline: payload.targetBaseline,
+      p_relation_type: payload.relationType,
+    }
   } else if (operation === 'submitIntent') {
     rpcName = 'vaos_submit_intent'
     args = {
@@ -211,11 +230,21 @@ Deno.serve(async (req: Request) => {
       p_evidence_refs: payload.evidenceRefs || [],
     }
   } else if (operation === 'assessDigitalEmployeeQualification') {
-    rpcName = payload.employeeId === 'project'
-      && payload.targetLevel === 2
-      && payload.profileId === 'PROJECT_Q2_PROJECT_CONTROLS_V1'
-      ? 'vaos_assess_project_q2_qualification'
-      : 'vaos_assess_digital_employee_qualification'
+    if (payload.employeeId === 'project'
+        && payload.targetLevel === 2
+        && payload.profileId === 'PROJECT_Q2_PROJECT_CONTROLS_V1') {
+      rpcName = 'vaos_assess_project_q2_qualification'
+    } else if (payload.employeeId === 'release'
+        && payload.targetLevel === 2
+        && payload.profileId === 'RELEASE_Q2_RELEASE_ASSURANCE_V1') {
+      rpcName = 'vaos_assess_release_q2_qualification'
+    } else if (payload.employeeId === 'knowledge'
+        && payload.targetLevel === 2
+        && payload.profileId === 'KNOWLEDGE_Q2_TRACEABILITY_GOVERNANCE_V1') {
+      rpcName = 'vaos_assess_knowledge_q2_qualification'
+    } else {
+      rpcName = 'vaos_assess_digital_employee_qualification'
+    }
     args = {
       p_server_key: serverKey,
       p_job_id: payload.jobId,

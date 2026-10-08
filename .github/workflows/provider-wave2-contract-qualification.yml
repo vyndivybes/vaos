@@ -1,0 +1,60 @@
+name: provider-wave2-contract-qualification
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - qualification/provider-wave-2
+    paths:
+      - .github/provider-wave2-contract.trigger
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-wave2-contract-qualification
+  cancel-in-progress: true
+
+jobs:
+  contract-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+
+      - name: Qualification profile integrity
+        run: >-
+          node --test
+          platform/execution/provider-qualification-engine.test.mjs
+          platform/qualification/provider-wave-2-profiles.test.mjs
+
+      - name: Definitive fabric invariants
+        run: node --test scripts/automation-fabric-definitive-audit.test.mjs
+
+      - name: Wave 2 adapter contract suites
+        run: >-
+          node --test
+          integrations/n8n/workflow-adapter.test.mjs
+          integrations/activepieces/workflow-adapter.test.mjs
+          integrations/paperwork/extract-adapter.test.mjs
+          integrations/paperwork/document-worker-adapters.test.mjs
+          integrations/paperwork/file-bridge.test.mjs
+          integrations/paperless-ngx/archive-adapter.test.mjs
+          integrations/stirling-pdf/transform-adapter.test.mjs
+          integrations/windmill/code-adapter.test.mjs
+          integrations/airbyte/replication-adapter.test.mjs
+
+      - name: Common security and reconciliation boundaries
+        run: >-
+          node --test
+          platform/execution/provider-control-plane.test.mjs
+          platform/execution/provider-runtime.test.mjs
+          platform/execution/credential-broker.test.mjs
+          platform/execution/governed-http-transport.test.mjs
+          platform/execution/callback-gateway.test.mjs
+          platform/execution/reconciliation-service.test.mjs
+          platform/execution/artifact-broker.test.mjs

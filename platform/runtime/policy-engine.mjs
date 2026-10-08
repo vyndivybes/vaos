@@ -23,6 +23,11 @@ export const ACTION_POLICIES = Object.freeze({
     requiresApproval: false,
     defaultRisk: 'medium',
   }),
+  'SECURITY.OBSERVE_IDENTITY': Object.freeze({
+    minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
+    requiresApproval: true,
+    defaultRisk: 'high',
+  }),
   'DIGITAL_THREAD.CREATE_LINK': Object.freeze({
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,

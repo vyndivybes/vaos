@@ -12,6 +12,7 @@ export async function dispatchInfisicalWatchdog({token,fetchImpl=fetch}={}) {
       headers:{
         Authorization:'Bearer '+token,
         Accept:'application/vnd.github+json',
+        'User-Agent':'vaos-infisical-watchdog',
         'X-GitHub-Api-Version':'2022-11-28',
         'Content-Type':'application/json',
       },
@@ -25,4 +26,10 @@ export async function dispatchInfisicalWatchdog({token,fetchImpl=fetch}={}) {
   if(response.status!==204) throw new Error('VAOS_GITHUB_DISPATCH_HTTP_'+response.status);
   // Dispatch acknowledgment is not a successful canary: verify GitHub run and Supabase separately.
   return {status:'accepted'};
+}
+
+export function infisicalDispatchFailureCode(error) {
+  const message = error instanceof Error ? error.message : '';
+  return /^(VAOS_GITHUB_DISPATCH_HTTP_[1-5][0-9]{2}|VAOS_GITHUB_DISPATCH_NETWORK_FAILED)$/.test(message)
+    ? message : 'VAOS_GITHUB_DISPATCH_UNKNOWN_FAILED';
 }

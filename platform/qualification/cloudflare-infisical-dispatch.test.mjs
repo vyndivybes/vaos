@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { dispatchInfisicalWatchdog } from '../execution/cloudflare-infisical-dispatch.mjs';
+import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../execution/cloudflare-infisical-dispatch.mjs';
 
 test('missing Cloudflare scoped dispatch token cannot access GitHub', async () => {
   let calls = 0;
@@ -22,6 +22,7 @@ test('Cloudflare cron dispatches one fixed main-only Infisical health check', as
   assert.equal(requests[0].options.redirect,'error');
   assert.deepEqual(JSON.parse(requests[0].options.body),{ref:'main',inputs:{action:'record-health'}});
   assert.equal(requests[0].options.headers.Authorization,'Bearer fake-secret-value');
+  assert.equal(requests[0].options.headers['User-Agent'],'vaos-infisical-watchdog');
   assert.ok(requests[0].options.signal);
 });
 
@@ -45,4 +46,13 @@ test('network errors are sanitized without leaking scoped token or retrying',asy
     fetchImpl:async()=>{calls++;throw Error('private network detail');},
   }),err=>{assert.equal(err.message,'VAOS_GITHUB_DISPATCH_NETWORK_FAILED');return true;});
   assert.equal(calls,1);
+});
+
+test('dispatch diagnostics allow only fixed error codes', () => {
+  for (const code of ['VAOS_GITHUB_DISPATCH_HTTP_403', 'VAOS_GITHUB_DISPATCH_NETWORK_FAILED']) {
+    assert.equal(infisicalDispatchFailureCode(new Error(code)), code);
+  }
+  for (const error of [new Error('secret'), new Error('VAOS_GITHUB_DISPATCH_HTTP_403 secret'), new Error('VAOS_GITHUB_DISPATCH_HTTP_999'), 'secret', null]) {
+    assert.equal(infisicalDispatchFailureCode(error), 'VAOS_GITHUB_DISPATCH_UNKNOWN_FAILED');
+  }
 });

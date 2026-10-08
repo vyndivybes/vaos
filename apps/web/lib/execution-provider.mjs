@@ -46,10 +46,12 @@ export function getExecutionEngine(runtimeEnv = undefined) {
       getQualificationAssessment(job, employeeId) { return store.getQualificationAssessment(job, employeeId); },
     });
 
-    const vyndiBridge = createVyndiReadBridgeClient({
-      signer: store,
-      serviceBinding: runtimeEnv?.VYNDI,
-    });
+    const vyndiBridge = runtimeEnv?.VYNDI
+      ? createVyndiReadBridgeClient({
+          signer: store,
+          serviceBinding: runtimeEnv.VYNDI,
+        })
+      : undefined;
 
     engine = createExecutionEngine({
       store,

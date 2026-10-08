@@ -17,6 +17,17 @@ export function createInMemoryCallbackStore(){
       const current=rows.get(receiptRef);if(!current)throw fail('CALLBACK_RECEIPT_NOT_FOUND');
       const next={...current,...clone(patch)};rows.set(receiptRef,next);return clone(next);
     },
+    async consumeOnce(receiptRef,{tokenHash,providerId,executionJobId,intentId,actionKey,consumedAt,status,evidence}={}){
+      const current=rows.get(receiptRef);if(!current)throw fail('CALLBACK_RECEIPT_NOT_FOUND');
+      if(current.consumedAt)throw fail('CALLBACK_RECEIPT_REPLAY');
+      if(current.tokenHash!==tokenHash)throw fail('CALLBACK_TOKEN_INVALID');
+      if(current.providerId!==providerId||current.executionJobId!==executionJobId||current.intentId!==intentId||current.actionKey!==actionKey){
+        throw fail('CALLBACK_CORRELATION_MISMATCH');
+      }
+      const next={...current,consumedAt,status,evidence:clone(evidence)};
+      rows.set(receiptRef,next);
+      return clone(next);
+    },
     list(){return [...rows.values()].map(clone)},
   });
 }
@@ -30,7 +41,7 @@ export function createCallbackGateway({
   validators={},
   recordAudit=async()=>{},
 }={}){
-  if(!store||typeof store.create!=='function'||typeof store.get!=='function'||typeof store.save!=='function')throw fail('CALLBACK_STORE_REQUIRED');
+  if(!store||typeof store.create!=='function'||typeof store.get!=='function'||typeof store.consumeOnce!=='function')throw fail('CALLBACK_STORE_REQUIRED');
   if(typeof tokenFactory!=='function')throw fail('CALLBACK_TOKEN_FACTORY_REQUIRED');
   if(typeof hashToken!=='function')throw fail('CALLBACK_HASH_REQUIRED');
   if(typeof recordAudit!=='function')throw fail('CALLBACK_AUDIT_INVALID');
@@ -102,7 +113,12 @@ export function createCallbackGateway({
     }
 
     const consumedAt=clock.toISOString();
-    const saved=await store.save(receiptRef,{
+    const saved=await store.consumeOnce(receiptRef,{
+      tokenHash:suppliedHash,
+      providerId,
+      executionJobId,
+      intentId,
+      actionKey,
       consumedAt,
       status:normalized.status,
       evidence:clone(normalized.evidence),

@@ -120,8 +120,8 @@ assert.match(workspaceApp, /executeVAOSCommand\(commandQuery\.dataset\.commandQu
 assert.match(workspaceApp, /controlPlaneStatus/);
 assert.match(workspaceApp, /Control plane online/);
 assert.match(workspaceApp, /Control plane unavailable/);
-assert.match(workspaceApp, /from ['"]\.\/command-router\.mjs['"]/);
-assert.doesNotMatch(workspaceApp, /from ['"]\.\/lib\/command-router\.mjs['"]/);
+assert.match(workspaceApp, /from ['"]\.\/command-router\.mjs\?v=20261008-q2-workforce['"]/);
+assert.doesNotMatch(workspaceApp, /from ['"]\.\/lib\/command-router\.mjs(?:\?[^'"]*)?['"]/);
 assert.equal(existsSync(rootCommandRouter), true);
 const executionsApi = readFileSync(resolve(web, "api", "executions.mjs"), "utf8");
 assert.match(executionsApi, /getExecutionEngine/);

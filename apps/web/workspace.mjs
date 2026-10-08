@@ -1,4 +1,4 @@
-import { resolveCommand } from './command-router.mjs';
+import { resolveCommand } from './command-router.mjs?v=20261008-q2-workforce';
 
 const shell = document.querySelector('#control-shell');
 const loading = document.querySelector('#workspace-loading');

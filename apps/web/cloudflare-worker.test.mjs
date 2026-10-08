@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 
 import { createCloudflareApp } from './cloudflare-worker.mjs';
 
@@ -8,7 +9,13 @@ function assetFetcher(request) {
   if (path === '/login' || path === '/workspace') {
     return new Response(`asset:${path}`, {
       status: 200,
-      headers: { 'Content-Type': 'text/html' },
+      headers: { 'Content-Type': 'text/html', 'Cache-Control': 'public, max-age=3600' },
+    });
+  }
+  if (path === '/workspace.mjs' || path === '/command-router.mjs') {
+    return new Response(`asset:${path}`, {
+      status: 200,
+      headers: { 'Content-Type': 'text/javascript', 'Cache-Control': 'public, max-age=3600' },
     });
   }
   return new Response('not found', { status: 404 });
@@ -85,4 +92,26 @@ test('Cloudflare app forwards explicit runtime bindings to API handlers', async 
     url: 'https://project.supabase.co',
     hasSecret: true,
   });
+});
+
+
+test('Cloudflare app disables browser caching for workspace HTML and executable modules', async () => {
+  const app = createCloudflareApp({ apiHandlers: {}, assetFetcher });
+
+  for (const path of ['/workspace', '/workspace.mjs', '/command-router.mjs']) {
+    const response = await app.fetch(new Request(`https://vaos.example${path}`));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Cache-Control'), 'no-store, max-age=0');
+  }
+});
+
+
+test('workspace entrypoints use the current cache-busted module version', async () => {
+  const [html, workspace] = await Promise.all([
+    readFile(new URL('./workspace.html', import.meta.url), 'utf8'),
+    readFile(new URL('./workspace.mjs', import.meta.url), 'utf8'),
+  ]);
+
+  assert.match(html, /\/workspace\.mjs\?v=20261008-q2-workforce/);
+  assert.match(workspace, /\.\/command-router\.mjs\?v=20261008-q2-workforce/);
 });

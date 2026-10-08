@@ -13,6 +13,9 @@ function requireStore(store) {
     'createOperatingHandoff',
     'transitionOperatingHandoff',
     'operatingMissionSnapshot',
+    'recordWorkEvidence',
+    'getWorkEvidence',
+    'listRunnableMissions',
   ];
   if (!store || required.some((name) => typeof store[name] !== 'function')) {
     throw new Error('EIGHT_AGENT_OPERATING_STORE_REQUIRED');
@@ -67,6 +70,34 @@ export function createEightAgentOperatingService({ store } = {}) {
         reason: input.reason || null,
         evidenceRefs: input.evidenceRefs || [],
       });
+    },
+
+    async recordWorkEvidence(input = {}) {
+      const handoffId = requiredText(input.handoffId, 'HANDOFF_ID_REQUIRED');
+      const byAgentId = requiredText(input.byAgentId, 'HANDOFF_ACTOR_REQUIRED');
+      if (!Number.isInteger(input.expectedVersion) || input.expectedVersion < 1) {
+        throw new Error('HANDOFF_EXPECTED_VERSION_INVALID');
+      }
+      if (!input.report || typeof input.report !== 'object' || Array.isArray(input.report)) {
+        throw new Error('MISSION_EVIDENCE_REPORT_INVALID');
+      }
+      return durableStore.recordWorkEvidence({
+        handoffId,
+        expectedVersion: input.expectedVersion,
+        byAgentId,
+        report: input.report,
+      });
+    },
+
+    async getWorkEvidence(evidenceId) {
+      return durableStore.getWorkEvidence(requiredText(evidenceId, 'MISSION_EVIDENCE_ID_REQUIRED'));
+    },
+
+    async listRunnableMissions({ limit = 8 } = {}) {
+      if (!Number.isInteger(limit) || limit < 1 || limit > 8) {
+        throw new Error('MISSION_DISCOVERY_LIMIT_INVALID');
+      }
+      return durableStore.listRunnableMissions({ limit });
     },
 
     snapshot(missionId) {

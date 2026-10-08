@@ -47,3 +47,14 @@ test('scheduler rejects unsupported mission discovery payload and unbounded requ
   await assert.rejects(runScheduledMissionSweep({ service }), /MISSION_QUEUE_DUPLICATE/);
   await assert.rejects(runScheduledMissionSweep({ service, maxMissions: 500 }), /MISSION_SWEEP_LIMIT_INVALID/);
 });
+
+
+test('Cloudflare schedules bounded worker execution without exposing a public runner route', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const wrangler = JSON.parse(await readFile(new URL('../../wrangler.jsonc', import.meta.url), 'utf8'));
+  assert.deepEqual(wrangler.triggers.crons, ['*/15 * * * *']);
+  const worker = await readFile(new URL('../../apps/web/cloudflare-worker.mjs', import.meta.url), 'utf8');
+  assert.match(worker, /async scheduled\(/);
+  assert.match(worker, /runScheduledMissionSweep/);
+  assert.doesNotMatch(worker, /'\/api\/run-agent'/);
+});

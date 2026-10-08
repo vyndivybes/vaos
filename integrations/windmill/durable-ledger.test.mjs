@@ -125,3 +125,17 @@ test('reject arbitrary scripts, negative budgets and production enabled requests
   }
   assert.equal((await ledger.snapshot()).active,null);
 });
+
+test('cancellation cannot be certified without a durable cancellation request',async()=>{
+  const {ledger}=context();
+  const granted=await ledger.reserve(permit());
+  await ledger.beginDispatch({jobId:'synthetic-a',epoch:granted.epoch});
+  const providerRunId='019effff-aaaa-7bbb-8ccc-0123456789ab';
+  await ledger.recordProviderRun({jobId:'synthetic-a',epoch:granted.epoch,providerRunId});
+  await assert.rejects(ledger.finish({
+    jobId:'synthetic-a',epoch:granted.epoch,providerRunId,
+    verified:true,terminalState:'CANCELLED',
+    verificationSource:'windmill.api.job-readback',evidenceRef:'github-actions:cancellation',
+  }),{code:'WINDMILL_CANCELLATION_NOT_REQUESTED'});
+  assert.equal((await ledger.snapshot()).active.state,'RUNNING');
+});

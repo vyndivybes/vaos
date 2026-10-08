@@ -1,0 +1,50 @@
+name: provider-wave4-readiness
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/provider-wave4-readiness.yml
+      - platform/qualification/provider-wave-4-profiles.mjs
+      - platform/qualification/provider-wave-4-profiles.test.mjs
+      - scripts/qualification/write-wave4-readiness-evidence.mjs
+      - integrations/windmill/**
+      - integrations/documenso/**
+      - integrations/airbyte/**
+      - integrations/zapier/**
+      - integrations/paperwork/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-wave4-readiness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract-readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Validate profiles and all prepared adapters
+        run: >-
+          node --test
+          platform/qualification/provider-wave-4-profiles.test.mjs
+          integrations/windmill/code-adapter.test.mjs
+          integrations/documenso/sign-adapter.test.mjs
+          integrations/airbyte/replication-adapter.test.mjs
+          integrations/zapier/action-adapter.test.mjs
+          integrations/paperwork/extract-adapter.test.mjs
+          integrations/paperwork/file-bridge.test.mjs
+          integrations/paperwork/document-worker-adapters.test.mjs
+      - name: Write governed readiness evidence
+        run: node scripts/qualification/write-wave4-readiness-evidence.mjs
+      - uses: actions/upload-artifact@v5
+        with:
+          name: provider-wave4-readiness-evidence
+          path: qualification-evidence/provider-wave-4/readiness.json
+          retention-days: 30

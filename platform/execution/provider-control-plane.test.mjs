@@ -236,3 +236,44 @@ test('deterministic routing respects explicit provider order when multiple provi
     'activepieces',
   );
 });
+
+
+test('routing optionally enforces deployment mode and data residency policy', async () => {
+  const cp = createProviderControlPlane({
+    providers: [manifest({
+      deploymentModes: ['self-hosted'],
+      qualification: {
+        state: 'qualified',
+        qualifiedCapabilities: ['workflow.orchestrate'],
+        evidenceRefs: ['q'],
+        validUntil: null,
+      },
+      operations: {
+        retentionClass: 'provider-default',
+        dataResidency: ['IN'],
+        costControl: 'bounded',
+      },
+    })],
+  });
+
+  assert.equal(cp.resolve('workflow.orchestrate', {
+    dataClassification: 'internal',
+    riskClass: 'low',
+    deploymentMode: 'self-hosted',
+    dataResidency: 'IN',
+  }).providerId, 'n8n');
+
+  assert.equal(cp.resolve('workflow.orchestrate', {
+    dataClassification: 'internal',
+    riskClass: 'low',
+    deploymentMode: 'managed-saas',
+    dataResidency: 'IN',
+  }), null);
+
+  assert.equal(cp.resolve('workflow.orchestrate', {
+    dataClassification: 'internal',
+    riskClass: 'low',
+    deploymentMode: 'self-hosted',
+    dataResidency: 'EU',
+  }), null);
+});

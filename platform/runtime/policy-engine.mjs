@@ -39,7 +39,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'medium',
   }),
   'COMMERCIAL.OBSERVE_PIPELINE': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
@@ -57,7 +57,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'high',
   }),
   'PROCUREMENT.OBSERVE_SHORTAGE': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
@@ -75,7 +75,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'high',
   }),
   'INVENTORY.OBSERVE_STOCK': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
@@ -93,7 +93,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'high',
   }),
   'PRODUCTION.OBSERVE_WIP': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
@@ -111,7 +111,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'medium',
   }),
   'MAINTENANCE.OBSERVE_ASSET': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
@@ -129,7 +129,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'high',
   }),
   'FINANCE.OBSERVE_LEDGER': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
@@ -141,7 +141,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'high',
   }),
   'PEOPLE.OBSERVE_WORKFORCE': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',
@@ -159,7 +159,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'high',
   }),
   'ENGINEERING.OBSERVE_CONFIGURATION': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'live_read',
     minimumAuthority: AUTHORITY.RECOMMEND,
     requiresApproval: false,
     defaultRisk: 'low',

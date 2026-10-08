@@ -3,6 +3,16 @@ function req(input,key){const v=input?.[key];if(typeof v!=='string'||!v.trim())t
 function defaultIdFactory(){if(globalThis.crypto?.randomUUID)return globalThis.crypto.randomUUID();throw fail('PROVIDER_RUNTIME_ID_FACTORY_REQUIRED')}
 function safeRefs(value){return Array.isArray(value)?value.filter(v=>typeof v==='string'&&v.trim()).map(v=>v.trim()):[]}
 function clock(now){const d=now();if(!(d instanceof Date)||Number.isNaN(d.getTime()))throw fail('PROVIDER_RUNTIME_CLOCK_INVALID');return d.toISOString()}
+function safeProviderError(error){
+  const code=typeof error?.code==='string'&&error.code?error.code:'PROVIDER_EXECUTION_FAILED';
+  const sanitized=fail(code);
+  if(typeof error?.retryable==='boolean')sanitized.retryable=error.retryable;
+  if(typeof error?.outcomeUnknown==='boolean')sanitized.outcomeUnknown=error.outcomeUnknown;
+  if((typeof error?.providerRunId==='string'&&error.providerRunId.trim())||Number.isFinite(error?.providerRunId)){
+    sanitized.providerRunId=String(error.providerRunId);
+  }
+  return sanitized;
+}
 
 export function createProviderRuntime({
   controlPlane,
@@ -85,7 +95,7 @@ export function createProviderRuntime({
           reasonCode:typeof error?.code==='string'&&error.code?error.code:'PROVIDER_OUTCOME_UNKNOWN',
         });
       }
-      throw error;
+      throw safeProviderError(error);
     }
   }
 

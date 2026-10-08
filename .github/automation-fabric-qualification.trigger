@@ -1,3 +1,0 @@
-automation-fabric qualification trigger
-requested-head=e09d01d382a19447b1ef6d674f04341c295b30db
-reason=durable-state-and-atomicity-qualification

@@ -18,6 +18,51 @@ function terminalError(code, message = code) {
   return error;
 }
 
+const VYNDI_READ_ACTIONS = Object.freeze([
+  'COMMERCIAL.OBSERVE_PIPELINE',
+  'PROCUREMENT.OBSERVE_SHORTAGE',
+  'INVENTORY.OBSERVE_STOCK',
+  'PRODUCTION.OBSERVE_WIP',
+  'MAINTENANCE.OBSERVE_ASSET',
+  'FINANCE.OBSERVE_LEDGER',
+  'PEOPLE.OBSERVE_WORKFORCE',
+  'ENGINEERING.OBSERVE_CONFIGURATION',
+]);
+
+function vyndiReadAdapter(vyndiBridge, actionType) {
+  return adapter('vyndi.read-bridge.v1', async (job) => {
+    if (!vyndiBridge || typeof vyndiBridge.execute !== 'function') {
+      throw terminalError('DOMAIN_PORT_REQUIRED:vyndiBridge');
+    }
+    const observed = await vyndiBridge.execute(job);
+    if (!observed || observed.actionType !== actionType || !observed.sourceAuthority) {
+      throw terminalError('VYNDI_READ_BRIDGE_VERIFICATION_MISMATCH');
+    }
+    return {
+      adapterId: 'vyndi.read-bridge.v1',
+      effect: {
+        effectType: 'VYNDI.DOMAIN_OBSERVED',
+        resourceType: 'VYNDI_READ_SNAPSHOT',
+        resourceId: `${actionType}:${job.id}`,
+        state: 'OBSERVED',
+        employeeId: observed.employeeId,
+        sourceAuthority: observed.sourceAuthority,
+      },
+      verification: {
+        verified: true,
+        resourceType: 'VYNDI_READ_SNAPSHOT',
+        resourceId: `${actionType}:${job.id}`,
+        expectedState: 'OBSERVED',
+        actionType,
+        sourceAuthority: observed.sourceAuthority,
+        nonce: observed.nonce,
+        bodySha256: observed.bodySha256,
+        evidenceSource: 'vyndi:/api/vaos/bridge',
+      },
+    };
+  });
+}
+
 const WORKFORCE_TARGET_STATUS = Object.freeze({
   'WORKFORCE.START_TRAINING': 'TRAINING',
   'WORKFORCE.QUALIFY': 'QUALIFIED',
@@ -519,7 +564,7 @@ function digitalWorkforceAdapter(digitalWorkforce, actionType) {
   });
 }
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce } = {}) {
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
@@ -528,6 +573,7 @@ export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, proj
     ['DIGITAL_THREAD.CREATE_LINK', digitalThreadLinkAdapter(digitalThread)],
     ['WORKFORCE.ASSESS_QUALIFICATION', digitalWorkforceAssessmentAdapter(digitalWorkforce)],
     ...Object.keys(WORKFORCE_TARGET_STATUS).map((actionType) => [actionType, digitalWorkforceAdapter(digitalWorkforce, actionType)]),
+    ...VYNDI_READ_ACTIONS.map((actionType) => [actionType, vyndiReadAdapter(vyndiBridge, actionType)]),
   ]);
 
   return Object.freeze({

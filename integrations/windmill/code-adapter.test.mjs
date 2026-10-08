@@ -410,3 +410,38 @@ test('malformed code-execution job is rejected before credential or provider acc
   );
   assert.equal(touched, false);
 });
+
+
+test('oversized Windmill result is externalized through artifact broker when available', async () => {
+  const artifacts=[];
+  const adapter = createWindmillCodeAdapter({
+    capabilityRegistry: createCapabilityRegistry({ providers: [windmillManifest()] }),
+    credentialBroker: broker(),
+    artifactBroker: {
+      async put(input) {
+        artifacts.push(input);
+        return {
+          artifactRef:'r2:sha256:large-result',
+          sha256:'large-result',
+          size:input.bytes.byteLength,
+          contentType:input.contentType,
+        };
+      },
+    },
+    transport: {
+      async runScript() { return { status: 201, headers: {}, body: '019f-job-101' }; },
+      async waitForJob() { return completed({ result: { data: 'x'.repeat(300) } }); },
+    },
+    config: config({ maxResultBytes: 100 }),
+  });
+
+  const result=await adapter.execute(job());
+  assert.equal(result.effect.output.externalized,true);
+  assert.equal(result.effect.output.artifactRef,'r2:sha256:large-result');
+  assert.equal(result.verification.resultArtifactRef,'r2:sha256:large-result');
+  assert.equal(JSON.stringify(result).includes('x'.repeat(100)),false);
+  assert.equal(artifacts[0].executionJobId,'job-code-101');
+  assert.equal(artifacts[0].intentId,'intent-code-101');
+  assert.equal(artifacts[0].kind,'code-result');
+  assert.equal(artifacts[0].contentType,'application/json');
+});

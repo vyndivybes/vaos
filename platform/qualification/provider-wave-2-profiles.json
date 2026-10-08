@@ -1,0 +1,639 @@
+{
+  "schemaVersion": "vaos.provider-qualification-wave.v1",
+  "waveId": "provider-wave-2",
+  "description": "Workflow, document, code and data providers. Qualification evidence remains separate from production activation.",
+  "profiles": [
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "n8n",
+      "capability": "workflow.orchestrate",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "idempotency-and-unknown-outcome",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "secret-boundary",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "runtime-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "governed-webhook-happy-path",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "execution-readback",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "intentional-failure-mode",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "staging-auth",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "callback-authenticity",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "unknown-outcome-reconciliation",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rate-limit-and-dlq",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "canary-readonly-or-reversible",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "activepieces",
+      "capability": "workflow.orchestrate",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "approved-flow-key-boundary",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "secret-boundary",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "runtime-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "approved-flow-happy-path",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "verified-callback",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "unknown-flow-rejection",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "staging-auth",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "callback-correlation",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "unknown-outcome-reconciliation",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "reversible-canary",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "paperwork",
+      "capability": "document.extract",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "extract-adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "citation-contract",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "document-data-boundary",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "sandbox-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "synthetic-document-extract",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "citation-readback",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "malformed-document-failure",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "staging-auth",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "retention-and-residency",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "artifact-hash-lineage",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rate-limit-reconciliation",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "synthetic-canary",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "paperless-ngx",
+      "capability": "document.archive",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "archive-adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "immutable-source-reference",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "runtime-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "synthetic-document-archive",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "document-id-readback",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "duplicate-intake-behavior",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "staging-auth",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "ocr-index-readback",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "retention-policy",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "artifact-lineage",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "synthetic-archive-canary",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "restore-retrieval-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "stirling-pdf",
+      "capability": "document.transform",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "transform-adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "allowlisted-operation-boundary",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "artifact-hash-contract",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "runtime-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "deterministic-transform",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "output-hash-verification",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "disallowed-transform-rejection",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "resource-limits",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "artifact-storage-handoff",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "content-type-policy",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "synthetic-transform-canary",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "windmill",
+      "capability": "code.execute",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "approved-script-key-boundary",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "large-result-artifact-handoff",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "runtime-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "approved-script-happy-path",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "job-readback",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "unknown-script-rejection",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "service-account-scope",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "queue-backpressure",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "timeout-reconciliation",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "compute-budget",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "approved-script-canary",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "cancellation-rollback-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "schemaVersion": "vaos.provider-qualification-profile.v1",
+      "providerId": "airbyte",
+      "capability": "data.replicate",
+      "validForDays": 30,
+      "stages": [
+        {
+          "stage": "contract",
+          "checks": [
+            {
+              "id": "manifest-v2",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "adapter-suite",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "approved-connection-key-boundary",
+              "requiredEvidenceClass": "automated"
+            },
+            {
+              "id": "data-classification-boundary",
+              "requiredEvidenceClass": "automated"
+            }
+          ]
+        },
+        {
+          "stage": "ephemeral-live",
+          "checks": [
+            {
+              "id": "runtime-health",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "synthetic-connection-sync",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "job-readback",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "busy-connection-behavior",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "staging",
+          "checks": [
+            {
+              "id": "short-lived-token-refresh",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "schema-change-policy",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "lineage-evidence",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "residency-egress-policy",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "kill-switch",
+              "requiredEvidenceClass": "live"
+            }
+          ]
+        },
+        {
+          "stage": "production",
+          "checks": [
+            {
+              "id": "synthetic-replication-canary",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "rollback-or-cancel-drill",
+              "requiredEvidenceClass": "live"
+            },
+            {
+              "id": "owner-approval",
+              "requiredEvidenceClass": "manual"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

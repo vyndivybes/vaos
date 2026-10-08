@@ -1,3 +1,3 @@
 automation-fabric qualification trigger
-requested-head=ed315ac8ae379fa5f04a37e62918174adb12ec68
-reason=definitive-post-observability-audit
+requested-head=e09d01d382a19447b1ef6d674f04341c295b30db
+reason=durable-state-and-atomicity-qualification

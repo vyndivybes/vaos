@@ -703,3 +703,53 @@ test('Security qualification recovery second attempt verifies observation and wr
   assert.equal(result.effect.qualificationTraceLinkId, 'security-link-1');
 });
 
+test('Knowledge Q2 link resolves business resource IDs through the dedicated governed port', async () => {
+  const digitalThread = {
+    async linkDomainRecords() { throw new Error('generic path must not be used'); },
+    async getDomainLink() { throw new Error('generic path must not be used'); },
+    async linkKnowledgeQualification(job, input) {
+      return {
+        outcome: 'CREATED',
+        link: {
+          id: 'knowledge-link-1',
+          sourceRiskId: input.sourceRiskId,
+          targetBaseline: input.targetBaseline,
+          relationType: input.relationType,
+          executionJobId: job.id,
+          intentId: job.intentId,
+        },
+      };
+    },
+    async getKnowledgeQualificationLink(job, input) {
+      return {
+        id: 'knowledge-link-1',
+        sourceRiskId: input.sourceRiskId,
+        targetBaseline: input.targetBaseline,
+        relationType: input.relationType,
+        executionJobId: job.id,
+        intentId: job.intentId,
+      };
+    },
+  };
+
+  const result = await createExecutionAdapterRegistry({ digitalThread })
+    .get('DIGITAL_THREAD.CREATE_LINK')
+    .execute({
+      id: 'job-knowledge-1',
+      intentId: 'intent-knowledge-1',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      payload: {
+        sourceRiskId: 'PC-Q2-001',
+        targetBaseline: '5.3.9',
+        relationType: 'RELATED_TO',
+        qualificationKnowledgeLink: true,
+        qualificationMode: true,
+      },
+    });
+
+  assert.equal(result.adapterId, 'supabase.knowledge-trace.v1');
+  assert.equal(result.effect.resourceId, 'knowledge-link-1');
+  assert.equal(result.verification.verified, true);
+  assert.equal(result.verification.evidenceSource, 'vaos_private.digital_thread_links');
+});
+

@@ -23,6 +23,16 @@ channels:
     messages:
       reconciliationEvent:
         $ref: '#/components/messages/ReconciliationEvent'
+  providerCallbacks:
+    address: vaos.provider.callbacks.v1
+    messages:
+      providerCallback:
+        $ref: '#/components/messages/ProviderCallbackEvent'
+  edgeEvents:
+    address: vaos.edge.events.v1
+    messages:
+      edgeEvent:
+        $ref: '#/components/messages/EdgeEvent'
 operations:
   receiveVyndiIntent:
     action: receive
@@ -36,6 +46,14 @@ operations:
     action: send
     channel:
       $ref: '#/channels/reconciliation'
+  receiveProviderCallback:
+    action: receive
+    channel:
+      $ref: '#/channels/providerCallbacks'
+  receiveEdgeEvent:
+    action: receive
+    channel:
+      $ref: '#/channels/edgeEvents'
 components:
   messages:
     GovernedIntent:
@@ -95,6 +113,40 @@ components:
           evidenceRefs:
             type: array
             items: { type: string }
+    ProviderCallbackEvent:
+      name: com.vaos.provider.callback.v1
+      payload:
+        type: object
+        additionalProperties: false
+        required: [receiptRef, providerId, executionJobId, intentId, actionKey, status]
+        properties:
+          receiptRef: { type: string }
+          providerId: { type: string }
+          executionJobId: { type: string }
+          intentId: { type: string }
+          actionKey: { type: string }
+          status:
+            enum: [succeeded, failed]
+          evidence:
+            type: object
+    EdgeEvent:
+      name: com.vaos.edge.event.v1
+      payload:
+        type: object
+        additionalProperties: false
+        required: [eventId, deviceKey, flowKey, occurredAt, dataClassification, evidenceRefs]
+        properties:
+          eventId: { type: string }
+          deviceKey: { type: string }
+          flowKey: { type: string }
+          occurredAt: { type: string, format: date-time }
+          dataClassification:
+            enum: [public, internal, confidential, restricted]
+          evidenceRefs:
+            type: array
+            items: { type: string }
+          payload:
+            type: object
   schemas:
     IntentData:
       type: object

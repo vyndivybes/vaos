@@ -8,7 +8,7 @@ function res(){
     json(v){body=v;return this;},get data(){return {code,body}}};
 }
 function input(phase='start'){
-  return {method:'POST',headers:{authorization:'Bearer fake-signed-oidc'},
+  return {method:'POST',headers:{authorization:'Bearer '+ 'x'.repeat(200)},
     body:{phase},env:{WINDMILL_ADMISSION:{
       getByName(name){
         assert.equal(name,'vaos-windmill-selftest-'+runId+'-'+runAttempt);

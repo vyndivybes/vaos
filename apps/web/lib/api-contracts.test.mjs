@@ -157,3 +157,64 @@ test('Digital Workforce assessment payload requires a bounded Q-level and named 
   assert.ok(invalid.errors.includes('INVALID_QUALIFICATION_LEVEL'));
   assert.ok(invalid.errors.includes('INVALID_QUALIFICATION_PROFILE'));
 });
+
+test('intent API accepts bounded Knowledge qualification links using business resource IDs', () => {
+  const trainingDenial = validateIntentRequest({
+    idempotencyKey: 'knowledge:q2:deny:1',
+    body: {
+      agentId: 'knowledge',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      risk: 'medium',
+      reason: 'knowledge link risk PC-Q2-001 baseline 5.3.9',
+      payload: {
+        sourceRiskId: 'PC-Q2-001',
+        targetBaseline: '5.3.9',
+        relationType: 'RELATED_TO',
+        qualificationKnowledgeLink: true,
+      },
+    },
+  });
+  assert.equal(trainingDenial.ok, true);
+
+  const qualification = validateIntentRequest({
+    idempotencyKey: 'knowledge:q2:qualification:1',
+    body: {
+      agentId: 'knowledge',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      risk: 'medium',
+      reason: 'qualification knowledge link risk PC-Q2-002 baseline 5.3.9',
+      payload: {
+        sourceRiskId: 'PC-Q2-002',
+        targetBaseline: '5.3.9',
+        relationType: 'RELATED_TO',
+        qualificationKnowledgeLink: true,
+        qualificationMode: true,
+      },
+    },
+  });
+  assert.equal(qualification.ok, true);
+});
+
+test('Knowledge business-ID link validation fails closed for malformed qualification payloads', () => {
+  const invalid = validateIntentRequest({
+    idempotencyKey: 'knowledge:q2:invalid:1',
+    body: {
+      agentId: 'knowledge',
+      actionType: 'DIGITAL_THREAD.CREATE_LINK',
+      risk: 'medium',
+      reason: 'invalid Knowledge qualification link',
+      payload: {
+        sourceRiskId: '',
+        targetBaseline: '',
+        relationType: 'INVENTED_LINK',
+        qualificationKnowledgeLink: true,
+      },
+    },
+  });
+
+  assert.equal(invalid.ok, false);
+  assert.ok(invalid.errors.includes('INVALID_KNOWLEDGE_LINK_SOURCE'));
+  assert.ok(invalid.errors.includes('INVALID_KNOWLEDGE_LINK_TARGET'));
+  assert.ok(invalid.errors.includes('INVALID_DIGITAL_THREAD_RELATION'));
+});
+

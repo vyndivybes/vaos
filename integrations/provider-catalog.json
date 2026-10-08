@@ -19,7 +19,7 @@
         "workflow.orchestrate"
       ],
       "tier": "A",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "fallback"
     },
     {
@@ -73,7 +73,7 @@
         "secret.broker"
       ],
       "tier": "A",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {
@@ -93,7 +93,7 @@
         "document.archive"
       ],
       "tier": "B",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {
@@ -103,7 +103,7 @@
         "document.transform"
       ],
       "tier": "B",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {
@@ -113,7 +113,7 @@
         "document.sign"
       ],
       "tier": "B",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {
@@ -133,7 +133,7 @@
         "desktop.automate"
       ],
       "tier": "B",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {
@@ -143,7 +143,7 @@
         "workflow.durable"
       ],
       "tier": "B",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {
@@ -153,7 +153,7 @@
         "event.edge"
       ],
       "tier": "B",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {
@@ -174,7 +174,7 @@
         "ai.observe"
       ],
       "tier": "B",
-      "implementation": "boundary-required",
+      "implementation": "sink-implemented",
       "priority": "primary"
     },
     {
@@ -194,7 +194,7 @@
         "process.orchestrate"
       ],
       "tier": "C",
-      "implementation": "adapter-required",
+      "implementation": "adapter-implemented",
       "priority": "primary"
     },
     {

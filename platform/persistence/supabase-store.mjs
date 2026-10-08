@@ -244,5 +244,11 @@ export function createSupabaseControlStore({
         employeeId,
       });
     },
+    signVyndiBridgeRequest(input) {
+      return invoke('signVyndiBridgeRequest', {
+        keyId: input.keyId,
+        canonical: input.canonical,
+      });
+    },
   });
 }

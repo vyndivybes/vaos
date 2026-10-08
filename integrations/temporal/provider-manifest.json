@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "temporal",
+  "displayName": "Temporal",
+  "adapterVersion": "1.0.0",
+  "description": "Durable long-running workflow provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "workflow.durable"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "api-key",
+      "mtls"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "native",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "terminate-workflow-or-disable-provider"
+  },
+  "operations": {
+    "retentionClass": "workflow-history-policy",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "namespace-and-workflow-budget"
+  },
+  "licensing": {
+    "model": "Self-hosted or Temporal Cloud; deployment/commercial terms require qualification",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS uses stable Workflow IDs, USE_EXISTING conflicts and REJECT_DUPLICATE reuse for durable identity."
+  },
+  "notes": "Disabled/evaluation-only. VAOS authority remains external to Temporal; signals, queries and termination are separately allow-listed."
+}

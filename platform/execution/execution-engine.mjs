@@ -3,11 +3,18 @@ import { executeQualificationRecovery } from './qualification-recovery.mjs';
 function errorEnvelope(error, code = 'ADAPTER_EXECUTION_FAILED', retryable = true) {
   const resolvedCode = typeof error?.code === 'string' && error.code ? error.code : code;
   const resolvedRetryable = typeof error?.retryable === 'boolean' ? error.retryable : retryable;
-  return {
+  const envelope = {
     code: resolvedCode,
     retryable: resolvedRetryable,
-    message: typeof error?.message === 'string' ? error.message.slice(0, 240) : resolvedCode,
   };
+  if (typeof error?.outcomeUnknown === 'boolean') envelope.outcomeUnknown = error.outcomeUnknown;
+  if (
+    (typeof error?.providerRunId === 'string' && error.providerRunId.trim())
+    || Number.isFinite(error?.providerRunId)
+  ) {
+    envelope.providerRunId = String(error.providerRunId);
+  }
+  return envelope;
 }
 
 export function createExecutionEngine({
@@ -27,7 +34,6 @@ export function createExecutionEngine({
       const failed = await store.failExecution(job, {
         code: 'EXECUTION_ADAPTER_NOT_FOUND',
         retryable: false,
-        message: `No execution adapter registered for ${job.actionType}`,
       });
       return { status: failed?.outcome || 'DEAD_LETTER', jobId: job.id };
     }
@@ -38,7 +44,6 @@ export function createExecutionEngine({
         const failed = await store.failExecution(job, {
           code: 'EXECUTION_VERIFICATION_FAILED',
           retryable: false,
-          message: 'Execution adapter did not produce verified evidence',
         });
         return { status: failed?.outcome || 'DEAD_LETTER', jobId: job.id };
       }

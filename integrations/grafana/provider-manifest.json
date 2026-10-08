@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "grafana",
+  "displayName": "Grafana/Tempo",
+  "adapterVersion": "1.0.0",
+  "description": "Operations dashboard and trace-analysis boundary consuming OpenTelemetry via Collector/Tempo.",
+  "capabilities": [
+    "telemetry.observe",
+    "analytics.ops"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "basic",
+      "bearer"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "optional",
+    "rollbackMethod": "disable-otlp-export"
+  },
+  "operations": {
+    "retentionClass": "telemetry-policy",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "active-series-and-trace-volume-budget"
+  },
+  "licensing": {
+    "model": "Open-source self-managed stack or Grafana Cloud",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS should send OTLP through Collector/Alloy rather than coupling provider adapters to Grafana APIs."
+  },
+  "notes": "Disabled/evaluation-only. Grafana consumes common observability signals; it does not become an execution authority."
+}

@@ -1,0 +1,3 @@
+automation-fabric qualification trigger
+requested-head=4099654dc4bd8e632d54f9b610bfda295d7bed4e
+reason=durable-persistence-and-final-governance-hardening

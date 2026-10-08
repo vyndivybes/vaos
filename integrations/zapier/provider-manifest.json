@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "zapier",
+  "displayName": "Zapier",
+  "adapterVersion": "1.0.0",
+  "description": "Managed long-tail SaaS integration provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "integration.saas"
+  ],
+  "deploymentModes": [
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "external",
+    "authModes": [
+      "local"
+    ],
+    "callbackVerification": "provider-specific"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "callback-evidence",
+    "healthProbe": "optional",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "provider-default",
+    "dataResidency": [
+      "provider-qualified"
+    ],
+    "costControl": "task-budget"
+  },
+  "licensing": {
+    "model": "Managed SaaS; plan/task/app-access review required",
+    "redistributionReviewRequired": true,
+    "notes": "Catch Hook URL is secret material; verified VAOS callback receipt is required."
+  },
+  "notes": "Disabled/evaluation-only until callback gateway, held-run/task-limit, replay and cost-control qualification pass."
+}

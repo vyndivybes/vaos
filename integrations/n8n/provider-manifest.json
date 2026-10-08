@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "n8n",
+  "displayName": "n8n",
+  "adapterVersion": "1.0.0",
+  "description": "General workflow orchestration provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "workflow.orchestrate"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "api-key"
+    ],
+    "callbackVerification": "hmac"
+  },
+  "execution": {
+    "idempotency": "hybrid",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "provider-default",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "task-and-runtime-budget"
+  },
+  "licensing": {
+    "model": "External provider; deployment/licensing review required before activation",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS does not expose or embed the n8n editor in this phase."
+  },
+  "notes": "Disabled/evaluation-only until authenticated dispatch, duplicate handling, reconciliation, callback authenticity, rate limiting, health and licensing evidence pass."
+}

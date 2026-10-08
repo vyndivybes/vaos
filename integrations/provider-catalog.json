@@ -1,0 +1,395 @@
+{
+  "schemaVersion": "vaos.provider-catalog.v1",
+  "generatedFor": "PR-30 definitive non-dilution scope",
+  "providers": [
+    {
+      "providerId": "n8n",
+      "displayName": "n8n",
+      "capabilities": [
+        "workflow.orchestrate"
+      ],
+      "tier": "A",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "activepieces",
+      "displayName": "Activepieces",
+      "capabilities": [
+        "workflow.orchestrate"
+      ],
+      "tier": "A",
+      "implementation": "adapter-implemented",
+      "priority": "fallback"
+    },
+    {
+      "providerId": "zapier",
+      "displayName": "Zapier",
+      "capabilities": [
+        "integration.saas"
+      ],
+      "tier": "A",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "paperwork",
+      "displayName": "Paperwork",
+      "capabilities": [
+        "document.extract",
+        "document.classify",
+        "document.fill",
+        "document.redact",
+        "document.redline"
+      ],
+      "tier": "A",
+      "implementation": "partial-adapter",
+      "priority": "primary"
+    },
+    {
+      "providerId": "playwright",
+      "displayName": "Playwright",
+      "capabilities": [
+        "browser.automate"
+      ],
+      "tier": "A",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "windmill",
+      "displayName": "Windmill",
+      "capabilities": [
+        "code.execute"
+      ],
+      "tier": "A",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "infisical",
+      "displayName": "Infisical",
+      "capabilities": [
+        "secret.broker"
+      ],
+      "tier": "A",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "opentelemetry",
+      "displayName": "OpenTelemetry",
+      "capabilities": [
+        "telemetry.observe"
+      ],
+      "tier": "A",
+      "implementation": "exporter-and-sink-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "paperless-ngx",
+      "displayName": "Paperless-ngx",
+      "capabilities": [
+        "document.archive"
+      ],
+      "tier": "B",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "stirling-pdf",
+      "displayName": "Stirling PDF",
+      "capabilities": [
+        "document.transform"
+      ],
+      "tier": "B",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "documenso",
+      "displayName": "Documenso",
+      "capabilities": [
+        "document.sign"
+      ],
+      "tier": "B",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "airbyte",
+      "displayName": "Airbyte",
+      "capabilities": [
+        "data.replicate"
+      ],
+      "tier": "B",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "power-automate-desktop",
+      "displayName": "Power Automate Desktop",
+      "capabilities": [
+        "desktop.automate"
+      ],
+      "tier": "B",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "temporal",
+      "displayName": "Temporal",
+      "capabilities": [
+        "workflow.durable"
+      ],
+      "tier": "B",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "node-red",
+      "displayName": "Node-RED",
+      "capabilities": [
+        "event.edge"
+      ],
+      "tier": "B",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "grafana",
+      "displayName": "Grafana",
+      "capabilities": [
+        "telemetry.observe",
+        "analytics.ops"
+      ],
+      "tier": "B",
+      "implementation": "sink-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "langfuse",
+      "displayName": "Langfuse",
+      "capabilities": [
+        "ai.observe"
+      ],
+      "tier": "B",
+      "implementation": "sink-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "metabase",
+      "displayName": "Metabase",
+      "capabilities": [
+        "analytics.bi"
+      ],
+      "tier": "B",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "camunda",
+      "displayName": "Camunda",
+      "capabilities": [
+        "process.orchestrate"
+      ],
+      "tier": "C",
+      "implementation": "adapter-implemented",
+      "priority": "primary"
+    },
+    {
+      "providerId": "apromore",
+      "displayName": "Apromore",
+      "capabilities": [
+        "process.mine"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "qdrant",
+      "displayName": "Qdrant",
+      "capabilities": [
+        "search.semantic"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "meilisearch",
+      "displayName": "Meilisearch",
+      "capabilities": [
+        "search.fulltext"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "typesense",
+      "displayName": "Typesense",
+      "capabilities": [
+        "search.fulltext"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "formbricks",
+      "displayName": "Formbricks",
+      "capabilities": [
+        "forms.collect"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "cal-com",
+      "displayName": "Cal.com",
+      "capabilities": [
+        "scheduling.coordinate"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "zammad",
+      "displayName": "Zammad",
+      "capabilities": [
+        "service.manage"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "glpi",
+      "displayName": "GLPI",
+      "capabilities": [
+        "service.manage",
+        "asset.manage"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "openproject",
+      "displayName": "OpenProject",
+      "capabilities": [
+        "project.manage"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "pipedream",
+      "displayName": "Pipedream",
+      "capabilities": [
+        "integration.saas"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "great-expectations",
+      "displayName": "Great Expectations",
+      "capabilities": [
+        "data.quality"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "google-apps-script",
+      "displayName": "Google Apps Script",
+      "capabilities": [
+        "workspace.automate"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "nocodb",
+      "displayName": "NocoDB",
+      "capabilities": [
+        "workspace.tables",
+        "forms.collect"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "appsmith",
+      "displayName": "Appsmith",
+      "capabilities": [
+        "internal.tools"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "budibase",
+      "displayName": "Budibase",
+      "capabilities": [
+        "internal.tools"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "retool",
+      "displayName": "Retool",
+      "capabilities": [
+        "internal.tools"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "kong",
+      "displayName": "Kong Gateway",
+      "capabilities": [
+        "api.gateway"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "secondary"
+    },
+    {
+      "providerId": "bardeen",
+      "displayName": "Bardeen",
+      "capabilities": [
+        "browser.automate",
+        "integration.saas"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "optional"
+    },
+    {
+      "providerId": "gumloop",
+      "displayName": "Gumloop",
+      "capabilities": [
+        "workflow.orchestrate",
+        "integration.saas"
+      ],
+      "tier": "C",
+      "implementation": "catalog",
+      "priority": "optional"
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "node-red",
+  "displayName": "Node-RED",
+  "adapterVersion": "1.0.0",
+  "description": "Edge/event execution provider for preinstalled factory/IoT flows behind the governed VAOS fabric.",
+  "capabilities": [
+    "event.edge"
+  ],
+  "deploymentModes": [
+    "edge",
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "bearer",
+      "local"
+    ],
+    "callbackVerification": "provider-specific"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "composite",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-flow-ingress-or-provider"
+  },
+  "operations": {
+    "retentionClass": "edge-event-policy",
+    "dataResidency": [
+      "edge-local",
+      "IN"
+    ],
+    "costControl": "edge-runtime-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hosted event-driven runtime",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS does not expose Node-RED flow deployment or node-install Admin API operations to agents."
+  },
+  "notes": "Disabled/evaluation-only. Only preinstalled flow ingress endpoints and read-only Admin API verification are permitted; physical effects require separate safety authority."
+}

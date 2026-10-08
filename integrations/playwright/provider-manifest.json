@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "playwright",
+  "displayName": "Playwright",
+  "adapterVersion": "1.0.0",
+  "description": "Self-hosted browser automation provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "browser.automate"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "session"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "artifact-hash",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "trace-policy-bound",
+    "dataResidency": [
+      "IN"
+    ],
+    "costControl": "browser-runtime-budget"
+  },
+  "licensing": {
+    "model": "Open-source browser automation runtime",
+    "redistributionReviewRequired": false,
+    "notes": "Authenticated browser state is secret material and must never be committed as evidence."
+  },
+  "notes": "Disabled/evaluation-only; origin allow-list, artifact broker, session isolation and no-blind-retry controls apply."
+}

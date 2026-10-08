@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "paperwork",
+  "displayName": "Paperwork",
+  "adapterVersion": "1.0.0",
+  "description": "Document-intelligence provider behind the governed VAOS fabric.",
+  "capabilities": [
+    "document.extract",
+    "document.classify",
+    "document.fill",
+    "document.redact",
+    "document.redline"
+  ],
+  "deploymentModes": [
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "external",
+    "authModes": [
+      "bearer"
+    ],
+    "callbackVerification": "public-key"
+  },
+  "execution": {
+    "idempotency": "native",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider-capability"
+  },
+  "operations": {
+    "retentionClass": "document-policy-bound",
+    "dataResidency": [
+      "provider-qualified"
+    ],
+    "costControl": "document-page-budget"
+  },
+  "licensing": {
+    "model": "External managed API; commercial and data-governance review required",
+    "redistributionReviewRequired": true,
+    "notes": "Extraction is implemented; classify/fill/redact/redline remain capability-specific qualification scopes."
+  },
+  "notes": "Disabled/evaluation-only. Formal e-signature remains Documenso; deterministic PDF transformation remains Stirling PDF."
+}

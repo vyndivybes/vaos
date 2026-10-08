@@ -108,7 +108,7 @@ test('control snapshot combines durable state with the capability-scoped agent f
   const snapshot = await service.snapshot();
 
   assert.equal(snapshot.mode, 'DURABLE_POSTGRES');
-  assert.ok(snapshot.agents.length >= 8);
+  assert.equal(snapshot.agents.length, 16);
   assert.equal(snapshot.approvals[0].id, 'apr-1');
 });
 
@@ -286,3 +286,41 @@ test('qualification mode fails closed when the training action is outside the re
   assert.equal(result.reason, 'RESPONSIBILITY_ACTION_UNDECLARED');
 });
 
+
+
+test('VYNDI operational read intent is authorized through the default durable control registry', async () => {
+  const store = makeStore();
+  const service = createDurableControlService({ store });
+
+  const result = await service.proposeIntent({
+    idempotencyKey: 'inventory:observe:canary',
+    agentId: 'inventory',
+    actionType: 'INVENTORY.OBSERVE_STOCK',
+    risk: 'low',
+    reason: 'Commissioned VYNDI inventory read canary',
+    payload: { limit: 1 },
+  });
+
+  assert.equal(result.status, 'AUTHORIZED');
+  assert.equal(result.authority, 5);
+  assert.equal(store.calls.intents[0].eventType, 'GOVERNANCE.ACTION_AUTHORIZED');
+});
+
+test('VYNDI operational mutation intent remains preparation-only through the default durable control registry', async () => {
+  const store = makeStore();
+  const service = createDurableControlService({ store });
+
+  const result = await service.proposeIntent({
+    idempotencyKey: 'inventory:reserve:guard',
+    agentId: 'inventory',
+    actionType: 'INVENTORY.RESERVE_MATERIAL',
+    risk: 'medium',
+    reason: 'Verify mutation remains fail-closed before write commissioning',
+    payload: { materialId: 'MAT-CANARY-001' },
+  });
+
+  assert.equal(result.status, 'PREPARED');
+  assert.equal(result.reason, 'WORKFORCE_BRIDGE_PREPARE_ONLY');
+  assert.equal(result.authority, 4);
+  assert.equal(store.calls.intents[0].eventType, 'AGENT.ACTION_PREPARED');
+});

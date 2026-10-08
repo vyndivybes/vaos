@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "opentelemetry",
+  "displayName": "OpenTelemetry Collector",
+  "adapterVersion": "1.0.0",
+  "description": "Vendor-neutral telemetry collection/export boundary for VAOS execution and AI spans.",
+  "capabilities": [
+    "telemetry.observe"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "not-applicable",
+    "dataEgress": "controlled",
+    "authModes": [],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-export-pipeline"
+  },
+  "operations": {
+    "retentionClass": "collector-buffer-only",
+    "dataResidency": [
+      "IN",
+      "deployment-policy-bound"
+    ],
+    "costControl": "telemetry-volume-budget"
+  },
+  "licensing": {
+    "model": "Open-source vendor-neutral collector",
+    "redistributionReviewRequired": false,
+    "notes": "Collector receives sanitized OTel spans and can route them to Tempo/Grafana/Langfuse-compatible backends."
+  },
+  "notes": "Disabled/evaluation-only until deployment/topology and egress policy are qualified."
+}

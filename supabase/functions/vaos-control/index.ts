@@ -94,6 +94,9 @@ Deno.serve(async (req: Request) => {
       p_server_key: serverKey,
       p_limit: payload.limit ?? 8,
     }
+  } else if (operation === 'prepareOperatingMissionClosure') {
+    rpcName = 'vaos_prepare_operating_mission_closure'
+    args = { p_server_key: serverKey, p_mission_id: payload.missionId }
   } else if (operation === 'operatingMissionSnapshot') {
     rpcName = 'vaos_operating_mission_snapshot'
     args = {

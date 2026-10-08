@@ -43,6 +43,8 @@ const mandatoryCore=[
   'platform/execution/governed-http-transport.mjs',
   'platform/execution/callback-gateway.mjs',
   'platform/execution/artifact-broker.mjs',
+  'platform/persistence/automation-fabric-supabase-stores.mjs',
+  'supabase/migrations/20261008071230_automation_fabric_durable_state_v1.sql',
   'platform/execution/credential-broker.mjs',
   'platform/execution/telemetry-recorder.mjs',
   'platform/execution/telemetry-fanout.mjs',

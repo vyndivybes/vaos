@@ -3,6 +3,7 @@ import { createExecutionAdapterRegistry } from '../../../platform/execution/adap
 import { createExecutionEngine } from '../../../platform/execution/execution-engine.mjs';
 import { resolveDurableControlConfig } from './durable-control-provider.mjs';
 import { createVyndiReadBridgeClient } from '../../../platform/execution/vyndi-read-bridge-client.mjs';
+import { createVyndiWriteQualificationClient } from '../../../platform/execution/vyndi-write-qualification-client.mjs';
 
 let engine;
 
@@ -52,10 +53,25 @@ export function getExecutionEngine(runtimeEnv = undefined) {
           serviceBinding: runtimeEnv.VYNDI,
         })
       : undefined;
+    const vyndiWriteQualification = runtimeEnv?.VYNDI
+      ? createVyndiWriteQualificationClient({
+          signer: store,
+          serviceBinding: runtimeEnv.VYNDI,
+        })
+      : undefined;
 
     engine = createExecutionEngine({
       store,
-      registry: createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge }),
+      registry: createExecutionAdapterRegistry({
+        qaCapa,
+        engineeringChange,
+        projectRisk,
+        security,
+        digitalThread,
+        digitalWorkforce,
+        vyndiBridge,
+        vyndiWriteQualification,
+      }),
       workerId: 'vaos-cloudflare-worker',
     });
   }

@@ -1,7 +1,7 @@
 import { createAgentDefinition } from '../../packages/contracts/agent.mjs';
 import { AGENT_DEFINITIONS } from '../runtime/development-runtime.mjs';
 import { stableHash } from '../runtime/idempotency.mjs';
-import { evaluateActionPolicy, POLICY_DECISION } from '../runtime/policy-engine.mjs';
+import { evaluateActionPolicy, evaluateWriteQualificationPolicy, POLICY_DECISION } from '../runtime/policy-engine.mjs';
 
 const WORKFORCE_LIFECYCLE_ACTIONS = new Set([
   'WORKFORCE.START_TRAINING',
@@ -127,11 +127,19 @@ export function createDurableControlService({
       }
 
       if (!result) {
-        result = resultFromPolicy(evaluateActionPolicy({
-          actionType: intent.actionType,
-          authority,
-          risk: intent.risk,
-        }), authority);
+        const policy = intent?.payload?.writeQualification === true
+          ? evaluateWriteQualificationPolicy({
+              actionType: intent.actionType,
+              authority,
+              risk: intent.risk,
+              payload: intent.payload,
+            })
+          : evaluateActionPolicy({
+              actionType: intent.actionType,
+              authority,
+              risk: intent.risk,
+            });
+        result = resultFromPolicy(policy, authority);
       }
     }
 

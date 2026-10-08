@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { evaluateActionPolicy, POLICY_DECISION } from './policy-engine.mjs';
+import { evaluateActionPolicy, evaluateWriteQualificationPolicy, POLICY_DECISION } from './policy-engine.mjs';
 
 const readActions=[
   'COMMERCIAL.OBSERVE_PIPELINE',
@@ -46,3 +46,26 @@ test('all VYNDI mutation actions remain prepare-only until write commissioning',
     assert.equal(result.reason,'WORKFORCE_BRIDGE_PREPARE_ONLY',actionType);
   }
 });
+
+test('Stage-3 write qualification policy only opens the synthetic commercial canary path',()=>{
+  const allowed=evaluateWriteQualificationPolicy({
+    actionType:'COMMERCIAL.COMMIT_ORDER',
+    authority:4,
+    risk:'low',
+    payload:{writeQualification:true,qualificationProfile:'COMMERCIAL_WRITE_CANARY_V1'},
+  });
+  assert.equal(allowed.decision,POLICY_DECISION.AWAIT_APPROVAL);
+  assert.equal(allowed.reason,'WRITE_QUALIFICATION_APPROVAL_REQUIRED');
+
+  for(const candidate of [
+    {actionType:'COMMERCIAL.COMMIT_ORDER',payload:{writeQualification:true,qualificationProfile:'WRONG_PROFILE'}},
+    {actionType:'INVENTORY.RESERVE_MATERIAL',payload:{writeQualification:true,qualificationProfile:'COMMERCIAL_WRITE_CANARY_V1'}},
+  ]){
+    const denied=evaluateWriteQualificationPolicy({...candidate,authority:4,risk:'low'});
+    assert.equal(denied.decision,POLICY_DECISION.DENY);
+  }
+
+  const ordinary=evaluateActionPolicy({actionType:'COMMERCIAL.COMMIT_ORDER',authority:4,risk:'low'});
+  assert.equal(ordinary.decision,POLICY_DECISION.PREPARE_ONLY);
+});
+

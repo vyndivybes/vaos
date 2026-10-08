@@ -221,6 +221,35 @@ export const ACTION_POLICIES = Object.freeze({
 
 const VALID_RISKS = new Set(['low', 'medium', 'high', 'critical']);
 
+export const VYNDI_WRITE_QUALIFICATION_PROFILE = 'COMMERCIAL_WRITE_CANARY_V1';
+
+export function evaluateWriteQualificationPolicy({ actionType, authority, risk, payload } = {}) {
+  const policy = ACTION_POLICIES[actionType];
+  const normalizedRisk = VALID_RISKS.has(String(risk || '').toLowerCase())
+    ? String(risk).toLowerCase()
+    : policy?.defaultRisk || 'high';
+
+  if (
+    actionType !== 'COMMERCIAL.COMMIT_ORDER'
+    || payload?.writeQualification !== true
+    || payload?.qualificationProfile !== VYNDI_WRITE_QUALIFICATION_PROFILE
+  ) {
+    return { decision: POLICY_DECISION.DENY, reason: 'WRITE_QUALIFICATION_SCOPE_DENIED', policy: policy || null, risk: normalizedRisk };
+  }
+  if (!policy || policy.commissioningMode !== 'prepare_only') {
+    return { decision: POLICY_DECISION.DENY, reason: 'WRITE_QUALIFICATION_POLICY_INVALID', policy: policy || null, risk: normalizedRisk };
+  }
+  if (!Number.isInteger(authority) || authority < AUTHORITY.APPROVED_EXECUTION) {
+    return { decision: POLICY_DECISION.DENY, reason: 'INSUFFICIENT_AUTHORITY', policy, risk: normalizedRisk };
+  }
+  return {
+    decision: POLICY_DECISION.AWAIT_APPROVAL,
+    reason: 'WRITE_QUALIFICATION_APPROVAL_REQUIRED',
+    policy,
+    risk: normalizedRisk,
+  };
+}
+
 export function evaluateActionPolicy({ actionType, authority, risk } = {}) {
   const policy = ACTION_POLICIES[actionType];
 

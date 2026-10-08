@@ -81,3 +81,28 @@ test('commissioning snapshot is routed through Edge, authenticated API, store an
   assert.match(workspace, /resolved\.kind === 'commissioning'/);
   assert.match(workspace, /fetch\('\/api\/commissioning'/);
 });
+
+test('Stage-3 maker/checker migration persists requester identity and refuses self-approval', async () => {
+  const sql = await readFile(new URL(
+    '../../supabase/migrations/20261008231500_stage3_write_qualification_controls.sql',
+    import.meta.url,
+  ), 'utf8');
+  assert.match(sql,/add column if not exists requested_by/i);
+  assert.match(sql,/WRITE_QUALIFICATION_REQUESTER_REQUIRED/);
+  assert.match(sql,/MAKER_CHECKER_REQUIRED/);
+  assert.match(sql,/writeQualification/);
+  assert.match(sql,/_vaosControl/);
+  assert.match(sql,/approvalId/);
+  assert.match(sql,/approvedBy/);
+  assert.match(sql,/idempotencyKey/);
+});
+
+test('write qualification API overwrites caller requester identity and exposes maker-checker denial', async () => {
+  const intents = await readFile(new URL('../../apps/web/api/intents.mjs', import.meta.url), 'utf8');
+  const approvals = await readFile(new URL('../../apps/web/api/approvals.mjs', import.meta.url), 'utf8');
+  assert.match(intents,/writeQualification/);
+  assert.match(intents,/requestedBy: session\.email/);
+  assert.match(intents,/_vaosControl/);
+  assert.match(approvals,/MAKER_CHECKER_REQUIRED/);
+});
+

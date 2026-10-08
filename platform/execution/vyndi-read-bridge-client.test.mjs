@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createVyndiReadBridgeClient, VYNDI_BRIDGE_KEY_ID } from './vyndi-read-bridge-client.mjs';
+import { createVyndiWriteQualificationClient, VYNDI_WRITE_QUALIFICATION_PROFILE } from './vyndi-write-qualification-client.mjs';
 
 test('signed read client binds action, intent and verification metadata', async()=>{
   let signedCanonical='';
@@ -137,3 +138,88 @@ test('protocol-v2 signed execution context binds service, audience, route and ex
     approvalId:null,
   });
 });
+
+test('write qualification client binds maker/checker approval and fixed compensated canary input', async()=>{
+  let captured;
+  const client=createVyndiWriteQualificationClient({
+    signer:{async signVyndiBridgeRequest(){return {keyId:VYNDI_BRIDGE_KEY_ID,signature:'sig-test'}}},
+    serviceBinding:{
+      async fetch(url,options){
+        captured={url,options};
+        const body=JSON.parse(options.body);
+        return new Response(JSON.stringify({
+          ok:true,
+          qualificationOnly:true,
+          readOnly:false,
+          actionType:body.actionType,
+          sourceAuthority:'saveSalesOrder',
+          qualificationProfile:body.qualificationProfile,
+          canaryId:body.input.id,
+          outcome:'COMPENSATED',
+          finalState:'cancelled',
+          initialRevision:1,
+          finalRevision:2,
+        }),{status:200,headers:{'content-type':'application/json'}});
+      },
+    },
+    now:()=>1760000000000,
+    nonce:()=> 'nonce-write-qualification-0001',
+  });
+
+  const result=await client.execute({
+    id:'00000000-0000-4000-8000-000000000031',
+    intentId:'00000000-0000-4000-8000-000000000032',
+    actionType:'COMMERCIAL.COMMIT_ORDER',
+    payload:{
+      writeQualification:true,
+      qualificationProfile:VYNDI_WRITE_QUALIFICATION_PROFILE,
+      requestedBy:'maker@example.com',
+      _vaosControl:{
+        idempotencyKey:'stage3-canary-001',
+        approvalId:'00000000-0000-4000-8000-000000000033',
+        requestedBy:'maker@example.com',
+        approvedBy:'checker@example.com',
+      },
+    },
+  });
+
+  const body=JSON.parse(captured.options.body);
+  assert.equal(body.purpose,'write-qualify');
+  assert.equal(body.approvalId,'00000000-0000-4000-8000-000000000033');
+  assert.equal(body.qualificationProfile,'COMMERCIAL_WRITE_CANARY_V1');
+  assert.equal(body.input.id,'VAOS-CANARY-SO-00000000-0000-4000-8000-000000000031');
+  assert.deepEqual({
+    month:body.input.month,product:body.input.product,units:body.input.units,
+    aspLakh:body.input.aspLakh,channel:body.input.channel,status:body.input.status,
+  },{month:36,product:'aluminium',units:1,aspLakh:0,channel:'direct',status:'lead'});
+  assert.equal(result.outcome,'COMPENSATED');
+  assert.equal(result.finalState,'cancelled');
+});
+
+test('write qualification client rejects self-approval before signing or contacting VYNDI', async()=>{
+  let touched=false;
+  const client=createVyndiWriteQualificationClient({
+    signer:{async signVyndiBridgeRequest(){touched=true;}},
+    serviceBinding:{async fetch(){touched=true;}},
+  });
+  await assert.rejects(
+    ()=>client.execute({
+      id:'00000000-0000-4000-8000-000000000041',
+      intentId:'00000000-0000-4000-8000-000000000042',
+      actionType:'COMMERCIAL.COMMIT_ORDER',
+      payload:{
+        writeQualification:true,
+        qualificationProfile:VYNDI_WRITE_QUALIFICATION_PROFILE,
+        _vaosControl:{
+          idempotencyKey:'stage3-canary-002',
+          approvalId:'00000000-0000-4000-8000-000000000043',
+          requestedBy:'same@example.com',
+          approvedBy:'same@example.com',
+        },
+      },
+    }),
+    error=>error.code==='VYNDI_WRITE_QUALIFICATION_SOD_REQUIRED',
+  );
+  assert.equal(touched,false);
+});
+

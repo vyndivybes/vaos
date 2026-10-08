@@ -67,7 +67,7 @@ jobs:
             sleep 2
           done
           curl -fsS http://127.0.0.1:5678/healthz >/dev/null
-          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:5678/api/v1/executions)
+          STATUS=$(curl -sS -o /dev/null -w '%{http_code}' http://127.0.0.1:5678/api/v1/workflows)
           test "$STATUS" = "401" -o "$STATUS" = "403"
           docker stop vaos-wave3-n8n >/dev/null
           if curl -fsS --max-time 2 http://127.0.0.1:5678/healthz >/dev/null 2>&1; then exit 1; fi
@@ -190,6 +190,7 @@ jobs:
         run: >-
           docker run -d --name vaos-wave3-stirling -p 8081:8080
           -e DISABLE_ADDITIONAL_FEATURES=true
+          -e SECURITY_ENABLELOGIN=false
           stirlingtools/stirling-pdf:3.1.0
       - name: Qualify synthetic PDF transformation and kill switch
         shell: bash

@@ -50,7 +50,7 @@ function fixture() {
 
 test('only approved deterministic read-only job types are supported', () => {
   assert.deepEqual([...SAFE_MISSION_JOBS].sort(), [
-    'KNOWLEDGE.DETECT_GAP', 'PROJECT.TRACK_DEPENDENCY', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY',
+    'KNOWLEDGE.DETECT_GAP', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY',
   ]);
 });
 
@@ -184,4 +184,51 @@ test('risk screen cannot acquire effectful or approval-required authority', asyn
   assert.equal(result.submitted, 0);
   assert.equal(result.unsupported, 1);
   assert.equal(f.events.length, 0);
+});
+
+test('project delay uses only persisted created timestamp and SLA hours; no invented due dates', () => {
+  const items = [
+    { id: 'delay-job', status: 'READY', created_at: '2026-10-08T11:00:00Z', sla_hours: 1, depends_on: [] },
+    { id: 'late', status: 'IN_PROGRESS', created_at: '2026-10-08T06:00:00Z', sla_hours: 4, depends_on: [] },
+    { id: 'on-time', status: 'READY', created_at: '2026-10-08T09:00:00Z', sla_hours: 4, depends_on: [] },
+    { id: 'no-source', status: 'READY', created_at: null, sla_hours: 4, depends_on: [] },
+    { id: 'completed', status: 'COMPLETED', created_at: '2026-10-05T09:00:00Z', sla_hours: 1, depends_on: [] },
+  ];
+  const observedAt = '2026-10-08T12:00:00.000Z';
+  const report = calculateReadOnlyMissionAudit('PROJECT.DETECT_DELAY', items, 'delay-job', { observedAt });
+  assert.equal(report.scope, 'MISSION_CATALOG_SLA_ONLY');
+  assert.equal(report.observedAt, observedAt);
+  assert.deepEqual(report.findings, [
+    'SLA_OVERDUE:late:2026-10-08T10:00:00.000Z',
+    'SLA_SOURCE_MISSING:no-source',
+  ]);
+  assert.equal(verifyReadOnlyMissionAudit(report, items, 'delay-job', { nowEpochMs: Date.parse('2026-10-08T12:01:00.000Z') }), true);
+  assert.equal(verifyReadOnlyMissionAudit({ ...report, findings: [] }, items, 'delay-job', { nowEpochMs: Date.parse('2026-10-08T12:01:00.000Z') }), false);
+});
+
+test('project delay evidence cannot be verified with future or stale observation or changed SLA', () => {
+  const work = [
+    { id:'self', status:'READY', depends_on:[] },
+    { id:'task', status:'READY', depends_on:[], created_at:'2026-10-08T06:00:00Z', sla_hours:4 },
+  ];
+  const observedAt = '2026-10-08T12:00:00.000Z';
+  const report = calculateReadOnlyMissionAudit('PROJECT.DETECT_DELAY', work, 'self', { observedAt });
+  assert.equal(verifyReadOnlyMissionAudit(report, work, 'self', { nowEpochMs: Date.parse('2026-10-08T11:59:59Z') }), false);
+  assert.equal(verifyReadOnlyMissionAudit(report, work, 'self', { nowEpochMs: Date.parse('2026-10-08T12:11:00Z') }), false);
+  work[1].sla_hours = 24;
+  assert.equal(verifyReadOnlyMissionAudit(report, work, 'self', { nowEpochMs: Date.parse('2026-10-08T12:01:00Z') }), false);
+});
+
+test('project delay refuses approval-required, elevated authority or effectful execution mode', async () => {
+  const f = fixture();
+  f.handoff.requested_job = 'PROJECT.DETECT_DELAY';
+  f.service.snapshot = async () => ({
+    mission:{ id:'mission-1', status:'ACTIVE' }, handoffs:[f.handoff],
+    workPackages:[{ id:'wp-1',action_type:'PROJECT.DETECT_DELAY',owner_agent_id:'project',
+      status:'READY',depends_on:[],human_approval_required:true,
+      authority:2,execution_mode:'ANALYSE',created_at:'2026-10-08T08:00:00Z',sla_hours:1 }],
+  });
+  const result = await createMissionConsumer({ service:f.service }).consume('mission-1');
+  assert.equal(result.unsupported,1);
+  assert.equal(f.handoff.status,'PENDING');
 });

@@ -1,7 +1,7 @@
 # VAOS RISK.IDENTIFY — production qualification dossier
 
 **Dossier:** VAOS-RISK-ID-20261008-Q1  
-**Classification:** VERIFIED EXECUTION / CLOSURE AND NEGATIVE CASE PENDING  
+**Classification:** PRODUCTION-VERIFIED LIMITED QUALIFICATION — POSITIVE + NEGATIVE + CLOSURE  
 **Source:** Supabase production project `jjzycduoujbmiegqfiud`; all timestamps UTC unless stated.  
 **Scope:** mission-only read-only `RISK.IDENTIFY`, not enterprise risk analysis.
 
@@ -33,9 +33,9 @@
 - Evidence SHA-256: `d3e01389986efc2ef7ba9ad85451f043ec6d3a7c5d97bd65e05b2882e3cffeaa`.
 - Report schema: `vaos.read-only-mission-audit.v1`; action `RISK.IDENTIFY`.
 - Work packages referenced: 1; dependency count: 0; findings: `[]` (**no test blockers**, not proof of zero enterprise risk).
-- Last observed mission status at **2026-10-08 14:54:54 UTC**: `ACTIVE`. Closure recovery pending despite successful verifier event. Never state final closure was performed.
+- **Closure readiness passed:** `READY_FOR_CLOSURE` at **2026-10-08 15:01:11.561194 UTC** (20:31:11 IST). No final administrative closure performed.
 
-## Negative live qualification — OPEN
+## Negative live qualification — VERIFIED PASS
 
 **Mission:** `VAOS-QUAL-RISK-BLOCKERS-20261008-02`.  
 **Origin:** separate labelled database-seeded qualification fixture, no domain effects.  
@@ -50,9 +50,25 @@ Expected findings, alphabetical:
 1. `MISSING_DEPENDENCY:VAOS-QUAL-RISK-BLOCKERS-20261008-WP-BLOCKED:VAOS-QUAL-RISK-BLOCKERS-20261008-WP-MISSING`
 2. `MISSION_BLOCKER:VAOS-QUAL-RISK-BLOCKERS-20261008-WP-BLOCKED:BLOCKED`
 
-**Fail-closed expectation:** Risk job can pass its own verification, but the overall negative mission MUST remain `ACTIVE` and MUST NOT reach `READY_FOR_CLOSURE`, because one other work package remains blocked and its dependency is unresolved.
+**Fail-closed observed:** Risk job reached `COMPLETED`, but the negative mission correctly remained `ACTIVE` as its other work package remained `BLOCKED`; it did NOT reach `READY_FOR_CLOSURE`.
 
-At dossier creation, negative execution and closure status have not yet been observed; do not mark this test PASS solely because the fixture exists.
+**Actual negative-case evidence:**
+
+| Event | UTC | Actor |
+|---|---|---|
+| ACCEPT | 2026-10-08 15:01:12.134365 | risk |
+| Evidence written | 2026-10-08 15:01:12.674501 | risk |
+| SUBMIT | 2026-10-08 15:01:12.939644 | risk |
+| Independent VERIFY | 2026-10-08 15:01:13.768350 | orchestrator |
+
+- Handoff: `VAOS-QUAL-RISK-BLOCKERS-20261008-HND-RISK`, `COMPLETED`.
+- Immutable evidence ID: `vaos-evidence:37dc4a0569f5691d81c331af`.
+- Report SHA-256: `59149b2b2ef8114ece968451b2baaa441261ca0773cf54d3ce4a03e074990244`.
+- Stored report: `READ_ONLY_MISSION_AUDIT`, `RISK.IDENTIFY`, 2 findings, `dependencyCount: 1`, `referencedWorkPackages: 2`.
+- Stored findings match the two expected indicator strings above **exactly**.
+- Negative mission status after scheduled execution: `ACTIVE`; blocker work-package status: `BLOCKED`.
+
+**Qualification conclusion:** PASS for source-backed mission blocker identification, independent verification, immutable evidence and closure refusal on incomplete work. This test does not establish enterprise-wide risk scoring, mitigation, acceptance or actual-source ingestion.
 
 ## Qualification boundary / future gates
 

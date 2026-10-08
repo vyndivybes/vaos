@@ -104,8 +104,11 @@ BEGIN
       RAISE EXCEPTION 'INFISICAL_DISABLE_INPUT_INVALID' USING errcode='22023';
     END IF;
     v_after := jsonb_set(
-      jsonb_set(v_before,'{enabled}',to_jsonb(false),true),
-      '{capabilityEnabled,secret.broker}',to_jsonb(false),true
+      jsonb_set(
+        jsonb_set(v_before,'{enabled}',to_jsonb(false),true),
+        '{capabilityEnabled,secret.broker}',to_jsonb(false),true
+      ),
+      '{health}','null'::jsonb,true
     );
   END IF;
 

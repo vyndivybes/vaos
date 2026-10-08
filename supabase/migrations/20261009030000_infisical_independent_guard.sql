@@ -29,6 +29,7 @@ AS $function$
 DECLARE
   v_state jsonb;
   v_health_at timestamptz;
+  v_qualification_until timestamptz;
   v_now timestamptz := clock_timestamp();
   v_age double precision;
   v_enabled boolean;
@@ -58,13 +59,19 @@ BEGIN
     v_age := NULL;
   END;
 
+  BEGIN
+    v_qualification_until := (v_state->'qualification'->>'validUntil')::timestamptz;
+  EXCEPTION WHEN OTHERS THEN
+    v_qualification_until := NULL;
+  END;
+
   IF NOT v_enabled THEN
     v_verdict := 'ALREADY_DISABLED';
     v_detail := 'No routing mutation';
   ELSIF v_state->'health'->>'status' IS DISTINCT FROM 'healthy'
       OR v_health_at IS NULL OR NOT isfinite(v_health_at) OR v_age < -120
       OR v_state->'qualification'->>'state' IS DISTINCT FROM 'qualified'
-      OR coalesce((v_state->'qualification'->>'validUntil')::timestamptz <= v_now,true)
+      OR v_qualification_until IS NULL OR v_qualification_until <= v_now
   THEN
     v_verdict := 'DISABLED_INVALID';
     v_detail := 'Invalid health or qualification; fail-closed';

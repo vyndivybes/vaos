@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "activepieces",
+  "displayName": "Activepieces",
+  "adapterVersion": "1.0.0",
+  "description": "Open-source workflow orchestration fallback behind the governed VAOS fabric.",
+  "capabilities": [
+    "workflow.orchestrate"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "bearer",
+      "local"
+    ],
+    "callbackVerification": "provider-specific"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "composite",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider-flow"
+  },
+  "operations": {
+    "retentionClass": "provider-default",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "flow-run-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hosted core with commercial embedding/enterprise features",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS uses predefined flows and does not depend on embedded builder capabilities."
+  },
+  "notes": "Disabled/evaluation-only. Used as a replaceable workflow-orchestration hedge to n8n."
+}

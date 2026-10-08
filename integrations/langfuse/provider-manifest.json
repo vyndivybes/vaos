@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "langfuse",
+  "displayName": "Langfuse",
+  "adapterVersion": "1.0.0",
+  "description": "AI/agent observability backend boundary using OpenTelemetry/GenAI spans.",
+  "capabilities": [
+    "ai.observe"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "external",
+    "authModes": [
+      "basic",
+      "api-key"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "optional",
+    "rollbackMethod": "disable-ai-observability-sink"
+  },
+  "operations": {
+    "retentionClass": "ai-observability-policy",
+    "dataResidency": [
+      "provider-qualified"
+    ],
+    "costControl": "trace-volume-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hosted or managed observability service",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS exports privacy-safe OTel GenAI spans only; raw prompts/completions are excluded by contract."
+  },
+  "notes": "Disabled/evaluation-only. OTLP/OpenTelemetry is the supported ingestion path."
+}

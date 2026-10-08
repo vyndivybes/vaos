@@ -1,0 +1,64 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "infisical",
+  "displayName": "Infisical",
+  "adapterVersion": "1.0.0",
+  "description": "Machine-identity secret broker candidate behind the vault-neutral VAOS credential boundary.",
+  "capabilities": [
+    "secret.broker"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "internal",
+      "confidential",
+      "restricted"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high",
+      "critical"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "service-account",
+      "token"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-secret-provider"
+  },
+  "operations": {
+    "retentionClass": "no-secret-retention",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "secret-access-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hostable or managed service",
+    "redistributionReviewRequired": true,
+    "notes": "Universal Auth machine identities exchange scoped bootstrap credentials for short-lived API tokens."
+  },
+  "notes": "Disabled/evaluation-only. Binding refs map to fixed project/environment/path/key scopes; arbitrary secret browsing is forbidden."
+}

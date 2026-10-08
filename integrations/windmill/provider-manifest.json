@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "windmill",
+  "displayName": "Windmill",
+  "adapterVersion": "1.0.0",
+  "description": "Self-hosted governed script execution provider behind the VAOS fabric.",
+  "capabilities": [
+    "code.execute"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "bearer"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider"
+  },
+  "operations": {
+    "retentionClass": "job-policy-bound",
+    "dataResidency": [
+      "IN"
+    ],
+    "costControl": "runtime-and-compute-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hostable platform",
+    "redistributionReviewRequired": true,
+    "notes": "Only approved script keys may map to versioned paths; inline/arbitrary execution is outside scope."
+  },
+  "notes": "Disabled/evaluation-only until service-account, queue/backpressure, cancellation, artifact handoff and compute controls qualify."
+}

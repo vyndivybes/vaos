@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vaos.local/schemas/provider-manifest-v2.json",
+  "title": "VAOS Provider Manifest v2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "providerId",
+    "displayName",
+    "adapterVersion",
+    "capabilities",
+    "deploymentModes",
+    "enabled",
+    "qualification",
+    "routing",
+    "security",
+    "execution",
+    "operations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "vaos.provider.v2" },
+    "providerId": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{1,79}$"
+    },
+    "displayName": { "type": "string", "minLength": 1, "maxLength": 120 },
+    "adapterVersion": { "type": "string", "minLength": 1, "maxLength": 40 },
+    "description": { "type": "string", "maxLength": 800 },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*\\.[a-z][a-z0-9-]*$"
+      }
+    },
+    "deploymentModes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": { "enum": ["self-hosted", "managed-saas", "desktop", "edge"] }
+    },
+    "enabled": { "type": "boolean" },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["state", "qualifiedCapabilities", "evidenceRefs", "validUntil"],
+      "properties": {
+        "state": { "enum": ["candidate", "evaluation", "qualified", "restricted", "rejected"] },
+        "qualifiedCapabilities": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string" }
+        },
+        "evidenceRefs": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1, "maxLength": 500 }
+        },
+        "validUntil": { "type": ["string", "null"], "format": "date-time" }
+      }
+    },
+    "routing": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["dataClassifications", "riskClasses", "licensingAllowed"],
+      "properties": {
+        "dataClassifications": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["public", "internal", "confidential", "restricted"] }
+        },
+        "riskClasses": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": { "enum": ["low", "medium", "high", "critical"] }
+        },
+        "licensingAllowed": { "type": "boolean" }
+      }
+    },
+    "security": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["secretBinding", "dataEgress", "authModes", "callbackVerification"],
+      "properties": {
+        "secretBinding": { "enum": ["required", "not-applicable"] },
+        "dataEgress": { "enum": ["none", "controlled", "external"] },
+        "authModes": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "oauth2", "api-key", "bearer", "basic", "jwt", "mtls",
+              "service-account", "session", "local", "token"
+            ]
+          }
+        },
+        "callbackVerification": {
+          "enum": ["none", "shared-secret", "hmac", "jwt", "public-key", "mtls", "provider-specific"]
+        }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["idempotency", "retrySemantics", "verificationStrategy", "healthProbe", "rollbackMethod"],
+      "properties": {
+        "idempotency": { "enum": ["native", "vaos-enforced", "hybrid", "not-supported"] },
+        "retrySemantics": { "enum": ["safe", "conditional", "unsafe", "unknown"] },
+        "verificationStrategy": {
+          "enum": ["provider-readback", "callback-evidence", "target-readback", "artifact-hash", "human-verification", "composite"]
+        },
+        "healthProbe": { "enum": ["required", "optional", "not-applicable"] },
+        "rollbackMethod": { "type": "string", "minLength": 1, "maxLength": 160 }
+      }
+    },
+    "operations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["retentionClass", "dataResidency", "costControl"],
+      "properties": {
+        "retentionClass": { "type": "string", "minLength": 1, "maxLength": 120 },
+        "dataResidency": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 2, "maxLength": 40 }
+        },
+        "costControl": { "type": "string", "minLength": 1, "maxLength": 160 }
+      }
+    },
+    "licensing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "model": { "type": "string", "maxLength": 200 },
+        "redistributionReviewRequired": { "type": "boolean" },
+        "notes": { "type": "string", "maxLength": 800 }
+      }
+    },
+    "notes": { "type": "string", "maxLength": 1500 }
+  }
+}

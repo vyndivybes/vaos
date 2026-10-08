@@ -1,0 +1,61 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "documenso",
+  "displayName": "Documenso",
+  "adapterVersion": "1.0.0",
+  "description": "Governed e-signature envelope provider behind the VAOS Automation & Integration Fabric.",
+  "capabilities": [
+    "document.sign"
+  ],
+  "deploymentModes": [
+    "self-hosted",
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "api-key"
+    ],
+    "callbackVerification": "provider-specific"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "conditional",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "cancel-envelope-and-disable-provider"
+  },
+  "operations": {
+    "retentionClass": "signed-document-policy",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "envelope-and-document-budget"
+  },
+  "licensing": {
+    "model": "Open-source/self-hosted or managed service; API/fair-use and deployment terms require qualification",
+    "redistributionReviewRequired": true,
+    "notes": "VAOS uses the current v2 envelope API. Deprecated document endpoints are not part of this adapter."
+  },
+  "notes": "Disabled/evaluation-only. Create/distribute ambiguity is never blindly retried; completion is verified by envelope readback and signed PDF hash."
+}

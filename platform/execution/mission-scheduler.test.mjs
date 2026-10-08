@@ -43,7 +43,7 @@ test('one mission failure does not abort other missions or suppress its error', 
 });
 
 test('scheduler rejects unsupported mission discovery payload and unbounded requests', async () => {
-  const service = { async listRunnableMissions() { return { missionIds: ['m-1', 'm-1'] }; } };
+  const service = { async listRunnableMissions() { return { missionIds: ['m-1', 'm-1'] }; }, async dispatchMission() { return { count: 0 }; } };
   await assert.rejects(runScheduledMissionSweep({ service }), /MISSION_QUEUE_DUPLICATE/);
   await assert.rejects(runScheduledMissionSweep({ service, maxMissions: 500 }), /MISSION_SWEEP_LIMIT_INVALID/);
 });

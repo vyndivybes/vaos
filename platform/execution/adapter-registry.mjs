@@ -286,18 +286,27 @@ function digitalThreadLinkAdapter(digitalThread) {
         throw new Error(`KNOWLEDGE_LINK_WRITE_FAILED:${linked?.outcome || 'UNKNOWN'}`);
       }
 
-      const record = await port.getKnowledgeQualificationLink(job, input);
+      const replayed = linked.outcome === 'REPLAY';
+      const record = replayed && linked.link
+        ? linked.link
+        : await port.getKnowledgeQualificationLink(job, input);
       const verified = Boolean(
         record
         && record.id
         && record.sourceRiskId === sourceRiskId
         && record.targetBaseline === targetBaseline
         && record.relationType === relationType
-        && record.executionJobId === job.id
-        && record.intentId === job.intentId
+        && (replayed || (record.executionJobId === job.id && record.intentId === job.intentId))
       );
 
       if (!verified) throw new Error('KNOWLEDGE_LINK_VERIFICATION_MISMATCH');
+
+      const replayLineage = replayed
+        ? {
+            replayedFromExecutionJobId: record.executionJobId,
+            replayedFromIntentId: record.intentId,
+          }
+        : {};
 
       return {
         adapterId: 'supabase.knowledge-trace.v1',
@@ -310,6 +319,7 @@ function digitalThreadLinkAdapter(digitalThread) {
           sourceRiskId,
           targetBaseline,
           relationType,
+          ...replayLineage,
         },
         verification: {
           verified: true,
@@ -318,6 +328,7 @@ function digitalThreadLinkAdapter(digitalThread) {
           expectedState: 'LINKED',
           executionJobId: job.id,
           intentId: job.intentId,
+          ...replayLineage,
           evidenceSource: 'vaos_private.digital_thread_links',
         },
       };

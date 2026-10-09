@@ -6,6 +6,7 @@ on:
       - '.github/workflows/windmill-live-do-qualification.yml'
       - 'platform/security/windmill-github-oidc*'
       - 'platform/execution/windmill-isolated-drill*'
+      - 'platform/execution/windmill-restart-drill*'
       - 'platform/execution/windmill-admission-object.mjs'
       - 'apps/web/api/windmill-live-do-qualification*'
       - 'apps/web/cloudflare-worker.mjs'
@@ -41,6 +42,7 @@ jobs:
           node --test
           platform/security/windmill-github-oidc.test.mjs
           platform/execution/windmill-isolated-drill.test.mjs
+          platform/execution/windmill-restart-drill.test.mjs
           apps/web/api/windmill-live-do-qualification.test.mjs
       - name: Full VAOS regression suite
         run: npm test
@@ -72,4 +74,11 @@ jobs:
         with:
           name: windmill-cloudflare-do-live-evidence
           path: qualification-evidence/windmill/cloudflare-do-live.json
+          retention-days: 30
+      - name: Upload separately linked Cloudflare forced-restart recovery evidence
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windmill-cloudflare-restart-evidence
+          path: qualification-evidence/windmill/cloudflare-restart.json
           retention-days: 30

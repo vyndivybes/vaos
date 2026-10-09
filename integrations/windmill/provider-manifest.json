@@ -3,12 +3,13 @@
   "providerId": "windmill",
   "displayName": "Windmill",
   "adapterVersion": "1.0.0",
-  "description": "Self-hosted governed script execution provider behind the VAOS fabric.",
+  "description": "Governed versioned-script execution provider for managed Windmill Cloud or approved self-hosted deployments.",
   "capabilities": [
     "code.execute"
   ],
   "deploymentModes": [
-    "self-hosted"
+    "self-hosted",
+    "managed-saas"
   ],
   "enabled": false,
   "qualification": {
@@ -57,5 +58,5 @@
     "redistributionReviewRequired": true,
     "notes": "Only approved script keys may map to versioned paths; inline/arbitrary execution is outside scope."
   },
-  "notes": "Disabled/evaluation-only until service-account, queue/backpressure, cancellation, artifact handoff and compute controls qualify."
+  "notes": "Disabled/evaluation-only until provider identity, admission/backpressure, cancellation, artifact verification, cost controls and owner production authorization are independently qualified. Managed Windmill Cloud does not require local self-hosting."
 }

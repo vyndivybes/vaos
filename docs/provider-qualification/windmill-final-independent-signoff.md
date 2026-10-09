@@ -13,7 +13,7 @@ executor is insufficient to authorize production jobs.
 | Separate read-only Windmill job readback | Run 37849719120 / `windmill-independent-verification-evidence` | PASS |
 | Cloudflare live DO admission, alarm and persistent quarantine | Run 37860222073 / `windmill-cloudflare-do-live-evidence` | PASS |
 | Controlled cancellation of an actually running, benign Windmill job | No live qualification artifact | MISSING |
-| Proven DO instance eviction/restart with same slot remaining fenced | No instance lifecycle artifact | MISSING |
+| Proven DO instance eviction/restart with same slot remaining fenced | Run 37906973346 / `windmill-cloudflare-restart-evidence` | PASS |
 | Separate reviewer sign-off linking those last two artifacts | No independently signed record | BLOCKED |
 
 The GitHub workflow `Windmill Independent Final Audit` downloads the actual
@@ -76,8 +76,29 @@ script or separately scoped cancellation token has been independently
 verified. The existing `f/vaos/qualification_ping` finishes promptly.
 A legitimate live cancellation cannot be declared PASS from that job.
 
-Forced instance eviction has not been proven. Cloudflare alarm delivery,
-SQLite durable state and HTTP-request persistence **have** been proven, but
-none substitutes for a genuine constructor-instance transition.
+Forced instance eviction and durable checkpoint recovery were verified in
+run 37906973346 after explicitly syncing storage before aborting the isolated
+Durable Object. The cancellation workflow and a separate manual examiner run
+remain required; tests or deployment alone cannot qualify them.
 
 **Disposition: HOLD. No business routing permitted.**
+
+## Controlled live workflow
+
+Deploy the bounded source in `integrations/windmill/qualification_hold.ts` to
+`f/vaos/qualification_hold`. Reviewed Windmill version: `92dd4d9b9bff2d1d`.
+Three distinct GitHub Actions secrets are required for this test only:
+`WINDMILL_HOLD_DISPATCH_TOKEN`, `WINDMILL_HOLD_CANCEL_TOKEN`, and
+`WINDMILL_HOLD_READ_TOKEN`, with respectively `jobs:run:scripts`,
+`jobs:cancel`, and `jobs:read` scoped to that exact path. The owner approved
+Windmill's 15-minute UI minimum; generate them immediately before execution.
+Run **Windmill Controlled Cancellation** on main with `RUN_ONE_CANCELLATION`.
+It reserves the global isolated DO slot before exactly one dispatch and requires
+actual running readback before one non-force cancel. Expiry or uncertain
+outcome leaves the slot occupied. `WINDMILL_CANCELLATION_KILL_SWITCH=true`
+stops further test mutations without preventing readback or verified release.
+Then run **Windmill Independent Final Audit**, supplying the successful
+cancellation run ID and the separate eviction run ID. The auditor uses only
+a read token and checks the provider's immutable completion record, exact
+script version, source commits, and distinct run provenance. No workflow
+activates production routing.

@@ -1,3 +1,4 @@
+import {verifyWindmillCancellationOidc} from '../../../platform/security/windmill-cancellation-oidc.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
 import {verifyWindmillGithubOidc} from '../../../platform/security/windmill-github-oidc.mjs';
 
@@ -5,7 +6,7 @@ import {verifyWindmillGithubOidc} from '../../../platform/security/windmill-gith
  * dispatch, no provider token, and no access to the real admission slot.
  */
 export function createWindmillLiveDoQualificationHandler({
-  verifyIdentity=verifyWindmillGithubOidc,
+  verifyIdentity=verifyWindmillGithubOidc,verifyCancellationIdentity=verifyWindmillCancellationOidc,
 }={}){
   return async function handler(req,res){
     res.setHeader('Cache-Control','no-store');
@@ -17,9 +18,25 @@ export function createWindmillLiveDoQualificationHandler({
     if(typeof auth!=='string'||!/^Bearer [A-Za-z0-9._-]{100,16000}$/.test(auth)){
       return res.status(401).json(apiError('UNAUTHENTICATED','Valid GitHub workflow identity required'));
     }
+    const cancellation=typeof req.body?.phase==='string'&&req.body.phase.startsWith('cancellation-');
     let principal;
-    try{principal=await verifyIdentity(auth.slice(7));}
+    try{principal=await (cancellation?verifyCancellationIdentity:verifyIdentity)(auth.slice(7));}
     catch{return res.status(401).json(apiError('UNAUTHENTICATED','Valid GitHub workflow identity required'))}
+    if(cancellation){
+      const phase=req.body.phase.slice('cancellation-'.length);
+      const expected=['bind','cancel'].includes(phase)?['phase','providerJobId']:phase==='finish'?['phase','providerJobId','canceled','success']:['phase'];
+      if(!['capabilities','start','bind','cancel','finish','snapshot'].includes(phase)||
+        Object.keys(req.body).length!==expected.length||expected.some(k=>!Object.hasOwn(req.body,k))||
+        (expected.includes('providerJobId')&&!/^[A-Za-z0-9-]{8,90}$/.test(req.body.providerJobId||''))||
+        (phase==='finish'&&(req.body.canceled!==true||req.body.success!==false)))
+        return res.status(422).json(apiError('VALIDATION_ERROR','Valid cancellation phase required'));
+      try{
+        const stub=req.env.WINDMILL_ADMISSION.getByName('vaos-windmill-cancellation-qualification-v1');
+        const value=await stub.cancellationQualification({...req.body,phase,runId:principal.runId,runAttempt:principal.runAttempt});
+        if(value?.productionActivation!==false||value.windmillCalls!==0)throw new Error('UNSAFE_DRILL');
+        return res.status(200).json({data:value});
+      }catch{return res.status(503).json(apiError('WINDMILL_CANCELLATION_DRILL_UNAVAILABLE','Isolated cancellation could not be verified'))}
+    }
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)||
       Object.keys(req.body).length!==1||!['capabilities','start','status','restart','restart-status','finish'].includes(req.body.phase)){
       return res.status(422).json(apiError('VALIDATION_ERROR','Valid qualification phase required'));

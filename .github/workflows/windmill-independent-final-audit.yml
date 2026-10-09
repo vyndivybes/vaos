@@ -1,6 +1,17 @@
 name: Windmill Independent Final Audit
 
 on:
+  workflow_dispatch:
+    inputs:
+      cancellation_run_id:
+        description: 'Successful controlled cancellation source run'
+        required: true
+        type: string
+      eviction_run_id:
+        description: 'Separate successful forced-restart source run'
+        required: true
+        type: string
+        default: '37906973346'
   pull_request:
     paths:
       - 'platform/qualification/final-independent-signoff*'
@@ -32,12 +43,14 @@ jobs:
         run: node --check scripts/qualification/windmill-final-independent-audit.mjs
 
   independent-evidence-reconciliation:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: audit-contract
     runs-on: ubuntu-latest
     timeout-minutes: 8
     env:
       GITHUB_TOKEN: ${{ github.token }}
+      WINDMILL_CANCELLATION_SOURCE_RUN: ${{ inputs.cancellation_run_id }}
+      WINDMILL_EVICTION_SOURCE_RUN: ${{ inputs.eviction_run_id }}
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -67,7 +80,27 @@ jobs:
           run-id: 37860222073
           github-token: ${{ github.token }}
           path: audit-input/cloudflare
+      - name: Fetch controlled cancellation evidence
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          name: windmill-cancellation-live-evidence
+          repository: vyndivybes/vaos
+          run-id: ${{ inputs.cancellation_run_id }}
+          github-token: ${{ github.token }}
+          path: audit-input/cancellation
+      - name: Fetch separately anchored real forced-restart evidence
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/download-artifact@v4
+        with:
+          name: windmill-cloudflare-restart-evidence
+          repository: vyndivybes/vaos
+          run-id: ${{ inputs.eviction_run_id }}
+          github-token: ${{ github.token }}
+          path: audit-input/eviction
       - name: Reconcile source run provenance and issue HOLD or approval recommendation
+        env:
+          WINDMILL_HOLD_READ_TOKEN: ${{ secrets.WINDMILL_HOLD_READ_TOKEN }}
         run: node scripts/qualification/windmill-final-independent-audit.mjs
       - name: Persist independent audit assessment
         if: success()

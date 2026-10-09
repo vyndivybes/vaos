@@ -99,3 +99,20 @@ test('signed capabilities call identifies upgraded forced-restart runtime withou
   assert.equal(r.data.body.data.schemaVersion,'vaos.windmill.restart-qualification.v1');
   assert.equal(r.data.body.data.productionActivation,false);
 });
+
+test('cancellation identity is separate and only targets the global isolated test slot',async()=>{
+ const q=input('cancellation-start'),r=res();q.env.WINDMILL_ADMISSION.getByName=name=>{
+ assert.equal(name,'vaos-windmill-cancellation-qualification-v1');return {cancellationQualification:async value=>{assert.equal(value.runId,runId);assert.equal(value.phase,'start');return {status:'GRANTED',productionActivation:false,windmillCalls:0};}};};
+ await createWindmillLiveDoQualificationHandler({verifyIdentity:async()=>{throw Error('wrong identity')},verifyCancellationIdentity:valid})(q,r);
+ assert.equal(r.data.code,200);
+});
+test('cancellation rejects unknown phases, extra fields and forged terminal proof',async()=>{
+ const h=createWindmillLiveDoQualificationHandler({verifyCancellationIdentity:valid});
+ for(const body of [{phase:'cancellation-arbitrary'},{phase:'cancellation-start',extra:true},{phase:'cancellation-finish',providerJobId:'019effff-aaaa-7bbb-8ccc-0123456789ab',canceled:false,success:false}]){
+ const q=input();q.body=body;const r=res();await h(q,r);assert.equal(r.data.code,422);
+ }
+});
+test('ordinary DO workflow identity cannot authorize cancellation mutations',async()=>{
+ const h=createWindmillLiveDoQualificationHandler({verifyIdentity:valid,verifyCancellationIdentity:async()=>{throw Error('wrong workflow')}});
+ const r=res();await h(input('cancellation-start'),r);assert.equal(r.data.code,401);
+});

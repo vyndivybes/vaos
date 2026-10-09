@@ -52,7 +52,12 @@ export function evaluateWindmillFinalSignoff({
     cancellation.scriptPath==='f/vaos/qualification_hold'&&
     jobId(cancellation.jobId)&&cancellation.jobId===cancellation.providerJobId&&
     cancellation.terminalState==='CANCELLED'&&
-    cancellation.independentReadback===true&&
+    cancellation.independentReadback===true&&cancellation.runningBeforeCancellation===true&&
+    cancellation.dispatchPostAttemptCount===1&&cancellation.distinctCredentialRoles===true&&
+    /^[a-f0-9]{40}$/.test(cancellation.sourceCommitSha||'')&&
+    cancellation.providerScriptHash==='92dd4d9b9bff2d1d'&&
+    cancellation.reservation?.durable===true&&cancellation.reservation.maxConcurrentRuns===1&&
+    cancellation.reservation.queuedRuns===0&&cancellation.reservation.expirySeconds===60&&cancellation.reservation.released===true&&
     cancellation.cancelPostAttemptCount===1&&runId(cancellation.evidenceRunId)&&
     !Object.values(sourceRuns).includes(cancellation.evidenceRunId);
   const evictionValid=eviction?.schemaVersion==='vaos.windmill.restart-recovery.v1'&&

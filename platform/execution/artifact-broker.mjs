@@ -78,3 +78,36 @@ export function createArtifactBroker({
   }
   return Object.freeze({put});
 }
+
+
+/** Read immutable content-addressed PDF artifacts and independently check bytes. */
+export function createR2ArtifactReader({bucket,prefix='vaos-artifacts',maxBytes=16_777_216}={}){
+  if(!bucket||typeof bucket.get!=='function')throw fail('ARTIFACT_R2_BUCKET_REQUIRED');
+  if(!Number.isInteger(maxBytes)||maxBytes<1)throw fail('ARTIFACT_CONFIG_INVALID:maxBytes');
+  const root=cleanPrefix(prefix);
+  return Object.freeze({
+    async read(ref){
+      if(typeof ref!=='string'||!/^r2:sha256:[a-f0-9]{64}$/.test(ref))
+        throw fail('ARTIFACT_REFERENCE_INVALID');
+      const sha=ref.slice('r2:sha256:'.length);
+      const key=`${root?root+'/':''}sha256/${sha}`;
+      const obj=await bucket.get(key);
+      if(!obj)throw fail('ARTIFACT_NOT_FOUND');
+      if(Number(obj.size)>maxBytes)throw fail('ARTIFACT_TOO_LARGE');
+      if(obj.httpMetadata?.contentType!=='application/pdf')
+        throw fail('ARTIFACT_CONTENT_TYPE_REJECTED');
+      if(obj.customMetadata?.sha256 && obj.customMetadata.sha256!==sha)
+        throw fail('ARTIFACT_HASH_VERIFICATION_FAILED');
+      let bytes;
+      try{bytes=new Uint8Array(await obj.arrayBuffer())}
+      catch{throw fail('ARTIFACT_READ_FAILED')}
+      if(bytes.byteLength>maxBytes||bytes.byteLength!==Number(obj.size))
+        throw fail('ARTIFACT_SIZE_MISMATCH');
+      const digest=await defaultSha256(bytes);
+      if(digest!==sha)throw fail('ARTIFACT_HASH_VERIFICATION_FAILED');
+      if(bytes.byteLength<5||new TextDecoder().decode(bytes.subarray(0,5))!=='%PDF-')
+        throw fail('ARTIFACT_CONTENT_TYPE_REJECTED');
+      return Object.freeze({bytes,sha256:sha,contentType:'application/pdf'});
+    },
+  });
+}

@@ -1,9 +1,59 @@
+import { credentialKeyReady, sealActivepiecesCredentials, openActivepiecesCredentials } from './credential-vault.mjs';
+import { probeActivepiecesMcpReadback, refreshActivepiecesMcpTokens } from './mcp-oauth-handshake.mjs';
 import { checkActivepiecesDiscovery } from './oauth-network-probe.mjs';
 import { DurableObject } from 'cloudflare:workers';
 
 // One-time authorization-code handshake coordinator. Never stores tokens.
 // There is no public fetch handler; only Cloudflare Worker bindings can invoke RPC methods.
 export class ActivepiecesMcpHandshake extends DurableObject {
+  async credentialKeyReady(){return credentialKeyReady(this.env.ACTIVEPIECES_VAULT_KEY)}
+  async storeCredentials(record) {
+    const encrypted=await sealActivepiecesCredentials(record,this.env.ACTIVEPIECES_VAULT_KEY);
+    await this.ctx.storage.put('oauth-encrypted-credentials',encrypted);
+    await this.ctx.storage.put('oauth-connection-evidence',{status:'SECURED_PENDING_VERIFY',verifiedAt:null,connected:false,productionActivation:false});
+    return {secured:true};
+  }
+  async connectionStatus() {
+    const encrypted=await this.ctx.storage.get('oauth-encrypted-credentials');
+    const last=await this.ctx.storage.get('oauth-connection-evidence');
+    return {stored:Boolean(encrypted),connected:Boolean(encrypted&&last?.connected),
+      status:!encrypted?'NOT_ENROLLED':last?.status||'SECURED_PENDING_VERIFY',
+      verifiedAt:last?.verifiedAt||null,productionActivation:false};
+  }
+  async verifyStoredCredentials() {
+    if(!credentialKeyReady(this.env.ACTIVEPIECES_VAULT_KEY))
+      throw new Error('ACTIVEPIECES_VAULT_KEY_UNAVAILABLE');
+    const stored=await this.ctx.storage.get('oauth-encrypted-credentials');
+    if(!stored)throw new Error('ACTIVEPIECES_VAULT_NOT_ENROLLED');
+    try {
+      let rec=await openActivepiecesCredentials(stored,this.env.ACTIVEPIECES_VAULT_KEY);
+      if(rec.expiresAt < Date.now()+60000){
+        rec=await refreshActivepiecesMcpTokens(rec);
+        await this.ctx.storage.put('oauth-encrypted-credentials',
+          await sealActivepiecesCredentials(rec,this.env.ACTIVEPIECES_VAULT_KEY));
+      }
+      const tools=await probeActivepiecesMcpReadback(rec.accessToken);
+      if(!tools.includes('ap_get_run')||!tools.includes('ap_list_runs'))
+        throw new Error('ACTIVEPIECES_READBACK_UNAVAILABLE');
+      const outcome={status:'MCP_AUTHENTICATED_READBACK_PASS',verifiedAt:new Date().toISOString(),
+        connected:true,productionActivation:false};
+      await this.ctx.storage.put('oauth-connection-evidence',outcome);
+      return outcome;
+    }catch {
+      // No sensitive diagnostic detail is persisted or emitted.
+      const outcome={status:'MCP_READBACK_FAILED',verifiedAt:new Date().toISOString(),
+        connected:false,productionActivation:false};
+      await this.ctx.storage.put('oauth-connection-evidence',outcome);
+      return outcome;
+    }
+  }
+  async disconnectCredentials(){
+    await this.ctx.storage.delete('oauth-encrypted-credentials');
+    await this.ctx.storage.put('oauth-connection-evidence',{status:'REVOKED_LOCALLY',verifiedAt:new Date().toISOString(),
+      connected:false,productionActivation:false});
+    return {connected:false,productionActivation:false};
+  }
+
   async probeDiscovery(){
     // Shared Durable Object throttles unauthenticated health reads: at most one
     // actual upstream metadata GET per ten minutes, across all clients.

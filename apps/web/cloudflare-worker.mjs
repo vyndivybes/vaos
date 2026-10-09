@@ -26,6 +26,8 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/commissioning': commissioning,
   '/api/activepieces-mcp': activepiecesMcp,
   '/api/activepieces-mcp/start': activepiecesMcp,
+  '/api/activepieces-mcp/enroll/start': activepiecesMcp,
+  '/api/activepieces-mcp/verify': activepiecesMcp,
   '/api/activepieces-mcp/callback': activepiecesMcp,
   '/api/activepieces-mcp/status': activepiecesMcp,
   '/api/activepieces-mcp/discovery-health': activepiecesMcp,

@@ -71,7 +71,7 @@ function metadataChecks(metadata) {
   };
 }
 
-export async function beginActivepiecesAuthorization({callbackUrl,store,fetchImpl=fetch,now=Date.now,randomBytes}={}) {
+export async function beginActivepiecesAuthorization({callbackUrl,store,fetchImpl=fetch,now=Date.now,randomBytes,persistCredentials=false}={}) {
   if(!store||typeof store.put!=='function')throw fail('ACTIVEPIECES_OAUTH_STATE_STORE_REQUIRED');
   const redirectUri=callback(callbackUrl);
   const metadata=await jsonResponse(await guarded(fetchImpl,METADATA_URL,{headers:{Accept:'application/json'}},'DISCOVERY'));
@@ -94,7 +94,7 @@ export async function beginActivepiecesAuthorization({callbackUrl,store,fetchImp
   const time=now();
   if(!Number.isFinite(time))throw fail('ACTIVEPIECES_OAUTH_CLOCK_INVALID');
   try {
-    await store.put({nonce,clientId:register.client_id,verifier,redirectUri,tokenUrl:endpoints.token,expiresAt:time+10*MINUTE});
+    await store.put({nonce,clientId:register.client_id,verifier,redirectUri,tokenUrl:endpoints.token,expiresAt:time+10*MINUTE,persistCredentials:persistCredentials===true});
   }catch { throw fail('ACTIVEPIECES_OAUTH_STATE_STORE_FAILED'); }
   const auth=new URL(endpoints.authorize);
   auth.searchParams.set('response_type','code');
@@ -153,6 +153,28 @@ async function readonlyMcpProbe(accessToken,fetchImpl) {
   if(!names.includes('ap_get_run')||!names.includes('ap_list_runs'))throw fail('ACTIVEPIECES_READBACK_UNAVAILABLE');
   return names;
 }
+// A read-only revalidation does not require access to any business workflow.
+export async function probeActivepiecesMcpReadback(accessToken, fetchImpl=fetch) {
+  return readonlyMcpProbe(accessToken,fetchImpl);
+}
+export async function refreshActivepiecesMcpTokens(record,fetchImpl=fetch,now=Date.now) {
+  if(!record || record.tokenUrl !== ORIGIN+'/token' || typeof record.refreshToken !== 'string' || !record.refreshToken)
+    throw fail('ACTIVEPIECES_OAUTH_REFRESH_INVALID');
+  const token=await jsonResponse(await guarded(fetchImpl,record.tokenUrl,{
+    method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded',Accept:'application/json'},
+    body:new URLSearchParams({
+      grant_type:'refresh_token',refresh_token:record.refreshToken,
+      client_id:record.clientId,resource:ACTIVEPIECES_MCP_RESOURCE,
+    }).toString(),
+  },'REFRESH'));
+  if(typeof token.access_token!=='string'||!token.access_token||
+     token.token_type?.toLowerCase()!=='bearer'||
+     !Number.isFinite(Number(token.expires_in)) || Number(token.expires_in)<=0)
+    throw fail('ACTIVEPIECES_OAUTH_REFRESH_INVALID');
+  return {...record,accessToken:token.access_token,
+    refreshToken:typeof token.refresh_token==='string'&&token.refresh_token?token.refresh_token:record.refreshToken,
+    expiresAt:now()+Number(token.expires_in)*1000};
+}
 export async function completeActivepiecesAuthorization({nonce,code,store,fetchImpl=fetch,now=Date.now}={}) {
   if(!nonce||typeof nonce!=='string'||nonce.length>256||!store||typeof store.take!=='function')throw fail('ACTIVEPIECES_OAUTH_STATE_INVALID');
   const pending=await store.take(nonce); // atomic one-time consumption, before any external calls
@@ -173,7 +195,20 @@ export async function completeActivepiecesAuthorization({nonce,code,store,fetchI
       throw fail('ACTIVEPIECES_OAUTH_TOKEN_INVALID');
     // Tokens are never saved in the state store, evidence, response or logs.
     const readonlyTools=await readonlyMcpProbe(token.access_token,fetchImpl);
-    const outcome={status:'MCP_READBACK_CAPABLE',verifiedAt:new Date(now()).toISOString(),readonlyTools,productionActivation:false};
+    let status='MCP_READBACK_CAPABLE';
+    if(pending.persistCredentials===true){
+      if(typeof token.refresh_token!=='string'||!token.refresh_token||
+         !Number.isFinite(Number(token.expires_in))||Number(token.expires_in)<=0)
+        throw fail('ACTIVEPIECES_OAUTH_PERSISTENT_REFRESH_REQUIRED');
+      if(typeof store.storeCredentials!=='function') throw fail('ACTIVEPIECES_VAULT_UNAVAILABLE');
+      await store.storeCredentials({
+        accessToken:token.access_token,refreshToken:token.refresh_token,
+        clientId:pending.clientId,tokenUrl:pending.tokenUrl,
+        expiresAt:now()+Number(token.expires_in)*1000,
+      });
+      status='MCP_CREDENTIALS_SECURED';
+    }
+    const outcome={status,verifiedAt:new Date(now()).toISOString(),readonlyTools,productionActivation:false};
     await store.record(outcome);
     return outcome;
   }catch(error){

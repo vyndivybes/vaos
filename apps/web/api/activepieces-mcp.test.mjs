@@ -6,7 +6,7 @@ import {createSessionToken} from '../lib/auth.mjs';
 const cookie='vaos_session='+encodeURIComponent(createSessionToken('shyamsundhar1982@gmail.com'));
 const namespace={
   idFromName(n){return n},
-  get(){return {async put(){},async take(){return null},async status(){return {status:'NOT_CONNECTED',readonlyTools:[],productionActivation:false}}}},
+  get(){return {async put(){},async take(){return null},async status(){return {status:'NOT_CONNECTED',readonlyTools:[],productionActivation:false}},async connectionStatus(){return {stored:false,connected:false}},async credentialKeyReady(){return false}}},
 };
 function req(path,method='GET',headers={},env={ACTIVEPIECES_HANDSHAKE:namespace}) {
   return {url:'https://vaos.vayushastr.workers.dev'+path,method,headers,env};
@@ -206,4 +206,34 @@ test('public metadata health is strictly GET and fails closed when storage is un
   assert.equal(post.status,405);
   const unavailable=await handler(req('/api/activepieces-mcp/discovery-health','GET',{},{}),{});
   assert.equal(unavailable.status,503);
+});
+
+test('persistent OAuth enrollment fails closed when protected key is absent',async()=>{
+  const view=await handler(req('/api/activepieces-mcp','GET',{cookie}),{});
+  const csrf=(await view.text()).match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
+  assert.ok(csrf);
+  const request=req('/api/activepieces-mcp/enroll/start','POST',
+    {cookie,'content-type':'application/x-www-form-urlencoded'});
+  request.body='csrf='+csrf;
+  const result=await handler(request,{});
+  assert.equal(result.status,503);
+  assert.match(await result.text(),/VAULT_KEY_UNAVAILABLE/);
+});
+test('read-only status never includes OAuth tokens or enables production',async()=>{
+  const res=await handler(req('/api/activepieces-mcp/status','GET',{cookie}),{});
+  const json=await res.json();
+  assert.equal(json.connected,false);
+  assert.equal(json.productionActivation,false);
+  assert.equal(json.connection.stored,false);
+});
+test('read-only verify is maker-gated and requires CSRF',async()=>{
+  const other='vaos_session='+encodeURIComponent(createSessionToken('kaaviyam1519@gmail.com'));
+  const reqOther=req('/api/activepieces-mcp/verify','POST',
+    {cookie:other,'content-type':'application/x-www-form-urlencoded'});
+  reqOther.body='csrf=wrong';
+  assert.equal((await handler(reqOther,{})).status,403);
+  const reqMaker=req('/api/activepieces-mcp/verify','POST',
+    {cookie,'content-type':'application/x-www-form-urlencoded'});
+  reqMaker.body='csrf=wrong';
+  assert.equal((await handler(reqMaker,{})).status,403);
 });

@@ -28,6 +28,12 @@ export class WindmillAdmissionCoordinator extends DurableObject {
   }
   async startQualification(runId) { return this.isolatedDrill().start(runId); }
   async alarmStatus(runId) { return this.isolatedDrill().alarmStatus(runId); }
+  async restartCapability() {
+    return Object.freeze({
+      schemaVersion:'vaos.windmill.restart-qualification.v1',
+      status:'RESTART_DRILL_READY',productionActivation:false,windmillCalls:0,
+    });
+  }
   restartDrill() {
     return createWindmillRestartDrill({store:this.ctx.storage});
   }

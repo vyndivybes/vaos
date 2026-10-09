@@ -71,6 +71,20 @@ export default async function activepiecesOAuthHandler(req,res) {
         +'<a href="/api/activepieces-mcp">Return to commissioning</a>',502);
     }
   }
+  if(path==='/api/activepieces-mcp/discovery-health'){
+    if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
+    try{
+      const probe=await vault(req.env).probeDiscovery();
+      // Public response intentionally contains only status and finite code;
+      // no tenant credentials, OAuth state, client id or upstream text.
+      return new Response(JSON.stringify({providerId:'activepieces',stage:'discovery',
+        ok:probe.ok===true,code:probe.code,httpStatus:probe.httpStatus,
+        cached:probe.cached===true,productionActivation:false}),{
+        status:200,headers:{'Content-Type':'application/json; charset=utf-8',
+        'Cache-Control':'public, max-age=60','X-Content-Type-Options':'nosniff'},
+      });
+    }catch{return fail(503,'DISCOVERY_HEALTH_UNAVAILABLE')}
+  }
   if(!session(req))return fail(401,'UNAUTHENTICATED');
   let stub;
   try{stub=vault(req.env)}catch{return fail(503,'ACTIVEPIECES_HANDSHAKE_UNAVAILABLE')}

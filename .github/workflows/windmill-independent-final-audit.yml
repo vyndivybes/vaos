@@ -1,0 +1,78 @@
+name: Windmill Independent Final Audit
+
+on:
+  pull_request:
+    paths:
+      - 'platform/qualification/final-independent-signoff*'
+      - 'scripts/qualification/windmill-final-independent-audit.mjs'
+      - '.github/workflows/windmill-independent-final-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'platform/qualification/final-independent-signoff*'
+      - 'scripts/qualification/windmill-final-independent-audit.mjs'
+      - '.github/workflows/windmill-independent-final-audit.yml'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  audit-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Independent sign-off safety-policy tests
+        run: node --test platform/qualification/final-independent-signoff.test.mjs
+      - name: Audit script syntax
+        run: node --check scripts/qualification/windmill-final-independent-audit.mjs
+
+  independent-evidence-reconciliation:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: audit-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      GITHUB_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Fetch original Windmill live execution evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: windmill-synthetic-live-evidence
+          repository: vyndivybes/vaos
+          run-id: 37847337453
+          github-token: ${{ github.token }}
+          path: audit-input/synthetic
+      - name: Fetch separately credentialed GET-only verification evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: windmill-independent-verification-evidence
+          repository: vyndivybes/vaos
+          run-id: 37849719120
+          github-token: ${{ github.token }}
+          path: audit-input/independent
+      - name: Fetch actual Cloudflare DO/alarms live evidence
+        uses: actions/download-artifact@v4
+        with:
+          name: windmill-cloudflare-do-live-evidence
+          repository: vyndivybes/vaos
+          run-id: 37860222073
+          github-token: ${{ github.token }}
+          path: audit-input/cloudflare
+      - name: Reconcile source run provenance and issue HOLD or approval recommendation
+        run: node scripts/qualification/windmill-final-independent-audit.mjs
+      - name: Persist independent audit assessment
+        if: success()
+        uses: actions/upload-artifact@v5
+        with:
+          name: windmill-independent-final-audit
+          path: qualification-evidence/windmill/final-independent-assessment.json
+          retention-days: 30

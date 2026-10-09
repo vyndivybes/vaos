@@ -26,6 +26,15 @@ export async function repairOriginalSandboxOnce({store,client,preflight=prefligh
   let original;
   try{original=await preflight({store,client})}catch{return fail('AP_REPAIR_PREFLIGHT_UNAVAILABLE')}
   if(!isSafePreflight(original))return fail('AP_REPAIR_UNSAFE_OR_UNNEEDED');
+  // Discover the actual Activepieces mutation capabilities BEFORE irrevocably
+  // consuming the single repair admission. A read-only OAuth grant may expose
+  // readback tools but no update methods; never burn admission on that account.
+  try{
+    if(typeof client.tools!=='function')return fail('AP_REPAIR_MUTATION_TOOLS_UNAVAILABLE');
+    const tools=new Set((await client.tools()).map(t=>typeof t==='string'?t:t?.name));
+    if(['ap_update_trigger','ap_update_step','ap_read_step_settings','ap_list_flows']
+      .some(name=>!tools.has(name)))return fail('AP_REPAIR_MUTATION_TOOLS_UNAVAILABLE');
+  }catch{return fail('AP_REPAIR_MUTATION_TOOLS_UNAVAILABLE')}
   let flowId;
   try{
     const displayName='VAOS Synthetic Qualification '+state.marker;

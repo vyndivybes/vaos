@@ -285,3 +285,33 @@ test('sandbox repair requires maker POST, same-origin, exact JSON consent, never
  assert.equal(data.status,'HOLD');assert.equal(data.productionActivation,false);
  assert.equal(attempts,1);
 });
+
+
+test('Cloudflare JSON adapter accepts maker-authorized one-shot repair and rejects ineligible bodies',async()=>{
+ const {invokeCloudflareHandler}=await import('../lib/cloudflare-adapter.mjs');
+ const origin='https://vaos.vayushastr.workers.dev';
+ const url=origin+'/api/activepieces-mcp/synthetic-repair';
+ let repairCount=0;
+ const env={ACTIVEPIECES_HANDSHAKE:{idFromName:n=>n,get:()=>({
+   async repairOriginalSandboxOnce(){repairCount++;return {status:'HOLD',reason:'AP_REPAIR_UNSAFE_OR_UNNEEDED',runSubmitted:false,productionActivation:false}}
+ })}};
+ const send=(body,extra={})=>invokeCloudflareHandler(handler,new Request(url,{
+   method:'POST',headers:{'Content-Type':'application/json',Cookie:cookie,Origin:origin,...extra},
+   body:typeof body==='string'?body:JSON.stringify(body)
+ }),env);
+ const authorized=await send({approval:'REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009'});
+ assert.equal(authorized.status,200);
+ const payload=await authorized.json();
+ assert.equal(payload.reason,'AP_REPAIR_UNSAFE_OR_UNNEEDED');
+ assert.equal(payload.runSubmitted,false);
+ assert.equal(payload.productionActivation,false);
+ assert.equal(repairCount,1);
+ for(const body of [{},{approval:'different'},{approval:'REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009',extra:true},['REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009']]){
+   const response=await send(body);
+   assert.equal(response.status,403);
+   assert.match(await response.text(),/REPAIR_ADMISSION_INVALID/);
+ }
+ const originDenied=await send({approval:'REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009'},{Origin:'https://attacker.invalid'});
+ assert.equal(originDenied.status,403);
+ assert.equal(repairCount,1);
+});

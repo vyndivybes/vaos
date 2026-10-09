@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      actions: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -21,3 +22,7 @@ jobs:
           node --check integrations/dify/github-evidence-verifier.mjs
       - name: Run Dify and independent evidence tests
         run: node --test integrations/dify/*.test.mjs
+      - name: Live independent GitHub evidence readback
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: node integrations/dify/live-github-readback.mjs

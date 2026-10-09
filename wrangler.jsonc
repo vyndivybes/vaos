@@ -60,5 +60,11 @@
       "type": "durable-object",
       "storage": "sqlite"
     }
-  }
+  },
+  "r2_buckets": [
+    {
+      "binding": "VAOS_ARTIFACTS",
+      "bucket_name": "vaos-qualification-artifacts"
+    }
+  ]
 }

@@ -258,3 +258,30 @@ test('Activepieces sandbox preflight denies unauthenticated, wrong-origin and PO
   assert.equal(body.productionActivation,false);
   assert.equal(calls,1);
 });
+
+test('sandbox repair requires maker POST, same-origin, exact JSON consent, never activates production',async()=>{
+ let attempts=0;
+ const env={ACTIVEPIECES_HANDSHAKE:{idFromName:x=>x,get:()=>({
+   async repairOriginalSandboxOnce(){attempts++;return {status:'HOLD',reason:'AP_REPAIR_UNSAFE_OR_UNNEEDED',productionActivation:false,runSubmitted:false}}
+ })}};
+ const path='/api/activepieces-mcp/synthetic-repair';
+ const body=JSON.stringify({approval:'REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009'});
+ for(const [h,m,b,code] of [
+  [{origin:'https://vaos.vayushastr.workers.dev','content-type':'application/json'},'POST',body,403],
+  [{cookie,origin:'https://bad.invalid','content-type':'application/json'},'POST',body,403],
+  [{cookie,origin:'https://vaos.vayushastr.workers.dev','content-type':'application/json'},'GET',body,405],
+  [{cookie,origin:'https://vaos.vayushastr.workers.dev','content-type':'application/json'},'POST','{}',403],
+  [{cookie,origin:'https://vaos.vayushastr.workers.dev','content-type':'text/plain'},'POST',body,403],
+ ]){
+   const input=req(path,m,h,env);input.body=b;
+   assert.equal((await handler(input,{})).status,code);
+ }
+ assert.equal(attempts,0);
+ const input=req(path,'POST',{cookie,origin:'https://vaos.vayushastr.workers.dev',
+   'content-type':'application/json'},env);input.body=body;
+ const response=await handler(input,{});
+ assert.equal(response.status,200);
+ const data=await response.json();
+ assert.equal(data.status,'HOLD');assert.equal(data.productionActivation,false);
+ assert.equal(attempts,1);
+});

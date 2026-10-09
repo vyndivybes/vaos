@@ -115,19 +115,12 @@ export default {
     })).then((summary) => {
       console.log('VAOS_SAFE_MISSION_SWEEP', JSON.stringify(summary));
     });
-    const infisical = dispatchInfisicalWatchdog({
-      token: env?.VAOS_GITHUB_WATCHDOG_DISPATCH_TOKEN,
-    }).then(({status}) => {
-      if (status === 'unconfigured') console.warn('VAOS_INFISICAL_CRON_DISPATCH_UNCONFIGURED');
-      else console.log('VAOS_INFISICAL_CRON_DISPATCH_ACCEPTED');
-    });
-    const task = Promise.allSettled([mission, infisical]).then((outcomes) => {
-      if (outcomes[0].status === 'rejected') console.error('VAOS_MISSION_SWEEP_FAILED');
-      if (outcomes[1].status === 'rejected') console.error('VAOS_INFISICAL_CRON_DISPATCH_FAILED', infisicalDispatchFailureCode(outcomes[1].reason));
-      if (outcomes.some((outcome) => outcome.status === 'rejected')) {
-        throw new Error('VAOS_CLOUDFLARE_SCHEDULED_TASK_FAILED');
-      }
-    });
+    // Infisical has a dedicated GitHub-native 15-minute schedule.
+    // Do not issue a second, uncorrelated workflow dispatch from this cron.
+    // GitHub scheduled-run freshness is qualified independently; this Worker
+    // remains responsible for its own mission sweep only.
+    const task = mission;
+
     if (ctx?.waitUntil) ctx.waitUntil(task);
     else await task;
   },

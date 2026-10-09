@@ -36,6 +36,7 @@ jobs:
           platform/qualification/provider-wave-3-profiles.test.mjs
           integrations/n8n/workflow-adapter.test.mjs
           integrations/activepieces/workflow-adapter.test.mjs
+          integrations/activepieces/sandbox-preflight.test.mjs
           integrations/paperless-ngx/archive-adapter.test.mjs
           integrations/stirling-pdf/transform-adapter.test.mjs
 

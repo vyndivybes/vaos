@@ -32,7 +32,7 @@ test('Cloudflare native watchdog supersedes GitHub schedule, preserving manual d
   assert.doesNotMatch(workflow,/^  schedule:/m);
   assert.doesNotMatch(workflow,/^  push:/m);
   assert.match(workflow,/workflow_dispatch:/);
-  assert.match(workflow,/steps\\.live\\.outcome == 'failure'/);
+  assert.match(workflow,/steps\.live\.outcome == 'failure'/);
   assert.match(workflow,/INFISICAL_COMMISSION_ACTION: disable/);
   assert.match(workflow,/INFISICAL_DISABLE_CONFIRM: DISABLE-ONLY/);
   assert.match(workflow,/VAOS_INFISICAL_WATCHDOG_KEY/);

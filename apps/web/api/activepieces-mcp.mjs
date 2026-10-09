@@ -23,6 +23,7 @@ function sessionToken(req) {
 function session(req) {
   return verifySessionToken(sessionToken(req));
 }
+function makerSession(req){return session(req)?.email==='shyamsundhar1982@gmail.com'}
 // An unpredictable per-session CSRF proof replaces the false assumption that every
 // browser's navigation POST includes an Origin header. This is not an OAuth token.
 function csrfToken(req) {
@@ -60,10 +61,11 @@ export default async function activepiecesOAuthHandler(req,res) {
         code:str(u.searchParams.get('code')),
         store:vault(req.env),
       });
-      if(outcome.status!=='MCP_READBACK_CAPABLE')throw Error('ACTIVEPIECES_READBACK_UNAVAILABLE');
+      if(!['MCP_READBACK_CAPABLE','MCP_CREDENTIALS_SECURED'].includes(outcome.status))throw Error('ACTIVEPIECES_READBACK_UNAVAILABLE');
       return page('Activepieces OAuth verification passed',
-        '<p>Temporary OAuth authorization succeeded and read-only run-discovery tools were detected.</p>'
-        +'<p><strong>Important:</strong> VAOS did not retain OAuth tokens, activate provider routing, or commission a live production workflow.</p>'
+        outcome.status==='MCP_CREDENTIALS_SECURED'
+        ?'<p>OAuth tokens have been encrypted inside VAOS for controlled read-only verification. Production workflows remain disabled.</p>'
+        :'<p>Temporary OAuth authorization succeeded and read-only run-discovery tools were detected. No tokens were retained.</p>'
         +'<a href="/api/activepieces-mcp">View commissioning evidence</a>');
     }catch{
       return page('Activepieces OAuth verification failed',
@@ -93,15 +95,32 @@ export default async function activepiecesOAuthHandler(req,res) {
       '<p>This initiates a one-time OAuth and read-only MCP tool-discovery test using the Activepieces account you approve.</p>'
       +'<p>The test does not incur an Activepieces action credit, perform a business operation, or retain OAuth tokens.</p>'
       +'<form action="/api/activepieces-mcp/start" method="post"><input type="hidden" name="csrf" value="'+csrfToken(req)+'"><button type="submit" style="font-size:17px;padding:12px 18px">Authorize read-only test</button></form>'
-      +'<p><a href="/api/activepieces-mcp/status">View current qualification evidence (JSON)</a></p>');
+      +'<p><a href="/api/activepieces-mcp/status">View current qualification evidence (JSON)</a></p>'
+      +(makerSession(req)
+        ?'<form action="/api/activepieces-mcp/enroll/start" method="post"><input type="hidden" name="csrf" value="'+csrfToken(req)+'"><button type="submit">Securely connect for persistent read-only verification</button></form>'
+          +'<form action="/api/activepieces-mcp/verify" method="post"><input type="hidden" name="csrf" value="'+csrfToken(req)+'"><button type="submit">Verify stored read-only MCP connection</button></form>'
+        :''));
+
   }
   if(path==='/api/activepieces-mcp/status' && req.method==='GET'){
     const status=await stub.status();
-    return new Response(JSON.stringify({providerId:'activepieces',mcpServer:'https://cloud.activepieces.com/mcp/platform',evidence:status,connected:false,productionActivation:false}),{
+    const connection=await stub.connectionStatus();
+    return new Response(JSON.stringify({providerId:'activepieces',mcpServer:'https://cloud.activepieces.com/mcp/platform',
+      evidence:status,connection,connected:connection.connected,productionActivation:false}),{
       status:200,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store'},
     });
   }
-  if(path==='/api/activepieces-mcp/start' && req.method==='POST') {
+  if(path==='/api/activepieces-mcp/verify' && req.method==='POST'){
+    if(!makerSession(req))return fail(403,'MAKER_REQUIRED');
+    if(!validCsrf(req))return fail(403,'CSRF_INVALID');
+    try{
+      const outcome=await stub.verifyStoredCredentials();
+      return page(outcome.connected?'Activepieces read-only verification passed':'Activepieces read-only verification failed',
+        '<p>Verification: '+outcome.status+'. Production routing remains disabled.</p>'
+        +'<p><a href="/api/activepieces-mcp/status">Review sanitized evidence</a></p>',outcome.connected?200:502);
+    }catch{return fail(503,'ACTIVEPIECES_READBACK_NOT_AVAILABLE')}
+  }
+  if(['/api/activepieces-mcp/start','/api/activepieces-mcp/enroll/start'].includes(path) && req.method==='POST') {
     // Session authentication is checked above, and the session-bound HMAC
     // proof below is the CSRF authorization for this state-changing POST.
     // Origin / Sec-Fetch-Site are *not* used as correctness gates: reverse
@@ -110,9 +129,12 @@ export default async function activepiecesOAuthHandler(req,res) {
     // prevent cross-site request forgery without fragile header comparisons.
     if(!validCsrf(req))return fail(403,'CSRF_INVALID');
     try {
+      const persistent=path==='/api/activepieces-mcp/enroll/start';
+      if(persistent && !makerSession(req))return fail(403,'MAKER_REQUIRED');
+      if(persistent && !(await stub.credentialKeyReady()))return fail(503,'ACTIVEPIECES_VAULT_KEY_UNAVAILABLE');
       const authorizationUrl=await beginActivepiecesAuthorization({
         callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
-        store:stub,
+        store:stub,persistCredentials:persistent,
       });
       return Response.redirect(authorizationUrl,303);
     }catch(error){

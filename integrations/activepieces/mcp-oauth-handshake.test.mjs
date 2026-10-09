@@ -155,3 +155,30 @@ test('Cloudflare manual redirect never follows a 302 for OAuth discovery',async(
   assert.equal(log.length,1);
   assert.equal(log[0].options.redirect,'manual');
 });
+
+test('persistent OAuth enrollment calls protected vault only after read-only proof',async()=>{
+  const log=[],store=fakeStore(),fetchImpl=mockFetch(log);
+  let secret=null;store.storeCredentials=async data=>{secret=data};
+  const auth=await beginActivepiecesAuthorization({callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
+    store,fetchImpl,persistCredentials:true});
+  const result=await completeActivepiecesAuthorization({nonce:new URL(auth).searchParams.get('state'),
+    code:'demo-authorization',store,fetchImpl});
+  assert.equal(result.status,'MCP_CREDENTIALS_SECURED');
+  assert.equal(secret.refreshToken,'secret-refresh');
+  assert.equal(secret.accessToken,'secret-access-token');
+  assert.equal(secret.tokenUrl,'https://cloud.activepieces.com/token');
+  assert.equal(JSON.stringify(result).includes('secret'),false);
+});
+test('refresh rotates token only at pinned Activepieces endpoint',async()=>{
+  const log=[];
+  const {refreshActivepiecesMcpTokens}=await import('./mcp-oauth-handshake.mjs');
+  const current={accessToken:'old-token',refreshToken:'refresh-original',clientId:'client-demo',
+    tokenUrl:'https://cloud.activepieces.com/token',expiresAt:1};
+  const refreshed=await refreshActivepiecesMcpTokens(current,mockFetch(log),()=>1000);
+  assert.equal(refreshed.accessToken,'secret-access-token');
+  assert.equal(refreshed.refreshToken,'secret-refresh');
+  assert.equal(refreshed.expiresAt,901000);
+  assert.equal(log.length,1);
+  assert.equal(log[0].options.redirect,'manual');
+  await assert.rejects(()=>refreshActivepiecesMcpTokens({...current,tokenUrl:'https://evil.example'},mockFetch([])),/REFRESH_INVALID/);
+});

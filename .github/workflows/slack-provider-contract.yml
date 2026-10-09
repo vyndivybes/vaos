@@ -16,5 +16,5 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - run: node --test integrations/slack/notification-adapter.test.mjs
-      - run: node --check integrations/slack/notification-adapter.mjs
+      - run: node --test integrations/slack/notification-adapter.test.mjs apps/web/api/slack-qualification.test.mjs
+      - run: node --check integrations/slack/notification-adapter.mjs && node --check apps/web/api/slack-qualification.mjs

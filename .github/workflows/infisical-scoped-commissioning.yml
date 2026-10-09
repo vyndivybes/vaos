@@ -1,16 +1,8 @@
 name: infisical-scoped-commissioning
 
+# Retired recurring GitHub watchdog after two independently verified Cloudflare
+# cron canaries (2026-10-09 18:15Z and 18:30Z). Manual break-glass retained.
 on:
-  schedule:
-    # Every 15 minutes at off-peak UTC minutes to avoid crowded quarter-hours.
-    # GitHub schedules are best-effort; independent missed-run checks remain required.
-    - cron: '7,22,37,52 * * * *'
-  # A single trusted main-branch push can bootstrap and verify the live canary.
-  push:
-    branches:
-      - main
-    paths:
-      - .github/infisical-watchdog-bootstrap.trigger
   workflow_dispatch:
     inputs:
       action:
@@ -19,7 +11,7 @@ on:
         required: true
         options: [record-health, disable]
       watchdog_tick:
-        description: 'Optional Cloudflare cron tick in epoch milliseconds'
+        description: 'Optional manual investigation correlation tick in epoch milliseconds'
         type: string
         required: false
 

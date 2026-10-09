@@ -18,6 +18,7 @@ function input(phase='start'){
           alarmStatus:async()=>({status:'ALARM_OBSERVED',alarmObserved:true,productionActivation:false,windmillCalls:0}),
           beginRestartQualification:async()=>({status:'PENDING',productionActivation:false}),
           restartQualificationStatus:async()=>({status:'RESTART_VERIFIED',instanceChanged:true,productionActivation:false,windmillCalls:0}),
+          restartCapability:async()=>({schemaVersion:'vaos.windmill.restart-qualification.v1',status:'RESTART_DRILL_READY',productionActivation:false,windmillCalls:0}),
         };
       },
     }}};
@@ -91,8 +92,7 @@ test('restart status is read-only and proves new instance state',async()=>{
 test('signed capabilities call identifies upgraded forced-restart runtime without mutating DO',async()=>{
   const h=createWindmillLiveDoQualificationHandler({verifyIdentity:valid});
   const q=input('capabilities'),r=res();
-  // The capability response must be resolved *before* a DO object is accessed.
-  q.env.WINDMILL_ADMISSION.getByName=()=>{throw Error('MUST_NOT_INSTANTIATE');};
+  // The isolated DO itself must attest to the upgraded version; no state mutation.
   await h(q,r);
   assert.equal(r.data.code,200);
   assert.equal(r.data.body.data.status,'RESTART_DRILL_READY');

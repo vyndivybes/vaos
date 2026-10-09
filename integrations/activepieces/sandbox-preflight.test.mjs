@@ -140,3 +140,37 @@ test('read-only mismatch evidence distinguishes webhook piece, trigger name and 
   assert.equal(calls.some(x=>['ap_update_trigger','ap_update_step','ap_test_flow'].includes(x.name)),false);
  }
 });
+
+
+test('Activepieces default catch_webhook authType none and empty authFields pass safely',async()=>{
+  const allowed=[
+    {authType:'none'},
+    {authType:'none',authFields:{}},
+    {authFields:{},authType:'none'}
+  ];
+  for(const input of allowed){
+    const {client}=realMcpShapeClient({triggerSettings:{
+      pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input
+    }});
+    const r=await preflightActivepiecesSandbox({store,client});
+    assert.equal(r.status,'PASS',JSON.stringify(input));
+    assert.equal(r.runSubmitted,false);assert.equal(r.productionActivation,false);
+  }
+});
+test('unsafe webhook auth modes or injected fields continue to fail closed',async()=>{
+  for(const input of [
+    {authType:'basic',authFields:{}},
+    {authType:'header',authFields:{headerName:'x-bypass',headerValue:'secret'}},
+    {authType:'hmac',authFields:{}},
+    {authType:'none',authFields:{headerValue:'secret'}},
+    {authType:'none',authFields:{},another:'bad'},
+    {authType:'None',authFields:{}}
+  ]){
+    const {client}=realMcpShapeClient({triggerSettings:{
+      pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input
+    }});
+    const r=await preflightActivepiecesSandbox({store,client});
+    assert.equal(r.status,'HOLD',JSON.stringify(Object.keys(input)));
+    assert.equal(JSON.stringify(r).includes('secret'),false);
+  }
+});

@@ -3,6 +3,7 @@ import { diagnoseSyntheticHold } from './synthetic-diagnostic.mjs';
 import { reconcileExistingQualification } from './reconcile-existing.mjs';
 import { preflightActivepiecesSandbox } from './sandbox-preflight.mjs';
 import { repairOriginalSandboxOnce } from './sandbox-repair.mjs';
+import { recoverCodeStepOnce } from './sandbox-step-recovery.mjs';
 import { auditAppend } from './synthetic-qualification.mjs';
 import { qualifyOnce, recoverOnce, qualifyEvidence } from './synthetic-qualification.mjs';
 import { createActivepiecesToolClient } from './mcp-tool-client.mjs';
@@ -85,6 +86,22 @@ export class ActivepiecesMcpHandshake extends DurableObject {
       return {...outcome,repairAdmissionStatus};
     }catch{return {status:'HOLD',reason:'AP_PREFLIGHT_CREDENTIAL_OR_NETWORK_ERROR',productionActivation:false};}
   }
+  async recoverSyntheticCodeStepOnce(){
+    const connection=await this.connectionStatus();
+    if(!connection.connected)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_VERIFIED',productionActivation:false};
+    const envelope=await this.ctx.storage.get('oauth-encrypted-credentials');
+    if(!envelope)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_ENROLLED',productionActivation:false};
+    try{
+      let rec=await openActivepiecesCredentials(envelope,this.env.ACTIVEPIECES_VAULT_KEY);
+      if(rec.expiresAt<Date.now()+90000){
+        rec=await refreshActivepiecesMcpTokens(rec);
+        await this.ctx.storage.put('oauth-encrypted-credentials',
+          await sealActivepiecesCredentials(rec,this.env.ACTIVEPIECES_VAULT_KEY));
+      }
+      return await recoverCodeStepOnce({store:this.ctx.storage,
+        client:createActivepiecesToolClient({accessToken:rec.accessToken})});
+    }catch{return {status:'HOLD',reason:'AP_CODE_RECOVERY_CREDENTIAL_OR_NETWORK_UNAVAILABLE',productionActivation:false};}
+  }
   async repairOriginalSandboxOnce(){
     const conn=await this.connectionStatus();
     if(!conn.connected)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_VERIFIED',productionActivation:false};
@@ -102,7 +119,12 @@ export class ActivepiecesMcpHandshake extends DurableObject {
     }catch{return {status:'HOLD',reason:'AP_REPAIR_CREDENTIAL_OR_NETWORK_UNAVAILABLE',productionActivation:false};}
   }
   async syntheticEvidence() {
-    return qualifyEvidence(this.ctx.storage);
+    const evidence=await qualifyEvidence(this.ctx.storage);
+    // Sanitize just the one-shot CODE recovery state, allowing independent
+    // public verification without disclosing markers, flow IDs or secrets.
+    const recovery=await this.ctx.storage.get('ap-sandbox-step-recovery-v1');
+    return {...evidence,codeRecoveryStatus:
+      ['ADMITTED','VERIFIED','HOLD'].includes(recovery?.status)?recovery.status:'NOT_ADMITTED'};
   }
   async qualifyScheduledOnce(){
     // This is an explicit, one-off commissioning order, not a general agent action.

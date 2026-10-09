@@ -315,3 +315,56 @@ test('Cloudflare JSON adapter accepts maker-authorized one-shot repair and rejec
  assert.equal(originDenied.status,403);
  assert.equal(repairCount,1);
 });
+
+
+test('maker-only recovery page uses a session-bound one-use POST authorization, no action on GET',async()=>{
+ const origin='https://vaos.vayushastr.workers.dev';
+ let writes=0;
+ const env={ACTIVEPIECES_HANDSHAKE:{idFromName:x=>x,get:()=>({
+  async recoverSyntheticCodeStepOnce(){writes++;return {
+   status:'HOLD',reason:'AP_CODE_RECOVERY_UNSAFE_OR_UNNEEDED',
+   productionActivation:false,runSubmitted:false
+  }}
+ })}};
+ const p='/api/activepieces-mcp/code-recovery';
+ const denied=await handler(req(p,'GET',{},env),{});
+ assert.equal(denied.status,403);
+ const page=await handler(req(p,'GET',{cookie},env),{});
+ assert.equal(page.status,200);
+ const html=await page.text();
+ assert.match(html,/Approve single CODE-step recovery/);
+ assert.equal(writes,0);
+ const csrf=html.match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
+ assert.ok(csrf);
+ for(const body of ['csrf=wrong','csrf='+csrf+'&other=1']){
+  const rejected=req(p,'POST',{cookie,origin,'content-type':'application/x-www-form-urlencoded'},env);
+  rejected.body=body;
+  const response=await handler(rejected,{});
+  assert.equal(response.status,403);assert.equal(writes,0);
+ }
+ const authorized=req(p,'POST',{cookie,'content-type':'application/x-www-form-urlencoded'},env);
+ authorized.body='csrf='+csrf;
+ const result=await handler(authorized,{});
+ assert.equal(result.status,200);
+ assert.match(await result.text(),/CODE-step recovery HOLD/);
+ assert.equal(writes,1);
+});
+
+
+test('public audit exposes only bounded code-recovery status, never flow or credential details',async()=>{
+ const env={ACTIVEPIECES_HANDSHAKE:{idFromName:x=>x,get:()=>({
+  async syntheticEvidence(){return {
+   status:'HOLD',phase:'REMEDIATION_HOLD',reason:'AP_TOOL_RESULT_INVALID',
+   markerVerified:false,checksumVerified:false,codeRecoveryStatus:'VERIFIED',
+   flowId:'private_flow',token:'credential_secret',
+   audit:{ok:true,count:23,head:'abc'}
+  }}
+ })}};
+ const res=await handler(req('/api/activepieces-mcp/synthetic-evidence','GET',{},env),{});
+ assert.equal(res.status,200);
+ const t=await res.text();
+ assert.match(t,/"codeRecoveryStatus":"VERIFIED"/);
+ assert.equal(t.includes('private_flow'),false);
+ assert.equal(t.includes('credential_secret'),false);
+ assert.equal(t.includes('marker":"'),false);
+});

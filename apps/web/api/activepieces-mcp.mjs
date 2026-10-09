@@ -31,6 +31,20 @@ function csrfToken(req) {
   return crypto.createHmac('sha256',cookieToken)
     .update('vaos:activepieces:mcp:start:v1').digest('hex');
 }
+function codeRecoveryCsrf(req) {
+  return crypto.createHmac('sha256',sessionToken(req))
+    .update('vaos:activepieces:code-recovery:v1').digest('hex');
+}
+function validCodeRecoveryCsrf(req){
+  const contentType=String(req.headers?.['content-type']||'').split(';')[0].trim().toLowerCase();
+  if(contentType!=='application/x-www-form-urlencoded'||
+     typeof req.body!=='string'||req.body.length>256)return false;
+  const vals=new URLSearchParams(req.body);
+  const proof=vals.getAll('csrf');
+  return [...vals.keys()].every(k=>k==='csrf')&&proof.length===1&&
+    /^[a-f0-9]{64}$/.test(proof[0])&&
+    constantTimeEqual(proof[0],codeRecoveryCsrf(req));
+}
 function validCsrf(req) {
   const contentType=String(req.headers['content-type']||'').split(';')[0].trim().toLowerCase();
   if(contentType!=='application/x-www-form-urlencoded' ||
@@ -95,10 +109,36 @@ export default async function activepiecesOAuthHandler(req,res) {
       // exposing project, flow/run IDs, test marker, OAuth tokens or private outputs.
       const report={providerId:'activepieces',status:v.status,phase:v.phase,
         reason:v.reason,markerVerified:v.markerVerified,
-        checksumVerified:v.checksumVerified,productionActivation:false,audit:v.audit};
+        checksumVerified:v.checksumVerified,productionActivation:false,audit:v.audit,
+        codeRecoveryStatus:['NOT_ADMITTED','ADMITTED','VERIFIED','HOLD'].includes(v.codeRecoveryStatus)
+          ?v.codeRecoveryStatus:'NOT_ADMITTED'};
       return new Response(JSON.stringify(report),{status:200,
         headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
     }catch{return fail(503,'AP_SYNTHETIC_EVIDENCE_UNAVAILABLE')}
+  }
+  if(path==='/api/activepieces-mcp/code-recovery'){
+    if(!makerSession(req))return fail(403,'MAKER_REQUIRED');
+    if(req.method==='GET'){
+      return page('Activepieces isolated code-step recovery',
+        '<p>The previous one-shot trigger admission is already consumed.</p>'
+        +'<p>This approves one attempt to repair <code>step_1</code> in the exact existing disabled, unpublished synthetic flow, only after fresh safety checks. It will not retry the webhook trigger, execute a flow, publish, or activate production.</p>'
+        +'<form method="post" action="/api/activepieces-mcp/code-recovery">'
+        +'<input type="hidden" name="csrf" value="'+codeRecoveryCsrf(req)+'">'
+        +'<button type="submit">Approve single CODE-step recovery</button></form>');
+    }
+    if(req.method!=='POST')return fail(405,'METHOD_NOT_ALLOWED');
+    if(!validCodeRecoveryCsrf(req))return fail(403,'CODE_RECOVERY_CSRF_INVALID');
+    try{
+      const outcome=await vault(req.env).recoverSyntheticCodeStepOnce();
+      const reason=/^AP_[A-Z0-9_]{3,100}$/.test(outcome?.reason||'')
+        ?outcome.reason:'AP_CODE_RECOVERY_RESULT_UNKNOWN';
+      const passed=outcome?.status==='PASS'&&reason==='AP_SANDBOX_CODE_READBACK_VERIFIED';
+      return page(passed?'Activepieces CODE-step recovery verified':'Activepieces CODE-step recovery HOLD',
+        '<p>Status: '+(passed?'PASS':'HOLD')+'</p>'
+        +'<p>Reason: <code>'+reason+'</code></p>'
+        +'<p>No synthetic test, production publishing, or activation has been performed.</p>'
+        +'<a href="/api/activepieces-mcp/code-recovery">Review recovery gate</a>');
+    }catch{return fail(503,'AP_CODE_RECOVERY_UNAVAILABLE')}
   }
   if(path==='/api/activepieces-mcp/synthetic-repair'){
     if(req.method!=='POST')return fail(405,'METHOD_NOT_ALLOWED');

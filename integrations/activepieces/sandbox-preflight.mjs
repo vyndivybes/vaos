@@ -13,7 +13,7 @@ function parseProject(raw){
   return null;
 }
 function diagnostic(reason,details={}){
-  return hold(reason,Object.fromEntries(Object.entries(details).filter(([k,v])=>/^(flowStatus|published|structureKeys|codeKeys|triggerKeys|validationKeys|structureStepNames|structureStepTypes|structureStepCount|codeType|codeMatchesExpected|inputMatchesExpected|packageJsonEmpty|validationValid|validationIssuesCount|structureOk|triggerOk|triggerPieceMatches|triggerNameMatches|triggerInputEmpty|triggerInputFieldCount)$/.test(k)&&(
+  return hold(reason,Object.fromEntries(Object.entries(details).filter(([k,v])=>/^(flowStatus|published|structureKeys|codeKeys|triggerKeys|validationKeys|structureStepNames|structureStepTypes|structureStepCount|codeType|codeMatchesExpected|inputMatchesExpected|packageJsonEmpty|validationValid|validationIssuesCount|structureOk|triggerOk|triggerPieceMatches|triggerNameMatches|triggerInputEmpty|triggerInputFieldCount|triggerInputApproved)$/.test(k)&&(
     typeof v==='string'||typeof v==='boolean'||Array.isArray(v)
   ))));
 }
@@ -64,7 +64,18 @@ export async function preflightActivepiecesSandbox({store,client}={}){
     const triggerInputFieldCount=t.input&&typeof t.input==='object'&&!Array.isArray(t.input)
       ?Object.keys(t.input).length:null;
     const triggerInputEmpty=triggerInputFieldCount===0;
-    const triggerOk=triggerPieceMatches&&triggerNameMatches&&triggerInputEmpty;
+    // Activepieces catch_webhook has a required authType default 'none' and
+    // optional empty authFields. The platform may materialize these after
+    // ap_update_trigger(input:{}), so treating *only* {} as safe is incorrect.
+    // Explicitly refuse every other input key or non-'none' auth setting.
+    const safeDefaults=t.input&&typeof t.input==='object'&&!Array.isArray(t.input)&&
+      Object.keys(t.input).every(k=>k==='authType'||k==='authFields')&&
+      t.input.authType==='none'&&
+      (!Object.hasOwn(t.input,'authFields')||
+        (t.input.authFields&&typeof t.input.authFields==='object'&&
+        !Array.isArray(t.input.authFields)&&Object.keys(t.input.authFields).length===0));
+    const triggerInputApproved=triggerInputEmpty||Boolean(safeDefaults);
+    const triggerOk=triggerPieceMatches&&triggerNameMatches&&triggerInputApproved;
     // ap_read_step_code returns 'code' (not 'sourceCode'). Full source
     // must match the synthetic fixture, never merely contain 'checksum'.
     const fullSource=typeof c.code==='string'?c.code:c.sourceCode;
@@ -98,7 +109,7 @@ export async function preflightActivepiecesSandbox({store,client}={}){
         validationValid:validation.valid===true,
         validationIssuesCount:Array.isArray(reportedIssues)?String(reportedIssues.length):'UNKNOWN',
         structureOk:Boolean(structureOk),triggerOk:Boolean(triggerOk),
-        triggerPieceMatches,triggerNameMatches,triggerInputEmpty,
+        triggerPieceMatches,triggerNameMatches,triggerInputEmpty,triggerInputApproved,
         triggerInputFieldCount:Number.isInteger(triggerInputFieldCount)?String(triggerInputFieldCount):'UNKNOWN'
       }));
     return report({status:'PASS',reason:'AP_SANDBOX_PREFLIGHT_VERIFIED',

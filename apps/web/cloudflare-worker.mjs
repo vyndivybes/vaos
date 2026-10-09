@@ -28,6 +28,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/activepieces-mcp/start': activepiecesMcp,
   '/api/activepieces-mcp/callback': activepiecesMcp,
   '/api/activepieces-mcp/status': activepiecesMcp,
+  '/api/activepieces-mcp/discovery-health': activepiecesMcp,
   '/api/missions': missions,
   '/api/project-schedule': projectSchedule,
   '/api/windmill-runtime-status': windmillRuntimeStatus,

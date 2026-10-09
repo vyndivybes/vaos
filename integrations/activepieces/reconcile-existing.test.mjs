@@ -146,3 +146,17 @@ test('one failed run readback blocks qualification even with matching run',async
   const r=await reconcileExistingQualification({store:store(),client:c});
   assert.equal(r.status,'HOLD');assert.notEqual(r.status,'EXISTING_RUN_VERIFIED');
 });
+
+test('new reconciliation ignores old v3 HOLD cache and persists fresh versioned result',async()=>{
+  const s=store();
+  await s.put('ap-qual-readonly-reconcile-v3',{status:'HOLD',reason:'AP_MULTIPLE_TEST_RUNS',checkedAtMs:Date.now()});
+  const run=markerRun(21);
+  const c=multiRunClient([run],{[run.id]:markerDetail(run)});
+  const first=await reconcileExistingQualification({store:s,client:c});
+  assert.equal(first.status,'EXISTING_RUN_VERIFIED');
+  assert.equal(first.cached,false);
+  const next=await reconcileExistingQualification({store:s,client:c});
+  assert.equal(next.cached,true);
+  assert.equal(next.status,'EXISTING_RUN_VERIFIED');
+  assert.ok(await s.get('ap-qual-readonly-reconcile-v4'));
+});

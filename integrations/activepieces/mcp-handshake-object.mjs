@@ -1,5 +1,6 @@
 import { remediateProjectOnce } from './project-context-repair.mjs';
 import { diagnoseSyntheticHold } from './synthetic-diagnostic.mjs';
+import { reconcileExistingQualification } from './reconcile-existing.mjs';
 import { auditAppend } from './synthetic-qualification.mjs';
 import { qualifyOnce, recoverOnce, qualifyEvidence } from './synthetic-qualification.mjs';
 import { createActivepiecesToolClient } from './mcp-tool-client.mjs';
@@ -33,6 +34,32 @@ export class ActivepiecesMcpHandshake extends DurableObject {
       await auditAppend(this.ctx.storage,'READONLY_DIAGNOSIS',{reason:result.reason});
       return result;
     }catch{return {status:'HOLD',reason:'AP_DIAGNOSIS_UNAVAILABLE',productionActivation:false};}
+  }
+  async reconcileSyntheticReadOnly() {
+    const cached=await this.ctx.storage.get('ap-qual-readonly-reconcile');
+    if(cached?.checkedAtMs && Date.now()-cached.checkedAtMs<600000)
+      return {...cached,cached:true};
+    const state=await this.ctx.storage.get('ap-qual-state');
+    if(!state || state.status!=='HOLD')
+      return {status:'HOLD',reason:'AP_RECONCILE_NOT_ADMITTED',productionActivation:false};
+    const conn=await this.connectionStatus();
+    if(!conn.connected)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_VERIFIED',productionActivation:false};
+    const envelope=await this.ctx.storage.get('oauth-encrypted-credentials');
+    if(!envelope)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_ENROLLED',productionActivation:false};
+    try {
+      let creds=await openActivepiecesCredentials(envelope,this.env.ACTIVEPIECES_VAULT_KEY);
+      if(creds.expiresAt<Date.now()+90000){
+        creds=await refreshActivepiecesMcpTokens(creds);
+        await this.ctx.storage.put('oauth-encrypted-credentials',
+          await sealActivepiecesCredentials(creds,this.env.ACTIVEPIECES_VAULT_KEY));
+      }
+      const client=createActivepiecesToolClient({accessToken:creds.accessToken});
+      const report=await reconcileExistingQualification({store:this.ctx.storage,client});
+      await auditAppend(this.ctx.storage,'READONLY_RECONCILIATION',{reason:report.reason||report.status});
+      return report;
+    } catch {
+      return {status:'HOLD',reason:'AP_READONLY_RECONCILIATION_UNAVAILABLE',productionActivation:false};
+    }
   }
   async syntheticEvidence() {
     return qualifyEvidence(this.ctx.storage);

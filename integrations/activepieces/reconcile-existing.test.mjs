@@ -35,7 +35,7 @@ test('duplicate matching flows never start a new run',async()=>{
 test('project selection ambiguity stays HOLD',async()=>{
   const c=fake();c.call=async()=>plain('Available projects: none');
   const r=await reconcileExistingQualification({store:store(),client:c});
-  assert.equal(r.reason,'AP_PROJECT_SELECTION_AMBIGUOUS');
+  assert.equal(r.reason,'AP_PROJECT_CATALOG_EMPTY');
 });
 test('cached readback is idempotent, and never repeats provider calls',async()=>{
   const s=store(),c=fake();await reconcileExistingQualification({store:s,client:c});
@@ -79,4 +79,11 @@ test('zero accessible projects yields specific HOLD rather than inventing a proj
  c.call=async()=>plain('Project context cleared. Available projects:');
  const r=await reconcileExistingQualification({store:s,client:c});
  assert.equal(r.status,'HOLD');assert.equal(r.reason,'AP_PROJECT_CATALOG_EMPTY');
+});
+
+test('multiple non-personal projects are ambiguous and no flow read is attempted',async()=>{
+ const s=store(),c=fake();
+ c.call=async()=>plain('Available projects:\n- Work (project_work01)\n- Other (project_other02)');
+ const r=await reconcileExistingQualification({store:s,client:c});
+ assert.equal(r.reason,'AP_PROJECT_SELECTION_AMBIGUOUS');
 });

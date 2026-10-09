@@ -28,12 +28,24 @@ async function challenge(verifier) {
   const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
   return b64url(new Uint8Array(hash));
 }
-async function guarded(fetchImpl,url,options={}) {
-  const res=await fetchImpl(pinnedEndpoint(url),{
-    ...options,redirect:'error',
-    signal:AbortSignal.timeout(12_000),
-  });
-  if(!res||res.status<200||res.status>=300)throw fail('ACTIVEPIECES_OAUTH_REMOTE_FAILED');
+async function guarded(fetchImpl,url,options={},phase='REMOTE') {
+  // Phase comes only from literal call-sites below, never from user input.
+  let res;
+  const trusted=pinnedEndpoint(url);
+  try {
+    res=await fetchImpl(trusted,{
+      ...options,redirect:'error',
+      signal:AbortSignal.timeout(12_000),
+    });
+  }catch {
+    // Never forward fetch exceptions, remote response bodies, URLs or headers.
+    throw fail('ACTIVEPIECES_OAUTH_'+phase+'_NETWORK_FAILED');
+  }
+  if(!res||res.status<200||res.status>=300) {
+    const status=Number.isInteger(res?.status)&&res.status>=100&&res.status<=599
+      ?String(res.status):'UNKNOWN';
+    throw fail('ACTIVEPIECES_OAUTH_'+phase+'_HTTP_'+status);
+  }
   return res;
 }
 async function jsonResponse(res) {
@@ -61,7 +73,7 @@ function metadataChecks(metadata) {
 export async function beginActivepiecesAuthorization({callbackUrl,store,fetchImpl=fetch,now=Date.now,randomBytes}={}) {
   if(!store||typeof store.put!=='function')throw fail('ACTIVEPIECES_OAUTH_STATE_STORE_REQUIRED');
   const redirectUri=callback(callbackUrl);
-  const metadata=await jsonResponse(await guarded(fetchImpl,METADATA_URL,{headers:{Accept:'application/json'}}));
+  const metadata=await jsonResponse(await guarded(fetchImpl,METADATA_URL,{headers:{Accept:'application/json'}},'DISCOVERY'));
   const endpoints=metadataChecks(metadata);
   const register=await jsonResponse(await guarded(fetchImpl,endpoints.register,{
     method:'POST',
@@ -73,14 +85,16 @@ export async function beginActivepiecesAuthorization({callbackUrl,store,fetchImp
       response_types:['code'],
       token_endpoint_auth_method:'none',
     }),
-  }));
+  },'REGISTRATION'));
   if(typeof register.client_id!=='string'||!register.client_id||register.client_id.length>256)
     throw fail('ACTIVEPIECES_OAUTH_CLIENT_INVALID');
   const nonce=b64url(bytes(32,randomBytes));
   const verifier=b64url(bytes(48,randomBytes));
   const time=now();
   if(!Number.isFinite(time))throw fail('ACTIVEPIECES_OAUTH_CLOCK_INVALID');
-  await store.put({nonce,clientId:register.client_id,verifier,redirectUri,tokenUrl:endpoints.token,expiresAt:time+10*MINUTE});
+  try {
+    await store.put({nonce,clientId:register.client_id,verifier,redirectUri,tokenUrl:endpoints.token,expiresAt:time+10*MINUTE});
+  }catch { throw fail('ACTIVEPIECES_OAUTH_STATE_STORE_FAILED'); }
   const auth=new URL(endpoints.authorize);
   auth.searchParams.set('response_type','code');
   auth.searchParams.set('client_id',register.client_id);

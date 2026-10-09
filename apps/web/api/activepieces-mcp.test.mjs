@@ -161,3 +161,30 @@ test('real Request adapter: signed form POST ignores unreliable Origin and Fetch
   }
   assert.equal(remote.mock.callCount(),4);
 });
+
+test('setup failure preserves only a safe discovery code in the UI and durable evidence',async(t)=>{
+  let evidence=null;
+  const env={ACTIVEPIECES_HANDSHAKE:{
+    idFromName:id=>id,
+    get:()=>({
+      async put(){},
+      async record(value){evidence=value;},
+      async status(){return evidence;},
+    }),
+  }};
+  const view=await handler(req('/api/activepieces-mcp','GET',{cookie},env),{});
+  const csrf=(await view.text()).match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
+  assert.ok(csrf);
+  t.mock.method(globalThis,'fetch',async()=>{throw Error('sensitive upstream diagnostic token=do_not_print');});
+  const request=req('/api/activepieces-mcp/start','POST',
+    {cookie,'content-type':'application/x-www-form-urlencoded'},env);
+  request.body='csrf='+csrf;
+  const res=await handler(request,{});
+  const html=await res.text();
+  assert.equal(res.status,503);
+  assert.match(html,/ACTIVEPIECES_OAUTH_DISCOVERY_NETWORK_FAILED/);
+  assert.doesNotMatch(html,/do_not_print|sensitive upstream diagnostic/);
+  assert.equal(evidence.reasonCode,'ACTIVEPIECES_OAUTH_DISCOVERY_NETWORK_FAILED');
+  assert.equal(evidence.productionActivation,false);
+  assert.doesNotMatch(JSON.stringify(evidence),/do_not_print/);
+});

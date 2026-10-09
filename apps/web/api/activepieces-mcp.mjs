@@ -101,9 +101,22 @@ export default async function activepiecesOAuthHandler(req,res) {
         store:stub,
       });
       return Response.redirect(authorizationUrl,303);
-    }catch{
+    }catch(error){
+      const candidate=typeof error?.code==='string'?error.code:'';
+      // Only our own fixed machine codes are shown or logged. Never include
+      // raw thrown error text, HTTP response bodies, OAuth codes or credentials.
+      const reasonCode=/^ACTIVEPIECES_OAUTH_[A-Z0-9_]{4,85}$/.test(candidate)
+        ? candidate : 'ACTIVEPIECES_OAUTH_UNEXPECTED_FAILED';
+      try {
+        await stub.record({status:'FAILED',verifiedAt:new Date().toISOString(),
+          reasonCode,readonlyTools:[],productionActivation:false});
+      }catch {
+        console.warn('VAOS_ACTIVEPIECES_OAUTH_EVIDENCE_WRITE_FAILED');
+      }
+      console.warn('VAOS_ACTIVEPIECES_OAUTH_SETUP_FAILED',reasonCode);
       return page('Activepieces OAuth setup unavailable',
-        '<p>Could not discover/register an OAuth client at Activepieces. No connection was created.</p>'
+        '<p>VAOS could not complete OAuth setup. No connection was created.</p>'
+        +'<p>Diagnostic: <code>'+reasonCode+'</code></p>'
         +'<a href="/api/activepieces-mcp">Return to commissioning</a>',503);
     }
   }

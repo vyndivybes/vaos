@@ -1,0 +1,34 @@
+name: Windmill Live Cancellation Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      provider_run_id:
+        description: Exact isolated Windmill job ID already cancelled by the approved operator
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  independent-terminal-readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      PROVIDER_RUN_ID: ${{ inputs.provider_run_id }}
+      EXPECTED_CHALLENGE: c9a4e2f1b7d3485ca6e9012f4b8d73aa
+      WINDMILL_VERIFIER_READ_TOKEN: ${{ secrets.WINDMILL_VERIFIER_READ_TOKEN }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Independently verify exact cancelled bounded qualification job
+        run: node scripts/qualification/windmill-live-cancellation-verify.mjs
+      - name: Upload sanitized cancellation evidence
+        uses: actions/upload-artifact@v5
+        with:
+          name: windmill-live-cancellation-evidence
+          path: qualification-evidence/windmill/cancellation-live.json
+          retention-days: 30

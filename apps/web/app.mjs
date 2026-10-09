@@ -1,4 +1,5 @@
 import { resolveRoute } from "./router.mjs";
+import { resolveLoginReturn } from "./lib/login-return.mjs";
 
 const route = resolveRoute(window.location.pathname);
 if (route.redirect && window.location.pathname !== route.redirect) {
@@ -34,7 +35,10 @@ if (rememberedEmail && emailInput) {
 async function checkExistingSession() {
   try {
     const response = await fetch("/api/session", { credentials: "same-origin" });
-    if (response.ok) window.location.replace("/workspace");
+    if (response.ok) {
+      const result=await response.json();
+      window.location.replace(resolveLoginReturn(window.location.search,result.email));
+    }
   } catch {}
 }
 
@@ -75,7 +79,7 @@ form?.addEventListener("submit", async (event) => {
 
     status.dataset.state = "success";
     status.textContent = "Authenticated. Opening VAOS…";
-    window.location.replace("/workspace");
+    window.location.replace(resolveLoginReturn(window.location.search,emailInput.value));
   } catch {
     status.dataset.state = "error";
     status.textContent = "Authentication service is unavailable.";

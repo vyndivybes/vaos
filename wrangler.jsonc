@@ -4,7 +4,8 @@
   "main": "./apps/web/cloudflare-entry.mjs",
   "compatibility_date": "2026-10-07",
   "compatibility_flags": [
-    "nodejs_compat"
+    "nodejs_compat",
+    "global_fetch_strictly_public"
   ],
   "workers_dev": true,
   "keep_vars": true,

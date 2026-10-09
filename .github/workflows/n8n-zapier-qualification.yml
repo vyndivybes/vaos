@@ -1,0 +1,22 @@
+name: n8n Zapier Fail-Closed Qualification
+on:
+  pull_request:
+    paths:
+      - 'integrations/n8n/**'
+      - 'integrations/zapier/**'
+      - 'tests/integrations/n8n-zapier-commissioning.test.mjs'
+      - '.github/workflows/n8n-zapier-qualification.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  guarded-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify adapters do not dispatch when unqualified
+        run: node --test tests/integrations/n8n-zapier-commissioning.test.mjs

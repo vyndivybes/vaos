@@ -105,3 +105,16 @@ test('scheduler selects direct or GitHub, leaves missions independent',()=>{
   assert.match(source,/dispatchInfisicalWatchdog\(/);
   assert.match(source,/Promise\.allSettled\(\[mission,watchdog,synthetic\]\)/);
 });
+
+test('migration accepts only bounded Cloudflare health evidence and preserves fail-closed controls',()=>{
+  const sql=readFileSync(new URL('../../supabase/migrations/20261009220000_infisical_cloudflare_direct_watchdog_v1.sql',import.meta.url),'utf8');
+  assert.match(sql,/cloudflare:vaos:infisical:cron:/);
+  assert.match(sql,/p_action <> 'record-health'/);
+  assert.match(sql,/interval '25 minutes'/);
+  assert.match(sql,/assert_infisical_commissioning_key/);
+  assert.match(sql,/INFISICAL_DISABLE_INPUT_INVALID/);
+  assert.match(sql,/INFISICAL_HEALTH_TIMESTAMP_INVALID/);
+  assert.match(sql,/v_after:=jsonb_set\(v_before,'\{health\}'/);
+  assert.match(sql,/UPDATE vaos_private\.provider_control_state/);
+  assert.doesNotMatch(sql,/p_action\s*=\s*'enable'/);
+});

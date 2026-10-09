@@ -1,0 +1,14 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createGitHubEvidenceVerifier} from './github-evidence-verifier.mjs';
+const sha='381b41493b5b103b1cc48715abda0de4e44ec7cd',runId='37918328806';
+const payload={run_id:runId,commit_sha:sha,evidence_url:`https://github.com/vyndivybes/vaos/actions/runs/${runId}`};
+const run={id:Number(runId),head_sha:sha,repository:{full_name:'vyndivybes/vaos'},status:'completed',conclusion:'success'};
+const jobs={total_count:1,jobs:[{status:'completed',conclusion:'success'}]};
+const client=(a=run,b=jobs)=>createGitHubEvidenceVerifier({token:'fake',fetchImpl:async url=>Response.json(url.includes('/jobs?')?b:a)});
+test('independent run and jobs both pass',async()=>assert.equal((await client().verify(payload)).status,'PASS'));
+test('wrong commit cannot pass',async()=>assert.equal((await client({...run,head_sha:'f'.repeat(40)}).verify(payload)).status,'HOLD'));
+test('failed job cannot pass',async()=>assert.equal((await client(run,{total_count:1,jobs:[{status:'completed',conclusion:'failure'}]}).verify(payload)).status,'HOLD'));
+test('incomplete pagination cannot pass',async()=>assert.equal((await client(run,{total_count:101,jobs:[{status:'completed',conclusion:'success'}]}).verify(payload)).status,'HOLD'));
+test('missing token cannot pass',async()=>assert.equal((await createGitHubEvidenceVerifier().verify(payload)).status,'HOLD'));
+test('wrong URL cannot pass',async()=>assert.equal((await client().verify({...payload,evidence_url:'https://example.com'})).status,'HOLD'));

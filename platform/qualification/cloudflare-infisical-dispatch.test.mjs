@@ -12,7 +12,7 @@ test('missing Cloudflare scoped dispatch token cannot access GitHub', async () =
 test('Cloudflare cron dispatches one fixed main-only Infisical health check', async () => {
   const requests = [];
   const result = await dispatchInfisicalWatchdog({
-    token:'fake-secret-value',
+    token:'  fake-secret-value\r\n',
     fetchImpl:async (url, options) => {requests.push({url,options}); return {status:204};},
   });
   assert.deepEqual(result, {status:'accepted'});
@@ -24,6 +24,16 @@ test('Cloudflare cron dispatches one fixed main-only Infisical health check', as
   assert.equal(requests[0].options.headers.Authorization,'Bearer fake-secret-value');
   assert.equal(requests[0].options.headers['User-Agent'],'vaos-infisical-watchdog');
   assert.ok(requests[0].options.signal);
+});
+
+test('uses a Worker-compatible AbortController and clears its timer after dispatch', async () => {
+  let capturedSignal;
+  await dispatchInfisicalWatchdog({token:'fake',fetchImpl:async(_url,options)=>{
+    capturedSignal=options.signal;
+    return {status:204};
+  }});
+  assert.ok(capturedSignal instanceof AbortSignal);
+  assert.equal(capturedSignal.aborted,false);
 });
 
 test('a non-204 GitHub response fails closed without retries or response-body logging',async()=>{

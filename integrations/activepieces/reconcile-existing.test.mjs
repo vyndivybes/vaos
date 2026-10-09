@@ -35,7 +35,7 @@ test('duplicate matching flows never start a new run',async()=>{
 test('project selection ambiguity stays HOLD',async()=>{
   const c=fake();c.call=async()=>plain('Available projects: none');
   const r=await reconcileExistingQualification({store:store(),client:c});
-  assert.equal(r.reason,'AP_PROJECT_SELECTION_AMBIGUOUS');
+  assert.equal(r.reason,'AP_PROJECT_CATALOG_EMPTY');
 });
 test('cached readback is idempotent, and never repeats provider calls',async()=>{
   const s=store(),c=fake();await reconcileExistingQualification({store:s,client:c});
@@ -58,4 +58,32 @@ test('provider structuredContent nested in JSON text is consumed as machine evid
  const msg={content:[{type:'text',text:'✅ Listed 1 flow(s):'}],structuredContent:{flows:[{id:'fl_123456',displayName:'sample'}],count:1}};
  assert.equal(parseActivepiecesToolResult({content:[{type:'text',text:JSON.stringify(msg)}]}).flows[0].id,'fl_123456');
  assert.equal(parseActivepiecesToolResult({content:[{type:'text',text:JSON.stringify({result:msg})}]}).count,1);
+});
+
+test('unique accessible project with non-default name is selected for read-only audit',async()=>{
+ const s=store(),c=fake(),original=c.call;
+ c.call=async(name,args)=>{
+   if(name==='ap_set_project_context'){
+     c.calls.push({name,args});
+     return !args.projectId?plain('Project context cleared.\n\nAvailable projects:\n- VYNDI Workspace (project_only01)')
+       :plain('Project context set to "VYNDI Workspace".\n\nAvailable projects:\n> VYNDI Workspace (project_only01)');
+   }
+   return original(name,args);
+ };
+ const r=await reconcileExistingQualification({store:s,client:c});
+ assert.equal(r.status,'NO_MATCH');
+ assert.equal(c.calls[1].args.projectId,'project_only01');
+});
+test('zero accessible projects yields specific HOLD rather than inventing a project',async()=>{
+ const s=store(),c=fake();
+ c.call=async()=>plain('Project context cleared. Available projects:');
+ const r=await reconcileExistingQualification({store:s,client:c});
+ assert.equal(r.status,'HOLD');assert.equal(r.reason,'AP_PROJECT_CATALOG_EMPTY');
+});
+
+test('multiple non-personal projects are ambiguous and no flow read is attempted',async()=>{
+ const s=store(),c=fake();
+ c.call=async()=>plain('Available projects:\n- Work (project_work01)\n- Other (project_other02)');
+ const r=await reconcileExistingQualification({store:s,client:c});
+ assert.equal(r.reason,'AP_PROJECT_SELECTION_AMBIGUOUS');
 });

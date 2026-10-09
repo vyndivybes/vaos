@@ -10,7 +10,8 @@
       ],
       "tier": "A",
       "implementation": "adapter-implemented",
-      "priority": "primary"
+      "priority": "optional",
+      "subscriptionPolicy": "no-hosted-subscription"
     },
     {
       "providerId": "activepieces",
@@ -20,7 +21,8 @@
       ],
       "tier": "A",
       "implementation": "adapter-implemented",
-      "priority": "fallback"
+      "priority": "primary",
+      "subscriptionPolicy": "free-cloud-evaluation"
     },
     {
       "providerId": "zapier",
@@ -30,7 +32,8 @@
       ],
       "tier": "A",
       "implementation": "adapter-implemented",
-      "priority": "primary"
+      "priority": "optional",
+      "subscriptionPolicy": "disabled-no-paid-tasks"
     },
     {
       "providerId": "paperwork",
@@ -64,7 +67,8 @@
       ],
       "tier": "A",
       "implementation": "adapter-implemented",
-      "priority": "primary"
+      "priority": "primary",
+      "subscriptionPolicy": "existing-integration-no-new-subscription"
     },
     {
       "providerId": "infisical",

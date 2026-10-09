@@ -44,7 +44,7 @@ test('network errors are sanitized without leaking scoped token or retrying',asy
   await assert.rejects(dispatchInfisicalWatchdog({
     token:'private',
     fetchImpl:async()=>{calls++;throw Error('private network detail');},
-  }),err=>{assert.equal(err.message,'VAOS_GITHUB_DISPATCH_NETWORK_FAILED');return true;});
+  }),err=>{assert.equal(err.message,'VAOS_GITHUB_DISPATCH_NETWORK_FAILED_UNKNOWN');return true;});
   assert.equal(calls,1);
 });
 

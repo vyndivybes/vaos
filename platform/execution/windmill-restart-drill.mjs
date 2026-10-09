@@ -30,7 +30,7 @@ export function createWindmillRestartDrill({store,now=()=>Date.now()}={}){
     return {start,state};
   }
   async function begin({runId,instanceId,abort}={}){
-    if(!validInstance(instanceId)||typeof abort!=='function')
+    if(!validInstance(instanceId)||typeof abort!=='function'||typeof store.sync!=='function')
       throw fail('WINDMILL_RESTART_INPUT_INVALID');
     const {start}=await original(runId);
     const existing=await store.get('restart:before');
@@ -41,6 +41,9 @@ export function createWindmillRestartDrill({store,now=()=>Date.now()}={}){
       deadlineMs:start.deadlineMs,
       auditCount:3,recordedAtMs:now(),
     });
+    // put() may return while writes are buffered. A forced abort must only
+    // occur after the restart checkpoint has actually reached durable disk.
+    await store.sync();
     // Cloudflare ctx.abort immediately terminates the current DO instance.
     // It throws an uncatchable runtime error; the test request is expected
     // to fail, and success is established only by a subsequent fresh RPC.
@@ -85,8 +88,9 @@ export function createWindmillRestartDrill({store,now=()=>Date.now()}={}){
     return Object.freeze({
       status:'RESTART_VERIFIED',instanceChanged:true,
       sameDurableObject:true,previouslyReservedSlotStillBlocked:true,
-      providerDispatchCount:0,productionActivation:false,
+      providerDispatchCount:0,windmillCalls:0,productionActivation:false,
     });
   }
   return Object.freeze({begin,observe});
 }
+

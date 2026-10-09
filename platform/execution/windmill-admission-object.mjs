@@ -32,6 +32,7 @@ export class WindmillAdmissionCoordinator extends DurableObject {
     return Object.freeze({
       schemaVersion:'vaos.windmill.restart-qualification.v1',
       status:'RESTART_DRILL_READY',productionActivation:false,windmillCalls:0,
+      checkpointFlushRequired:true,
     });
   }
   restartDrill() {
@@ -67,3 +68,4 @@ export class WindmillAdmissionCoordinator extends DurableObject {
     }
   }
 }
+

@@ -135,7 +135,7 @@ async function main(){
     sourceCommit:String(process.env.GITHUB_SHA),
     method:'cloudflare.ctx.abort',
     productionActivation:false,
-  },null,2)+'\\n',{mode:0o600});
+  },null,2),{mode:0o600});
   console.log('PASS: genuine isolated Durable Object abort/reinstantiation, preserved fencing and alarm evidence. Windmill routing disabled.');
 }
 try{await main();}

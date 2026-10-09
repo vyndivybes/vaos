@@ -1,7 +1,29 @@
 // One-shot read-only reconciliation against actual Activepieces project/flow/run records.
 // Never create, test, publish, retry or delete a flow in this path.
 const E=(code)=>Object.assign(new Error(code),{code});
+// Some Activepieces MCP deployments JSON-serialize the MCP tool result inside
+// an outer text content item. Unwrap bounded envelopes, but never infer data
+// from the human-facing narrative when structured fields are unavailable.
+function unwrapMcp(raw){
+  let current=raw;
+  for(let depth=0;depth<3;depth++){
+    if(!current||current.isError===true)throw E('AP_TOOL_READ_FAILED');
+    if(current.structuredContent||!Array.isArray(current.content)||current.content.length!==1)return current;
+    const txt=current.content[0]?.text;
+    if(typeof txt!=='string'||txt.length>160000||!txt.trimStart().startsWith('{'))return current;
+    try{
+      const nested=JSON.parse(txt);
+      const next=nested?.result&&typeof nested.result==='object'?nested.result:nested;
+      if(next&&typeof next==='object'&&(next.structuredContent||Array.isArray(next.content))){
+        current=next;continue;
+      }
+    }catch{}
+    return current;
+  }
+  return current;
+}
 export function parseActivepiecesToolResult(raw){
+  raw=unwrapMcp(raw);
   if(!raw||raw.isError===true)throw E('AP_TOOL_READ_FAILED');
   if(raw.structuredContent && typeof raw.structuredContent==='object' && !Array.isArray(raw.structuredContent))return raw.structuredContent;
   const pieces=Array.isArray(raw.content)?raw.content.filter(x=>x.type==='text'&&typeof x.text==='string'):[];
@@ -10,6 +32,7 @@ export function parseActivepiecesToolResult(raw){
   catch{throw E('AP_STRUCTURED_EVIDENCE_MISSING')}
 }
 function toolText(raw){
+  raw=unwrapMcp(raw);
   if(!raw||raw.isError===true)throw E('AP_TOOL_READ_FAILED');
   return Array.isArray(raw.content)?raw.content.filter(c=>c.type==='text').map(c=>c.text).join('\n').slice(0,10000):'';
 }
@@ -29,7 +52,7 @@ function authenticatedRunDetail(doc,flowId,runId,marker){
 }
 export async function reconcileExistingQualification({store,client,now=Date.now}={}){
   if(!store?.get||!store?.put||!client?.tools||!client?.call)throw E('AP_RECONCILE_DEPS_INVALID');
-  const cache=await store.get('ap-qual-readonly-reconcile');
+  const cache=await store.get('ap-qual-readonly-reconcile-v2');
   if(cache && Number.isFinite(cache.checkedAtMs) && now()-cache.checkedAtMs<600000)
     return {...cache,cached:true};
   const state=await store.get('ap-qual-state');
@@ -70,6 +93,6 @@ export async function reconcileExistingQualification({store,client,now=Date.now}
     }
   }catch(e){result={status:'HOLD',reason:/^AP_[A-Z0-9_]{3,80}$/.test(e?.code||'')?e.code:'AP_READONLY_RECONCILIATION_UNAVAILABLE'};}
   const safe={...result,checkedAtMs:now(),productionActivation:false,cached:false};
-  await store.put('ap-qual-readonly-reconcile',safe);
+  await store.put('ap-qual-readonly-reconcile-v2',safe);
   return safe;
 }

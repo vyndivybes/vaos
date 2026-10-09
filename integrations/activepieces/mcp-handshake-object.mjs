@@ -1,8 +1,21 @@
+import { checkActivepiecesDiscovery } from './oauth-network-probe.mjs';
 import { DurableObject } from 'cloudflare:workers';
 
 // One-time authorization-code handshake coordinator. Never stores tokens.
 // There is no public fetch handler; only Cloudflare Worker bindings can invoke RPC methods.
 export class ActivepiecesMcpHandshake extends DurableObject {
+  async probeDiscovery(){
+    // Shared Durable Object throttles unauthenticated health reads: at most one
+    // actual upstream metadata GET per ten minutes, across all clients.
+    const now=Date.now();
+    const cached=await this.ctx.storage.get('mcp-public-discovery-health');
+    if(cached&&Number.isFinite(cached.checkedAtMs)&&now-cached.checkedAtMs<600000)
+      return {ok:cached.ok,code:cached.code,httpStatus:cached.httpStatus,cached:true};
+    const observed=await checkActivepiecesDiscovery();
+    const safe={ok:observed.ok,code:observed.code,httpStatus:observed.httpStatus,checkedAtMs:now};
+    await this.ctx.storage.put('mcp-public-discovery-health',safe);
+    return {ok:safe.ok,code:safe.code,httpStatus:safe.httpStatus,cached:false};
+  }
   async put(record) {
     if(!record||typeof record.nonce!=='string'||typeof record.verifier!=='string'
       ||!Number.isFinite(record.expiresAt))throw new Error('ACTIVEPIECES_OAUTH_STATE_INVALID');

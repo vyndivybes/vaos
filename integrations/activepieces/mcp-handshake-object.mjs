@@ -1,3 +1,5 @@
+import { qualifyOnce, recoverOnce, qualifyEvidence } from './synthetic-qualification.mjs';
+import { createActivepiecesToolClient } from './mcp-tool-client.mjs';
 import { credentialKeyReady, sealActivepiecesCredentials, openActivepiecesCredentials } from './credential-vault.mjs';
 import { probeActivepiecesMcpReadback, refreshActivepiecesMcpTokens } from './mcp-oauth-handshake.mjs';
 import { checkActivepiecesDiscovery } from './oauth-network-probe.mjs';
@@ -6,6 +8,37 @@ import { DurableObject } from 'cloudflare:workers';
 // One-time authorization-code handshake coordinator. Never stores tokens.
 // There is no public fetch handler; only Cloudflare Worker bindings can invoke RPC methods.
 export class ActivepiecesMcpHandshake extends DurableObject {
+  async syntheticEvidence() {
+    return qualifyEvidence(this.ctx.storage);
+  }
+  async qualifyScheduledOnce(){
+    // This is an explicit, one-off commissioning order, not a general agent action.
+    if(this.env.ACTIVEPIECES_SYNTHETIC_QUALIFY!=='approved-20261009')
+      return {status:'DISABLED',productionActivation:false};
+    const prior=await this.ctx.storage.get('ap-qual-state');
+    if(prior && (prior.status==='PASS'||!prior.runId||!prior.flowId))
+      return qualifyEvidence(this.ctx.storage);
+    const connection=await this.connectionStatus();
+    if(!connection.connected)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_VERIFIED',productionActivation:false};
+    const envelope=await this.ctx.storage.get('oauth-encrypted-credentials');
+    if(!envelope)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_ENROLLED',productionActivation:false};
+    let credentials;
+    try{
+      credentials=await openActivepiecesCredentials(envelope,this.env.ACTIVEPIECES_VAULT_KEY);
+      if(credentials.expiresAt<Date.now()+90000){
+        credentials=await refreshActivepiecesMcpTokens(credentials);
+        await this.ctx.storage.put('oauth-encrypted-credentials',
+          await sealActivepiecesCredentials(credentials,this.env.ACTIVEPIECES_VAULT_KEY));
+      }
+    }catch {
+      return {status:'HOLD',reason:'AP_CREDENTIALS_UNAVAILABLE',productionActivation:false};
+    }
+    const client=createActivepiecesToolClient({accessToken:credentials.accessToken});
+    if(prior) return recoverOnce({store:this.ctx.storage,client});
+    const bytes=crypto.getRandomValues(new Uint8Array(8));
+    const marker='VAOSQ_'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
+    return qualifyOnce({store:this.ctx.storage,client,makeMarker:()=>marker});
+  }
   async credentialKeyReady(){return credentialKeyReady(this.env.ACTIVEPIECES_VAULT_KEY)}
   async storeCredentials(record) {
     const encrypted=await sealActivepiecesCredentials(record,this.env.ACTIVEPIECES_VAULT_KEY);

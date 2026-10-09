@@ -1,0 +1,23 @@
+name: Dify qualification gates
+on:
+  pull_request:
+    paths:
+      - 'integrations/dify/**'
+      - '.github/workflows/dify-qualification.yml'
+  workflow_dispatch:
+jobs:
+  qualification-tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify syntax
+        run: |
+          node --check integrations/dify/qualification-client.mjs
+          node --check integrations/dify/github-evidence-verifier.mjs
+      - name: Run Dify and independent evidence tests
+        run: node --test integrations/dify/*.test.mjs

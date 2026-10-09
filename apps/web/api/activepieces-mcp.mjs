@@ -109,7 +109,9 @@ export default async function activepiecesOAuthHandler(req,res) {
       // exposing project, flow/run IDs, test marker, OAuth tokens or private outputs.
       const report={providerId:'activepieces',status:v.status,phase:v.phase,
         reason:v.reason,markerVerified:v.markerVerified,
-        checksumVerified:v.checksumVerified,productionActivation:false,audit:v.audit};
+        checksumVerified:v.checksumVerified,productionActivation:false,audit:v.audit,
+        codeRecoveryStatus:['NOT_ADMITTED','ADMITTED','VERIFIED','HOLD'].includes(v.codeRecoveryStatus)
+          ?v.codeRecoveryStatus:'NOT_ADMITTED'};
       return new Response(JSON.stringify(report),{status:200,
         headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
     }catch{return fail(503,'AP_SYNTHETIC_EVIDENCE_UNAVAILABLE')}

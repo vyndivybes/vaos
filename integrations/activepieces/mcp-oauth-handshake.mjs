@@ -96,7 +96,7 @@ export function parseMcpResponse(value,contentType='') {
   if(typeof value!=='string'||value.length>200_000)throw fail('ACTIVEPIECES_MCP_RESPONSE_INVALID');
   try {
     if(String(contentType).includes('text/event-stream')) {
-      const payload=value.split(/\\r?\\n/).filter(line=>line.startsWith('data:')).map(line=>line.slice(5).trim())
+      const payload=value.split(/\r?\n/).filter(line=>line.startsWith('data:')).map(line=>line.slice(5).trim())
         .find(data=>data.startsWith('{') && data.includes('"jsonrpc"'));
       if(!payload)throw fail('ACTIVEPIECES_MCP_RESPONSE_INVALID');
       return JSON.parse(payload);

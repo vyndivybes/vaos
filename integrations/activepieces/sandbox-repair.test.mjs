@@ -21,6 +21,7 @@ function mock({preflightSafe=true,flowEnabled=false,failTool=null}={}){
     calls.push({name,args});
     if(name===failTool)throw Error('synthetic error');
     if(name==='ap_list_flows')return {structuredContent:{flows:[flow]}};
+    if(name==='ap_read_step_settings')return {structuredContent:{pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input:{}}};
     if(name==='ap_update_trigger'||name==='ap_update_step'){
       if(name==='ap_update_step')repaired=true;
       return {structuredContent:{ok:true}};
@@ -31,12 +32,12 @@ function mock({preflightSafe=true,flowEnabled=false,failTool=null}={}){
   const preflight=async()=>{checked++;return !preflightSafe
     ?{status:'HOLD',reason:'AP_PREFLIGHT_STRUCTURE_UNKNOWN',structureOk:false}
     :repaired
-    ?{status:'PASS',reason:'AP_SANDBOX_PREFLIGHT_VERIFIED',productionActivation:false,runSubmitted:false}
+    ?{status:'PASS',reason:'AP_SANDBOX_PREFLIGHT_VERIFIED',productionActivation:false,runSubmitted:false,flowIsolated:true}
     :{status:'HOLD',reason:'AP_PREFLIGHT_CONFIGURATION_UNVERIFIED',
       structureOk:true,structureStepNames:['trigger','step_1'],
       structureStepTypes:['PIECE_TRIGGER','CODE'],structureStepCount:'2',
       packageJsonEmpty:true,validationValid:true,validationIssuesCount:'0',triggerOk:false,
-      codeMatchesExpected:false,inputMatchesExpected:false};
+      codeMatchesExpected:false,inputMatchesExpected:false,productionActivation:false,runSubmitted:false};
   };
   return {store,client,preflight,calls,getChecks:()=>checked};
 }
@@ -48,7 +49,7 @@ test('one guarded repair restores original disabled synthetic trigger and code, 
  assert.equal(out.productionActivation,false);
  assert.equal(out.runSubmitted,false);
  assert.equal(m.getChecks(),2);
- assert.deepEqual(m.calls.map(x=>x.name),['ap_list_flows','ap_update_trigger','ap_update_step']);
+ assert.deepEqual(m.calls.map(x=>x.name),['ap_list_flows','ap_update_trigger','ap_read_step_settings','ap_update_step']);
  const t=m.calls.find(x=>x.name==='ap_update_trigger').args;
  assert.equal(t.triggerName,'catch_webhook');assert.equal(t.pieceName,'@activepieces/piece-webhook');assert.deepEqual(t.input,{});
  const step=m.calls.find(x=>x.name==='ap_update_step').args;
@@ -94,7 +95,7 @@ test('post-write mismatch remains HOLD, with no automatic retry',async()=>{
  const m=mock();m.preflight=async()=>({status:'HOLD',reason:'AP_PREFLIGHT_CONFIGURATION_UNVERIFIED',
   structureOk:true,structureStepNames:['trigger','step_1'],structureStepTypes:['PIECE_TRIGGER','CODE'],
   structureStepCount:'2',packageJsonEmpty:true,validationValid:true,
-  validationIssuesCount:'0',triggerOk:false,codeMatchesExpected:false,inputMatchesExpected:false});
+  validationIssuesCount:'0',triggerOk:false,codeMatchesExpected:false,inputMatchesExpected:false,productionActivation:false,runSubmitted:false});
  const out=await repairOriginalSandboxOnce(m);
  assert.equal(out.status,'HOLD');
  assert.equal(out.reason,'AP_REPAIR_READBACK_UNVERIFIED');

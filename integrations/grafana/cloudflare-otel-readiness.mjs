@@ -1,8 +1,8 @@
 // Read-only configuration gate. Passing this gate NEVER verifies receipt by Grafana.
 // Grafana credentials must stay in Cloudflare destinations; never return them.
 export const GRAFANA_DESTINATIONS = Object.freeze({
-  logs: 'vaos-grafana-logs',
-  traces: 'vaos-grafana-traces',
+  logs: 'grafana-logs',
+  traces: 'grafana-traces',
 });
 
 function report(status, reason, logsReady = false, tracesReady = false) {

@@ -13,7 +13,6 @@ import windmillRuntimeStatus from './api/windmill-runtime-status.mjs';
 import windmillLiveDoQualification from './api/windmill-live-do-qualification.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
-import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 
 export const DEFAULT_API_HANDLERS = Object.freeze({

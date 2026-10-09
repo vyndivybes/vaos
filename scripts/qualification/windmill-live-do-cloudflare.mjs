@@ -61,7 +61,8 @@ async function main(){
     try{
       const c=await phase('capabilities');
       if(c?.status==='RESTART_DRILL_READY'&&
-        c.schemaVersion==='vaos.windmill.restart-qualification.v1'){
+        c.schemaVersion==='vaos.windmill.restart-qualification.v1'&&
+        c.checkpointFlushRequired===true){
         upgraded=true;break;
       }
     }catch{
@@ -163,3 +164,4 @@ catch(e){
   console.error('::error::'+code);
   process.exitCode=1;
 }
+

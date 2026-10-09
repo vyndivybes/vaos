@@ -20,7 +20,7 @@ function store() {
     queue=result.catch(()=>{});
     return result;
   };
-  return {transaction,async get(k){return data.get(k);},async put(k,v){data.set(k,structuredClone(v));}};
+  return {transaction,async sync(){},async get(k){return data.get(k);},async put(k,v){data.set(k,structuredClone(v));}};
 }
 const RUN='37860000001';
 const permit=jobId=>({jobId,scriptPath:'f/vaos/qualification_ping',
@@ -70,7 +70,31 @@ test('new Durable Object constructor instance proves original fenced lease survi
   assert.equal(observed.previouslyReservedSlotStillBlocked,true);
   assert.equal(observed.instanceChanged,true);
   assert.equal(observed.providerDispatchCount,0);
+  assert.equal(observed.windmillCalls,0);
   assert.equal((await next.observe({runId:RUN,instanceId:'instance-3'})).status,'RESTART_VERIFIED');
+});
+test('abort waits for the checkpoint to be committed and refuses a failed flush',async()=>{
+  const f=await started();
+  let commit;
+  const flushed=new Promise(resolve=>{commit=resolve;});
+  let syncStarted=false,aborted=false;
+  f.storage.sync=async()=>{syncStarted=true;await flushed;};
+  const drill=createWindmillRestartDrill({store:f.storage,now:()=>f.now+2000});
+  const pending=assert.rejects(drill.begin({runId:RUN,instanceId:'instance-1',abort:()=>{
+    aborted=true;throw new Error('CF_RESET_EXPECTED');
+  }}),/CF_RESET_EXPECTED/);
+  for(let n=0;n<30&&!syncStarted;n++)await Promise.resolve();
+  assert.equal(syncStarted,true);
+  assert.equal(aborted,false);
+  commit();await pending;
+  assert.equal(aborted,true);
+  const g=await started();
+  g.storage.sync=async()=>{throw new Error('COMMIT_FAILED');};
+  let failedAbort=false;
+  await assert.rejects(createWindmillRestartDrill({store:g.storage}).begin({
+    runId:RUN,instanceId:'instance-1',abort:()=>{failedAbort=true;},
+  }),/COMMIT_FAILED/);
+  assert.equal(failedAbort,false);
 });
 test('invalid start, missing alarm, same-instance nonce and wrong run fail closed',async()=>{
   const f=await started();
@@ -88,3 +112,4 @@ test('real production coordinator has no drill checkpoint, therefore cannot be a
     abort:()=>{invoked=true;}}));
   assert.equal(invoked,false);
 });
+

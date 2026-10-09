@@ -116,3 +116,36 @@ test('form submission with unsupported encoding fails closed',async()=>{
   assert.equal(response.status,403);
   assert.match(await response.text(),/CSRF_INVALID/);
 });
+
+test('same-site browser submission with CSRF does not fail before OAuth discovery',async(t)=>{
+  const view=await handler(req('/api/activepieces-mcp','GET',{cookie}),{});
+  const csrf=(await view.text()).match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
+  assert.ok(csrf);
+  const fetchStub=t.mock.method(globalThis,'fetch',async()=>{throw new Error('synthetic remote outage')});
+  for(const headers of [
+    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'same-site'},
+    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'same-site',origin:'https://vaos.vayushastr.workers.dev'},
+  ]) {
+    const request=req('/api/activepieces-mcp/start','POST',headers);
+    request.body='csrf='+csrf;
+    const result=await handler(request,{});
+    assert.equal(result.status,503,'matching CSRF should reach provider discovery');
+    assert.match(await result.text(),/OAuth setup unavailable/);
+  }
+  assert.equal(fetchStub.mock.callCount(),2);
+});
+
+test('cross-site and mismatched Origin are rejected even when CSRF is present',async()=>{
+  const view=await handler(req('/api/activepieces-mcp','GET',{cookie}),{});
+  const csrf=(await view.text()).match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
+  for(const headers of [
+    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'cross-site'},
+    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'same-site',origin:'https://attacker.example'},
+    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'same-origin',origin:'null'},
+  ]) {
+    const request=req('/api/activepieces-mcp/start','POST',headers);
+    request.body='csrf='+csrf;
+    const result=await handler(request,{});
+    assert.equal(result.status,403);
+  }
+});

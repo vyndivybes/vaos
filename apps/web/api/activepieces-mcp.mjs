@@ -89,13 +89,14 @@ export default async function activepiecesOAuthHandler(req,res) {
   }
   if(path==='/api/activepieces-mcp/start' && req.method==='POST') {
     const actual=new URL(req.url);
-    // If Origin is explicitly present it must match; some valid navigation POSTs omit it.
-    // Reject cross-site Fetch Metadata even if the Origin header is omitted.
-    if((req.headers.origin && req.headers.origin!==actual.origin)
-       || (req.headers['sec-fetch-site']
-          && !['same-origin','none'].includes(req.headers['sec-fetch-site'])))
-      return fail(403,'ORIGIN_INVALID');
-    // A correct session-bound form token is mandatory in all cases, including with Origin.
+    // Validated session-bound CSRF remains mandatory; explicitly hostile Origin and
+    // cross-site metadata are additional restrictions, not prerequisites for browser
+    // navigation. Browsers/proxies may report a same-site request for this Worker.
+    const origin=req.headers.origin;
+    if(origin && origin!==actual.origin) return fail(403,'ORIGIN_INVALID');
+    const fetchSite=String(req.headers['sec-fetch-site']||'').toLowerCase();
+    if(fetchSite && !['same-origin','same-site','none'].includes(fetchSite))
+      return fail(403,'FETCH_SITE_INVALID');
     if(!validCsrf(req))return fail(403,'CSRF_INVALID');
     try {
       const authorizationUrl=await beginActivepiecesAuthorization({

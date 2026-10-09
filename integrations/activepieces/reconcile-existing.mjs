@@ -51,12 +51,20 @@ function findProject(text){
   throw E('AP_PROJECT_SELECTION_AMBIGUOUS');
 }
 const exactId=v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{6,120}$/.test(v);
+// Inspect only machine-readable outputs, never textual summaries. A run's marker
+// must match the stored qualification nonce. Neither a count nor a checksum by
+// itself establishes execution authority.
 function authenticatedRunDetail(doc,flowId,runId,marker){
-  if(!doc||doc.id!==runId||doc.flowId!==flowId||doc.environment!=='TESTING'||doc.status!=='SUCCEEDED'||!Array.isArray(doc.steps))
-    return {verified:false,markerVerified:false,checksumVerified:false};
-  const outputs=doc.steps.map(v=>v?.output).filter(v=>v&&typeof v==='object');
-  const verified=outputs.some(v=>v.qualMarker===marker&&v.fixtureType==='VAOS_SANDBOX_V1'&&v.checksum===45);
-  return {verified,markerVerified:outputs.some(v=>v.qualMarker===marker),checksumVerified:outputs.some(v=>v.checksum===45)};
+  if(!doc||doc.id!==runId||doc.flowId!==flowId||doc.environment!=='TESTING')
+    throw E('AP_RUN_DETAIL_IDENTITY_MISMATCH');
+  const steps=Array.isArray(doc.steps)?doc.steps:
+    (doc.steps && typeof doc.steps==='object' && !Array.isArray(doc.steps)?Object.values(doc.steps):null);
+  if(!steps)throw E('AP_RUN_DETAIL_SCHEMA_UNKNOWN');
+  const outputs=steps.map(v=>v?.output).filter(v=>v && typeof v==='object' && !Array.isArray(v));
+  const matches=outputs.filter(v=>v.qualMarker===marker);
+  const verified=doc.status==='SUCCEEDED' && matches.some(v=>v.fixtureType==='VAOS_SANDBOX_V1' && v.checksum===45);
+  return {verified,markerVerified:matches.length>0,
+    checksumVerified:matches.some(v=>v.fixtureType==='VAOS_SANDBOX_V1' && v.checksum===45)};
 }
 export async function reconcileExistingQualification({store,client,now=Date.now}={}){
   if(!store?.get||!store?.put||!client?.tools||!client?.call)throw E('AP_RECONCILE_DEPS_INVALID');
@@ -87,16 +95,27 @@ export async function reconcileExistingQualification({store,client,now=Date.now}
       const flowId=matches[0].id;
       const runs=parseActivepiecesToolResult(await client.call('ap_list_runs',{flowId,environment:'TESTING',limit:50})).runs;
       if(!Array.isArray(runs)||runs.length>=50)throw E('AP_RUN_LIST_SCHEMA_UNKNOWN');
-      const eligible=runs.filter(x=>x?.flowId===flowId&&exactId(x?.id));
+      const eligible=runs.filter(x=>x?.flowId===flowId && exactId(x?.id));
+      if(eligible.length!==runs.length || new Set(eligible.map(x=>x.id)).size!==eligible.length)
+        throw E('AP_RUN_LIST_SCHEMA_UNKNOWN');
       if(eligible.length===0)result={status:'EXISTING_FLOW_ONLY',reason:'AP_NO_TEST_RUN',matchCount:1,runCount:0};
-      else if(eligible.length>1)result={status:'HOLD',reason:'AP_MULTIPLE_TEST_RUNS',matchCount:1,runCount:eligible.length};
       else{
-        const runId=eligible[0].id;
-        const doc=parseActivepiecesToolResult(await client.call('ap_get_run',{flowRunId:runId}));
-        const proof=authenticatedRunDetail(doc,flowId,runId,state.marker);
-        result={status:proof.verified?'EXISTING_RUN_VERIFIED':'HOLD',
-          reason:proof.verified?null:'AP_RUN_CONTENT_UNVERIFIED',matchCount:1,runCount:1,
-          markerVerified:proof.markerVerified,checksumVerified:proof.checksumVerified};
+        // Bounded independent readback of each run. Multiple unrelated tests
+        // are normal; multiple exact-nonce runs are not.
+        const matchesForNonce=[];
+        for(const run of eligible){
+          const doc=parseActivepiecesToolResult(await client.call('ap_get_run',{flowRunId:run.id}));
+          const proof=authenticatedRunDetail(doc,flowId,run.id,state.marker);
+          if(proof.markerVerified)matchesForNonce.push(proof);
+        }
+        const proof=matchesForNonce[0];
+        result=matchesForNonce.length>1
+          ?{status:'HOLD',reason:'AP_MULTIPLE_MARKER_RUNS',matchCount:1,runCount:eligible.length,markerVerified:false,checksumVerified:false}
+          :matchesForNonce.length===0
+            ?{status:'HOLD',reason:'AP_QUALIFICATION_RUN_NOT_FOUND',matchCount:1,runCount:eligible.length,markerVerified:false,checksumVerified:false}
+            :{status:proof.verified?'EXISTING_RUN_VERIFIED':'HOLD',
+              reason:proof.verified?null:'AP_RUN_CONTENT_UNVERIFIED',matchCount:1,runCount:eligible.length,
+              markerVerified:proof.markerVerified,checksumVerified:proof.checksumVerified};
       }
     }
   }catch(e){result={status:'HOLD',reason:/^AP_[A-Z0-9_]{3,80}$/.test(e?.code||'')?e.code:'AP_READONLY_RECONCILIATION_UNAVAILABLE'};}

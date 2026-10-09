@@ -96,6 +96,6 @@ test('expired OAuth state cannot be exchanged and never calls token endpoint',as
 test('MCP reader accepts JSON or compact event-stream frames without arbitrary data exposure',()=>{
   const json=JSON.stringify({jsonrpc:'2.0',id:2,result:{tools:[{name:'ap_get_run'}]}});
   assert.equal(parseMcpResponse(json,'application/json').result.tools[0].name,'ap_get_run');
-  assert.equal(parseMcpResponse('event: message\\ndata: '+json+'\\n\\n','text/event-stream').result.tools[0].name,'ap_get_run');
+  assert.equal(parseMcpResponse('event: message\ndata: '+json+'\n\n','text/event-stream').result.tools[0].name,'ap_get_run');
   assert.throws(()=>parseMcpResponse('not-json','application/json'),/ACTIVEPIECES_MCP_RESPONSE_INVALID/);
 });

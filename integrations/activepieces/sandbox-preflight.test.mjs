@@ -91,7 +91,7 @@ test('real-schema altered code, dependencies or mapping cannot pass',async()=>{
  const badCases=[
  {source:'export const code = async()=>({qualMarker:"x",checksum:45,fixtureType:"VAOS_SANDBOX_V1"});'},
  {packageJson:'{"dependencies":{"axios":"1.0.0"}}'},
- {input:{qualMarker:'{{some.non-original.marker}}',value:'{{trigger.body.value}}'}
+ {input:{qualMarker:'{{some.non-original.marker}}',value:'{{trigger.body.value}}'}}
  ];
  for(const opt of badCases) {
   const {client}=realMcpShapeClient(opt);

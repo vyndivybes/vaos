@@ -1,3 +1,5 @@
+import { diagnoseSyntheticHold } from './synthetic-diagnostic.mjs';
+import { auditAppend } from './synthetic-qualification.mjs';
 import { qualifyOnce, recoverOnce, qualifyEvidence } from './synthetic-qualification.mjs';
 import { createActivepiecesToolClient } from './mcp-tool-client.mjs';
 import { credentialKeyReady, sealActivepiecesCredentials, openActivepiecesCredentials } from './credential-vault.mjs';
@@ -8,6 +10,29 @@ import { DurableObject } from 'cloudflare:workers';
 // One-time authorization-code handshake coordinator. Never stores tokens.
 // There is no public fetch handler; only Cloudflare Worker bindings can invoke RPC methods.
 export class ActivepiecesMcpHandshake extends DurableObject {
+  async syntheticDiagnosis(){
+    const existing=await this.ctx.storage.get('ap-qual-diagnostic');
+    if(existing)return existing;
+    const state=await this.ctx.storage.get('ap-qual-state');
+    if(state?.status!=='HOLD'||state.phase!=='BUILD_SUBMITTED')
+      return {status:'NOT_APPLICABLE',reason:'AP_NO_AMBIGUOUS_BUILD',productionActivation:false};
+    const connection=await this.connectionStatus();
+    if(!connection.connected)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_VERIFIED',productionActivation:false};
+    const sealed=await this.ctx.storage.get('oauth-encrypted-credentials');
+    if(!sealed)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_ENROLLED',productionActivation:false};
+    try{
+      let credentials=await openActivepiecesCredentials(sealed,this.env.ACTIVEPIECES_VAULT_KEY);
+      if(credentials.expiresAt<Date.now()+90000){
+        credentials=await refreshActivepiecesMcpTokens(credentials);
+        await this.ctx.storage.put('oauth-encrypted-credentials',
+          await sealActivepiecesCredentials(credentials,this.env.ACTIVEPIECES_VAULT_KEY));
+      }
+      const client=createActivepiecesToolClient({accessToken:credentials.accessToken});
+      const result=await diagnoseSyntheticHold({store:this.ctx.storage,client});
+      await auditAppend(this.ctx.storage,'READONLY_DIAGNOSIS',{reason:result.reason});
+      return result;
+    }catch{return {status:'HOLD',reason:'AP_DIAGNOSIS_UNAVAILABLE',productionActivation:false};}
+  }
   async syntheticEvidence() {
     return qualifyEvidence(this.ctx.storage);
   }

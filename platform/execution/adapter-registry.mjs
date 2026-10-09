@@ -618,7 +618,7 @@ function digitalWorkforceAdapter(digitalWorkforce, actionType) {
   });
 }
 
-export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge, vyndiWriteQualification } = {}) {
+export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, projectRisk, security, digitalThread, digitalWorkforce, vyndiBridge, vyndiWriteQualification, stirlingTransform } = {}) {
   const adapters = new Map([
     ['QA.OPEN_CAPA', qaCapaAdapter(qaCapa)],
     ['ENGINEERING.BASELINE_CHANGE', engineeringBaselineAdapter(engineeringChange)],
@@ -629,6 +629,7 @@ export function createExecutionAdapterRegistry({ qaCapa, engineeringChange, proj
     ...Object.keys(WORKFORCE_TARGET_STATUS).map((actionType) => [actionType, digitalWorkforceAdapter(digitalWorkforce, actionType)]),
     ...VYNDI_READ_ACTIONS.map((actionType) => [actionType, vyndiReadAdapter(vyndiBridge, actionType)]),
     ['COMMERCIAL.COMMIT_ORDER', vyndiWriteQualificationAdapter(vyndiWriteQualification)],
+    ...(stirlingTransform ? [['DOCUMENT.TRANSFORM', adapter('stirling.transform.v1', async job => stirlingTransform.execute(job))]] : []),
   ]);
 
   return Object.freeze({

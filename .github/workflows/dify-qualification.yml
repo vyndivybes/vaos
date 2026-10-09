@@ -4,6 +4,7 @@ on:
     paths:
       - 'integrations/dify/**'
       - 'apps/web/api/dify-live-reconciliation*'
+      - 'apps/web/api/dify-exact-verification*'
       - 'apps/web/api/dify-live-qualification*'
       - 'apps/web/cloudflare-worker.mjs'
       - '.github/workflows/dify-qualification.yml'
@@ -26,8 +27,10 @@ jobs:
           node --check apps/web/api/dify-live-qualification.mjs
           node --check apps/web/api/dify-live-reconciliation.mjs
           node --check integrations/dify/run-history.mjs
+          node --check integrations/dify/exact-run-verifier.mjs
+          node --check apps/web/api/dify-exact-verification.mjs
       - name: Run Dify and independent evidence tests
-        run: node --test integrations/dify/*.test.mjs apps/web/api/dify-live-qualification.test.mjs apps/web/api/dify-live-reconciliation.test.mjs
+        run: node --test integrations/dify/*.test.mjs apps/web/api/dify-live-qualification.test.mjs apps/web/api/dify-live-reconciliation.test.mjs apps/web/api/dify-exact-verification.test.mjs
       - name: Live independent GitHub evidence readback
         env:
           GITHUB_TOKEN: ${{ github.token }}

@@ -22,3 +22,6 @@ jobs:
 
       - name: Verify login surface
         run: npm test
+
+      - name: Verify Slack provider contract
+        run: node --test integrations/slack/notification-adapter.test.mjs

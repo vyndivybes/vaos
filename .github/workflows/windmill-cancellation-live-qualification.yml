@@ -1,0 +1,58 @@
+name: Windmill Controlled Cancellation
+on:
+  pull_request:
+    paths:
+      - 'integrations/windmill/cancellation-controller*'
+      - 'platform/execution/windmill-cancellation-drill*'
+      - 'platform/security/windmill-cancellation-oidc*'
+      - 'scripts/qualification/windmill-cancellation-live.mjs'
+      - '.github/workflows/windmill-cancellation-live-qualification.yml'
+  workflow_dispatch:
+    inputs:
+      confirm:
+        description: 'Run one approved benign 45-second cancellation test'
+        required: true
+        type: choice
+        options: [RUN_ONE_CANCELLATION]
+permissions:
+  contents: read
+concurrency:
+  group: windmill-controlled-cancellation
+  cancel-in-progress: false
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: node --test integrations/windmill/cancellation-controller.test.mjs platform/execution/windmill-cancellation-drill.test.mjs platform/security/windmill-cancellation-oidc.test.mjs apps/web/api/windmill-live-do-qualification.test.mjs
+      - run: node --check scripts/qualification/windmill-cancellation-live.mjs
+  live:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.confirm == 'RUN_ONE_CANCELLATION'
+    needs: contracts
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - name: Execute one admitted cancellation drill
+        env:
+          WINDMILL_CANCELLATION_CONFIRM: ${{ inputs.confirm }}
+          WINDMILL_HOLD_DISPATCH_TOKEN: ${{ secrets.WINDMILL_HOLD_DISPATCH_TOKEN }}
+          WINDMILL_HOLD_CANCEL_TOKEN: ${{ secrets.WINDMILL_HOLD_CANCEL_TOKEN }}
+          WINDMILL_HOLD_READ_TOKEN: ${{ secrets.WINDMILL_HOLD_READ_TOKEN }}
+        run: node scripts/qualification/windmill-cancellation-live.mjs
+      - uses: actions/upload-artifact@v5
+        if: success()
+        with:
+          name: windmill-cancellation-live-evidence
+          path: qualification-evidence/windmill/cancellation-live.json
+          retention-days: 30

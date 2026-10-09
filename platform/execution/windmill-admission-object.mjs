@@ -1,6 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createWindmillDurableLedger } from '../../integrations/windmill/durable-ledger.mjs';
 import { createWindmillIsolatedDrill, recordWindmillAlarmReceipt } from './windmill-isolated-drill.mjs';
+import { createWindmillCancellationDrill } from './windmill-cancellation-drill.mjs';
 import { createWindmillRestartDrill } from './windmill-restart-drill.mjs';
 
 /**
@@ -48,6 +49,15 @@ export class WindmillAdmissionCoordinator extends DurableObject {
     return this.restartDrill().observe({runId,instanceId:this.incarnationId});
   }
   async finishQualification(runId) { return this.isolatedDrill().finish(runId); }
+  cancellationDrill() {
+    return createWindmillCancellationDrill({store:this.ctx.storage,setAlarm:at=>this.ctx.storage.setAlarm(at)});
+  }
+  async cancellationQualification({phase,...request}) {
+    if(this.env.WINDMILL_CANCELLATION_KILL_SWITCH==='true'&&!['capabilities','snapshot','finish'].includes(phase))
+      throw new Error('WINDMILL_CANCELLATION_KILL_SWITCH');
+    const drill=this.cancellationDrill();
+    return phase==='capabilities'?drill.capability():phase==='snapshot'?drill.snapshot():drill[phase](request);
+  }
   async reserve(request) {
     this.assertEnabled();
     const value = await this.ledger.reserve(request);
@@ -59,6 +69,7 @@ export class WindmillAdmissionCoordinator extends DurableObject {
   async requestCancellation(request) { this.assertEnabled(); return this.ledger.requestCancellation(request); }
   async finish(request) { this.assertEnabled(); return this.ledger.finish(request); }
   async alarm() {
+    await this.cancellationDrill().expire();
     const outcome=await this.ledger.expire();
     const isolated=await this.ctx.storage.get('drill:start');
     if(isolated) {

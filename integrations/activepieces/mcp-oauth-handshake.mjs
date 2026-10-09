@@ -28,13 +28,14 @@ async function challenge(verifier) {
   const hash=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(verifier));
   return b64url(new Uint8Array(hash));
 }
+// workerd supports manual redirect handling; 3xx are rejected by the status gate.
 async function guarded(fetchImpl,url,options={},phase='REMOTE') {
   // Phase comes only from literal call-sites below, never from user input.
   let res;
   const trusted=pinnedEndpoint(url);
   try {
     res=await fetchImpl(trusted,{
-      ...options,redirect:'error',
+      ...options,redirect:'manual',
       signal:AbortSignal.timeout(12_000),
     });
   }catch {

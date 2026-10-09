@@ -46,7 +46,7 @@ test('OAuth start uses pinned metadata, PKCE S256, short-lived state and no secr
   assert.equal(u.searchParams.get('resource'),'https://cloud.activepieces.com/mcp/platform');
   assert.equal(store.pending().expiresAt,601000);
   assert.equal(store.pending().clientId,'client-demo');
-  assert.equal(log[1].options.redirect,'error');
+  assert.equal(log[1].options.redirect,'manual');
   assert.equal(JSON.stringify(store.pending()).includes('secret-access-token'),false);
 });
 
@@ -126,4 +126,32 @@ test('registration succeeds but Durable Object state failure is labeled independ
     callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
     store:s,fetchImpl:mockFetch([]),
   }),/ACTIVEPIECES_OAUTH_STATE_STORE_FAILED/);
+});
+
+test('Cloudflare workerd redirect:error incompatibility is bypassed using manual redirects',async()=>{
+  const logs=[],upstream=mockFetch(logs);
+  const response=await beginActivepiecesAuthorization({
+    callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
+    store:fakeStore(),
+    fetchImpl:async(url,options)=>{
+      if(options.redirect==='error')throw new TypeError('Invalid redirect value, must be one of follow or manual');
+      return upstream(url,options);
+    },
+  });
+  assert.equal(new URL(response).hostname,'cloud.activepieces.com');
+  assert.ok(logs.length>=2);
+  assert.ok(logs.every(x=>x.options.redirect==='manual'));
+});
+test('Cloudflare manual redirect never follows a 302 for OAuth discovery',async()=>{
+  const log=[];
+  await assert.rejects(()=>beginActivepiecesAuthorization({
+    callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
+    store:fakeStore(),
+    fetchImpl:async(url,options)=>{
+      log.push({url,options});
+      return new Response(null,{status:302,headers:{Location:'https://evil.example'}});
+    },
+  }),/ACTIVEPIECES_OAUTH_DISCOVERY_HTTP_302/);
+  assert.equal(log.length,1);
+  assert.equal(log[0].options.redirect,'manual');
 });

@@ -1,4 +1,4 @@
-// Safe, bounded, fixed-destination read-only probe. Never stores or displays
+// Safe, bounded, fixed-destination read-only probe. Redirects are never followed. Never stores or displays
 // any upstream response body, auth material, URL query, headers or exception text.
 const DISCOVERY_URL='https://cloud.activepieces.com/.well-known/oauth-authorization-server';
 const HOST='https://cloud.activepieces.com';
@@ -15,7 +15,7 @@ export async function checkActivepiecesDiscovery({fetchImpl=fetch}={}){
   let res;
   try{
     res=await fetchImpl(DISCOVERY_URL,{
-      method:'GET',redirect:'error',
+      method:'GET',redirect:'manual',
       headers:{Accept:'application/json'},
       signal:AbortSignal.timeout(12000),
     });

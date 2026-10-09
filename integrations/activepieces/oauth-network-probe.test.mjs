@@ -13,7 +13,7 @@ test('checks only pinned public Activepieces metadata, no authenticated or side-
   assert.equal(log.length,1);
   assert.equal(log[0].url,'https://cloud.activepieces.com/.well-known/oauth-authorization-server');
   assert.equal(log[0].options.method,'GET');
-  assert.equal(log[0].options.redirect,'error');
+  assert.equal(log[0].options.redirect,'manual');
   assert.equal(log[0].options.headers.Authorization,undefined);
 });
 test('separates HTTP 403 from synchronous network rejection',async()=>{
@@ -38,4 +38,21 @@ test('network probe never performs any OAuth registration, even on metadata inva
   const urls=[];
   await checkActivepiecesDiscovery({fetchImpl:async url=>{urls.push(url);return result({...valid,authorization_endpoint:'https://evil.example/authorize'})}});
   assert.equal(urls.length,1);
+});
+
+test('workerd unsupported error redirect mode cannot block the production discovery probe',async()=>{
+  const observed=await checkActivepiecesDiscovery({
+    fetchImpl:async(url,options)=>{
+      if(options.redirect==='error')throw new TypeError('Invalid redirect value, must be one of follow or manual');
+      return result(valid);
+    },
+  });
+  assert.equal(observed.ok,true);
+  assert.equal(observed.code,'MCP_DISCOVERY_OK');
+});
+test('manual HTTP redirects are rejected without following Location',async()=>{
+  let attempts=0;
+  const observed=await checkActivepiecesDiscovery({fetchImpl:async()=>{attempts++;return new Response(null,{status:302,headers:{Location:'https://evil.example'}})}});
+  assert.equal(observed.code,'MCP_DISCOVERY_HTTP_302');
+  assert.equal(attempts,1);
 });

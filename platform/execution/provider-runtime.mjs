@@ -32,6 +32,7 @@ export function createProviderRuntime({
   adapters={},
   adapterFactories={},
   reconciliation=null,
+  routingPolicy=null,
   recordAudit=async()=>{},
   idFactory=defaultIdFactory,
   now=()=>new Date(),
@@ -40,6 +41,7 @@ export function createProviderRuntime({
   if(!adapters||typeof adapters!=='object'||Array.isArray(adapters))throw fail('PROVIDER_RUNTIME_ADAPTERS_INVALID');
   if(!adapterFactories||typeof adapterFactories!=='object'||Array.isArray(adapterFactories))throw fail('PROVIDER_RUNTIME_FACTORIES_INVALID');
   if(reconciliation!==null&&typeof reconciliation?.enqueue!=='function')throw fail('PROVIDER_RUNTIME_RECONCILIATION_INVALID');
+  if(routingPolicy!==null&&typeof routingPolicy?.apply!=='function')throw fail('PROVIDER_RUNTIME_ROUTING_POLICY_INVALID');
   if(typeof recordAudit!=='function'||typeof idFactory!=='function'||typeof now!=='function')throw fail('PROVIDER_RUNTIME_CONFIG_INVALID');
 
   async function execute({
@@ -59,7 +61,7 @@ export function createProviderRuntime({
     const executionJobId=req(executionJob,'id');
     const intentId=req(executionJob,'intentId');
 
-    const provider=controlPlane.resolve(capability,{
+    const candidateConstraints={
       dataClassification,
       riskClass,
       preferredProviderIds,
@@ -67,7 +69,10 @@ export function createProviderRuntime({
       dataResidency,
       allowedProviderIds,
       deniedProviderIds,
-    });
+    };
+    const selectedConstraints=routingPolicy===null?candidateConstraints:routingPolicy.apply(capability,candidateConstraints);
+    if(!selectedConstraints||typeof selectedConstraints!=='object'||Array.isArray(selectedConstraints))throw fail('PROVIDER_RUNTIME_ROUTING_POLICY_INVALID');
+    const provider=controlPlane.resolve(capability,selectedConstraints);
     if(!provider)throw fail('PROVIDER_RUNTIME_NOT_AVAILABLE');
 
     const providerId=req(provider,'providerId');

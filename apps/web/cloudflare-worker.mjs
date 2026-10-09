@@ -6,6 +6,7 @@ import intents from './api/intents.mjs';
 import approvals from './api/approvals.mjs';
 import executions from './api/executions.mjs';
 import commissioning from './api/commissioning.mjs';
+import activepiecesMcp from './api/activepieces-mcp.mjs';
 import missions from './api/missions.mjs';
 import projectSchedule from './api/project-schedule.mjs';
 import windmillRuntimeStatus from './api/windmill-runtime-status.mjs';
@@ -24,6 +25,10 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/approvals': approvals,
   '/api/executions': executions,
   '/api/commissioning': commissioning,
+  '/api/activepieces-mcp': activepiecesMcp,
+  '/api/activepieces-mcp/start': activepiecesMcp,
+  '/api/activepieces-mcp/callback': activepiecesMcp,
+  '/api/activepieces-mcp/status': activepiecesMcp,
   '/api/missions': missions,
   '/api/project-schedule': projectSchedule,
   '/api/windmill-runtime-status': windmillRuntimeStatus,

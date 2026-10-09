@@ -42,11 +42,19 @@
       {
         "name": "WINDMILL_ADMISSION",
         "class_name": "WindmillAdmissionCoordinator"
+      },
+      {
+        "name": "ACTIVEPIECES_HANDSHAKE",
+        "class_name": "ActivepiecesMcpHandshake"
       }
     ]
   },
   "exports": {
     "WindmillAdmissionCoordinator": {
+      "type": "durable-object",
+      "storage": "sqlite"
+    },
+    "ActivepiecesMcpHandshake": {
       "type": "durable-object",
       "storage": "sqlite"
     }

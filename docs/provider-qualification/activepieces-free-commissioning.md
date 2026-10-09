@@ -45,3 +45,15 @@ Activepieces' current published Free plan describes **daily credits** and unlimi
 ## Rollback
 
 Disable the Activepieces provider and its capability in the VAOS provider control plane; revoke the scoped Infisical binding; stop the Activepieces flow; reconcile all unknown outcomes before retries; retain audit and event evidence. The n8n/Zapier optional adapters remain available for a separately approved future policy, not as unreviewed cost-bearing fallbacks.
+
+## VAOS OAuth qualification page — staged implementation
+
+The feature branch for PR #111 adds a **one-time, non-persistent OAuth 2.1 PKCE handshake** backed by a dedicated Cloudflare Durable Object, and a read-only MCP tool-discovery probe. The user-facing page is `https://vaos.vayushastr.workers.dev/api/activepieces-mcp` **only after a verified Cloudflare production deployment**.
+
+- Operator signs into VAOS, opens the commissioning page, clicks **Authorize read-only test**, and approves the Activepieces OAuth dialog in the browser.
+- OAuth discovery is pinned to `cloud.activepieces.com`, and DCR, token and authorization endpoints must remain on that origin. Redirect URI is pinned to the VAOS Worker callback; S256 PKCE and a 10-minute one-time nonce are mandatory.
+- On callback the Worker uses the short-lived token to initialize MCP and list tools. It verifies presence of `ap_get_run` and `ap_list_runs`, then discards the token and stores only a sanitized `MCP_READBACK_CAPABLE` result with a timestamp. **It does not call a real flow, verify execution output, save OAuth tokens, or grant any production permission.**
+- Failed OAuth setup must not silently revert to paid n8n or Zapier. Error/denial leaves the provider disabled.
+- The `/api/activepieces-mcp/status` endpoint requires an authenticated VAOS session and reports **connected=false** regardless of a passing one-time probe. Durable credential lifecycle, actual run readback, independent evidence, cost admission and governance gates must be implemented/qualified before persistent production routing can be activated.
+
+**Rollout prerequisite:** Verify the new Worker build is deployed and the Durable Object binding `ACTIVEPIECES_HANDSHAKE` is operational; GitHub green CI or a merged PR does not prove Cloudflare deployment. OAuth registration may differ by hosted plan; if the provider rejects dynamic client registration, record the failure and keep the route fail-closed. No API keys or passwords are to be pasted into chat.

@@ -328,7 +328,10 @@ test('maker-only recovery page uses a session-bound one-use POST authorization, 
  })}};
  const p='/api/activepieces-mcp/code-recovery';
  const denied=await handler(req(p,'GET',{},env),{});
- assert.equal(denied.status,403);
+ assert.equal(denied.status,303);
+ assert.equal(new URL(denied.headers.get('location')).pathname,'/login');
+ assert.equal(new URL(denied.headers.get('location')).searchParams.get('next'),p);
+ assert.equal(writes,0);
  const page=await handler(req(p,'GET',{cookie},env),{});
  assert.equal(page.status,200);
  const html=await page.text();
@@ -367,4 +370,22 @@ test('public audit exposes only bounded code-recovery status, never flow or cred
  assert.equal(t.includes('private_flow'),false);
  assert.equal(t.includes('credential_secret'),false);
  assert.equal(t.includes('marker":"'),false);
+});
+
+test('an existing non-maker account gets human-readable restriction, never repair authorization',async()=>{
+ let writes=0;
+ const checkerCookie='vaos_session='+encodeURIComponent(createSessionToken('kaaviyam1519@gmail.com'));
+ const p='/api/activepieces-mcp/code-recovery';
+ const env={ACTIVEPIECES_HANDSHAKE:{idFromName:x=>x,get:()=>({
+  async recoverSyntheticCodeStepOnce(){writes++;}
+ })}};
+ const denied=await handler(req(p,'GET',{cookie:checkerCookie},env),{});
+ assert.equal(denied.status,403);
+ assert.match(denied.headers.get('content-type'),/text\/html/);
+ assert.match(await denied.text(),/maker account/i);
+ assert.equal(writes,0);
+ const deniedPost=req(p,'POST',{cookie:checkerCookie,'content-type':'application/x-www-form-urlencoded'},env);
+ deniedPost.body='csrf=bad';
+ assert.equal((await handler(deniedPost,{})).status,403);
+ assert.equal(writes,0);
 });

@@ -21,14 +21,16 @@ export function createWindmillLiveDoQualificationHandler({
     try{principal=await verifyIdentity(auth.slice(7));}
     catch{return res.status(401).json(apiError('UNAUTHENTICATED','Valid GitHub workflow identity required'))}
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)||
-      Object.keys(req.body).length!==1||!['start','status','restart','restart-status','finish'].includes(req.body.phase)){
+      Object.keys(req.body).length!==1||!['capabilities','start','status','restart','restart-status','finish'].includes(req.body.phase)){
       return res.status(422).json(apiError('VALIDATION_ERROR','Valid qualification phase required'));
     }
     try{
       const namespace=req.env?.WINDMILL_ADMISSION;
       if(typeof namespace?.getByName!=='function')throw new Error('NO_BINDING');
       const stub=namespace.getByName('vaos-windmill-selftest-'+principal.runId+'-'+principal.runAttempt);
-      const value=req.body.phase==='start'
+      const value=req.body.phase==='capabilities'
+        ?await stub.restartCapability()
+        :req.body.phase==='start'
         ?await stub.startQualification(principal.runId)
         :req.body.phase==='status'
           ?await stub.alarmStatus(principal.runId)
@@ -41,7 +43,9 @@ export function createWindmillLiveDoQualificationHandler({
         (req.body.phase==='start'&&value.status!=='STARTED')||
         (req.body.phase==='finish'&&value.status!=='PASS')||
         (req.body.phase==='status'&&!['WAITING','ALARM_OBSERVED'].includes(value.status))||
-        (req.body.phase==='restart-status'&&!['WAITING','RESTART_VERIFIED'].includes(value.status))){
+        (req.body.phase==='restart-status'&&!['WAITING','RESTART_VERIFIED'].includes(value.status))||
+        (req.body.phase==='capabilities'&&(
+          value.status!=='RESTART_DRILL_READY'||value.schemaVersion!=='vaos.windmill.restart-qualification.v1'))){
         throw new Error('QUALIFICATION_FAILED');
       }
       return res.status(200).json({data:value});

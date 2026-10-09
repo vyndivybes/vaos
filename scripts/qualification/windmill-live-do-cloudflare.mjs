@@ -53,6 +53,24 @@ async function main(){
       throw fail('CLOUDFLARE_DRILL_SAFETY_MISMATCH');
     return data;
   }
+  // A previous version already exposed this route. A 405 GET cannot attest
+  // that both the Worker and its Durable Object class were upgraded.
+  // Poll the signed, non-mutating, DO-backed version probe before reserving.
+  let upgraded=false;
+  for(let attempt=0;attempt<36;attempt++){
+    try{
+      const c=await phase('capabilities');
+      if(c?.status==='RESTART_DRILL_READY'&&
+        c.schemaVersion==='vaos.windmill.restart-qualification.v1'){
+        upgraded=true;break;
+      }
+    }catch{
+      // Older deployed Worker returns 422; old DO class returns 503.
+      // Both mean NO ADMISSION. Never retry a state-mutating phase.
+    }
+    if(attempt<35)await nap(10000);
+  }
+  if(!upgraded)throw fail('CLOUDFLARE_RESTART_VERSION_NOT_DEPLOYED');
   const start=await phase('start');
   if(start?.status!=='STARTED'||start.admission!=='PASS'||
      start.blockedCompetingJob!==true||start.auditCount!==2)

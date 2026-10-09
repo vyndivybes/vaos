@@ -18,6 +18,7 @@ function input(phase='start'){
           alarmStatus:async()=>({status:'ALARM_OBSERVED',alarmObserved:true,productionActivation:false,windmillCalls:0}),
           beginRestartQualification:async()=>({status:'PENDING',productionActivation:false}),
           restartQualificationStatus:async()=>({status:'RESTART_VERIFIED',instanceChanged:true,productionActivation:false,windmillCalls:0}),
+          restartCapability:async()=>({schemaVersion:'vaos.windmill.restart-qualification.v1',status:'RESTART_DRILL_READY',productionActivation:false,windmillCalls:0}),
         };
       },
     }}};
@@ -86,4 +87,15 @@ test('restart status is read-only and proves new instance state',async()=>{
   await createWindmillLiveDoQualificationHandler({verifyIdentity:valid})(q,r);
   assert.equal(r.data.code,200);
   assert.equal(r.data.body.data.instanceChanged,true);
+});
+
+test('signed capabilities call identifies upgraded forced-restart runtime without mutating DO',async()=>{
+  const h=createWindmillLiveDoQualificationHandler({verifyIdentity:valid});
+  const q=input('capabilities'),r=res();
+  // The isolated DO itself must attest to the upgraded version; no state mutation.
+  await h(q,r);
+  assert.equal(r.data.code,200);
+  assert.equal(r.data.body.data.status,'RESTART_DRILL_READY');
+  assert.equal(r.data.body.data.schemaVersion,'vaos.windmill.restart-qualification.v1');
+  assert.equal(r.data.body.data.productionActivation,false);
 });

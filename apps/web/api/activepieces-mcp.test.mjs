@@ -349,3 +349,22 @@ test('maker-only recovery page uses a session-bound one-use POST authorization, 
  assert.match(await result.text(),/CODE-step recovery HOLD/);
  assert.equal(writes,1);
 });
+
+
+test('public audit exposes only bounded code-recovery status, never flow or credential details',async()=>{
+ const env={ACTIVEPIECES_HANDSHAKE:{idFromName:x=>x,get:()=>({
+  async syntheticEvidence(){return {
+   status:'HOLD',phase:'REMEDIATION_HOLD',reason:'AP_TOOL_RESULT_INVALID',
+   markerVerified:false,checksumVerified:false,codeRecoveryStatus:'VERIFIED',
+   flowId:'private_flow',token:'credential_secret',
+   audit:{ok:true,count:23,head:'abc'}
+  }}
+ })}};
+ const res=await handler(req('/api/activepieces-mcp/synthetic-evidence','GET',{},env),{});
+ assert.equal(res.status,200);
+ const t=await res.text();
+ assert.match(t,/"codeRecoveryStatus":"VERIFIED"/);
+ assert.equal(t.includes('private_flow'),false);
+ assert.equal(t.includes('credential_secret'),false);
+ assert.equal(t.includes('marker":"'),false);
+});

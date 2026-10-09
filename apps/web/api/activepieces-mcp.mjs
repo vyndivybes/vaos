@@ -1,4 +1,5 @@
-import { parseCookies, SESSION_COOKIE, verifySessionToken } from '../lib/auth.mjs';
+import crypto from 'node:crypto';
+import { constantTimeEqual, parseCookies, SESSION_COOKIE, verifySessionToken } from '../lib/auth.mjs';
 import { beginActivepiecesAuthorization, completeActivepiecesAuthorization } from '../../../integrations/activepieces/mcp-oauth-handshake.mjs';
 
 function page(title,body,status=200) {
@@ -16,8 +17,26 @@ function page(title,body,status=200) {
 const fail=(status,code)=>new Response(JSON.stringify({error:{code}}),{status,headers:{
   'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',
 }});
+function sessionToken(req) {
+  return parseCookies(req.headers.cookie||'')[SESSION_COOKIE] || '';
+}
 function session(req) {
-  return verifySessionToken(parseCookies(req.headers.cookie||'')[SESSION_COOKIE]);
+  return verifySessionToken(sessionToken(req));
+}
+// An unpredictable per-session CSRF proof replaces the false assumption that every
+// browser's navigation POST includes an Origin header. This is not an OAuth token.
+function csrfToken(req) {
+  const cookieToken=sessionToken(req);
+  return crypto.createHmac('sha256',cookieToken)
+    .update('vaos:activepieces:mcp:start:v1').digest('hex');
+}
+function validCsrf(req) {
+  const contentType=String(req.headers['content-type']||'').split(';')[0].trim().toLowerCase();
+  if(contentType!=='application/x-www-form-urlencoded' ||
+     typeof req.body!=='string' || req.body.length>4096)return false;
+  const values=new URLSearchParams(req.body).getAll('csrf');
+  return values.length===1 && /^[a-f0-9]{64}$/.test(values[0])
+    && constantTimeEqual(values[0],csrfToken(req));
 }
 function vault(env) {
   const ns=env?.ACTIVEPIECES_HANDSHAKE;
@@ -59,7 +78,7 @@ export default async function activepiecesOAuthHandler(req,res) {
     return page('VAOS — Activepieces MCP commissioning',
       '<p>This initiates a one-time OAuth and read-only MCP tool-discovery test using the Activepieces account you approve.</p>'
       +'<p>The test does not incur an Activepieces action credit, perform a business operation, or retain OAuth tokens.</p>'
-      +'<form action="/api/activepieces-mcp/start" method="post"><button type="submit" style="font-size:17px;padding:12px 18px">Authorize read-only test</button></form>'
+      +'<form action="/api/activepieces-mcp/start" method="post"><input type="hidden" name="csrf" value="'+csrfToken(req)+'"><button type="submit" style="font-size:17px;padding:12px 18px">Authorize read-only test</button></form>'
       +'<p><a href="/api/activepieces-mcp/status">View current qualification evidence (JSON)</a></p>');
   }
   if(path==='/api/activepieces-mcp/status' && req.method==='GET'){
@@ -70,8 +89,14 @@ export default async function activepiecesOAuthHandler(req,res) {
   }
   if(path==='/api/activepieces-mcp/start' && req.method==='POST') {
     const actual=new URL(req.url);
-    // Browser form sends Origin. Reject cross-site form submissions and public unauthenticated links.
-    if(req.headers.origin!==actual.origin)return fail(403,'ORIGIN_INVALID');
+    // If Origin is explicitly present it must match; some valid navigation POSTs omit it.
+    // Reject cross-site Fetch Metadata even if the Origin header is omitted.
+    if((req.headers.origin && req.headers.origin!==actual.origin)
+       || (req.headers['sec-fetch-site']
+          && !['same-origin','none'].includes(req.headers['sec-fetch-site'])))
+      return fail(403,'ORIGIN_INVALID');
+    // A correct session-bound form token is mandatory in all cases, including with Origin.
+    if(!validCsrf(req))return fail(403,'CSRF_INVALID');
     try {
       const authorizationUrl=await beginActivepiecesAuthorization({
         callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',

@@ -1,6 +1,6 @@
 # VAOS no-new-subscription commissioning: Activepieces + Windmill
 
-Status (2026-10-09): PREPARED, NOT COMISSIONED. No Activepieces tenant, webhook URL, API key, health evidence or live independent readback has been verified. No external provider is enabled by this change.
+Status (2026-10-09): ACCOUNT ACCESS CONFIRMED BY USER SCREENSHOT; NOT COMMISSIONED. User provided the management page `https://cloud.activepieces.com/mcp/platform` (not a server endpoint). Screenshot shows signed-in Personal Project, 1,000 credits, 0% used, next reset 2026-11-09. This is observed tenant information, **not evidence of plan/entitlement, billing or active production integration**. No webhook, run-readback authority, authenticated server URL, independent health evidence or live run has been verified. No provider was enabled by this change.
 
 ## Operating decision
 
@@ -17,12 +17,12 @@ The opt-in `createNoSubscriptionRoutingPolicy()` is in `platform/execution/no-su
 ## Commissioning prerequisites (operator login required)
 
 1. Create or sign in to an **Activepieces Free Cloud** workspace at https://cloud.activepieces.com . Do not select or authorize a paid subscription.
-2. Record the tenant's actual workspace URL and inspect whether the Free account includes the **specific run-readback API endpoint and token** required by the existing adapter. Free product-page 'API access' is not proof of programmatic flow-run readback entitlement. If readback is unavailable, do not enable this adapter in production; use a readback-capable free architecture or seek a reviewed alternative.
+2. The user has supplied a management-page URL (`https://cloud.activepieces.com/mcp/platform`) only. Obtain **the real MCP Server URL** from MCP settings (see below), and inspect whether the Free account includes the **specific run-readback API endpoint and token** required by the existing webhook adapter. Published Free-plan 'API access' is not proof of management API key entitlement; the API reference states that platform-management API keys may be restricted to Platform/Enterprise editions. If readback is unavailable, do not enable the webhook adapter in production. Evaluate the built-in OAuth MCP read-only `ap_get_run` tool as a separate independently authenticated readback boundary without weakening verification.
 3. Create an inert test flow, with **Catch Webhook** trigger and a no-side-effects echo/acknowledgment action. The flow must include the VAOS execution job ID and intent ID. Use only synthetic, non-sensitive payloads for qualification.
 4. Save the webhook URL as a scoped, confidential binding in Infisical; do NOT paste the hook URL or API credential in ChatGPT, the repository or workflow logs. Suggested logical references: `secret:activepieces:hook` and `secret:activepieces:api`. These are references, not the actual secret values.
 5. Provision the guarded callback route and register an approved `flowKey -> flowId, projectId, hookBindingRef, apiBindingRef` mapping. Restrict outbound hosts, redirects, request size, data classification and expiry through VAOS governed HTTP transport. Use **HTTPS**.
 6. Run synthetic contract tests, then independent live dispatch and callback receipt, provider-run readback, duplicate delivery, post-send timeout/unknown-outcome, quota exhaustion, replay, kill switch, restart reconciliation, and audit-signoff. Keep production routing **disabled** pending evidence and explicit approval.
-7. Confirm the 100-credits/day Free plan limit and the exact reset behavior in the tenant. Configure an independent credit-spend admission cap and alert *before* 100/day to protect mission reliability. Do not use the Free plan for safety-critical missions or workloads that require guaranteed dispatch; when exhausted, jobs may not run until credits renew. Verify AI-step surcharges or avoid all AI pieces.
+7. Verify the **actual account quota and reset cadence from tenant Billing/Usage**, not marketing examples. User screenshot dated 2026-10-09 shows **1,000 credits, 0% used, resetting 2026-11-09**; the currently published Free pricing page instead describes **daily** refresh, so do not enforce an assumed `100/day` limit. Configure a conservative independent credit-spend admission cap and alert based on verified account evidence. Do not use the Free plan for safety-critical missions or workloads requiring guaranteed dispatch. Verify AI-step surcharges or avoid AI steps.
 
 ## Activation gates
 
@@ -32,7 +32,15 @@ No gate may be silently skipped. A green test run is **contract qualification**,
 
 ## Free-tier caveat
 
-Activepieces' published Free plan offers 100 credits/day and unlimited flows. Its separate API documentation has previously described management API keys as restricted to platform-admin editions; therefore confirm exact tenant entitlement rather than infer access from marketing. The existing VAOS adapter requires authenticated flow-run readback to mark a run verified. Do not weaken independent verification to accommodate plan limits.
+Activepieces' current published Free plan describes **daily credits** and unlimited flows, while the authenticated user screenshot shows a **1,000-credit pool with a November 9 reset**. Treat account Billing/Usage as the authority and explicitly reconcile the mismatch before enforcing quota caps. Its REST API documentation describes platform API keys as restricted to some platform-admin editions; verify actual tenant entitlement. The existing VAOS webhook adapter requires authenticated REST flow-run readback to mark a run verified. The separate Activepieces built-in OAuth MCP server offers read-only run-discovery tools, but it is NOT an automatic drop-in adapter: VAOS still needs a scoped OAuth connection, tool response validation, independently authenticated readback, durable evidence and authorization/security review. Do not weaken independent verification to accommodate plan limits.
+
+## Activepieces MCP link distinction
+
+- User-provided `https://cloud.activepieces.com/mcp/platform` is a **browser management page**. It is neither the authenticated webhook endpoint nor proof of a usable VAOS MCP endpoint.
+- Per Activepieces MCP docs, use **Settings → MCP Server** (or the MCP sidebar section if the current UI offers it), enable the server and copy the actual **Server URL**. The documented server endpoint has shape `https://<instance>/mcp`; do not guess or store an endpoint before inspecting it.
+- The remote MCP endpoint uses OAuth in compatible clients. Never commit OAuth tokens, webhook URLs that act as secrets, or raw authorization codes.
+- MCP read-only tools include `ap_list_runs` and `ap_get_run`, which may be used in an independent verification design **only after** VAOS connects and proves the correct project, execution job, run ID and immutable audit evidence.
+- Official references: https://www.activepieces.com/docs/mcp/overview ; https://www.activepieces.com/docs/mcp/tools ; https://www.activepieces.com/docs/endpoints/overview ; https://www.activepieces.com/pricing .
 
 ## Rollback
 

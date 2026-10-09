@@ -19,7 +19,7 @@ test('Cloudflare cron dispatches one fixed main-only Infisical health check', as
   assert.equal(requests.length,1);
   assert.equal(requests[0].url,'https://api.github.com/repos/vyndivybes/vaos/actions/workflows/infisical-scoped-commissioning.yml/dispatches');
   assert.equal(requests[0].options.method,'POST');
-  assert.equal(requests[0].options.redirect,'error');
+  assert.equal(requests[0].options.redirect,'manual');
   assert.deepEqual(JSON.parse(requests[0].options.body),{ref:'main',inputs:{action:'record-health'}});
   assert.equal(requests[0].options.headers.Authorization,'Bearer fake-secret-value');
   assert.equal(requests[0].options.headers['User-Agent'],'vaos-infisical-watchdog');
@@ -65,4 +65,18 @@ test('dispatch diagnostics allow only fixed error codes', () => {
   for (const error of [new Error('secret'), new Error('VAOS_GITHUB_DISPATCH_HTTP_403 secret'), new Error('VAOS_GITHUB_DISPATCH_HTTP_999'), 'secret', null]) {
     assert.equal(infisicalDispatchFailureCode(error), 'VAOS_GITHUB_DISPATCH_UNKNOWN_FAILED');
   }
+});
+
+test('dispatch uses workerd-supported manual redirects without following 3xx',async()=>{
+ let calls=0;
+ const result=await dispatchInfisicalWatchdog({token:'test',fetchImpl:async(_url,o)=>{
+  calls++;if(o.redirect!=='manual')throw new Error("Unsupported redirect mode");return {status:204};
+ }});
+ assert.equal(result.status,'accepted');assert.equal(calls,1);
+ await assert.rejects(dispatchInfisicalWatchdog({token:'test',fetchImpl:async()=>({status:302})}),/VAOS_GITHUB_DISPATCH_HTTP_302/);
+});
+test('correlates one cron tick with exactly one bounded health dispatch',async()=>{
+ let sent;
+ await dispatchInfisicalWatchdog({token:'test',scheduledTime:1791539100000,fetchImpl:async(_url,o)=>{sent=JSON.parse(o.body);return {status:204};}});
+ assert.equal(sent.inputs.watchdog_tick,'1791539100000');
 });

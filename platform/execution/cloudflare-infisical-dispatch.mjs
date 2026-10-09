@@ -1,7 +1,7 @@
 // Cloudflare Cron Trigger -> existing qualified GitHub Actions health workflow.
 // This dispatcher cannot read Infisical secrets, write provider state, or reactivate routing.
 // A dedicated GitHub Actions:write token must be provisioned as a Cloudflare Worker secret.
-export async function dispatchInfisicalWatchdog({token,fetchImpl=fetch}={}) {
+export async function dispatchInfisicalWatchdog({token,scheduledTime,fetchImpl=fetch}={}) {
   if (typeof token !== 'string' || !token.trim()) return {status:'unconfigured'};
   const normalizedToken=token.trim();
   const url='https://api.github.com/repos/vyndivybes/vaos/actions/workflows/infisical-scoped-commissioning.yml/dispatches';
@@ -11,7 +11,7 @@ export async function dispatchInfisicalWatchdog({token,fetchImpl=fetch}={}) {
   try {
     response=await fetchImpl(url,{
       method:'POST',
-      redirect:'error',
+      redirect:'manual',
       headers:{
         Authorization:'Bearer '+normalizedToken,
         Accept:'application/vnd.github+json',
@@ -19,7 +19,7 @@ export async function dispatchInfisicalWatchdog({token,fetchImpl=fetch}={}) {
         'X-GitHub-Api-Version':'2022-11-28',
         'Content-Type':'application/json',
       },
-      body:JSON.stringify({ref:'main',inputs:{action:'record-health'}}),
+      body:JSON.stringify({ref:'main',inputs:{action:'record-health',...(Number.isSafeInteger(scheduledTime)&&scheduledTime>0?{watchdog_tick:String(scheduledTime)}:{})}}),
       signal:controller.signal,
     });
   } catch (error) {

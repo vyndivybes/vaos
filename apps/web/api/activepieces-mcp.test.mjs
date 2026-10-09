@@ -6,7 +6,7 @@ import {createSessionToken} from '../lib/auth.mjs';
 const cookie='vaos_session='+encodeURIComponent(createSessionToken('shyamsundhar1982@gmail.com'));
 const namespace={
   idFromName(n){return n},
-  get(){return {async status(){return {status:'NOT_CONNECTED',readonlyTools:[],productionActivation:false}}}},
+  get(){return {async put(){},async take(){return null},async status(){return {status:'NOT_CONNECTED',readonlyTools:[],productionActivation:false}}}},
 };
 function req(path,method='GET',headers={},env={ACTIVEPIECES_HANDSHAKE:namespace}) {
   return {url:'https://vaos.vayushastr.workers.dev'+path,method,headers,env};

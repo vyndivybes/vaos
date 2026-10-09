@@ -47,7 +47,8 @@
       ],
       "tier": "A",
       "implementation": "partial-adapter",
-      "priority": "primary"
+      "priority": "optional",
+      "subscriptionPolicy": "blocked-managed-saas-free-self-host-only"
     },
     {
       "providerId": "playwright",
@@ -118,7 +119,8 @@
       ],
       "tier": "B",
       "implementation": "adapter-implemented",
-      "priority": "primary"
+      "priority": "primary",
+      "subscriptionPolicy": "hosted-free-tier-qualified-before-use"
     },
     {
       "providerId": "airbyte",
@@ -128,7 +130,8 @@
       ],
       "tier": "B",
       "implementation": "adapter-implemented",
-      "priority": "primary"
+      "priority": "optional",
+      "subscriptionPolicy": "blocked-managed-cloud-free-self-host-only"
     },
     {
       "providerId": "power-automate-desktop",

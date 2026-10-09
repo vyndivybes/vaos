@@ -30,3 +30,14 @@ test('credential-dependent providers cannot be represented as live-qualified by 
     assert.ok(profile.livePrerequisites.some(x=>/credential|key|url|hook/.test(x)));
   }
 });
+
+test('requested document/data providers carry explicit free-mode gates',()=>{
+  assert.equal(getProviderWave4Profile('documenso').freeMode,'hosted-free-tier');
+  assert.ok(getProviderWave4Profile('documenso').livePrerequisites.includes('free-plan-confirmed'));
+
+  assert.equal(getProviderWave4Profile('paperwork').freeMode,'blocked-managed-saas');
+  assert.ok(getProviderWave4Profile('paperwork').livePrerequisites.includes('free-runtime-confirmed'));
+
+  assert.equal(getProviderWave4Profile('airbyte').freeMode,'blocked-managed-cloud');
+  assert.ok(getProviderWave4Profile('airbyte').livePrerequisites.includes('free-runtime-confirmed'));
+});

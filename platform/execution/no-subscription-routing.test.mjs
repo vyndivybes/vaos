@@ -28,9 +28,38 @@ test('Windmill is preferred for governed code execution', () => {
   assert.deepEqual(result.allowedProviderIds, ['windmill']);
 });
 
+test('Documenso is the only no-subscription signing route', () => {
+  const result = policy.apply('document.sign', {
+    dataClassification: 'internal',
+    preferredProviderIds: ['paid-signature-suite', 'documenso'],
+  });
+  assert.deepEqual(result.allowedProviderIds, ['documenso']);
+  assert.deepEqual(result.preferredProviderIds, ['documenso']);
+});
+
+test('Paperwork managed extraction is blocked until a free runtime is qualified', () => {
+  const result = policy.apply('document.extract', {
+    dataClassification: 'internal',
+    allowedProviderIds: ['paperwork'],
+    preferredProviderIds: ['paperwork'],
+  });
+  assert.deepEqual(result.allowedProviderIds, []);
+  assert.deepEqual(result.preferredProviderIds, []);
+});
+
+test('Airbyte managed replication is blocked until a free runtime is qualified', () => {
+  const result = policy.apply('data.replicate', {
+    dataClassification: 'internal',
+    allowedProviderIds: ['airbyte'],
+    preferredProviderIds: ['airbyte'],
+  });
+  assert.deepEqual(result.allowedProviderIds, []);
+  assert.deepEqual(result.preferredProviderIds, []);
+});
+
 test('unrelated capabilities retain existing policy and constraints', () => {
   const constraints = { deniedProviderIds: ['unqualified-provider'], riskClass: 'high' };
-  assert.deepEqual(policy.apply('document.sign', constraints), constraints);
+  assert.deepEqual(policy.apply('document.archive', constraints), constraints);
 });
 
 test('policy treats frozen inputs without mutation', () => {

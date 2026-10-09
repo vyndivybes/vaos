@@ -72,7 +72,11 @@ export async function preflightActivepiecesSandbox({store,client}={}){
     if(typeof c.packageJson==='string'){try{deps=JSON.parse(c.packageJson)}catch{}}
     else if(c.packageJson===undefined||c.packageJson===null)deps={};
     else deps=c.packageJson;
-    const packageJsonEmpty=deps&&typeof deps==='object'&&!Array.isArray(deps)&&Object.keys(deps).length===0;
+    const packageJsonEmpty=deps&&typeof deps==='object'&&!Array.isArray(deps)&&
+      (Object.keys(deps).length===0 ||
+       (Object.keys(deps).length===1&&Object.hasOwn(deps,'dependencies')&&
+        deps.dependencies&&typeof deps.dependencies==='object'&&!Array.isArray(deps.dependencies)&&
+        Object.keys(deps.dependencies).length===0));
     const codeOk=codeMatchesExpected&&inputMatchesExpected&&packageJsonEmpty&&
       c.continueOnFailure!==true&&c.retryOnFailure!==true&&c.skip!==true;
     const reportedIssues=Array.isArray(validation.issues)?validation.issues:validation.errors;

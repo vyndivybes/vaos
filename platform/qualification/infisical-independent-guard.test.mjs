@@ -63,7 +63,7 @@ test('Native Cloudflare cron is scheduled and legacy GitHub job is manual emerge
   assert.doesNotMatch(y,/^  push:/m);
   assert.match(y,/workflow_dispatch:/);
   assert.match(y,/REQUESTED_ACTION:/);
-  assert.match(y,/steps\\.live\\.outcome == 'failure'/);
+  assert.match(y,/steps\.live\.outcome == 'failure'/);
   assert.match(y,/INFISICAL_COMMISSION_ACTION: disable/);
   assert.match(y,/INFISICAL_DISABLE_CONFIRM: DISABLE-ONLY/);
   assert.doesNotMatch(y,/action: activate/);

@@ -1,0 +1,31 @@
+name: grafana-readiness
+
+on:
+  pull_request:
+    paths:
+      - "integrations/grafana/**"
+      - "docs/grafana-cloud-qualification.md"
+      - ".github/workflows/grafana-readiness.yml"
+      - "wrangler.jsonc"
+  push:
+    branches: [main]
+    paths:
+      - "integrations/grafana/**"
+      - ".github/workflows/grafana-readiness.yml"
+      - "wrangler.jsonc"
+
+permissions:
+  contents: read
+
+jobs:
+  safe-qualification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Verify Grafana export readiness contract
+        run: |
+          node --check integrations/grafana/cloudflare-otel-readiness.mjs
+          node --test integrations/grafana/cloudflare-otel-readiness.test.mjs integrations/grafana/operations-sink.test.mjs

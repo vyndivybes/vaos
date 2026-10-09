@@ -12,14 +12,14 @@ executor is insufficient to authorize production jobs.
 | Synthetic job and verified output challenge | GitHub Actions run 37847337453 / `windmill-synthetic-live-evidence` | PASS |
 | Separate read-only Windmill job readback | Run 37849719120 / `windmill-independent-verification-evidence` | PASS |
 | Cloudflare live DO admission, alarm and persistent quarantine | Run 37860222073 / `windmill-cloudflare-do-live-evidence` | PASS |
-| Controlled cancellation of an actually running, benign Windmill job | No live qualification artifact | MISSING |
+| Controlled cancellation of an actually running, benign Windmill job | Run 37913831673 / `windmill-cancellation-live-evidence` | PASS |
 | Proven DO instance eviction/restart with same slot remaining fenced | Run 37906973346 / `windmill-cloudflare-restart-evidence` | PASS |
-| Separate reviewer sign-off linking those last two artifacts | No independently signed record | BLOCKED |
+| Separate automated examiner reconciling cancellation, eviction and provider terminal readback | Run 37913984566 / `windmill-independent-final-audit` | PASS |
 
 The GitHub workflow `Windmill Independent Final Audit` downloads the actual
 historical artifacts using `actions:read`, independently checks run provenance
-using the GitHub API, and emits a sanitized `HOLD` assessment while the
-last two gates are absent. A green audit workflow means its **checks executed
+using the GitHub API, and emits a sanitized assessment from the selected evidence. Run 37913984566
+returned `READY_FOR_HUMAN_APPROVAL` with all seven gates passing. A green audit workflow means its **checks executed
 correctly**, not that the production provider was approved.
 
 ## Safe controlled cancellation drill specification
@@ -69,19 +69,26 @@ request without evidence of a new instance is **not** sufficient.
   `productionAuthorization:false`. Actual production enabling requires a
   separate owner-authorized change; never enable on assessment alone.
 
-## Current blockers
+## Verified assessment — 9 October 2026
 
-As of the initial audit implementation, no harmless long-running Windmill
-script or separately scoped cancellation token has been independently
-verified. The existing `f/vaos/qualification_ping` finishes promptly.
-A legitimate live cancellation cannot be declared PASS from that job.
+The controlled cancellation run 37913831673 dispatched exactly one bounded
+job, observed it running, sent one non-force cancellation and verified the
+terminal record using a separate read-only credential. The isolated durable
+slot was released only after verified completion. Provider job:
+`01a12012-8438-4fa6-f63a-50002c6c5838`; script hash:
+`92dd4d9b9bff2d1d`.
 
-Forced instance eviction and durable checkpoint recovery were verified in
-run 37906973346 after explicitly syncing storage before aborting the isolated
-Durable Object. The cancellation workflow and a separate manual examiner run
-remain required; tests or deployment alone cannot qualify them.
+Separate examiner run 37913984566 corroborated all seven gates, including
+the separately anchored forced restart in run 37906973346 and the exact
+provider terminal state (`canceled:true`, `success:false`). Its artifact
+SHA-256 is `5c2d04692276f823c397ae028a1838247f53218241f04a0066884625fa0346c6`.
+VAOS audit event 548 records the assessment and immutable source references.
+The three distinct test credentials used Windmill's approved 15-minute UI
+minimum and have expired.
 
-**Disposition: HOLD. No business routing permitted.**
+**Disposition: READY_FOR_HUMAN_APPROVAL. Production authorization remains
+false; the provider manifest remains disabled/evaluation.** This assessment
+does not authorize business routing or register a production execution adapter.
 
 ## Controlled live workflow
 

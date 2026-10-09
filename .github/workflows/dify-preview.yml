@@ -1,0 +1,33 @@
+name: Dify isolated preview deployment
+on:
+  push:
+    branches: [feat/dify-fail-closed-adapter]
+    paths:
+      - 'integrations/dify/**'
+      - 'apps/web/**'
+      - '.github/workflows/dify-preview.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  deploy-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify tests
+        run: node --test integrations/dify/*.test.mjs apps/web/api/dify-live-qualification.test.mjs
+      - name: Check Cloudflare deploy credentials
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CF_TOKEN" || { echo 'HOLD: CLOUDFLARE_API_TOKEN GitHub secret missing'; exit 1; }
+          test -n "$CF_ACCOUNT" || { echo 'HOLD: CLOUDFLARE_ACCOUNT_ID GitHub secret missing'; exit 1; }
+      - name: Deploy isolated Worker (no production routing)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc --name vaos-dify-qualification-preview --keep-vars

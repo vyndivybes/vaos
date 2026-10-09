@@ -33,3 +33,13 @@ test('audit hash chain detects tampering and contains no OAuth credentials',asyn
  es[0].event='ALTERED';s.tamper('ap-qual-audit',es);
  assert.equal((await auditValidate(s)).ok,false);
 });
+
+test('remediation may reuse diagnosed nonce once but never automatically replays',async()=>{
+ const s=store(),c=client();
+ s.raw.set('ap-qual-state',{status:'HOLD',phase:'BUILD_SUBMITTED',marker,flowId:null,runId:null});
+ await s.put('ap-qual-remediation-admitted',true);
+ const x=await qualifyOnce({store:s,client:c,makeMarker:()=>{throw Error('wrong nonce')},resumeRemediation:true});
+ assert.equal(x.status,'PASS');assert.equal(c.calls.filter(v=>v.method==='ap_test_flow').length,1);
+ const y=await qualifyOnce({store:s,client:c,makeMarker:()=>marker,resumeRemediation:true});
+ assert.equal(y.status,'PASS');assert.equal(c.calls.filter(v=>v.method==='ap_test_flow').length,1);
+});

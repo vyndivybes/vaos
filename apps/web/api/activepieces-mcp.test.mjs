@@ -188,3 +188,22 @@ test('setup failure preserves only a safe discovery code in the UI and durable e
   assert.equal(evidence.productionActivation,false);
   assert.doesNotMatch(JSON.stringify(evidence),/do_not_print/);
 });
+
+test('public metadata health is read-only, sanitized and does not disclose OAuth secrets',async()=>{
+  const env={ACTIVEPIECES_HANDSHAKE:{idFromName:n=>n,get:()=>({
+    async probeDiscovery(){return {ok:false,code:'MCP_DISCOVERY_FETCH_TYPE_ERROR',httpStatus:null,cached:false,clientSecret:'must_not_appear'};},
+  })}};
+  const res=await handler(req('/api/activepieces-mcp/discovery-health','GET',{},env),{});
+  assert.equal(res.status,200);
+  const text=await res.text();
+  assert.equal(JSON.parse(text).code,'MCP_DISCOVERY_FETCH_TYPE_ERROR');
+  assert.equal(JSON.parse(text).productionActivation,false);
+  assert.doesNotMatch(text,/must_not_appear|clientSecret/);
+  assert.equal(res.headers.get('cache-control'),'public, max-age=60');
+});
+test('public metadata health is strictly GET and fails closed when storage is unavailable',async()=>{
+  const post=await handler(req('/api/activepieces-mcp/discovery-health','POST',{}),{});
+  assert.equal(post.status,405);
+  const unavailable=await handler(req('/api/activepieces-mcp/discovery-health','GET',{},{}),{});
+  assert.equal(unavailable.status,503);
+});

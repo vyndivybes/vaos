@@ -28,7 +28,25 @@
     "not_found_handling": "none"
   },
   "observability": {
-    "enabled": true
+    "enabled": true,
+    "redact_query_string": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 0.25,
+      "persist": false,
+      "destinations": [
+        "grafana-logs"
+      ]
+    },
+    "traces": {
+      "enabled": true,
+      "head_sampling_rate": 0.1,
+      "persist": false,
+      "destinations": [
+        "grafana-traces"
+      ]
+    }
   },
   "triggers": {
     "crons": [

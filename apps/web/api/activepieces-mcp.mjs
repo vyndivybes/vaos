@@ -100,6 +100,15 @@ export default async function activepiecesOAuthHandler(req,res) {
         headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
     }catch{return fail(503,'AP_SYNTHETIC_EVIDENCE_UNAVAILABLE')}
   }
+  if(path==='/api/activepieces-mcp/synthetic-diagnostic'){
+    if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
+    try{
+      const v=await vault(req.env).syntheticDiagnosis();
+      return new Response(JSON.stringify({providerId:'activepieces',...v,
+        productionActivation:false}),{status:200,headers:{
+        'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+    }catch{return fail(503,'AP_SYNTHETIC_DIAGNOSIS_UNAVAILABLE')}
+  }
   if(!session(req))return fail(401,'UNAUTHENTICATED');
   let stub;
   try{stub=vault(req.env)}catch{return fail(503,'ACTIVEPIECES_HANDSHAKE_UNAVAILABLE')}

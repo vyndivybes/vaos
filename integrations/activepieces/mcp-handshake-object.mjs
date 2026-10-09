@@ -1,3 +1,4 @@
+import { remediateProjectOnce } from './project-context-repair.mjs';
 import { diagnoseSyntheticHold } from './synthetic-diagnostic.mjs';
 import { auditAppend } from './synthetic-qualification.mjs';
 import { qualifyOnce, recoverOnce, qualifyEvidence } from './synthetic-qualification.mjs';
@@ -41,8 +42,11 @@ export class ActivepiecesMcpHandshake extends DurableObject {
     if(this.env.ACTIVEPIECES_SYNTHETIC_QUALIFY!=='approved-20261009')
       return {status:'DISABLED',productionActivation:false};
     const prior=await this.ctx.storage.get('ap-qual-state');
-    if(prior && (prior.status==='PASS'||!prior.runId||!prior.flowId))
-      return qualifyEvidence(this.ctx.storage);
+    if(prior && prior.status==='PASS')return qualifyEvidence(this.ctx.storage);
+    const diagnosis=prior?await this.ctx.storage.get('ap-qual-diagnostic'):null;
+    if(prior && !(prior.status==='HOLD'&&prior.phase==='BUILD_SUBMITTED'
+      && diagnosis?.reason==='AP_PROJECT_CONTEXT_MISSING')
+      && (!prior.runId||!prior.flowId))return qualifyEvidence(this.ctx.storage);
     const connection=await this.connectionStatus();
     if(!connection.connected)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_VERIFIED',productionActivation:false};
     const envelope=await this.ctx.storage.get('oauth-encrypted-credentials');
@@ -59,7 +63,20 @@ export class ActivepiecesMcpHandshake extends DurableObject {
       return {status:'HOLD',reason:'AP_CREDENTIALS_UNAVAILABLE',productionActivation:false};
     }
     const client=createActivepiecesToolClient({accessToken:credentials.accessToken});
-    if(prior) return recoverOnce({store:this.ctx.storage,client});
+    if(prior && diagnosis?.reason==='AP_PROJECT_CONTEXT_MISSING'
+       && prior.phase==='BUILD_SUBMITTED' && prior.status==='HOLD'){
+      const result=await remediateProjectOnce({store:this.ctx.storage,client,
+        retry:(marker)=>qualifyOnce({store:this.ctx.storage,client,makeMarker:()=>marker,
+          resumeRemediation:true})});
+      if(result.reason && result.reason!=='AP_REMEDIATION_ALREADY_ATTEMPTED'){
+        const current=await this.ctx.storage.get('ap-qual-state');
+        await this.ctx.storage.put('ap-qual-state',{...current,status:'HOLD',
+          phase:'REMEDIATION_HOLD',reason:result.reason});
+        await auditAppend(this.ctx.storage,'REMEDIATION_HOLD',{reason:result.reason});
+      }
+      return qualifyEvidence(this.ctx.storage);
+    }
+    if(prior)return recoverOnce({store:this.ctx.storage,client});
     const bytes=crypto.getRandomValues(new Uint8Array(8));
     const marker='VAOSQ_'+Array.from(bytes,b=>b.toString(16).padStart(2,'0')).join('').toUpperCase();
     return qualifyOnce({store:this.ctx.storage,client,makeMarker:()=>marker});

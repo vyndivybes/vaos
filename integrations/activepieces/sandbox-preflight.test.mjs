@@ -123,10 +123,10 @@ test('a dependency-free Activepieces package.json is safe, but installed modules
 
 test('read-only mismatch evidence distinguishes webhook piece, trigger name and unwanted inputs',async()=>{
  const cases=[
-  [{pieceName:'wrong-piece',triggerName:'catch_webhook',input:{}},[false,true,true,0]],
-  [{pieceName:'@activepieces/piece-webhook',triggerName:'different',input:{}},[true,false,true,0]],
-  [{pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input:{extra:'private_value'}},[true,true,false,1]],
-  [{pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input:null},[true,true,false,null]]
+  [{pieceName:'wrong-piece',triggerName:'catch_webhook',input:{}},[false,true,true,'0']],
+  [{pieceName:'@activepieces/piece-webhook',triggerName:'different',input:{}},[true,false,true,'0']],
+  [{pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input:{extra:'private_value'}},[true,true,false,'1']],
+  [{pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input:null},[true,true,false,'UNKNOWN']]
  ];
  for(const [triggerSettings,expected] of cases){
   const {client,calls}=realMcpShapeClient({triggerSettings});

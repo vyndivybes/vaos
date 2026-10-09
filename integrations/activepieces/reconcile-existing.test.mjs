@@ -87,3 +87,62 @@ test('multiple non-personal projects are ambiguous and no flow read is attempted
  const r=await reconcileExistingQualification({store:s,client:c});
  assert.equal(r.reason,'AP_PROJECT_SELECTION_AMBIGUOUS');
 });
+
+
+const markerRun=(i)=>({id:'run_'+String(i).padStart(9,'0'),flowId:'flow_1234567890',status:'SUCCEEDED',environment:'TESTING'});
+const markerDetail=(r,m=marker,checksum=45,status='SUCCEEDED',objectSteps=true)=>({
+  id:r.id,flowId:r.flowId,status,environment:'TESTING',
+  steps:objectSteps
+    ?{step_1:{output:{qualMarker:m,checksum,fixtureType:'VAOS_SANDBOX_V1'}}}
+    :[{output:{qualMarker:m,checksum,fixtureType:'VAOS_SANDBOX_V1'}}]
+});
+function multiRunClient(runs,docs){
+  const flowId='flow_1234567890';
+  const c=fake([{id:flowId,displayName:'VAOS Synthetic Qualification '+marker}],runs);
+  const original=c.call;
+  c.call=async(name,args)=>{
+    if(name==='ap_get_run'){
+      c.calls.push({name,args});
+      const result=docs[args.flowRunId];
+      if(result instanceof Error)throw result;
+      return {structuredContent:result};
+    }
+    return original(name,args);
+  };
+  return c;
+}
+test('18 tests with one original marker are independently verified without replay',async()=>{
+  const runs=Array.from({length:18},(_,i)=>markerRun(i));
+  const docs=Object.fromEntries(runs.map((r,i)=>[r.id,markerDetail(r,i===8?marker:'TEST_ONLY')]));
+  const c=multiRunClient(runs,docs);
+  const r=await reconcileExistingQualification({store:store(),client:c});
+  assert.equal(r.status,'EXISTING_RUN_VERIFIED');assert.equal(r.runCount,18);
+  assert.equal(r.markerVerified,true);assert.equal(r.checksumVerified,true);
+  assert.equal(c.calls.filter(x=>x.name==='ap_get_run').length,18);
+  assert.equal(c.calls.some(x=>x.name==='ap_test_flow'),false);
+});
+test('TEST_ONLY executions do not qualify original marker',async()=>{
+  const runs=[markerRun(1),markerRun(2)];
+  const c=multiRunClient(runs,Object.fromEntries(runs.map(r=>[r.id,markerDetail(r,'TEST_ONLY')])));
+  const r=await reconcileExistingQualification({store:store(),client:c});
+  assert.equal(r.status,'HOLD');assert.equal(r.reason,'AP_QUALIFICATION_RUN_NOT_FOUND');
+  assert.equal(r.markerVerified,false);
+});
+test('two runs with the exact original marker stay HOLD',async()=>{
+  const runs=[markerRun(1),markerRun(2)];
+  const c=multiRunClient(runs,Object.fromEntries(runs.map(r=>[r.id,markerDetail(r)])));
+  const r=await reconcileExistingQualification({store:store(),client:c});
+  assert.equal(r.status,'HOLD');assert.equal(r.reason,'AP_MULTIPLE_MARKER_RUNS');
+});
+test('wrong checksum stays HOLD even if original marker appears',async()=>{
+  const run=markerRun(1),c=multiRunClient([run],{[run.id]:markerDetail(run,marker,44)});
+  const r=await reconcileExistingQualification({store:store(),client:c});
+  assert.equal(r.reason,'AP_RUN_CONTENT_UNVERIFIED');
+  assert.equal(r.markerVerified,true);assert.equal(r.checksumVerified,false);
+});
+test('one failed run readback blocks qualification even with matching run',async()=>{
+  const a=markerRun(1),b=markerRun(2);
+  const c=multiRunClient([a,b],{[a.id]:markerDetail(a),[b.id]:new Error('upstream offline')});
+  const r=await reconcileExistingQualification({store:store(),client:c});
+  assert.equal(r.status,'HOLD');assert.notEqual(r.status,'EXISTING_RUN_VERIFIED');
+});

@@ -21,7 +21,7 @@ export function createWindmillLiveDoQualificationHandler({
     try{principal=await verifyIdentity(auth.slice(7));}
     catch{return res.status(401).json(apiError('UNAUTHENTICATED','Valid GitHub workflow identity required'))}
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)||
-      Object.keys(req.body).length!==1||!['start','status','finish'].includes(req.body.phase)){
+      Object.keys(req.body).length!==1||!['start','status','restart','restart-status','finish'].includes(req.body.phase)){
       return res.status(422).json(apiError('VALIDATION_ERROR','Valid qualification phase required'));
     }
     try{
@@ -32,11 +32,16 @@ export function createWindmillLiveDoQualificationHandler({
         ?await stub.startQualification(principal.runId)
         :req.body.phase==='status'
           ?await stub.alarmStatus(principal.runId)
-          :await stub.finishQualification(principal.runId);
+          :req.body.phase==='restart'
+            ?await stub.beginRestartQualification(principal.runId)
+            :req.body.phase==='restart-status'
+              ?await stub.restartQualificationStatus(principal.runId)
+              :await stub.finishQualification(principal.runId);
       if(value?.productionActivation!==false||
         (req.body.phase==='start'&&value.status!=='STARTED')||
         (req.body.phase==='finish'&&value.status!=='PASS')||
-        (req.body.phase==='status'&&!['WAITING','ALARM_OBSERVED'].includes(value.status))){
+        (req.body.phase==='status'&&!['WAITING','ALARM_OBSERVED'].includes(value.status))||
+        (req.body.phase==='restart-status'&&!['WAITING','RESTART_VERIFIED'].includes(value.status))){
         throw new Error('QUALIFICATION_FAILED');
       }
       return res.status(200).json({data:value});

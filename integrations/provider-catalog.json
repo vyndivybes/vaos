@@ -397,6 +397,18 @@
       "tier": "C",
       "implementation": "catalog",
       "priority": "optional"
+    },
+    {
+      "providerId": "slack",
+      "displayName": "Slack",
+      "capabilities": [
+        "notification.send"
+      ],
+      "tier": "A",
+      "implementation": "adapter-implemented",
+      "priority": "optional",
+      "subscriptionPolicy": "free-cloud-evaluation",
+      "productionRouting": "disabled-pending-live-qualification"
     }
   ]
 }

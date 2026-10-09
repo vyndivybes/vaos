@@ -101,3 +101,28 @@ test('R2 store records correlation and lineage metadata but never secret input',
   assert.equal(JSON.stringify(row).includes('do-not-store'),false);
   assert.equal(JSON.stringify(result).includes('do-not-store'),false);
 });
+
+
+import { createR2ArtifactReader } from './artifact-broker.mjs';
+
+test('R2 artifact reader verifies immutable PDF hash and source reference',async()=>{
+  const bytes=new TextEncoder().encode('%PDF-1.4 synthetic');
+  const digest=[...new Uint8Array(await crypto.subtle.digest('SHA-256',bytes))].map(x=>x.toString(16).padStart(2,'0')).join('');
+  const bucket={async get(key){
+    assert.equal(key,'vaos-artifacts/sha256/'+digest);
+    return {size:bytes.byteLength,httpMetadata:{contentType:'application/pdf'},
+      customMetadata:{sha256:digest},arrayBuffer:async()=>bytes.buffer};
+  }};
+  const reader=createR2ArtifactReader({bucket});
+  const out=await reader.read('r2:sha256:'+digest);
+  assert.equal(out.sha256,digest);
+  assert.equal(out.contentType,'application/pdf');
+  assert.equal(new TextDecoder().decode(out.bytes),'%PDF-1.4 synthetic');
+});
+test('R2 artifact reader rejects tampered bytes and malformed references',async()=>{
+  const bucket={async get(){return {size:9,httpMetadata:{contentType:'application/pdf'},
+    arrayBuffer:async()=>new TextEncoder().encode('%PDF-FAKE').buffer}}};
+  const reader=createR2ArtifactReader({bucket});
+  await assert.rejects(()=>reader.read('https://evil.invalid/pdf'),/ARTIFACT_REFERENCE_INVALID/);
+  await assert.rejects(()=>reader.read('r2:sha256:'+'a'.repeat(64)),/ARTIFACT_HASH_VERIFICATION_FAILED/);
+});

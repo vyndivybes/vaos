@@ -187,3 +187,49 @@ test('provider must return bytes; remote output URLs are rejected',async()=>{
   });
   await assert.rejects(()=>a.execute(job()),/STIRLING_OUTPUT_INVALID/);
 });
+
+
+import { createStirlingCloudTransport } from './transform-adapter.mjs';
+
+test('Stirling Cloud transport builds guarded multipart POST with API key and PDF bytes',async()=>{
+  let requests=0;
+  const transport=createStirlingCloudTransport({fetchImpl:async(url,init)=>{
+    requests++;
+    assert.equal(url,'https://api.stirling.com/api/v1/general/rotate-pdf');
+    assert.equal(init.method,'POST');
+    assert.equal(init.redirect,'manual');
+    assert.equal(init.headers['X-API-KEY'],'redacted-test-key');
+    assert.equal(init.body.get('angle'),'90');
+    const file=init.body.get('fileInput');
+    assert.equal(file.type,'application/pdf');
+    assert.equal(await file.text(),'%PDF-1.4 synthetic');
+    return new Response('%PDF-1.4 transformed',{status:200,headers:{'content-type':'application/pdf'}});
+  }});
+  const result=await transport.transform({
+    url:'https://api.stirling.com/api/v1/general/rotate-pdf',
+    method:'POST',headers:{'X-API-KEY':'redacted-test-key'},
+    operation:'rotate-pdf',sourceBytes:new TextEncoder().encode('%PDF-1.4 synthetic'),
+    sourceContentType:'application/pdf',options:{angle:90},timeoutMs:1000,
+  });
+  assert.equal(result.status,200);
+  assert.equal(result.contentType,'application/pdf');
+  assert.equal(new TextDecoder().decode(result.bodyBytes),'%PDF-1.4 transformed');
+  assert.equal(requests,1);
+});
+
+test('Stirling Cloud transport denies other hosts, redirects, non-PDF results and unexpected angles',async()=>{
+  let requests=0;
+  const ok=()=>({url:'https://api.stirling.com/api/v1/general/rotate-pdf',method:'POST',
+    headers:{'X-API-KEY':'test-secret'},operation:'rotate-pdf',
+    sourceBytes:new TextEncoder().encode('%PDF-1.4 test'),sourceContentType:'application/pdf',
+    options:{angle:90},timeoutMs:1000});
+  const transport=createStirlingCloudTransport({fetchImpl:async()=>{
+    requests++;return new Response('',{status:302,headers:{location:'https://evil.invalid'}});
+  }});
+  await assert.rejects(()=>transport.transform({...ok(),url:'https://evil.invalid/api/v1/general/rotate-pdf'}),/STIRLING_TRANSPORT_URL_REJECTED/);
+  await assert.rejects(()=>transport.transform({...ok(),options:{angle:0}}),/STIRLING_TRANSPORT_REQUEST_REJECTED/);
+  await assert.rejects(()=>transport.transform(ok()),/STIRLING_TRANSPORT_REDIRECT_BLOCKED/);
+  assert.equal(requests,1);
+  const html=createStirlingCloudTransport({fetchImpl:async()=>new Response('<html>bad</html>',{status:200,headers:{'content-type':'text/html'}})});
+  await assert.rejects(()=>html.transform(ok()),/STIRLING_TRANSPORT_OUTPUT_REJECTED/);
+});

@@ -160,3 +160,69 @@ export function createStirlingTransformAdapter({
 
   return Object.freeze({id:'stirling.transform.v1',providerId:PROVIDER_ID,capability:CAPABILITY,execute});
 }
+
+
+/**
+ * Cloud-only Stirling PDF multipart transport. The URL and operation are fixed
+ * to the documented hosted rotate endpoint. No arbitrary outgoing URLs,
+ * unbounded uploads, redirects, or upstream response text are accepted.
+ * Produces the contract consumed by createStirlingTransformAdapter.
+ */
+export function createStirlingCloudTransport({
+  fetchImpl=globalThis.fetch,
+  maxInputBytes=2_097_152,
+  maxOutputBytes=16_777_216,
+}={}){
+  if(typeof fetchImpl!=='function'||!Number.isInteger(maxInputBytes)||maxInputBytes<1
+      ||!Number.isInteger(maxOutputBytes)||maxOutputBytes<1){
+    throw providerError('STIRLING_TRANSPORT_CONFIG_INVALID');
+  }
+  const endpoint='https://api.stirling.com/api/v1/general/rotate-pdf';
+  return Object.freeze({
+    async transform({url,method,headers,operation,sourceBytes,sourceContentType,options,timeoutMs=30_000}={}){
+      if(url!==endpoint)throw providerError('STIRLING_TRANSPORT_URL_REJECTED');
+      if(method!=='POST'||operation!=='rotate-pdf'||sourceContentType!=='application/pdf'
+        ||!(sourceBytes instanceof Uint8Array)||sourceBytes.byteLength<5
+        ||sourceBytes.byteLength>maxInputBytes
+        ||new TextDecoder().decode(sourceBytes.subarray(0,5))!=='%PDF-'
+        ||!options||Object.keys(options).length!==1||options.angle!==90
+        ||!Number.isInteger(timeoutMs)||timeoutMs<1000||timeoutMs>120_000
+        ||typeof headers?.['X-API-KEY']!=='string'||!headers['X-API-KEY'].trim()){
+        throw providerError('STIRLING_TRANSPORT_REQUEST_REJECTED');
+      }
+      const body=new FormData();
+      body.append('fileInput',new Blob([sourceBytes],{type:'application/pdf'}),'vaos-qualification.pdf');
+      body.append('angle','90');
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),timeoutMs);
+      let response;
+      try{
+        response=await fetchImpl(endpoint,{
+          method:'POST',headers:{'X-API-KEY':headers['X-API-KEY'],Accept:'application/pdf'},
+          body,redirect:'manual',signal:controller.signal,
+        });
+      }catch{
+        throw providerError('STIRLING_TRANSPORT_NETWORK_FAILED',{retryable:true});
+      }finally{clearTimeout(timer)}
+      const status=response?.status;
+      if(!Number.isInteger(status))throw providerError('STIRLING_TRANSPORT_RESPONSE_INVALID');
+      if(status>=300&&status<400)throw providerError('STIRLING_TRANSPORT_REDIRECT_BLOCKED');
+      const type=String(response.headers?.get('content-type')||'').split(';')[0].trim().toLowerCase();
+      if(status<200||status>=300){
+        // The upstream error body may contain private details: never return or log it.
+        return {status,contentType:type,bodyBytes:new Uint8Array(0)};
+      }
+      if(type!=='application/pdf')throw providerError('STIRLING_TRANSPORT_OUTPUT_REJECTED');
+      const declared=Number(response.headers?.get('content-length'));
+      if(Number.isFinite(declared)&&declared>maxOutputBytes)throw providerError('STIRLING_TRANSPORT_OUTPUT_REJECTED');
+      let bytes;
+      try{bytes=new Uint8Array(await response.arrayBuffer())}
+      catch{throw providerError('STIRLING_TRANSPORT_OUTPUT_REJECTED')}
+      if(bytes.byteLength<5||bytes.byteLength>maxOutputBytes
+        ||new TextDecoder().decode(bytes.subarray(0,5))!=='%PDF-'){
+        throw providerError('STIRLING_TRANSPORT_OUTPUT_REJECTED');
+      }
+      return {status,bodyBytes:bytes,contentType:'application/pdf'};
+    },
+  });
+}

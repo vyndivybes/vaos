@@ -17,7 +17,9 @@ function mock({preflightSafe=true,flowEnabled=false,failTool=null}={}){
   };
   const fullName='VAOS Synthetic Qualification '+marker;
   const flow={id:'flow_12345678',displayName:fullName,status:flowEnabled?'ENABLED':'DISABLED',published:false};
-  const client={calls,call:async(name,args)=>{
+  const client={calls,tools:async()=>[
+    'ap_update_trigger','ap_update_step','ap_list_flows','ap_read_step_settings'
+  ],call:async(name,args)=>{
     calls.push({name,args});
     if(name===failTool)throw Error('synthetic error');
     if(name==='ap_list_flows')return {structuredContent:{flows:[flow]}};
@@ -99,4 +101,14 @@ test('post-write mismatch remains HOLD, with no automatic retry',async()=>{
  const out=await repairOriginalSandboxOnce(m);
  assert.equal(out.status,'HOLD');
  assert.equal(out.reason,'AP_REPAIR_READBACK_UNVERIFIED');
+});
+
+test('missing Activepieces mutation tools fails closed before consuming one-shot admission',async()=>{
+  const m=mock();
+  m.client.tools=async()=>['ap_list_flows','ap_read_step_settings'];
+  const result=await repairOriginalSandboxOnce(m);
+  assert.equal(result.status,'HOLD');
+  assert.equal(result.reason,'AP_REPAIR_MUTATION_TOOLS_UNAVAILABLE');
+  assert.equal(m.calls.length,0);
+  assert.equal(await m.store.get('ap-sandbox-repair-admission-v1'),undefined);
 });

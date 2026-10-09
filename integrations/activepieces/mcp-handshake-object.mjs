@@ -119,7 +119,12 @@ export class ActivepiecesMcpHandshake extends DurableObject {
     }catch{return {status:'HOLD',reason:'AP_REPAIR_CREDENTIAL_OR_NETWORK_UNAVAILABLE',productionActivation:false};}
   }
   async syntheticEvidence() {
-    return qualifyEvidence(this.ctx.storage);
+    const evidence=await qualifyEvidence(this.ctx.storage);
+    // Sanitize just the one-shot CODE recovery state, allowing independent
+    // public verification without disclosing markers, flow IDs or secrets.
+    const recovery=await this.ctx.storage.get('ap-sandbox-step-recovery-v1');
+    return {...evidence,codeRecoveryStatus:
+      ['ADMITTED','VERIFIED','HOLD'].includes(recovery?.status)?recovery.status:'NOT_ADMITTED'};
   }
   async qualifyScheduledOnce(){
     // This is an explicit, one-off commissioning order, not a general agent action.

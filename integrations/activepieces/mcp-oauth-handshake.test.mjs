@@ -99,3 +99,31 @@ test('MCP reader accepts JSON or compact event-stream frames without arbitrary d
   assert.equal(parseMcpResponse('event: message\ndata: '+json+'\n\n','text/event-stream').result.tools[0].name,'ap_get_run');
   assert.throws(()=>parseMcpResponse('not-json','application/json'),/ACTIVEPIECES_MCP_RESPONSE_INVALID/);
 });
+
+test('network failure before discovery exposes only a fixed diagnostic code',async()=>{
+  await assert.rejects(()=>beginActivepiecesAuthorization({
+    callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
+    store:fakeStore(),fetchImpl:async()=>{throw new TypeError('untrusted upstream message and token=secret');},
+  }),/ACTIVEPIECES_OAUTH_DISCOVERY_NETWORK_FAILED/);
+});
+test('bad metadata response includes safe phase and HTTP status',async()=>{
+  await assert.rejects(()=>beginActivepiecesAuthorization({
+    callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
+    store:fakeStore(),fetchImpl:async()=>response({error:'hidden'},403),
+  }),/ACTIVEPIECES_OAUTH_DISCOVERY_HTTP_403/);
+});
+test('a failed registration is distinct from discovery failure',async()=>{
+  await assert.rejects(()=>beginActivepiecesAuthorization({
+    callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
+    store:fakeStore(),
+    fetchImpl:async(url)=>String(url).endsWith('/register')?response({error:'redacted'},500):response(metadata),
+  }),/ACTIVEPIECES_OAUTH_REGISTRATION_HTTP_500/);
+});
+test('registration succeeds but Durable Object state failure is labeled independently',async()=>{
+  const s=fakeStore();
+  s.put=async()=>{throw Error('private driver connection details')};
+  await assert.rejects(()=>beginActivepiecesAuthorization({
+    callbackUrl:'https://vaos.vayushastr.workers.dev/api/activepieces-mcp/callback',
+    store:s,fetchImpl:mockFetch([]),
+  }),/ACTIVEPIECES_OAUTH_STATE_STORE_FAILED/);
+});

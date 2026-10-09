@@ -47,11 +47,26 @@ export function createSlackQualificationHandler({makeAdapter}={}){
           summary:'VAOS synthetic Slack delivery. Production notification routing remains disabled.',
           evidenceRef:'slack-qualification:'+eventId},
       });
+      // Append bounded acknowledgement evidence to the VAOS R2 artifact boundary.
+      // It is deliberately a HOLD: Slack readback/approval are independent steps.
+      let auditRecorded=false;
+      try{
+        if(req.env?.VAOS_ARTIFACTS?.put){
+          await req.env.VAOS_ARTIFACTS.put('qualification/slack/'+eventId+'.json',JSON.stringify({
+            schemaVersion:'vaos.slack.qualification.v1',providerId:'slack',
+            eventId,channelId:CHANNEL,providerRunId:result.providerRunId,
+            acknowledgmentVerified:result.verification?.verified===true,
+            independentReadbackVerified:false,productionActivation:false,
+            recordedAt:new Date().toISOString(),
+          }),{httpMetadata:{contentType:'application/json'}});
+          auditRecorded=true;
+        }
+      }catch{auditRecorded=false}
       return respond(200,{providerId:'slack',status:'HOLD',
-        reason:'INDEPENDENT_SLACK_READBACK_REQUIRED',channelId:CHANNEL,
-        eventId,providerRunId:result.providerRunId,
+        reason:auditRecorded?'INDEPENDENT_SLACK_READBACK_REQUIRED':'SLACK_AUDIT_UNAVAILABLE',
+        channelId:CHANNEL,eventId,providerRunId:result.providerRunId,
         acknowledgmentVerified:result.verification?.verified===true,
-        productionActivation:false});
+        auditRecorded,productionActivation:false});
     }catch(e){
       const code=typeof e?.code==='string'&&/^SLACK_[A-Z_]+$/.test(e.code)?e.code:'SLACK_QUALIFICATION_FAILED';
       return respond(503,{providerId:'slack',status:'HOLD',reason:code,productionActivation:false});

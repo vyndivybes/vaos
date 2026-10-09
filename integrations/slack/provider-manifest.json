@@ -1,0 +1,54 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "slack",
+  "displayName": "Slack",
+  "adapterVersion": "1.0.0",
+  "description": "Outbound-only governed VAOS operational notification sink; never approval authority.",
+  "capabilities": [
+    "notification.send"
+  ],
+  "deploymentModes": [
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "evaluation",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "public",
+      "internal"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "bearer"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "no-automatic-retry-on-unknown",
+    "verificationStrategy": "slack-response-ack",
+    "healthProbe": "optional",
+    "rollbackMethod": "disable-slack-notification-routing"
+  },
+  "operations": {
+    "retentionClass": "slack-workspace-policy",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "event-allowlist-and-rate-budget"
+  },
+  "notes": "Evaluation only. Requires scoped bot token and independently verified live smoke before enabled."
+}

@@ -36,7 +36,7 @@ export class ActivepiecesMcpHandshake extends DurableObject {
     }catch{return {status:'HOLD',reason:'AP_DIAGNOSIS_UNAVAILABLE',productionActivation:false};}
   }
   async reconcileSyntheticReadOnly() {
-    const cached=await this.ctx.storage.get('ap-qual-readonly-reconcile');
+    const cached=await this.ctx.storage.get('ap-qual-readonly-reconcile-v2');
     if(cached?.checkedAtMs && Date.now()-cached.checkedAtMs<600000)
       return {...cached,cached:true};
     const state=await this.ctx.storage.get('ap-qual-state');

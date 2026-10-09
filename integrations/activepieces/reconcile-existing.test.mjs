@@ -42,3 +42,20 @@ test('cached readback is idempotent, and never repeats provider calls',async()=>
   const r=await reconcileExistingQualification({store:s,client:c});
   assert.equal(r.cached,true);assert.equal(c.calls.length,3);
 });
+
+test('provider nested JSON MCP content envelope unwraps project context before reading flows',async()=>{
+ const s=store(),c=fake(),before=c.call;
+ c.call=async(name,args)=>{
+   const result=await before(name,args);
+   if(name==='ap_set_project_context')return{content:[{type:'text',text:JSON.stringify(result)}]};
+   return result;
+ };
+ const result=await reconcileExistingQualification({store:s,client:c});
+ assert.equal(result.status,'NO_MATCH');
+ assert.deepEqual(c.calls.map(v=>v.name),['ap_set_project_context','ap_set_project_context','ap_list_flows']);
+});
+test('provider structuredContent nested in JSON text is consumed as machine evidence',()=>{
+ const msg={content:[{type:'text',text:'✅ Listed 1 flow(s):'}],structuredContent:{flows:[{id:'fl_123456',displayName:'sample'}],count:1}};
+ assert.equal(parseActivepiecesToolResult({content:[{type:'text',text:JSON.stringify(msg)}]}).flows[0].id,'fl_123456');
+ assert.equal(parseActivepiecesToolResult({content:[{type:'text',text:JSON.stringify({result:msg})}]}).count,1);
+});

@@ -38,8 +38,16 @@ function toolText(raw){
 }
 function findProject(text){
   const lines=[...text.matchAll(/^\s*[-*]\s+(.+?)\s+\(([a-zA-Z0-9_-]{6,120})\)\s*$/gm)].map(m=>({name:m[1].trim(),id:m[2]}));
+  // Scope strictly to one unambiguous accessible project; never select from a
+  // multi-project catalog unless exactly one is named Personal Project.
   const personal=lines.filter(p=>p.name==='Personal Project');
   if(personal.length===1)return personal[0];
+  if(personal.length===0 && lines.length===1)return lines[0];
+  if(/permission denied|does not have.+permission|not authorized/i.test(text))
+    throw E('AP_PROJECT_ACCESS_DENIED');
+  if(!/available projects/i.test(text))
+    throw E('AP_PROJECT_CATALOG_UNAVAILABLE');
+  if(lines.length===0)throw E('AP_PROJECT_CATALOG_EMPTY');
   throw E('AP_PROJECT_SELECTION_AMBIGUOUS');
 }
 const exactId=v=>typeof v==='string'&&/^[a-zA-Z0-9_-]{6,120}$/.test(v);
@@ -52,7 +60,7 @@ function authenticatedRunDetail(doc,flowId,runId,marker){
 }
 export async function reconcileExistingQualification({store,client,now=Date.now}={}){
   if(!store?.get||!store?.put||!client?.tools||!client?.call)throw E('AP_RECONCILE_DEPS_INVALID');
-  const cache=await store.get('ap-qual-readonly-reconcile-v2');
+  const cache=await store.get('ap-qual-readonly-reconcile-v3');
   if(cache && Number.isFinite(cache.checkedAtMs) && now()-cache.checkedAtMs<600000)
     return {...cache,cached:true};
   const state=await store.get('ap-qual-state');
@@ -93,6 +101,6 @@ export async function reconcileExistingQualification({store,client,now=Date.now}
     }
   }catch(e){result={status:'HOLD',reason:/^AP_[A-Z0-9_]{3,80}$/.test(e?.code||'')?e.code:'AP_READONLY_RECONCILIATION_UNAVAILABLE'};}
   const safe={...result,checkedAtMs:now(),productionActivation:false,cached:false};
-  await store.put('ap-qual-readonly-reconcile-v2',safe);
+  await store.put('ap-qual-readonly-reconcile-v3',safe);
   return safe;
 }

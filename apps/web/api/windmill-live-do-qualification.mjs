@@ -21,8 +21,16 @@ export function createWindmillLiveDoQualificationHandler({
     try{principal=await verifyIdentity(auth.slice(7));}
     catch{return res.status(401).json(apiError('UNAUTHENTICATED','Valid GitHub workflow identity required'))}
     if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)||
-      Object.keys(req.body).length!==1||!['start','status','restart','restart-status','finish'].includes(req.body.phase)){
+      Object.keys(req.body).length!==1||!['capabilities','start','status','restart','restart-status','finish'].includes(req.body.phase)){
       return res.status(422).json(apiError('VALIDATION_ERROR','Valid qualification phase required'));
+    }
+    if(req.body.phase==='capabilities'){
+      return res.status(200).json({data:{
+        schemaVersion:'vaos.windmill.restart-qualification.v1',
+        status:'RESTART_DRILL_READY',
+        productionActivation:false,
+        windmillCalls:0,
+      }});
     }
     try{
       const namespace=req.env?.WINDMILL_ADMISSION;

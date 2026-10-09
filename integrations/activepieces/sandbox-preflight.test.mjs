@@ -113,3 +113,10 @@ test('missing structural proof fails closed and emits metadata but not source, m
  assert.equal(JSON.stringify(r).includes(marker),false);
  assert.ok(Array.isArray(r.structureKeys));
 });
+
+test('a dependency-free Activepieces package.json is safe, but installed modules are not',async()=>{
+  const {client}=realMcpShapeClient({packageJson:'{"dependencies":{}}'});
+  const r=await preflightActivepiecesSandbox({store,client});
+  assert.equal(r.status,'PASS');
+  assert.equal(r.runSubmitted,false);
+});

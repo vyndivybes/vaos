@@ -5,6 +5,9 @@ const ALLOWED_BY_CAPABILITY = Object.freeze({
   'workflow.orchestrate': Object.freeze(['activepieces']),
   'integration.saas': Object.freeze([]),
   'code.execute': Object.freeze(['windmill']),
+  'document.sign': Object.freeze(['documenso']),
+  'document.extract': Object.freeze([]),
+  'data.replicate': Object.freeze([]),
 });
 
 export function createNoSubscriptionRoutingPolicy() {

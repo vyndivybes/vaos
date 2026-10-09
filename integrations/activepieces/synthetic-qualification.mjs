@@ -49,9 +49,13 @@ function assessRun(payload,flowId,runId,marker){
     (!fid||fid===flowId)&&(!rid||rid===runId)&&txt.includes(marker)&&txt.includes('"checksum":45')&&txt.includes('VAOS_SANDBOX_V1'),
     markerVerified:txt.includes(marker),checksumVerified:txt.includes('"checksum":45')};
 }
-export async function qualifyOnce({store,client,makeMarker}){
-  if(await store.get('ap-qual-state'))return qualifyEvidence(store); // fail closed on repeated calls
-  const marker=makeMarker();
+export async function qualifyOnce({store,client,makeMarker,resumeRemediation=false}){
+  const previous=await store.get('ap-qual-state');
+  if(previous && !resumeRemediation)return qualifyEvidence(store);
+  if(resumeRemediation && !(previous?.status==='HOLD'&&previous?.phase==='BUILD_SUBMITTED'
+    && await store.get('ap-qual-remediation-admitted')===true))
+    return qualifyEvidence(store);
+  const marker=resumeRemediation?previous.marker:makeMarker();
   if(!/^VAOSQ_[0-9A-F]{16}$/.test(marker))throw err('AP_MARKER_INVALID');
   let state={status:'IN_PROGRESS',phase:'ADMITTED',reason:null,marker,flowId:null,runId:null};
   await persist(store,state,'ADMITTED');

@@ -37,6 +37,7 @@ jobs:
           integrations/n8n/workflow-adapter.test.mjs
           integrations/activepieces/workflow-adapter.test.mjs
           integrations/activepieces/sandbox-preflight.test.mjs
+          integrations/activepieces/sandbox-repair.test.mjs
           integrations/paperless-ngx/archive-adapter.test.mjs
           integrations/stirling-pdf/transform-adapter.test.mjs
 

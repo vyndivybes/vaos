@@ -68,6 +68,38 @@ async function main(){
       throw fail('CLOUDFLARE_ALARM_STATUS_INVALID');
   }
   if(!alarmObserved)throw fail('CLOUDFLARE_ALARM_CALLBACK_NOT_OBSERVED');
+  // Deliberately abort the isolated Durable Object instance exactly once.
+  // Cloudflare returns a runtime error (non-200) and forcibly recreates the
+  // instance on its next call. Neither POST nor job dispatch is retried.
+  try{
+    await fetch(ORIGIN+PATH,{
+      method:'POST',redirect:'error',
+      headers:{Authorization:'Bearer '+oidc,'Content-Type':'application/json',Accept:'application/json'},
+      body:JSON.stringify({phase:'restart'}),
+      signal:AbortSignal.timeout(20000),
+    });
+  }catch{
+    // Connection teardown by ctx.abort is expected. Not proof of success.
+  }
+  let restartProof=null;
+  for(let probe=0;probe<16;probe++){
+    await nap(4000);
+    let candidate;
+    try{candidate=await phase('restart-status');}
+    catch(e){
+      if(probe===15)throw e;
+      continue;
+    }
+    if(candidate?.status==='RESTART_VERIFIED'&&
+      candidate.instanceChanged===true&&
+      candidate.sameDurableObject===true&&
+      candidate.previouslyReservedSlotStillBlocked===true&&
+      candidate.providerDispatchCount===0){
+      restartProof=candidate;break;
+    }
+    if(candidate?.status!=='WAITING')throw fail('CLOUDFLARE_RESTART_PROOF_INVALID');
+  }
+  if(!restartProof)throw fail('CLOUDFLARE_RESTART_INSTANCE_NOT_CHANGED');
   const end=await phase('finish');
   if(end?.status!=='PASS'||end.persistedAcrossRequests!==true||
      end.blockedWhileQuarantined!==true||end.quarantined!==true||
@@ -90,12 +122,21 @@ async function main(){
     auditEvents:end.auditCount,
     windmillCalls:0,
     liveWindmillCancellationQualified:false,
-    actualDurableObjectEvictionQualified:false,
+    actualDurableObjectEvictionQualified:true,
     productionActivation:false,
   };
   fs.writeFileSync('qualification-evidence/windmill/cloudflare-do-live.json',
     JSON.stringify(evidence,null,2)+'\n',{mode:0o600});
-  console.log('PASS: Cloudflare isolated Durable Object admission, persisted alarm callback, quarantine and audit verified. Production Windmill routing unchanged.');
+  fs.writeFileSync('qualification-evidence/windmill/cloudflare-restart.json',JSON.stringify({
+    schemaVersion:'vaos.windmill.restart-recovery.v1',
+    status:'PASS',instanceChanged:true,sameDurableObject:true,
+    previouslyReservedSlotStillBlocked:true,providerDispatchCount:0,
+    evidenceRunId:String(process.env.GITHUB_RUN_ID),
+    sourceCommit:String(process.env.GITHUB_SHA),
+    method:'cloudflare.ctx.abort',
+    productionActivation:false,
+  },null,2),{mode:0o600});
+  console.log('PASS: genuine isolated Durable Object abort/reinstantiation, preserved fencing and alarm evidence. Windmill routing disabled.');
 }
 try{await main();}
 catch(e){

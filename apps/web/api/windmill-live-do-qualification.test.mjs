@@ -16,6 +16,8 @@ function input(phase='start'){
           startQualification:async()=>({status:'STARTED',admission:'PASS',productionActivation:false}),
           finishQualification:async()=>({status:'PASS',timeout:'QUARANTINED',productionActivation:false}),
           alarmStatus:async()=>({status:'ALARM_OBSERVED',alarmObserved:true,productionActivation:false,windmillCalls:0}),
+          beginRestartQualification:async()=>({status:'PENDING',productionActivation:false}),
+          restartQualificationStatus:async()=>({status:'RESTART_VERIFIED',instanceChanged:true,productionActivation:false,windmillCalls:0}),
         };
       },
     }}};
@@ -23,7 +25,7 @@ function input(phase='start'){
 const valid=async()=>({runId,runAttempt});
 test('separately signed GitHub identity routes only to isolated DO namespace',async()=>{
   const h=createWindmillLiveDoQualificationHandler({verifyIdentity:valid});
-  for(const phase of ['start','status','finish']){
+  for(const phase of ['start','status','restart-status','finish']){
     const r=res();await h(input(phase),r);
     assert.equal(r.data.code,200);
     assert.equal(r.data.body.data.productionActivation,false);
@@ -71,4 +73,17 @@ test('OIDC-authorized status poll is read-only and scoped to the identical isola
   assert.equal(r.data.code,200);
   assert.equal(r.data.body.data.alarmObserved,true);
   assert.equal(r.data.body.data.productionActivation,false);
+});
+
+test('restart RPC is only routed after verified OIDC identity and to run-scoped DO',async()=>{
+  const q=input('restart'),r=res();
+  await createWindmillLiveDoQualificationHandler({verifyIdentity:valid})(q,r);
+  assert.equal(r.data.code,200);
+  assert.equal(r.data.body.data.productionActivation,false);
+});
+test('restart status is read-only and proves new instance state',async()=>{
+  const q=input('restart-status'),r=res();
+  await createWindmillLiveDoQualificationHandler({verifyIdentity:valid})(q,r);
+  assert.equal(r.data.code,200);
+  assert.equal(r.data.body.data.instanceChanged,true);
 });

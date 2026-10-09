@@ -68,7 +68,7 @@ function authenticatedRunDetail(doc,flowId,runId,marker){
 }
 export async function reconcileExistingQualification({store,client,now=Date.now}={}){
   if(!store?.get||!store?.put||!client?.tools||!client?.call)throw E('AP_RECONCILE_DEPS_INVALID');
-  const cache=await store.get('ap-qual-readonly-reconcile-v3');
+  const cache=await store.get('ap-qual-readonly-reconcile-v4');
   if(cache && Number.isFinite(cache.checkedAtMs) && now()-cache.checkedAtMs<600000)
     return {...cache,cached:true};
   const state=await store.get('ap-qual-state');
@@ -120,6 +120,6 @@ export async function reconcileExistingQualification({store,client,now=Date.now}
     }
   }catch(e){result={status:'HOLD',reason:/^AP_[A-Z0-9_]{3,80}$/.test(e?.code||'')?e.code:'AP_READONLY_RECONCILIATION_UNAVAILABLE'};}
   const safe={...result,checkedAtMs:now(),productionActivation:false,cached:false};
-  await store.put('ap-qual-readonly-reconcile-v3',safe);
+  await store.put('ap-qual-readonly-reconcile-v4',safe);
   return safe;
 }

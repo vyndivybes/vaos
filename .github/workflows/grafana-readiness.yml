@@ -28,4 +28,4 @@ jobs:
       - name: Verify Grafana export readiness contract
         run: |
           node --check integrations/grafana/cloudflare-otel-readiness.mjs
-          node --test integrations/grafana/cloudflare-otel-readiness.test.mjs integrations/grafana/operations-sink.test.mjs
+          node --test integrations/grafana/*.test.mjs

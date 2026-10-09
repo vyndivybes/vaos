@@ -55,7 +55,7 @@ export function createWindmillRestartDrill({store,now=()=>Date.now()}={}){
       status:'RESTART_VERIFIED',
       instanceChanged:true,sameDurableObject:true,
       previouslyReservedSlotStillBlocked:true,
-      providerDispatchCount:0,productionActivation:false,
+      providerDispatchCount:0,windmillCalls:0,productionActivation:false,
     });
     const before=await store.get('restart:before');
     if(!before||before.runId!==runId)
@@ -63,7 +63,7 @@ export function createWindmillRestartDrill({store,now=()=>Date.now()}={}){
     if(before.instanceId===instanceId)
       return Object.freeze({
         status:'WAITING',instanceChanged:false,
-        productionActivation:false,providerDispatchCount:0,
+        productionActivation:false,providerDispatchCount:0,windmillCalls:0,
       });
     const {start,state}=await original(runId);
     if(before.jobId!==start.jobId||before.epoch!==start.epoch||

@@ -104,13 +104,21 @@ export default async function activepiecesOAuthHandler(req,res) {
     if(req.method!=='POST')return fail(405,'METHOD_NOT_ALLOWED');
     if(!makerSession(req))return fail(403,'MAKER_REQUIRED');
     if(req.headers?.origin!==new URL(req.url).origin)return fail(403,'ORIGIN_INVALID');
-    if(String(req.headers?.['content-type']||'').split(';')[0].trim().toLowerCase()!=='application/json'||
-      typeof req.body!=='string'||req.body.length>256)return fail(403,'REPAIR_ADMISSION_INVALID');
-    let input;
-    try{input=JSON.parse(req.body)}catch{return fail(403,'REPAIR_ADMISSION_INVALID')}
-    if(!input||Object.keys(input).length!==1||
-      input.approval!=='REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009')
+    if(String(req.headers?.['content-type']||'').split(';')[0].trim().toLowerCase()!=='application/json')
       return fail(403,'REPAIR_ADMISSION_INVALID');
+    // Cloudflare's API adapter parses application/json before dispatching.
+    // Accept its object (and raw JSON in handler contract tests), but never
+    // accept arrays, malformed strings, extra fields or oversized payloads.
+    let input=req.body;
+    if(typeof input==='string'){
+      if(input.length>256)return fail(403,'REPAIR_ADMISSION_INVALID');
+      try{input=JSON.parse(input)}catch{return fail(403,'REPAIR_ADMISSION_INVALID')}
+    }
+    if(!input||typeof input!=='object'||Array.isArray(input)||
+      Object.getPrototypeOf(input)!==Object.prototype||
+      Object.keys(input).length!==1||
+      input.approval!=='REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009'||
+      JSON.stringify(input).length>256)return fail(403,'REPAIR_ADMISSION_INVALID');
     try{
       const outcome=await vault(req.env).repairOriginalSandboxOnce();
       return new Response(JSON.stringify({providerId:'activepieces',...outcome,

@@ -16,7 +16,8 @@
     }
   ],
   "vars": {
-    "SUPABASE_URL": "https://jjzycduoujbmiegqfiud.supabase.co"
+    "SUPABASE_URL": "https://jjzycduoujbmiegqfiud.supabase.co",
+    "ACTIVEPIECES_SYNTHETIC_QUALIFY": "approved-20261009"
   },
   "assets": {
     "directory": "./apps/web",

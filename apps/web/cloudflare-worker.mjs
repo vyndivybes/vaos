@@ -31,6 +31,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/activepieces-mcp/verify': activepiecesMcp,
   '/api/activepieces-mcp/callback': activepiecesMcp,
   '/api/activepieces-mcp/status': activepiecesMcp,
+  '/api/activepieces-mcp/synthetic-evidence': activepiecesMcp,
   '/api/activepieces-mcp/discovery-health': activepiecesMcp,
   '/api/missions': missions,
   '/api/project-schedule': projectSchedule,
@@ -130,10 +131,25 @@ export default {
       console.error('VAOS_INFISICAL_CRON_DISPATCH_FAILED',infisicalDispatchFailureCode(error));
       throw new Error('VAOS_INFISICAL_CRON_DISPATCH_FAILED');
     });
+    const synthetic = Promise.resolve().then(async()=>{
+      if(env.ACTIVEPIECES_SYNTHETIC_QUALIFY!=='approved-20261009')return;
+      const ns=env.ACTIVEPIECES_HANDSHAKE;
+      if(!ns)throw new Error('AP_SYNTHETIC_BINDING_UNAVAILABLE');
+      const stub=ns.get(ns.idFromName('vaos-activepieces-v1'));
+      const result=await stub.qualifyScheduledOnce();
+      // Status is safe for audit; never log OAuth secrets or provider responses.
+      console.log('VAOS_ACTIVEPIECES_SYNTHETIC_QUALIFICATION',JSON.stringify({
+        status:result.status,phase:result.phase||null,reason:result.reason||null,
+        checksumVerified:result.checksumVerified===true,
+        markerVerified:result.markerVerified===true,auditOk:result.audit?.ok===true
+      }));
+    }).catch(()=>{
+      console.warn('VAOS_ACTIVEPIECES_SYNTHETIC_QUALIFICATION_UNAVAILABLE');
+    });
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.
-    const task = Promise.allSettled([mission,watchdog]).then(results=>{
-      if(results.some(result=>result.status==='rejected'))throw new Error('VAOS_SCHEDULED_TASK_FAILED');
+    const task = Promise.allSettled([mission,watchdog,synthetic]).then(results=>{
+      if(results.slice(0,2).some(result=>result.status==='rejected'))throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 
     if (ctx?.waitUntil) ctx.waitUntil(task);

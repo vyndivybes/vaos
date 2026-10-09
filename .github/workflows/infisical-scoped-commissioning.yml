@@ -18,6 +18,10 @@ on:
         type: choice
         required: true
         options: [record-health, disable]
+      watchdog_tick:
+        description: 'Optional Cloudflare cron tick in epoch milliseconds'
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -32,6 +36,7 @@ jobs:
     timeout-minutes: 10
     environment: infisical-commissioning
     env:
+      WATCHDOG_TICK: ${{ inputs.watchdog_tick }}
       VAOS_INFISICAL_WATCHDOG_KEY: ${{ secrets.VAOS_INFISICAL_COMMISSIONING_KEY }}
       REQUESTED_ACTION: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && 'record-health' || inputs.action }}
       INFISICAL_BASE_URL: ${{ vars.INFISICAL_BASE_URL }}
@@ -49,6 +54,11 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
+      - name: Record fixed-format Cloudflare dispatch correlation
+        if: ${{ inputs.watchdog_tick != '' }}
+        run: >-
+          node --input-type=module -e
+          "const t=process.env.WATCHDOG_TICK;if(!/^[0-9]{13}$/.test(t||''))process.exit(1);console.log('VAOS_INFISICAL_WATCHDOG_TICK='+t);"
       - name: Preflight durable watchdog identity
         run: test -n "${VAOS_INFISICAL_WATCHDOG_KEY:-}"
       - name: Live authentication, canary, TTL and kill-switch checks
@@ -62,7 +72,7 @@ jobs:
           INFISICAL_COMMISSION_ACTION: record-health
         run: node scripts/qualification/record-infisical-commissioning.mjs
       - name: Fail closed after scheduled live-check failure
-        if: ${{ (github.event_name == 'schedule' || github.event_name == 'push') && steps.live.outcome == 'failure' }}
+        if: ${{ (github.event_name == 'schedule' || github.event_name == 'push' || inputs.watchdog_tick != '') && steps.live.outcome == 'failure' }}
         env:
           INFISICAL_COMMISSION_ACTION: disable
           INFISICAL_DISABLE_CONFIRM: DISABLE-ONLY

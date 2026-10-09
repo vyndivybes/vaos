@@ -1,3 +1,4 @@
+import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
 import login from './api/login.mjs';
 import session from './api/session.mjs';
 import logout from './api/logout.mjs';
@@ -117,11 +118,23 @@ export default {
     })).then((summary) => {
       console.log('VAOS_SAFE_MISSION_SWEEP', JSON.stringify(summary));
     });
-    // Infisical has a dedicated GitHub-native 15-minute schedule.
-    // Do not issue a second, uncorrelated workflow dispatch from this cron.
-    // GitHub scheduled-run freshness is qualified independently; this Worker
-    // remains responsible for its own mission sweep only.
-    const task = mission;
+    const watchdog = dispatchInfisicalWatchdog({
+      token:env.VAOS_GITHUB_WATCHDOG_DISPATCH_TOKEN,
+      scheduledTime:_controller?.scheduledTime,
+    }).then(result=>{
+      console.log('VAOS_INFISICAL_CRON_DISPATCH',JSON.stringify({
+        status:result.status,scheduledTime:_controller?.scheduledTime||null,
+      }));
+      if(result.status!=='accepted')throw new Error('VAOS_INFISICAL_CRON_DISPATCH_UNCONFIGURED');
+    }).catch(error=>{
+      console.error('VAOS_INFISICAL_CRON_DISPATCH_FAILED',infisicalDispatchFailureCode(error));
+      throw new Error('VAOS_INFISICAL_CRON_DISPATCH_FAILED');
+    });
+    // Settle both tasks before surfacing a failure; a failed watchdog cannot
+    // terminate an otherwise pending mission sweep.
+    const task = Promise.allSettled([mission,watchdog]).then(results=>{
+      if(results.some(result=>result.status==='rejected'))throw new Error('VAOS_SCHEDULED_TASK_FAILED');
+    });
 
     if (ctx?.waitUntil) ctx.waitUntil(task);
     else await task;

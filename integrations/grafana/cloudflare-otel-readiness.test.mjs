@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { assessGrafanaCloudflareReadiness, planGrafanaCloudflareExport } from './cloudflare-otel-readiness.mjs';
 
 const makeDestination = signal => ({
-  name: 'vaos-grafana-' + signal,
+  name: 'grafana-' + signal,
   enabled: true,
   configuration: {
     type: 'logpush',
@@ -17,11 +17,11 @@ const settings = () => ({
     redact_query_string: true,
     logs: {
       enabled: true, persist: false, head_sampling_rate: 0.25,
-      destinations: ['vaos-grafana-logs'],
+      destinations: ['grafana-logs'],
     },
     traces: {
       enabled: true, persist: false, head_sampling_rate: 0.1,
-      destinations: ['vaos-grafana-traces'],
+      destinations: ['grafana-traces'],
     },
   },
 });

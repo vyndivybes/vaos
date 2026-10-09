@@ -12,6 +12,8 @@ import activepiecesMcp from './api/activepieces-mcp.mjs';
 import difyLiveQualification from './api/dify-live-qualification.mjs';
 import difyLiveReconciliation from './api/dify-live-reconciliation.mjs';
 import difyExactVerification from './api/dify-exact-verification.mjs';
+import {runStirlingLiveQualification} from '../../platform/execution/stirling-live-qualification.mjs';
+import stirlingQualification from './api/stirling-qualification.mjs';
 import missions from './api/missions.mjs';
 import projectSchedule from './api/project-schedule.mjs';
 import windmillRuntimeStatus from './api/windmill-runtime-status.mjs';
@@ -33,6 +35,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/dify-live-qualification': difyLiveQualification,
   '/api/dify-live-reconciliation': difyLiveReconciliation,
   '/api/dify-exact-verification': difyExactVerification,
+  '/api/stirling-qualification/status': stirlingQualification,
   '/api/activepieces-mcp/start': activepiecesMcp,
   '/api/activepieces-mcp/enroll/start': activepiecesMcp,
   '/api/activepieces-mcp/verify': activepiecesMcp,
@@ -177,9 +180,22 @@ export default {
     }).catch(()=>{
       console.warn('VAOS_ACTIVEPIECES_SYNTHETIC_QUALIFICATION_UNAVAILABLE');
     });
+    const stirling = Promise.resolve().then(async()=>{
+      if(env.STIRLING_SYNTHETIC_QUALIFY!=='approved-20261010')return;
+      const report=await runStirlingLiveQualification({env});
+      // Only bounded machine-readable outcome fields; no API keys, tokens or PDF bytes.
+      console.log('VAOS_STIRLING_CLOUD_QUALIFICATION',JSON.stringify({
+        status:report.status,reason:report.reason||null,
+        auditVerified:report.auditVerified===true,productionActivation:false,
+      }));
+    }).catch(error=>{
+      const code=typeof error?.code==='string'&&/^STIRLING_[A-Z0-9_]+$/.test(error.code)
+        ?error.code:'STIRLING_LIVE_UNAVAILABLE';
+      console.warn('VAOS_STIRLING_CLOUD_QUALIFICATION_HOLD',code);
+    });
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.
-    const task = Promise.allSettled([mission,watchdog,synthetic]).then(results=>{
+    const task = Promise.allSettled([mission,watchdog,synthetic,stirling]).then(results=>{
       if(results.slice(0,2).some(result=>result.status==='rejected'))throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 

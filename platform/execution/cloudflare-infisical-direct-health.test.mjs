@@ -103,7 +103,7 @@ test('scheduler selects direct or GitHub, leaves missions independent',()=>{
   assert.match(source,/isCloudflareInfisicalHealthEnabled\(env\)/);
   assert.match(source,/runCloudflareInfisicalHealth\(\{env,scheduledTime:/);
   assert.match(source,/dispatchInfisicalWatchdog\(/);
-  assert.match(source,/Promise\.allSettled\(\[mission,watchdog,synthetic\]\)/);
+  assert.match(source,/Promise\.allSettled\(\[mission,watchdog,synthetic,stirling\]\)/);
 });
 
 test('migration accepts only bounded Cloudflare health evidence and preserves fail-closed controls',()=>{

@@ -88,7 +88,7 @@ test('forged cross-site requests without a valid CSRF proof remain blocked',asyn
     {cookie,origin:'null','sec-fetch-site':'cross-site','content-type':'application/x-www-form-urlencoded'},
   ]) {
     const request=req('/api/activepieces-mcp/start','POST',headers);
-    request.body='csrf='+csrf.slice(0,63)+'f'; // invalid proof: cannot authorize
+    request.body='csrf='+csrf.slice(0,63)+(csrf.endsWith('f')?'e':'f'); // always invalid proof
     const response=await handler(request,{});
     assert.equal(response.status,403);
     assert.match(await response.text(),/CSRF_INVALID/);

@@ -13,7 +13,7 @@ function parseProject(raw){
   return null;
 }
 function diagnostic(reason,details={}){
-  return hold(reason,Object.fromEntries(Object.entries(details).filter(([k,v])=>/^(flowStatus|published|structureKeys|codeKeys|triggerKeys|validationKeys|structureStepNames|structureStepTypes|structureStepCount|codeType|codeMatchesExpected|inputMatchesExpected|packageJsonEmpty|validationValid|validationIssuesCount|structureOk|triggerOk)$/.test(k)&&(
+  return hold(reason,Object.fromEntries(Object.entries(details).filter(([k,v])=>/^(flowStatus|published|structureKeys|codeKeys|triggerKeys|validationKeys|structureStepNames|structureStepTypes|structureStepCount|codeType|codeMatchesExpected|inputMatchesExpected|packageJsonEmpty|validationValid|validationIssuesCount|structureOk|triggerOk|triggerPieceMatches|triggerNameMatches|triggerInputEmpty|triggerInputFieldCount)$/.test(k)&&(
     typeof v==='string'||typeof v==='boolean'||Array.isArray(v)
   ))));
 }
@@ -59,8 +59,12 @@ export async function preflightActivepiecesSandbox({store,client}={}){
     const legacy=steps?.length===1&&isTrigger(s.trigger)&&isCode(steps[0]);
     const structureOk=stepListSafe&&s.flowId===flow.id&&(twoSteps||legacy)&&
       (s.stepCount===undefined||s.stepCount===2);
-    const triggerOk=t.pieceName==='@activepieces/piece-webhook'&&t.triggerName==='catch_webhook'&&
-      t.input&&typeof t.input==='object'&&!Array.isArray(t.input)&&Object.keys(t.input).length===0;
+    const triggerPieceMatches=t.pieceName==='@activepieces/piece-webhook';
+    const triggerNameMatches=t.triggerName==='catch_webhook';
+    const triggerInputFieldCount=t.input&&typeof t.input==='object'&&!Array.isArray(t.input)
+      ?Object.keys(t.input).length:null;
+    const triggerInputEmpty=triggerInputFieldCount===0;
+    const triggerOk=triggerPieceMatches&&triggerNameMatches&&triggerInputEmpty;
     // ap_read_step_code returns 'code' (not 'sourceCode'). Full source
     // must match the synthetic fixture, never merely contain 'checksum'.
     const fullSource=typeof c.code==='string'?c.code:c.sourceCode;
@@ -93,7 +97,9 @@ export async function preflightActivepiecesSandbox({store,client}={}){
         codeMatchesExpected,inputMatchesExpected,packageJsonEmpty:Boolean(packageJsonEmpty),
         validationValid:validation.valid===true,
         validationIssuesCount:Array.isArray(reportedIssues)?String(reportedIssues.length):'UNKNOWN',
-        structureOk:Boolean(structureOk),triggerOk:Boolean(triggerOk)
+        structureOk:Boolean(structureOk),triggerOk:Boolean(triggerOk),
+        triggerPieceMatches,triggerNameMatches,triggerInputEmpty,
+        triggerInputFieldCount:Number.isInteger(triggerInputFieldCount)?String(triggerInputFieldCount):'UNKNOWN'
       }));
     return report({status:'PASS',reason:'AP_SANDBOX_PREFLIGHT_VERIFIED',
       runSubmitted:false,productionActivation:false,flowIsolated:true,stepCount:1,checksumExpected:45});

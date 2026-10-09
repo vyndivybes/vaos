@@ -60,14 +60,14 @@ test('unknown tool schema or unavailable read tools fails closed',async()=>{
 
 function realMcpShapeClient({source=code,stepDescriptors=[
  {name:'trigger',type:'PIECE_TRIGGER'}, {name:'step_1',type:'CODE'}
-],stepCount=2,issues=[],valid=true,packageJson='{}',
+],stepCount=2,issues=[],valid=true,packageJson='{}',triggerSettings={pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',pieceVersion:'0.1.0',input:{},propertySettings:{},sampleData:null},
 input={qualMarker:'{{trigger.body.qualMarker}}',value:'{{trigger.body.value}}'}
 }={}){
  const m=mock();
  const earlier=m.client.call;
  m.client.call=async(name,args)=>{
   if(name==='ap_flow_structure'){m.calls.push({name,args});return S({flowId:'flow_12345678',displayName:'VAOS Synthetic Qualification '+marker,steps:stepDescriptors,stepCount});}
-  if(name==='ap_read_step_settings'){m.calls.push({name,args});return S({pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',pieceVersion:'0.1.0',input:{},propertySettings:{},sampleData:null});}
+  if(name==='ap_read_step_settings'){m.calls.push({name,args});return S(triggerSettings);}
   if(name==='ap_read_step_code'){m.calls.push({name,args});return S({stepName:'step_1',code:source,packageJson,input});}
   if(name==='ap_validate_flow'){m.calls.push({name,args});return S({valid,totalSteps:2,validSteps:valid?2:1,invalidSteps:valid?0:1,skippedSteps:0,issues});}
   return earlier(name,args);
@@ -119,4 +119,24 @@ test('a dependency-free Activepieces package.json is safe, but installed modules
   const r=await preflightActivepiecesSandbox({store,client});
   assert.equal(r.status,'PASS');
   assert.equal(r.runSubmitted,false);
+});
+
+test('read-only mismatch evidence distinguishes webhook piece, trigger name and unwanted inputs',async()=>{
+ const cases=[
+  [{pieceName:'wrong-piece',triggerName:'catch_webhook',input:{}},[false,true,true,'0']],
+  [{pieceName:'@activepieces/piece-webhook',triggerName:'different',input:{}},[true,false,true,'0']],
+  [{pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input:{extra:'private_value'}},[true,true,false,'1']],
+  [{pieceName:'@activepieces/piece-webhook',triggerName:'catch_webhook',input:null},[true,true,false,'UNKNOWN']]
+ ];
+ for(const [triggerSettings,expected] of cases){
+  const {client,calls}=realMcpShapeClient({triggerSettings});
+  const r=await preflightActivepiecesSandbox({store,client});
+  assert.equal(r.status,'HOLD');
+  assert.deepEqual(
+    [r.triggerPieceMatches,r.triggerNameMatches,r.triggerInputEmpty,r.triggerInputFieldCount],expected
+  );
+  assert.equal(JSON.stringify(r).includes('private_value'),false);
+  assert.equal(JSON.stringify(r).includes(marker),false);
+  assert.equal(calls.some(x=>['ap_update_trigger','ap_update_step','ap_test_flow'].includes(x.name)),false);
+ }
 });

@@ -76,7 +76,13 @@ export class ActivepiecesMcpHandshake extends DurableObject {
           await sealActivepiecesCredentials(credentials,this.env.ACTIVEPIECES_VAULT_KEY));
       }
       const client=createActivepiecesToolClient({accessToken:credentials.accessToken});
-      return await preflightActivepiecesSandbox({store:this.ctx.storage,client});
+      const outcome=await preflightActivepiecesSandbox({store:this.ctx.storage,client});
+      // Read-only evidence of the original irrevocable admission; never expose
+      // the stored marker, flow identifier, credentials or intermediate outputs.
+      const admitted=await this.ctx.storage.get('ap-sandbox-repair-admission-v1');
+      const repairAdmissionStatus=['ADMITTED','VERIFIED','HOLD'].includes(admitted?.status)
+        ?admitted.status:'NOT_ADMITTED';
+      return {...outcome,repairAdmissionStatus};
     }catch{return {status:'HOLD',reason:'AP_PREFLIGHT_CREDENTIAL_OR_NETWORK_ERROR',productionActivation:false};}
   }
   async repairOriginalSandboxOnce(){

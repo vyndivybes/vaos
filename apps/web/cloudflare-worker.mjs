@@ -46,6 +46,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/activepieces-mcp/synthetic-reconciliation': activepiecesMcp,
   '/api/activepieces-mcp/synthetic-preflight': activepiecesMcp,
   '/api/activepieces-mcp/synthetic-repair': activepiecesMcp,
+  '/api/activepieces-mcp/code-recovery': activepiecesMcp,
   '/api/activepieces-mcp/discovery-health': activepiecesMcp,
   '/api/missions': missions,
   '/api/project-schedule': projectSchedule,

@@ -17,10 +17,12 @@ test('MCP commissioning pages require a signed VAOS session',async()=>{
     assert.equal(res.status,401,path);
   }
 });
-test('MCP OAuth start is same-origin POST only',async()=>{
-  const res=await handler(req('/api/activepieces-mcp/start','POST',{cookie,origin:'https://evil.example'}),{});
-  assert.equal(res.status,403);
-  assert.match(await res.text(),/ORIGIN_INVALID/);
+test('Origin values cannot bypass required CSRF validation',async()=>{
+  for(const origin of ['https://evil.example', 'null', 'https://vaos.vayushastr.workers.dev']){
+    const res=await handler(req('/api/activepieces-mcp/start','POST',{cookie,origin}),{});
+    assert.equal(res.status,403);
+    assert.match(await res.text(),/CSRF_INVALID/);
+  }
 });
 test('commissioning UI is a non-mutating explicit consent form',async()=>{
   const res=await handler(req('/api/activepieces-mcp','GET',{cookie}),{});
@@ -77,18 +79,19 @@ test('missing or incorrect CSRF token fails closed even without Origin header',a
   }
 });
 
-test('cross-site POST remains forbidden even with the correct CSRF token',async()=>{
+test('forged cross-site requests without a valid CSRF proof remain blocked',async()=>{
   const view=await handler(req('/api/activepieces-mcp','GET',{cookie}),{});
   const csrf=(await view.text()).match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
   assert.ok(csrf);
   for(const headers of [
     {cookie,origin:'https://evil.example','sec-fetch-site':'cross-site','content-type':'application/x-www-form-urlencoded'},
-    {cookie,origin:'https://vaos.vayushastr.workers.dev','sec-fetch-site':'cross-site','content-type':'application/x-www-form-urlencoded'},
+    {cookie,origin:'null','sec-fetch-site':'cross-site','content-type':'application/x-www-form-urlencoded'},
   ]) {
     const request=req('/api/activepieces-mcp/start','POST',headers);
-    request.body='csrf='+encodeURIComponent(csrf);
+    request.body='csrf='+csrf.slice(0,63)+(csrf.endsWith('f')?'e':'f'); // always invalid proof
     const response=await handler(request,{});
     assert.equal(response.status,403);
+    assert.match(await response.text(),/CSRF_INVALID/);
   }
 });
 
@@ -135,17 +138,26 @@ test('same-site browser submission with CSRF does not fail before OAuth discover
   assert.equal(fetchStub.mock.callCount(),2);
 });
 
-test('cross-site and mismatched Origin are rejected even when CSRF is present',async()=>{
-  const view=await handler(req('/api/activepieces-mcp','GET',{cookie}),{});
+test('real Request adapter: signed form POST ignores unreliable Origin and Fetch Metadata',async(t)=>{
+  const {invokeCloudflareHandler}=await import('../lib/cloudflare-adapter.mjs');
+  const url='https://vaos.vayushastr.workers.dev/api/activepieces-mcp';
+  const get=new Request(url,{headers:{Cookie:cookie}});
+  const view=await invokeCloudflareHandler(handler,get,{ACTIVEPIECES_HANDSHAKE:namespace});
   const csrf=(await view.text()).match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
-  for(const headers of [
-    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'cross-site'},
-    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'same-site',origin:'https://attacker.example'},
-    {cookie,'content-type':'application/x-www-form-urlencoded','sec-fetch-site':'same-origin',origin:'null'},
+  assert.ok(csrf);
+  const remote=t.mock.method(globalThis,'fetch',async()=>{throw new Error('synthetic upstream offline')});
+  for(const [origin,site] of [
+    ['null','cross-site'],
+    ['https://cloud.activepieces.com','cross-site'],
+    ['https://vaos.vayushastr.workers.dev','same-origin'],
+    ['', 'same-site'],
   ]) {
-    const request=req('/api/activepieces-mcp/start','POST',headers);
-    request.body='csrf='+csrf;
-    const result=await handler(request,{});
-    assert.equal(result.status,403);
+    const headers={'Content-Type':'application/x-www-form-urlencoded','Cookie':cookie,'Sec-Fetch-Site':site};
+    if(origin)headers.Origin=origin;
+    const request=new Request(url+'/start',{method:'POST',headers,body:new URLSearchParams({csrf}).toString()});
+    const response=await invokeCloudflareHandler(handler,request,{ACTIVEPIECES_HANDSHAKE:namespace});
+    assert.equal(response.status,503,'valid CSRF and session must reach OAuth discovery');
+    assert.match(await response.text(),/OAuth setup unavailable/);
   }
+  assert.equal(remote.mock.callCount(),4);
 });

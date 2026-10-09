@@ -88,15 +88,12 @@ export default async function activepiecesOAuthHandler(req,res) {
     });
   }
   if(path==='/api/activepieces-mcp/start' && req.method==='POST') {
-    const actual=new URL(req.url);
-    // Validated session-bound CSRF remains mandatory; explicitly hostile Origin and
-    // cross-site metadata are additional restrictions, not prerequisites for browser
-    // navigation. Browsers/proxies may report a same-site request for this Worker.
-    const origin=req.headers.origin;
-    if(origin && origin!==actual.origin) return fail(403,'ORIGIN_INVALID');
-    const fetchSite=String(req.headers['sec-fetch-site']||'').toLowerCase();
-    if(fetchSite && !['same-origin','same-site','none'].includes(fetchSite))
-      return fail(403,'FETCH_SITE_INVALID');
+    // Session authentication is checked above, and the session-bound HMAC
+    // proof below is the CSRF authorization for this state-changing POST.
+    // Origin / Sec-Fetch-Site are *not* used as correctness gates: reverse
+    // proxies and browser navigation modes can report unexpected values.
+    // SameSite=Strict session cookie + unguessable per-session form token
+    // prevent cross-site request forgery without fragile header comparisons.
     if(!validCsrf(req))return fail(403,'CSRF_INVALID');
     try {
       const authorizationUrl=await beginActivepiecesAuthorization({

@@ -237,3 +237,24 @@ test('read-only verify is maker-gated and requires CSRF',async()=>{
   reqMaker.body='csrf=wrong';
   assert.equal((await handler(reqMaker,{})).status,403);
 });
+
+test('Activepieces sandbox preflight denies unauthenticated, wrong-origin and POST requests',async()=>{
+  const path='/api/activepieces-mcp/synthetic-preflight';
+  let calls=0;
+  const env={ACTIVEPIECES_HANDSHAKE:{idFromName:n=>n,get:()=>({
+    async preflightSyntheticSafely(){calls++;return {status:'HOLD',reason:'AP_PREFLIGHT_CONFIGURATION_UNVERIFIED',productionActivation:false}}
+  })}};
+  const anonymous=await handler(req(path,'GET',{origin:'https://vaos.vayushastr.workers.dev'},env),{});
+  assert.equal(anonymous.status,403);
+  const wrong=await handler(req(path,'GET',{cookie,origin:'https://other.invalid'},env),{});
+  assert.equal(wrong.status,403);
+  const post=await handler(req(path,'POST',{cookie,origin:'https://vaos.vayushastr.workers.dev'},env),{});
+  assert.equal(post.status,405);
+  assert.equal(calls,0);
+  const good=await handler(req(path,'GET',{cookie,origin:'https://vaos.vayushastr.workers.dev'},env),{});
+  assert.equal(good.status,200);
+  const body=await good.json();
+  assert.equal(body.status,'HOLD');
+  assert.equal(body.productionActivation,false);
+  assert.equal(calls,1);
+});

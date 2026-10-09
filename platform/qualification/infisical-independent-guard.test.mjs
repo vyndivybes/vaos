@@ -5,6 +5,8 @@ import {createProviderControlPlane} from '../execution/provider-control-plane.mj
 
 const migration=()=>readFileSync(new URL('../../supabase/migrations/20261009030000_infisical_independent_guard.sql',import.meta.url),'utf8');
 const workflow=()=>readFileSync(new URL('../../.github/workflows/infisical-scoped-commissioning.yml',import.meta.url),'utf8');
+const cloudflareConfig=()=>JSON.parse(readFileSync(new URL('../../wrangler.jsonc',import.meta.url),'utf8'));
+const cloudflareWorker=()=>readFileSync(new URL('../../apps/web/cloudflare-worker.mjs',import.meta.url),'utf8');
 
 function manifest(id='infisical',cap='secret.broker'){
  return {schemaVersion:'vaos.provider.v2',providerId:id,displayName:id,
@@ -53,13 +55,16 @@ test('Independent database watchdog schedules every five minutes, without creden
  assert.doesNotMatch(sql,/p_server_key|github-infisical-production-watchdog|key_hash/i);
  assert.match(sql,/REVOKE ALL ON FUNCTION vaos_private\.audit_infisical_watchdog/);
 });
-test('Scheduled workflow has narrow bootstrap trigger and preserves schedule, disable-only failure route',()=>{
- const y=workflow();
- assert.match(y,/cron: '7,22,37,52 \* \* \* \*'/);
- assert.match(y,/push:\s*\n\s*branches:.*\n\s*- main/m);
- assert.match(y,/infisical-watchdog-bootstrap\.trigger/);
- assert.match(y,/REQUESTED_ACTION:/);
- assert.match(y,/steps\.live\.outcome == 'failure'/);
- assert.match(y,/INFISICAL_COMMISSION_ACTION: disable/);
- assert.doesNotMatch(y,/action: activate/);
+test('Native Cloudflare cron is scheduled and legacy GitHub job is manual emergency-only',()=>{
+  const y=workflow();
+  assert.deepEqual(cloudflareConfig().triggers.crons,['*/15 * * * *']);
+  assert.match(cloudflareWorker(),/runCloudflareInfisicalHealth/);
+  assert.doesNotMatch(y,/^  schedule:/m);
+  assert.doesNotMatch(y,/^  push:/m);
+  assert.match(y,/workflow_dispatch:/);
+  assert.match(y,/REQUESTED_ACTION:/);
+  assert.match(y,/steps\.live\.outcome == 'failure'/);
+  assert.match(y,/INFISICAL_COMMISSION_ACTION: disable/);
+  assert.match(y,/INFISICAL_DISABLE_CONFIRM: DISABLE-ONLY/);
+  assert.doesNotMatch(y,/action: activate/);
 });

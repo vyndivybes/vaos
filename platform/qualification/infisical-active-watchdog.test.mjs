@@ -5,6 +5,8 @@ const migration=readFileSync(new URL('../../supabase/migrations/20261008230000_i
 const identity=readFileSync(new URL('../../supabase/migrations/20261008233000_infisical_durable_watchdog_identity_v1.sql',import.meta.url),'utf8');
 const workflow=readFileSync(new URL('../../.github/workflows/infisical-scoped-commissioning.yml',import.meta.url),'utf8');
 const writer=readFileSync(new URL('../../scripts/qualification/record-infisical-commissioning.mjs',import.meta.url),'utf8');
+const cloudflareConfig=JSON.parse(readFileSync(new URL('../../wrangler.jsonc',import.meta.url),'utf8'));
+const worker=readFileSync(new URL('../../apps/web/cloudflare-worker.mjs',import.meta.url),'utf8');
 
 test('active health refresh preserves routing and cannot activate',()=>{
   assert.match(migration,/v_after:=jsonb_set\(v_before,'\{health\}'/);
@@ -22,9 +24,13 @@ test('temporary commissioning lease is promoted and revoked',()=>{
   assert.match(assertion,/AND enabled/);
   assert.match(assertion,/last_authenticated_at/);
 });
-test('scheduled watchdog is every fifteen minutes and fails closed',()=>{
-  assert.match(workflow,/cron: '7,22,37,52 \* \* \* \*'/);
-  assert.match(workflow, /^  schedule:\s*$/m);
+test('Cloudflare native watchdog supersedes GitHub schedule, preserving manual disable',()=>{
+  assert.deepEqual(cloudflareConfig.triggers.crons,['*/15 * * * *']);
+  assert.match(worker,/runCloudflareInfisicalHealth/);
+  assert.match(worker,/isCloudflareInfisicalHealthEnabled/);
+  assert.match(worker,/VAOS_INFISICAL_WATCHDOG_FAILED/);
+  assert.doesNotMatch(workflow,/^  schedule:/m);
+  assert.doesNotMatch(workflow,/^  push:/m);
   assert.match(workflow,/workflow_dispatch:/);
   assert.match(workflow,/steps\.live\.outcome == 'failure'/);
   assert.match(workflow,/INFISICAL_COMMISSION_ACTION: disable/);

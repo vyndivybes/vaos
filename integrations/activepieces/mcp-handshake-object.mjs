@@ -1,6 +1,7 @@
 import { remediateProjectOnce } from './project-context-repair.mjs';
 import { diagnoseSyntheticHold } from './synthetic-diagnostic.mjs';
 import { reconcileExistingQualification } from './reconcile-existing.mjs';
+import { preflightActivepiecesSandbox } from './sandbox-preflight.mjs';
 import { auditAppend } from './synthetic-qualification.mjs';
 import { qualifyOnce, recoverOnce, qualifyEvidence } from './synthetic-qualification.mjs';
 import { createActivepiecesToolClient } from './mcp-tool-client.mjs';
@@ -60,6 +61,22 @@ export class ActivepiecesMcpHandshake extends DurableObject {
     } catch {
       return {status:'HOLD',reason:'AP_READONLY_RECONCILIATION_UNAVAILABLE',productionActivation:false};
     }
+  }
+  async preflightSyntheticSafely(){
+    const connection=await this.connectionStatus();
+    if(!connection.connected)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_VERIFIED',productionActivation:false};
+    const envelope=await this.ctx.storage.get('oauth-encrypted-credentials');
+    if(!envelope)return {status:'HOLD',reason:'AP_CREDENTIALS_NOT_ENROLLED',productionActivation:false};
+    try{
+      let credentials=await openActivepiecesCredentials(envelope,this.env.ACTIVEPIECES_VAULT_KEY);
+      if(credentials.expiresAt<Date.now()+90000){
+        credentials=await refreshActivepiecesMcpTokens(credentials);
+        await this.ctx.storage.put('oauth-encrypted-credentials',
+          await sealActivepiecesCredentials(credentials,this.env.ACTIVEPIECES_VAULT_KEY));
+      }
+      const client=createActivepiecesToolClient({accessToken:credentials.accessToken});
+      return await preflightActivepiecesSandbox({store:this.ctx.storage,client});
+    }catch{return {status:'HOLD',reason:'AP_PREFLIGHT_CREDENTIAL_OR_NETWORK_ERROR',productionActivation:false};}
   }
   async syntheticEvidence() {
     return qualifyEvidence(this.ctx.storage);

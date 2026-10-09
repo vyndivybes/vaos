@@ -100,6 +100,17 @@ export default async function activepiecesOAuthHandler(req,res) {
         headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
     }catch{return fail(503,'AP_SYNTHETIC_EVIDENCE_UNAVAILABLE')}
   }
+  if(path==='/api/activepieces-mcp/synthetic-preflight'){
+    if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
+    if(!makerSession(req))return fail(403,'MAKER_REQUIRED');
+    if(req.headers?.origin!==new URL(req.url).origin)return fail(403,'ORIGIN_INVALID');
+    try{
+      const outcome=await vault(req.env).preflightSyntheticSafely();
+      return new Response(JSON.stringify({providerId:'activepieces',...outcome,productionActivation:false}),{
+        status:200,headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}
+      });
+    }catch{return fail(503,'AP_SANDBOX_PREFLIGHT_UNAVAILABLE')}
+  }
   if(path==='/api/activepieces-mcp/synthetic-reconciliation'){
     if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
     try{

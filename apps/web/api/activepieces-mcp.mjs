@@ -100,6 +100,20 @@ export default async function activepiecesOAuthHandler(req,res) {
         headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
     }catch{return fail(503,'AP_SYNTHETIC_EVIDENCE_UNAVAILABLE')}
   }
+  if(path==='/api/activepieces-mcp/synthetic-reconciliation'){
+    if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
+    try{
+      const v=await vault(req.env).reconcileSyntheticReadOnly();
+      const response={providerId:'activepieces',status:v.status,reason:v.reason||null,
+        matchCount:Number.isInteger(v.matchCount)?v.matchCount:null,
+        runCount:Number.isInteger(v.runCount)?v.runCount:null,
+        markerVerified:v.markerVerified===true,checksumVerified:v.checksumVerified===true,
+        cached:v.cached===true,productionActivation:false};
+      return new Response(JSON.stringify(response),{status:200,headers:{
+        'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',
+        'X-Content-Type-Options':'nosniff'}});
+    }catch{return fail(503,'AP_SYNTHETIC_RECONCILIATION_UNAVAILABLE')}
+  }
   if(path==='/api/activepieces-mcp/synthetic-diagnostic'){
     if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
     try{

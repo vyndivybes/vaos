@@ -87,3 +87,15 @@ test('restart status is read-only and proves new instance state',async()=>{
   assert.equal(r.data.code,200);
   assert.equal(r.data.body.data.instanceChanged,true);
 });
+
+test('signed capabilities call identifies upgraded forced-restart runtime without mutating DO',async()=>{
+  const h=createWindmillLiveDoQualificationHandler({verifyIdentity:valid});
+  const q=input('capabilities'),r=res();
+  // The capability response must be resolved *before* a DO object is accessed.
+  q.env.WINDMILL_ADMISSION.getByName=()=>{throw Error('MUST_NOT_INSTANTIATE');};
+  await h(q,r);
+  assert.equal(r.data.code,200);
+  assert.equal(r.data.body.data.status,'RESTART_DRILL_READY');
+  assert.equal(r.data.body.data.schemaVersion,'vaos.windmill.restart-qualification.v1');
+  assert.equal(r.data.body.data.productionActivation,false);
+});

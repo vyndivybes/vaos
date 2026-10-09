@@ -87,6 +87,19 @@ export default async function activepiecesOAuthHandler(req,res) {
       });
     }catch{return fail(503,'DISCOVERY_HEALTH_UNAVAILABLE')}
   }
+  if(path==='/api/activepieces-mcp/synthetic-evidence'){
+    if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
+    try{
+      const v=await vault(req.env).syntheticEvidence();
+      // Public independent auditor can verify status and hash-chain anchor without
+      // exposing project, flow/run IDs, test marker, OAuth tokens or private outputs.
+      const report={providerId:'activepieces',status:v.status,phase:v.phase,
+        reason:v.reason,markerVerified:v.markerVerified,
+        checksumVerified:v.checksumVerified,productionActivation:false,audit:v.audit};
+      return new Response(JSON.stringify(report),{status:200,
+        headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
+    }catch{return fail(503,'AP_SYNTHETIC_EVIDENCE_UNAVAILABLE')}
+  }
   if(!session(req))return fail(401,'UNAUTHENTICATED');
   let stub;
   try{stub=vault(req.env)}catch{return fail(503,'ACTIVEPIECES_HANDSHAKE_UNAVAILABLE')}

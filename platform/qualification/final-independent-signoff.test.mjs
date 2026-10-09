@@ -89,3 +89,12 @@ test('rejects self-certification and missing independent auditor identity',()=>{
   assert.equal(x.decision,'HOLD');
   assert.equal(x.gates.independentProductionAudit,'BLOCKED');
 });
+
+test('Windmill manifest supports managed cloud without activating unqualified routing', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const manifest = JSON.parse(await readFile(new URL('../../integrations/windmill/provider-manifest.json', import.meta.url), 'utf8'));
+  assert.ok(manifest.deploymentModes.includes('managed-saas'), 'Windmill Cloud must be an allowed deployment mode');
+  assert.equal(manifest.enabled, false, 'Managed cloud mode is not production authorization');
+  assert.equal(manifest.qualification.state, 'evaluation', 'Independent evidence does not autoqualify business routing');
+  assert.deepEqual(manifest.qualification.qualifiedCapabilities, []);
+});

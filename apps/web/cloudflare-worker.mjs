@@ -1,4 +1,5 @@
 import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
+import { runCloudflareInfisicalHealth, isCloudflareInfisicalHealthEnabled } from '../../platform/execution/cloudflare-infisical-direct-health.mjs';
 import login from './api/login.mjs';
 import session from './api/session.mjs';
 import logout from './api/logout.mjs';
@@ -123,17 +124,37 @@ export default {
     })).then((summary) => {
       console.log('VAOS_SAFE_MISSION_SWEEP', JSON.stringify(summary));
     });
-    const watchdog = dispatchInfisicalWatchdog({
-      token:env.VAOS_GITHUB_WATCHDOG_DISPATCH_TOKEN,
-      scheduledTime:_controller?.scheduledTime,
-    }).then(result=>{
-      console.log('VAOS_INFISICAL_CRON_DISPATCH',JSON.stringify({
-        status:result.status,scheduledTime:_controller?.scheduledTime||null,
-      }));
-      if(result.status!=='accepted')throw new Error('VAOS_INFISICAL_CRON_DISPATCH_UNCONFIGURED');
+    // Native canary is explicitly opt-in; preserve the existing route until
+    // the scoped Cloudflare bootstrap keys and Supabase RPC migration qualify.
+    const directWatchdog = isCloudflareInfisicalHealthEnabled(env);
+    const watchdog = (directWatchdog
+      ? runCloudflareInfisicalHealth({env,scheduledTime:_controller?.scheduledTime})
+      : dispatchInfisicalWatchdog({
+          token:env.VAOS_GITHUB_WATCHDOG_DISPATCH_TOKEN,
+          scheduledTime:_controller?.scheduledTime,
+        })
+    ).then(result=>{
+      if(directWatchdog){
+        if(result.status!=='healthy')throw new Error('INFISICAL_DIRECT_HEALTH_NOT_VERIFIED');
+        console.log('VAOS_INFISICAL_DIRECT_HEALTH',JSON.stringify({
+          status:'healthy',scheduledTime:result.scheduledTime,
+          productionActivation:false,
+        }));
+      }else{
+        console.log('VAOS_INFISICAL_CRON_DISPATCH',JSON.stringify({
+          status:result.status,scheduledTime:_controller?.scheduledTime||null,
+        }));
+        if(result.status!=='accepted')throw new Error('VAOS_INFISICAL_CRON_DISPATCH_UNCONFIGURED');
+      }
     }).catch(error=>{
-      console.error('VAOS_INFISICAL_CRON_DISPATCH_FAILED',infisicalDispatchFailureCode(error));
-      throw new Error('VAOS_INFISICAL_CRON_DISPATCH_FAILED');
+      if(directWatchdog){
+        const code=typeof error?.code==='string'&&/^INFISICAL_DIRECT_[A-Z_]+$/.test(error.code)
+          ?error.code:'INFISICAL_DIRECT_FAILED';
+        console.error('VAOS_INFISICAL_DIRECT_HEALTH_FAILED',code);
+      }else{
+        console.error('VAOS_INFISICAL_CRON_DISPATCH_FAILED',infisicalDispatchFailureCode(error));
+      }
+      throw new Error('VAOS_INFISICAL_WATCHDOG_FAILED');
     });
     const synthetic = Promise.resolve().then(async()=>{
       if(env.ACTIVEPIECES_SYNTHETIC_QUALIFY!=='approved-20261009')return;

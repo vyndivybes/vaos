@@ -100,6 +100,26 @@ export default async function activepiecesOAuthHandler(req,res) {
         headers:{'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});
     }catch{return fail(503,'AP_SYNTHETIC_EVIDENCE_UNAVAILABLE')}
   }
+  if(path==='/api/activepieces-mcp/synthetic-repair'){
+    if(req.method!=='POST')return fail(405,'METHOD_NOT_ALLOWED');
+    if(!makerSession(req))return fail(403,'MAKER_REQUIRED');
+    if(req.headers?.origin!==new URL(req.url).origin)return fail(403,'ORIGIN_INVALID');
+    if(String(req.headers?.['content-type']||'').split(';')[0].trim().toLowerCase()!=='application/json'||
+      typeof req.body!=='string'||req.body.length>256)return fail(403,'REPAIR_ADMISSION_INVALID');
+    let input;
+    try{input=JSON.parse(req.body)}catch{return fail(403,'REPAIR_ADMISSION_INVALID')}
+    if(!input||Object.keys(input).length!==1||
+      input.approval!=='REPAIR_ORIGINAL_ACTIVEPIECES_SANDBOX_ONCE_20261009')
+      return fail(403,'REPAIR_ADMISSION_INVALID');
+    try{
+      const outcome=await vault(req.env).repairOriginalSandboxOnce();
+      return new Response(JSON.stringify({providerId:'activepieces',...outcome,
+        productionActivation:false}),{status:200,headers:{
+        'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store',
+        'X-Content-Type-Options':'nosniff'
+      }});
+    }catch{return fail(503,'AP_SANDBOX_REPAIR_UNAVAILABLE')}
+  }
   if(path==='/api/activepieces-mcp/synthetic-preflight'){
     if(req.method!=='GET')return fail(405,'METHOD_NOT_ALLOWED');
     if(!makerSession(req))return fail(403,'MAKER_REQUIRED');

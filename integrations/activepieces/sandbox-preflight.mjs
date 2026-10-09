@@ -13,7 +13,7 @@ function parseProject(raw){
   return null;
 }
 function diagnostic(reason,details={}){
-  return hold(reason,Object.fromEntries(Object.entries(details).filter(([k,v])=>/^(flowStatus|published|structureKeys|codeKeys|triggerKeys|validationKeys)$/.test(k)&&(
+  return hold(reason,Object.fromEntries(Object.entries(details).filter(([k,v])=>/^(flowStatus|published|structureKeys|codeKeys|triggerKeys|validationKeys|structureStepNames|structureStepTypes|structureStepCount|codeType|codeMatchesExpected|inputMatchesExpected|packageJsonEmpty|validationValid|validationIssuesCount|structureOk|triggerOk)$/.test(k)&&(
     typeof v==='string'||typeof v==='boolean'||Array.isArray(v)
   ))));
 }
@@ -47,17 +47,53 @@ export async function preflightActivepiecesSandbox({store,client}={}){
     const s=structure.flow||structure;
     const t=trigger.settings||trigger;
     const c=code.settings||code;
-    const structureOk=s.flowId===flow.id && s.trigger?.name==='trigger'&&s.trigger?.type==='PIECE_TRIGGER'&&
-      Array.isArray(s.steps)&&s.steps.length===1&&s.steps[0]?.name==='step_1'&&s.steps[0]?.type==='CODE';
+    // Activepieces MCP 'ap_flow_structure' returns steps and stepCount;
+    // the trigger can be represented as a step rather than top-level 'trigger'.
+    const steps=Array.isArray(s.steps)?s.steps:null;
+    const stepListSafe=steps&&steps.every(x=>x&&typeof x==='object'&&
+      !x.nextAction && !x.children && !x.branches && !x.onSuccessAction &&
+      x.retryOnFailure!==true && x.skip!==true && x.settings?.retryOnFailure!==true);
+    const isTrigger=x=>x?.name==='trigger'&&x?.type==='PIECE_TRIGGER';
+    const isCode=x=>x?.name==='step_1'&&x?.type==='CODE';
+    const twoSteps=steps?.length===2&&isTrigger(steps[0])&&isCode(steps[1]);
+    const legacy=steps?.length===1&&isTrigger(s.trigger)&&isCode(steps[0]);
+    const structureOk=stepListSafe&&s.flowId===flow.id&&(twoSteps||legacy)&&
+      (s.stepCount===undefined||s.stepCount===2);
     const triggerOk=t.pieceName==='@activepieces/piece-webhook'&&t.triggerName==='catch_webhook'&&
-      t.input&&Object.keys(t.input).length===0;
-    const codeOk=c.sourceCode===SOURCE&&c.input?.qualMarker==='{{trigger.body.qualMarker}}'&&
-      c.input?.value==='{{trigger.body.value}}'&&Object.keys(c.input).length===2&&
-      c.continueOnFailure!==true&&c.retryOnFailure!==true;
-    const validationOk=validation.valid===true&&Array.isArray(validation.errors)&&validation.errors.length===0;
+      t.input&&typeof t.input==='object'&&!Array.isArray(t.input)&&Object.keys(t.input).length===0;
+    // ap_read_step_code returns 'code' (not 'sourceCode'). Full source
+    // must match the synthetic fixture, never merely contain 'checksum'.
+    const fullSource=typeof c.code==='string'?c.code:c.sourceCode;
+    const codeMatchesExpected=typeof fullSource==='string'&&fullSource.trim()===SOURCE;
+    const inputMatchesExpected=c.input?.qualMarker==='{{trigger.body.qualMarker}}'&&
+      c.input?.value==='{{trigger.body.value}}'&&
+      Object.keys(c.input||{}).length===2;
+    let deps=null;
+    if(typeof c.packageJson==='string'){try{deps=JSON.parse(c.packageJson)}catch{}}
+    else if(c.packageJson===undefined||c.packageJson===null)deps={};
+    else deps=c.packageJson;
+    const packageJsonEmpty=deps&&typeof deps==='object'&&!Array.isArray(deps)&&
+      (Object.keys(deps).length===0 ||
+       (Object.keys(deps).length===1&&Object.hasOwn(deps,'dependencies')&&
+        deps.dependencies&&typeof deps.dependencies==='object'&&!Array.isArray(deps.dependencies)&&
+        Object.keys(deps.dependencies).length===0));
+    const codeOk=codeMatchesExpected&&inputMatchesExpected&&packageJsonEmpty&&
+      c.continueOnFailure!==true&&c.retryOnFailure!==true&&c.skip!==true;
+    const reportedIssues=Array.isArray(validation.issues)?validation.issues:validation.errors;
+    const validationOk=validation.valid===true&&Array.isArray(reportedIssues)&&reportedIssues.length===0&&
+      (validation.invalidSteps===undefined||validation.invalidSteps===0)&&
+      (validation.skippedSteps===undefined||validation.skippedSteps===0);
     if(!structureOk||!triggerOk||!codeOk||!validationOk)
       return report(diagnostic('AP_PREFLIGHT_CONFIGURATION_UNVERIFIED',{
-        structureKeys:keys(s),codeKeys:keys(c),triggerKeys:keys(t),validationKeys:keys(validation)
+        structureKeys:keys(s),codeKeys:keys(c),triggerKeys:keys(t),validationKeys:keys(validation),
+        structureStepNames:steps?.map(x=>/^[a-zA-Z0-9_-]{1,40}$/.test(x?.name||'')?x.name:'UNKNOWN')||[],
+        structureStepTypes:steps?.map(x=>/^[A-Z_]{1,40}$/.test(x?.type||'')?x.type:'UNKNOWN')||[],
+        structureStepCount:Number.isInteger(s.stepCount)?String(s.stepCount):'UNKNOWN',
+        codeType:typeof c.code,
+        codeMatchesExpected,inputMatchesExpected,packageJsonEmpty:Boolean(packageJsonEmpty),
+        validationValid:validation.valid===true,
+        validationIssuesCount:Array.isArray(reportedIssues)?String(reportedIssues.length):'UNKNOWN',
+        structureOk:Boolean(structureOk),triggerOk:Boolean(triggerOk)
       }));
     return report({status:'PASS',reason:'AP_SANDBOX_PREFLIGHT_VERIFIED',
       runSubmitted:false,productionActivation:false,flowIsolated:true,stepCount:1,checksumExpected:45});

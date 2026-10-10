@@ -28,9 +28,9 @@ body.login-body.cinematic-login {
 
 .cinematic-chrome {position:relative;z-index:4;min-height:68px;padding:0 clamp(23px,3.5vw,72px);display:flex;justify-content:space-between;align-items:center;gap:20px;border-bottom:1px solid rgba(233,190,117,.13);background:linear-gradient(180deg,rgba(2,3,4,.69),rgba(4,6,8,.08));backdrop-filter:blur(2px);font:600 10px/1.5 Consolas,'SFMono-Regular',monospace;letter-spacing:.20em;animation:cinematic-chrome-appear 900ms 1s both;}
 .cinematic-chrome__wordmark {display:flex;align-items:center;gap:14px;color:#dec896;white-space:nowrap;}
-.cinematic-chrome__wordmark i {height:8px;width:8px;display:inline-block;transform:rotate(45deg);border:1px solid #f4ca7d;box-shadow:0 0 13px #e9ac4f;}
+.cinematic-chrome__logo {width:36px;height:36px;object-fit:contain;flex:none;filter:drop-shadow(0 0 9px rgba(229,169,75,.28));}
 .cinematic-chrome__wordmark em {font-style:normal;color:#715933;}
-.cinematic-chrome__node {display:flex;gap:25px;color:#8e9292;}
+.cinematic-chrome__node {display:flex;gap:25px;color:#8e9292;align-items:center;}
 .cinematic-chrome__node span {color:#d8b579;white-space:nowrap;}
 @keyframes cinematic-chrome-appear {from{opacity:0;transform:translateY(-15px)}to{opacity:1;transform:translateY(0)}}
 
@@ -104,7 +104,7 @@ body.login-body.cinematic-login {
 .cinematic-portal__halo span:first-child {transform:rotateX(66deg);animation:portal-ring-a 5s linear infinite;}
 .cinematic-portal__halo span:nth-child(2) {transform:rotateY(70deg);animation:portal-ring-b 4.5s linear infinite;}
 .cinematic-portal__halo span:nth-child(3) {inset:13px;border-style:dashed;animation:portal-spin 8s linear infinite;}
-.cinematic-portal__halo b {font:800 52px Georgia,serif;color:#f4d292;text-shadow:0 0 34px rgba(246,190,98,.85);}
+.cinematic-portal__logo {display:block;width:92px;height:92px;object-fit:contain;filter:drop-shadow(0 0 22px rgba(246,190,98,.55));}
 .cinematic-portal__kicker {margin:0;color:#c69b5d;font:700 10px Consolas,monospace;letter-spacing:.19em;}
 .cinematic-portal h2 {margin:0;font-size:clamp(25px,5vw,51px);font-weight:650;letter-spacing:.12em;color:#f5ece0;}
 .cinematic-portal h2 em {font-style:normal;color:#e6b46c;}
@@ -116,6 +116,7 @@ body.login-body.cinematic-login {
 @keyframes portal-spin {to{transform:rotate(360deg);}}
 @keyframes portal-progress {to{transform:translateX(0);}}
 
+.access-console__brandmark {display:block;width:28px;height:28px;object-fit:contain;filter:drop-shadow(0 0 6px rgba(246,190,98,.3));}
 @media (max-width: 1100px) {
  .cinematic-layout {grid-template-columns:minmax(0,1fr) minmax(345px,390px);gap:12px;padding-inline:32px;}
  .cinematic-scene__veil {background:linear-gradient(90deg,transparent 10%,rgba(3,4,5,.12) 40%,rgba(3,4,5,.8) 76%,#030405 100%),linear-gradient(180deg,rgba(2,3,4,.42),transparent 48%,rgba(2,3,4,.8));}
@@ -129,6 +130,7 @@ body.login-body.cinematic-login {
  .cinematic-scene__veil {background:linear-gradient(180deg,rgba(3,4,5,.12) 0%,rgba(3,4,5,.4) 26%,rgba(3,4,5,.95) 47%,#030405 60%,#030405 100%);}
  .cinematic-scene__grid {display:none;}
  .cinematic-chrome {min-height:54px;padding:0 21px;}
+ .cinematic-chrome__logo {width:30px;height:30px;}
  .cinematic-layout {display:flex;flex-direction:column;min-height:calc(100svh - 106px);padding:0 17px 20px;gap:0;}
  .cinematic-identity {width:100%;min-height:clamp(190px,36svh,350px);flex:none;}
  .cinematic-identity__tag {display:none;}

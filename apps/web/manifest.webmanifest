@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "VAOS — Vāyū Agentic Operating System",
+  "short_name": "VAOS",
+  "description": "Governed Founder Command and digital workforce access",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090b0e",
+  "theme_color": "#101318",
+  "icons": [
+    {
+      "src": "/assets/vaos-app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

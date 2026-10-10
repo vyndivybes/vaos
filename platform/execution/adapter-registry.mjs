@@ -1,4 +1,5 @@
 import { createRiskQualificationTrace } from './risk-qualification-trace.mjs';
+import { verifyProductionWipReadback } from './production-l5-readback.mjs';
 import { createSecurityQualificationTrace } from './security-qualification-trace.mjs';
 
 function requiredText(payload, key) {
@@ -38,6 +39,13 @@ function vyndiReadAdapter(vyndiBridge, actionType) {
     if (!observed || observed.actionType !== actionType || !observed.sourceAuthority) {
       throw terminalError('VYNDI_READ_BRIDGE_VERIFICATION_MISMATCH');
     }
+    const verifiedReadback = actionType==='PRODUCTION.OBSERVE_WIP'
+      && job?.payload?.monitoringScope==='PRODUCTION_L5_READ_ONLY_V1'
+      ? await verifyProductionWipReadback({bridge:vyndiBridge,job,observed}) : null;
+    const sourceEvidence=verifiedReadback ? {
+      sourceContentSha256:verifiedReadback.sourceContentSha256,
+      independentlyReRead:true,observedRows:verifiedReadback.observedRows,
+    } : {};
     return {
       adapterId: 'vyndi.read-bridge.v1',
       effect: {
@@ -47,6 +55,7 @@ function vyndiReadAdapter(vyndiBridge, actionType) {
         state: 'OBSERVED',
         employeeId: observed.employeeId,
         sourceAuthority: observed.sourceAuthority,
+        ...sourceEvidence,
       },
       verification: {
         verified: true,
@@ -58,6 +67,7 @@ function vyndiReadAdapter(vyndiBridge, actionType) {
         nonce: observed.nonce,
         bodySha256: observed.bodySha256,
         evidenceSource: 'vyndi:/api/vaos/bridge',
+        ...sourceEvidence,
       },
     };
   });

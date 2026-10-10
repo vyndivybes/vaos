@@ -154,7 +154,9 @@ export function createVyndiOperationalWriteClient({
         throw terminalError('VYNDI_BRIDGE_SIGNATURE_UNAVAILABLE');
       }
 
-      const response=await serviceBinding.fetch(`https://vyndi.service${VYNDI_BRIDGE_PATH}`,{
+      let response;
+      try {
+        response=await serviceBinding.fetch(`https://vyndi.service${VYNDI_BRIDGE_PATH}`,{
         method:VYNDI_BRIDGE_METHOD,
         headers:{
           'content-type':'application/json',
@@ -166,7 +168,11 @@ export function createVyndiOperationalWriteClient({
           'x-vaos-signature':signed.signature,
         },
         body,
-      });
+        });
+      } catch {
+        // The target may already have committed. Never automatically retry a business write.
+        throw terminalError('VYNDI_OPERATIONAL_WRITE_OUTCOME_UNKNOWN');
+      }
 
       const payload=await response.json().catch(()=>null);
       if(!response.ok){
@@ -174,7 +180,8 @@ export function createVyndiOperationalWriteClient({
           'VYNDI_OPERATIONAL_WRITE_FAILED',
           `VYNDI_OPERATIONAL_WRITE_FAILED:${response.status}:${payload?.error||'unknown'}`,
         );
-        error.retryable=response.status>=500;
+        // A 5xx might arrive after the remote commit. Require readback/reconciliation.
+        error.retryable=false;
         throw error;
       }
 

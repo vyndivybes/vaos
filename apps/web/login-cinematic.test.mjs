@@ -102,3 +102,24 @@ test('cinematic login renders exactly one canonical licensed footer', () => {
   assert.match(html, /<footer class="cinematic-legal">\s*<span>© 2026 Vāyū Shastr Pvt\. Ltd\. All Rights Reserved\.<\/span>/);
   assert.doesNotMatch(html, /class="login-license"/, 'legacy footer must not duplicate cinematic legal');
 });
+
+
+test('cinematic VAOS uses official Vāyū insignia in every brand treatment', () => {
+  const html = load('./login.html');
+  for (const name of ['cinematic-chrome__logo', 'access-console__brandmark', 'cinematic-portal__logo']) {
+    assert.match(html, new RegExp('<img[^>]*class="' + name + '"[^>]*src="/assets/vayu-shastr-original\\.webp"'), name);
+  }
+  assert.doesNotMatch(html, /<b>V<\/b>/, 'synthetic letter cannot replace the official logo');
+  assert.match(html, /src="\/assets\/vayu-shastr-cinematic\.webp"/, 'cinematic background remains preserved');
+});
+
+test('all VAOS public screens use the approved product name and official identity', () => {
+  const name = 'VAOS Agentic AI Autonomous Ecosystem';
+  for (const page of ['./login.html', './index.html', './workspace.html', './mission-status.html', './agent-supervision.html', './slack-qualification.html']) {
+    const html = load(page);
+    assert.ok(html.includes(name), page + ' lacks the approved VAOS product name');
+    assert.match(html, /\/assets\/vayu-shastr-original\.webp/, page + ' lacks the official Vāyū logo');
+    assert.match(html, /<link rel="icon" type="image\/webp" href="\/assets\/vayu-shastr-original\.webp"/, page + ' lacks branded favicon');
+    assert.doesNotMatch(html, /VYNDI Agentic Operating System/i, page + ' still uses obsolete product description');
+  }
+});

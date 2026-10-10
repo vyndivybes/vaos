@@ -1,14 +1,19 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>VAOS · Slack Qualification</title>
+<link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp" />
+<meta name="description" content="VAOS Agentic AI Autonomous Ecosystem · Slack qualification" />
 <style>
 body{font:16px/1.6 Arial,Helvetica,sans-serif;background:#101827;color:#f8fafc;margin:0;min-height:100vh;display:grid;place-items:center}
 main{max-width:650px;width:calc(100% - 48px);padding:26px;background:#1e293b;border-radius:18px;border:1px solid #334155}
 h1{font-size:26px;margin:0 0 12px}p{color:#cbd5e1}button{background:#f97316;color:#111827;border:0;border-radius:8px;padding:12px 16px;font-weight:bold;cursor:pointer}
 button:disabled{opacity:.45;cursor:not-allowed}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#0f172a;padding:16px;border-radius:10px}
 a{color:#fdba74}
+.slack-brand{display:flex;align-items:center;gap:13px;margin-bottom:20px;color:#f5d38a;font-size:12px;font-weight:700;letter-spacing:.03em}
+.slack-brand img{width:42px;height:42px;object-fit:contain;flex:none}
 </style></head>
 <body><main>
+<div class="slack-brand"><img src="/assets/vayu-shastr-original.webp" alt="" /><span>VAOS Agentic AI Autonomous Ecosystem</span></div>
 <h1>VAOS → Slack qualification</h1>
 <p>Channel: <strong>#vaos-ops</strong>. This sends exactly one synthetic notification using the VAOS Worker bot credential. Production routing stays disabled. You must be signed into VAOS as the commissioning maker.</p>
 <button id="test" type="button" disabled>Check access</button>

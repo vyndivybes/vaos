@@ -1,4 +1,4 @@
-import {AGENTS,prepareFounderCommand,safeAgentSnapshot} from './lib/founder-command.mjs';
+import {AGENTS,prepareFounderCommand,safeAgentSnapshot} from './founder-command.mjs';
 const $=id=>document.getElementById(id),shell=$('founder-shell'),message=$('command-message'),agentSelect=$('agent');
 let preparedText='';
 for(const agent of AGENTS){const option=document.createElement('option');option.value=agent.id;option.textContent=agent.name;agentSelect.append(option);}

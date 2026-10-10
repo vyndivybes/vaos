@@ -29,9 +29,9 @@ test('persisted state does not imply runtime liveness',()=>{
 });
 test('install shell never caches private messages or claims commands were sent',async()=>{
  const [manifestText,html,script]=await Promise.all([
-  readFile(new URL('../manifest.webmanifest',import.meta.url),'utf8'),
-  readFile(new URL('../founder-console.html',import.meta.url),'utf8'),
-  readFile(new URL('../founder-console.mjs',import.meta.url),'utf8')
+  readFile(new URL('./manifest.webmanifest',import.meta.url),'utf8'),
+  readFile(new URL('./founder-console.html',import.meta.url),'utf8'),
+  readFile(new URL('./founder-console.mjs',import.meta.url),'utf8')
  ]);
  const manifest=JSON.parse(manifestText);
  assert.equal(manifest.display,'standalone');assert.equal(manifest.start_url,'/login');

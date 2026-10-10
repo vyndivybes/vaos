@@ -50,8 +50,8 @@ test('Infisical evidence-only key preserves Cloudflare primary and restricts pro
 test('every Infisical evidence SQL function is terminated before the next statement',()=>{
   const sql=read('../../supabase/migrations/20261008142200_infisical_evidence_only_key.sql');
   const starts=(sql.match(/CREATE OR REPLACE FUNCTION/g)||[]).length;
-  const ends=(sql.match(/end;\n\$function\$;/gi)||[]).length;
+  const ends=(sql.match(/end;\r?\n\$function\$;/gi)||[]).length;
   assert.equal(starts,4);
   assert.equal(ends,starts);
-  assert.doesNotMatch(sql,/end;\n\$function\$\n/i);
+  assert.doesNotMatch(sql,/end;\r?\n\$function\$\r?\n/i);
 });

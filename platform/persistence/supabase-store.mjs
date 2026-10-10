@@ -87,6 +87,7 @@ export function createSupabaseControlStore({
     submitIntent(input) { return invoke('submitIntent', input); },
     decideApproval(approvalId, input) { return invoke('decideApproval', { approvalId, ...input }); },
     claimExecution(input) { return invoke('claimExecution', input); },
+    claimProductionObservation(input) { return invoke('claimProductionObservation', input); },
     claimQualificationRecovery(job, input) {
       return invoke('claimQualificationRecovery', {
         jobId: job.id,

@@ -25,8 +25,8 @@ export function createExecutionEngine({
   if (!store) throw new Error('EXECUTION_STORE_REQUIRED');
   if (!registry) throw new Error('EXECUTION_REGISTRY_REQUIRED');
 
-  async function processOne() {
-    const job = await store.claimExecution({ workerId });
+  async function processOne(claimer = () => store.claimExecution({ workerId })) {
+    const job = await claimer();
     if (!job) return { status: 'EMPTY' };
 
     const adapter = registry.get(job.actionType);
@@ -83,5 +83,19 @@ export function createExecutionEngine({
     };
   }
 
-  return Object.freeze({ processOne, drain });
+  async function processProductionObservation({idempotencyKey} = {}) {
+    if(typeof idempotencyKey !== 'string' ||
+       !/^vaos-production-l5:[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:00:00[.]000Z$/.test(idempotencyKey))
+      throw new Error('PRODUCTION_OBSERVATION_KEY_INVALID');
+    if(typeof store.claimProductionObservation!=='function')
+      throw new Error('PRODUCTION_OBSERVATION_SCOPED_STORE_REQUIRED');
+    return processOne(async()=>{
+      const job=await store.claimProductionObservation({workerId:'vaos-production-l5-cron',idempotencyKey});
+      if(job && (job.actionType!=='PRODUCTION.OBSERVE_WIP' || job.payload?.monitoringScope!=='PRODUCTION_L5_READ_ONLY_V1'))
+        throw new Error('PRODUCTION_OBSERVATION_CLAIM_MISMATCH');
+      return job;
+    });
+  }
+
+  return Object.freeze({ processOne, drain, processProductionObservation });
 }

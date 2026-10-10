@@ -220,6 +220,10 @@ Deno.serve(async (req: Request) => {
       p_decision: payload.decision,
       p_decided_by: payload.decidedBy,
     }
+  } else if (operation === 'claimProductionObservation') {
+    rpcName = 'vaos_claim_production_observation'
+    args = { p_server_key: serverKey, p_worker_id: 'vaos-production-l5-cron',
+      p_idempotency_key: payload.idempotencyKey, p_lease_seconds: 120 }
   } else if (operation === 'claimExecution') {
     rpcName = 'vaos_claim_execution'
     args = {

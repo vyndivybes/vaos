@@ -1,4 +1,7 @@
 import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
+import { runProductionReadOnlyObservation } from '../../platform/execution/production-l5-observer.mjs';
+import { getDurableControlService } from './lib/durable-control-provider.mjs';
+import { getExecutionEngine } from './lib/execution-provider.mjs';
 import { runCloudflareInfisicalHealth, isCloudflareInfisicalHealthEnabled } from '../../platform/execution/cloudflare-infisical-direct-health.mjs';
 import login from './api/login.mjs';
 import session from './api/session.mjs';
@@ -174,6 +177,15 @@ export default {
       }
       throw new Error('VAOS_INFISICAL_WATCHDOG_FAILED');
     });
+    const productionObservation=Promise.resolve().then(async()=>{
+      if(env.VAOS_PRODUCTION_OBSERVER_CONTROL!=='read-only-v1')return;
+      const result=await runProductionReadOnlyObservation({
+        controlService:getDurableControlService(env),executionEngine:getExecutionEngine(env),
+        mode:()=>env.VAOS_PRODUCTION_OBSERVER_CONTROL,
+      });
+      console.log('VAOS_PRODUCTION_L5_OBSERVATION',JSON.stringify(result));
+      if(result.status==='HOLD')throw new Error('PRODUCTION_OBSERVATION_HOLD');
+    }).catch(()=>console.warn('VAOS_PRODUCTION_L5_OBSERVATION_HOLD'));
     const synthetic = Promise.resolve().then(async()=>{
       if(env.ACTIVEPIECES_SYNTHETIC_QUALIFY!=='approved-20261009')return;
       const ns=env.ACTIVEPIECES_HANDSHAKE;
@@ -204,8 +216,14 @@ export default {
     });
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.
-    const task = Promise.allSettled([mission,watchdog,synthetic,stirling]).then(results=>{
+    // Preserve the independently qualified four-provider scheduling contract.
+    const scheduledCore = Promise.allSettled([mission,watchdog,synthetic,stirling]).then(results=>{
       if(results.slice(0,2).some(result=>result.status==='rejected'))throw new Error('VAOS_SCHEDULED_TASK_FAILED');
+    });
+    // Keep the optional, fail-closed observer within waitUntil without changing
+    // any existing mission/watchdog/synthetic/Stirling result semantics.
+    const task = Promise.allSettled([scheduledCore,productionObservation]).then(results=>{
+      if(results[0].status==='rejected')throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 
     if (ctx?.waitUntil) ctx.waitUntil(task);

@@ -153,7 +153,7 @@ export const ACTION_POLICIES = Object.freeze({
     defaultRisk: 'high',
   }),
   'PEOPLE.CHANGE_EMPLOYEE_MASTER': Object.freeze({
-    commissioningMode: 'prepare_only',
+    commissioningMode: 'approved_write',
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,
     defaultRisk: 'high',

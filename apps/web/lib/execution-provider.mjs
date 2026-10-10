@@ -4,6 +4,7 @@ import { createExecutionEngine } from '../../../platform/execution/execution-eng
 import { resolveDurableControlConfig } from './durable-control-provider.mjs';
 import { createVyndiReadBridgeClient } from '../../../platform/execution/vyndi-read-bridge-client.mjs';
 import { createVyndiWriteQualificationClient } from '../../../platform/execution/vyndi-write-qualification-client.mjs';
+import { createVyndiOperationalWriteClient } from '../../../platform/execution/vyndi-operational-write-client.mjs';
 
 let engine;
 
@@ -59,6 +60,12 @@ export function getExecutionEngine(runtimeEnv = undefined) {
           serviceBinding: runtimeEnv.VYNDI,
         })
       : undefined;
+    const vyndiOperationalWrite = runtimeEnv?.VYNDI
+      ? createVyndiOperationalWriteClient({
+          signer: store,
+          serviceBinding: runtimeEnv.VYNDI,
+        })
+      : undefined;
 
     engine = createExecutionEngine({
       store,
@@ -71,6 +78,7 @@ export function getExecutionEngine(runtimeEnv = undefined) {
         digitalWorkforce,
         vyndiBridge,
         vyndiWriteQualification,
+        vyndiOperationalWrite,
       }),
       workerId: 'vaos-cloudflare-worker',
     });

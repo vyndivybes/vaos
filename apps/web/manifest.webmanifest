@@ -1,6 +1,6 @@
 {
   "id": "/",
-  "name": "VAOS — Vāyū Agentic Operating System",
+  "name": "VAOS Agentic AI Autonomous Ecosystem",
   "short_name": "VAOS",
   "description": "Governed Founder Command and digital workforce access",
   "start_url": "/login",
@@ -10,10 +10,10 @@
   "theme_color": "#101318",
   "icons": [
     {
-      "src": "/assets/vaos-app-icon.svg",
+      "src": "/assets/vayu-shastr-original.webp",
       "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/webp",
+      "purpose": "any"
     }
   ]
 }

@@ -3,65 +3,94 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#101318" />
-  <meta name="description" content="VAOS — VYNDI Agentic Operating System by Vāyū Shastr Pvt Ltd." />
-  <title>VAOS · Secure sign in</title>
+  <meta name="theme-color" content="#030405" />
+  <meta name="description" content="VAOS Agentic AI Autonomous Ecosystem by Vāyū Shastr Pvt. Ltd. Authorised command access." />
+  <title>VAOS Agentic AI Autonomous Ecosystem · Authorize Access</title>
+  <link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp" />
+  <link rel="preload" href="/assets/vayu-shastr-cinematic.webp" as="image" type="image/webp" />
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/styles.css" />
+  <link rel="stylesheet" href="/login-cinematic.css" />
 </head>
-<body class="login-body">
-  <header class="login-brandbar">
-    <div class="login-brandbar__brand">
-      <span class="login-brandbar__emblem" aria-hidden="true"><img src="/assets/vayu-shastr-original.webp" alt="" /></span>
-      <div><small>VĀYŪ SHASTR PVT. LTD.</small><strong>VAOS</strong></div>
+<body class="login-body cinematic-login">
+  <div class="cinematic-scene" id="cinematic-scene" aria-hidden="true">
+    <div class="cinematic-scene__art" data-parallax-art>
+      <img class="cinematic-scene__image" src="/assets/vayu-shastr-cinematic.webp"
+        alt="" fetchpriority="high" decoding="async" />
     </div>
-    <span class="login-brandbar__meta">VYNDI Agentic Operating System · Governed enterprise intelligence</span>
+    <div class="cinematic-scene__grid"></div>
+    <div class="cinematic-scene__dust" id="cinematic-dust"></div>
+    <div class="cinematic-scene__glow"></div>
+    <div class="cinematic-scene__veil"></div>
+    <div class="cinematic-scene__flash"></div>
+    <div class="cinematic-scene__void"></div>
+  </div>
+
+  <header class="cinematic-chrome" aria-label="Vāyū Shastr secure access">
+    <span class="cinematic-chrome__wordmark"><img class="cinematic-chrome__logo" src="/assets/vayu-shastr-original.webp" alt="" decoding="async" /> VĀYŪ SHASTR <em>/</em> VAOS</span>
+    <span class="cinematic-chrome__node">VAOS Agentic AI Autonomous Ecosystem <span>● SECURE GATEWAY</span></span>
   </header>
 
-  <main class="login-shell">
-    <section class="visual-stage" aria-label="Vāyū Shastr identity">
-      <div class="art-frame" data-parallax-art>
-        <img src="/assets/vayu-shastr-original.webp" alt="Vāyū Shastr Pvt Ltd metallic hexagonal logo surrounded by molecular carbon structures" class="brand-art" />
-        <div class="art-sheen" aria-hidden="true"></div>
-      </div>
-      <div class="visual-caption">
-        <span>VAOS</span>
-        <strong>VYNDI Agentic Operating System</strong>
-        <small>Governed access · auditable actions · policy controlled</small>
-      </div>
+  <main class="cinematic-layout">
+    <section class="cinematic-identity" aria-label="Vāyū Shastr Pvt Ltd">
+      <span class="cinematic-identity__tag"><i></i> CARBON / INTELLIGENCE / GOVERNANCE</span>
+      <div class="cinematic-identity__baseline"><span>01 — AUTHORITY</span><span>02 — EXECUTION</span><span>03 — EVIDENCE</span></div>
     </section>
 
-    <section class="auth-panel" aria-labelledby="signin-title">
-      <div class="auth-kicker">VĀYŪ SHASTR PVT. LTD.</div>
-      <h1 id="signin-title">Enter VAOS.</h1>
-      <p class="auth-copy">Sign in with an authorised VYNDI identity to access the governed agentic workspace.</p>
-
-      <form id="login-form" class="login-form" novalidate>
-        <label><span>Email</span><input id="email" name="email" type="email" autocomplete="email" required /></label>
-        <label><span>Password</span><input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required /></label>
-
-        <div class="login-form__row">
+    <section class="access-console" id="access-console" aria-labelledby="signin-title">
+      <div class="access-console__scan" aria-hidden="true"></div>
+      <header class="access-console__head">
+        <div><span class="access-console__indicator" aria-hidden="true"></span><span>VAOS // AGENTIC ACCESS</span></div>
+        <span class="access-console__edition">SYS.01 / PRIVATE</span>
+      </header>
+      <div class="access-console__titleblock">
+        <span class="access-console__eyebrow">ENCRYPTED ACCESS TERMINAL</span>
+        <h1 id="signin-title">Authorize <em>entry.</em></h1>
+        <p>Enter your authorised identity to access the VAOS Agentic AI Autonomous Ecosystem.</p>
+      </div>
+      <div class="access-console__telemetry" aria-label="System safeguards">
+        <div><span>AUTHORITY</span><strong>GOVERNED</strong></div>
+        <div><span>SESSION</span><strong>HTTPONLY</strong></div>
+        <div><span>EVIDENCE</span><strong>TRACEABLE</strong></div>
+      </div>
+      <form id="login-form" class="login-form cinematic-form" novalidate>
+        <label for="email"><span>01 / IDENTITY EMAIL</span>
+          <input id="email" name="email" type="email" autocomplete="email" inputmode="email"
+            placeholder="operator@organisation.com" required />
+        </label>
+        <label for="password"><span>02 / ACCESS CREDENTIAL</span>
+          <input id="password" name="password" type="password" autocomplete="current-password"
+            placeholder="••••••••••••" minlength="8" required />
+        </label>
+        <div class="cinematic-form__row">
           <label class="remember"><input type="checkbox" id="remember" /><span>Remember email</span></label>
-          <button type="button" class="text-button" id="access-help">Access help</button>
+          <button type="button" class="cinematic-text-button" id="access-help">Access help ↗</button>
         </div>
-
-        <button type="submit" class="primary-button" id="submit-button">
-          <span>Sign in to VAOS</span><span aria-hidden="true">→</span>
+        <button type="submit" class="cinematic-authorize" id="submit-button">
+          <span class="cinematic-authorize__icon" aria-hidden="true">⌁</span>
+          <span>AUTHORIZE &amp; ENTER</span>
+          <span aria-hidden="true">↗</span>
         </button>
         <p class="login-status" id="login-status" role="status" aria-live="polite"></p>
       </form>
-
-      <footer class="auth-footer"><span>HttpOnly session</span><span>·</span><span>8-hour development access</span><span>·</span><span>Governed control plane</span></footer>
+      <footer class="access-console__footer"><span>●</span> SECURE SESSION · 8H DEVELOPMENT ACCESS <span class="access-console__footer-mark"><img class="access-console__brandmark" src="/assets/vayu-shastr-original.webp" alt="" loading="lazy" /></span></footer>
     </section>
   </main>
 
-  <footer class="login-license">
-    <strong>© 2026 Vāyū Shastr Pvt. Ltd. All Rights Reserved.</strong>
-    <span>Official licensed interface of Vāyū Shastr Pvt. Ltd.</span>
-    <span class="login-license__spacer"></span>
-    <span>Designed & Developed by S. Shyam Sundhar</span>
+  <footer class="cinematic-legal">
+    <span>© 2026 Vāyū Shastr Pvt. Ltd. All Rights Reserved.</span>
+    <span>GOVERNED INTELLIGENCE · HUMAN AUTHORITY</span>
+    <span>DESIGNED &amp; DEVELOPED BY S. SHYAM SUNDHAR</span>
   </footer>
 
-  <script type="module" src="/app.mjs"></script>
+  <div class="cinematic-portal" id="cinematic-portal" aria-hidden="true" role="status">
+    <div class="cinematic-portal__halo" aria-hidden="true"><span></span><span></span><span></span><img class="cinematic-portal__logo" src="/assets/vayu-shastr-original.webp" alt="" decoding="async" /></div>
+    <p class="cinematic-portal__kicker">AUTHORITY VERIFIED · SESSION ESTABLISHED</p>
+    <h2>ENTERING <em>VAOS</em></h2>
+    <div class="cinematic-portal__bar" aria-hidden="true"><span></span></div>
+    <p class="cinematic-portal__status" id="portal-status">Preparing governed workspace…</p>
+  </div>
+
+  <script type="module" src="/app.mjs?v=20261011-cinematic-access"></script>
 </body>
 </html>

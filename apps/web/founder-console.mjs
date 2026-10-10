@@ -34,6 +34,8 @@ $('command-form').addEventListener('submit',event=>{
 });
 async function loadHistory(){
  const out=$('recorded-history');out.replaceChildren();
+ const select=$('report-request');select.replaceChildren();
+ const placeholder=document.createElement('option');placeholder.value='';placeholder.textContent='Select persisted report request';select.append(placeholder);
  try{
   const r=await fetch('/api/founder-inbox?agentId='+encodeURIComponent(agentSelect.value),{credentials:'same-origin',cache:'no-store'});
   if(!r.ok)throw Error();
@@ -41,6 +43,11 @@ async function loadHistory(){
   if(!Array.isArray(data?.messages))throw Error();
   if(!data.messages.length){out.textContent='No recorded messages for this employee.';return;}
   for(const m of data.messages){
+   if(m.kind==='REPORT_REQUEST'&&m.status==='RECORDED_NOT_ROUTED'
+      &&['project','orchestrator'].includes(agentSelect.value)&&typeof m.messageId==='string'){
+      const option=document.createElement('option');option.value=m.messageId;
+      option.textContent=(m.createdAt||'')+' · '+m.instruction.slice(0,80);select.append(option);
+   }
    const p=document.createElement('p');
    p.textContent=(m.createdAt||'')+' · '+m.kind+' · '+m.status+': '+m.instruction;
    out.append(p);
@@ -48,6 +55,25 @@ async function loadHistory(){
  }catch{out.textContent='Inbox history is not commissioned or is unavailable.';}
 }
 $('refresh-history').addEventListener('click',loadHistory);
+$('prepare-report').addEventListener('click',async()=>{
+ const out=$('report-preview');const messageId=$('report-request').value;
+ const missionId=$('report-mission-id').value.trim();
+ if(!messageId||!missionId){out.textContent='Select a saved report request and mission ID.';return;}
+ out.textContent='Checking authoritative evidence…';
+ try{
+  const r=await fetch('/api/founder-agent-report',{method:'POST',credentials:'same-origin',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({operation:'PREVIEW_MISSION_REPORT',agentId:agentSelect.value,messageId,missionId})});
+  if(!r.ok)throw Error();
+  const x=(await r.json()).data;
+  if(x?.status!=='READ_ONLY_PREVIEW_NOT_AGENT_REPLY'||x.actionAuthorized!==false)throw Error();
+  out.textContent='READ-ONLY PREVIEW — NOT AN AI REPLY\nMission: '+x.missionId+
+  '\nStatus: '+x.missionStatus+'\nVerified: '+x.verifiedWorkPackages+'/'+x.totalWorkPackages+
+  '\nBlockers: '+x.blockedWorkPackageIds.join(', ')+
+  '\nEvidence: '+x.evidenceRefs.join(', ')+
+  '\nUpdated: '+(x.sourceUpdatedAt||'Not recorded')+'\nNo model invoked. No action authorized.';
+ }catch{out.textContent='Report preview unavailable or not commissioned. No agent response inferred.';}
+});
 $('record-draft').addEventListener('click',async()=>{
  if(!prepared||!pendingMessageId){message.textContent='Prepare a draft first.';return;}
  // A changed form must never send an older draft without another explicit confirmation.

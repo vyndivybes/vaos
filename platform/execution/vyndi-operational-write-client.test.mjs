@@ -89,3 +89,28 @@ test('People master operational write fails closed without expectedRevision and 
     /EXPECTED_REVISION|SOD_REQUIRED/,
   );
 });
+
+test('People master write treats a 503 response as an unknown outcome and forbids blind retry',async()=>{
+  const client=createVyndiOperationalWriteClient({
+    signer:{async signVyndiBridgeRequest(){return {keyId:'vyndi-primary-p256-v1',signature:'sig-test'}}},
+    serviceBinding:{async fetch(){return new Response(JSON.stringify({error:'upstream_unknown'}),{status:503,headers:{'content-type':'application/json'}})}},
+    now:()=>1760000000000,
+    nonce:()=> 'nonce-stage4-people-503-test',
+  });
+  const job={
+    id:'job-stage4-503',intentId:'intent-stage4-503',actionType:'PEOPLE.CHANGE_EMPLOYEE_MASTER',
+    payload:{
+      operationalWrite:true,operationalWriteProfile:'PEOPLE_DRAFT_MASTER_V1',
+      id:'role-temp',expectedRevision:1,displayName:'Future role',functionName:'Operations',
+      roleTitle:'Temporary Role',engagementType:'planned_role',
+      startMonth:12,endMonth:null,notes:'test',
+      _vaosControl:{idempotencyKey:'stage4-key-503',approvalId:'approval-stage4-503',
+        requestedBy:'maker@example.test',approvedBy:'checker@example.test'},
+    },
+  };
+  await assert.rejects(()=>client.execute(job),(error)=>{
+    assert.equal(error.code,'VYNDI_OPERATIONAL_WRITE_FAILED');
+    assert.equal(error.retryable,false,'ambiguous business writes must never auto retry');
+    return true;
+  });
+});

@@ -94,3 +94,11 @@ test('CSS includes responsive and reduced-motion safety rules',()=>{
   assert.match(css,/\.is-void/);
   assert.match(css,/focus-visible/);
 });
+
+test('cinematic login renders exactly one canonical licensed footer', () => {
+  const html = load('./login.html');
+  const exact = '© 2026 Vāyū Shastr Pvt. Ltd. All Rights Reserved.';
+  assert.equal(html.split(exact).length - 1, 1, 'canonical copyright must appear once');
+  assert.match(html, /<footer class="cinematic-legal">\s*<span>© 2026 Vāyū Shastr Pvt\. Ltd\. All Rights Reserved\.<\/span>/);
+  assert.doesNotMatch(html, /class="login-license"/, 'legacy footer must not duplicate cinematic legal');
+});

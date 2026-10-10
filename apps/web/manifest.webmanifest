@@ -1,0 +1,19 @@
+{
+  "id": "/",
+  "name": "VAOS Agentic AI Autonomous Ecosystem",
+  "short_name": "VAOS",
+  "description": "Governed Founder Command and digital workforce access",
+  "start_url": "/login",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090b0e",
+  "theme_color": "#101318",
+  "icons": [
+    {
+      "src": "/assets/vayu-shastr-original.webp",
+      "sizes": "any",
+      "type": "image/webp",
+      "purpose": "any"
+    }
+  ]
+}

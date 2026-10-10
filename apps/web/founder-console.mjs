@@ -48,6 +48,30 @@ async function loadHistory(){
  }catch{out.textContent='Inbox history is not commissioned or is unavailable.';}
 }
 $('refresh-history').addEventListener('click',loadHistory);
+$('agent-brief-button').addEventListener('click',async()=>{
+ const out=$('agent-brief-output'),agentId=agentSelect.value,missionId=$('mission-id').value.trim();
+ if(missionId&&!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(missionId)){
+  out.textContent='Invalid mission ID. No report generated.';return;
+ }
+ const params=new URLSearchParams({agentId});if(missionId)params.set('missionId',missionId);
+ out.textContent='Reading persisted VAOS evidence…';
+ try{
+  const response=await fetch('/api/founder-agent-brief?'+params,{credentials:'same-origin',cache:'no-store'});
+  if(!response.ok)throw Error();
+  const data=(await response.json())?.data;
+  if(data?.agentId!==agentId||data?.schemaVersion!=='vaos.founder-agent-brief.v1'
+     ||data?.executionAuthorized!==false||data?.agentReply!==false)throw Error();
+  out.textContent='Agent: '+data.agentId+'\nReporting status: '+data.status+
+    '\nQualification: Q'+data.qualificationLevel+' / required Q'+data.requiredQualificationLevel+
+    '\nRuntime liveness: UNVERIFIED\nObserved: '+data.observedAt+
+    '\nMission: '+(data.missionId||'not selected')+
+    '\nOwned work: '+data.workPackages.completed+'/'+data.workPackages.assigned+' completed'+
+    '\nReview references: '+data.workPackages.withIndependentReviewReference+
+    '\nBlocked or failed: '+data.workPackages.blockedOrFailed+
+    '\n\n'+data.summary+'\n\n'+data.verificationCaveat+
+    '\nDETERMINISTIC REPORT · No agent instruction executed';
+ }catch{out.textContent='Agent report unavailable or uncommissioned. No live findings inferred.';}
+});
 $('record-draft').addEventListener('click',async()=>{
  if(!prepared||!pendingMessageId){message.textContent='Prepare a draft first.';return;}
  // A changed form must never send an older draft without another explicit confirmation.

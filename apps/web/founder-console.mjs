@@ -1,6 +1,6 @@
 import {AGENTS,prepareFounderCommand,safeAgentSnapshot} from './founder-command.mjs';
 const $=id=>document.getElementById(id),shell=$('founder-shell'),message=$('command-message'),agentSelect=$('agent');
-let preparedText='';
+let preparedText='';let pendingMessageId=null;let prepared=null;
 for(const agent of AGENTS){const option=document.createElement('option');option.value=agent.id;option.textContent=agent.name;agentSelect.append(option);}
 async function refresh(){
  $('agent-status').textContent='Reading persisted agent records…';
@@ -19,17 +19,57 @@ async function authenticate(){
   shell.hidden=false;$('auth-message').hidden=true;await refresh();
  }catch{$('auth-message').textContent='Session unavailable. Sign in from workspace.';}
 }
-agentSelect.addEventListener('change',()=>{$('draft-panel').hidden=true;preparedText='';refresh();});
+agentSelect.addEventListener('change',()=>{$('draft-panel').hidden=true;preparedText='';pendingMessageId=null;prepared=null;refresh();loadHistory();});
 $('refresh').addEventListener('click',refresh);
 $('command-form').addEventListener('submit',event=>{
  event.preventDefault();
  try{
   const d=prepareFounderCommand({agentId:agentSelect.value,kind:$('command-kind').value,instruction:$('instruction').value});
+  prepared=d;pendingMessageId=crypto.randomUUID();
   const a=AGENTS.find(a=>a.id===d.recipientAgentId);
   preparedText='Recipient: '+a.name+' ('+d.recipientAgentId+')\nType: '+d.kind+'\nStatus: DRAFT_NOT_SENT\n\n'+d.instruction+'\n\nRequires governed submission. No authority granted.';
   $('draft-output').textContent=preparedText;$('draft-panel').hidden=false;
   message.textContent='Draft prepared locally. It has NOT been sent to an agent.';
  }catch{message.textContent='Invalid draft. Enter a specific instruction (5–2000 characters).';}
+});
+async function loadHistory(){
+ const out=$('recorded-history');out.replaceChildren();
+ try{
+  const r=await fetch('/api/founder-inbox?agentId='+encodeURIComponent(agentSelect.value),{credentials:'same-origin',cache:'no-store'});
+  if(!r.ok)throw Error();
+  const data=(await r.json()).data;
+  if(!Array.isArray(data?.messages))throw Error();
+  if(!data.messages.length){out.textContent='No recorded messages for this employee.';return;}
+  for(const m of data.messages){
+   const p=document.createElement('p');
+   p.textContent=(m.createdAt||'')+' · '+m.kind+' · '+m.status+': '+m.instruction;
+   out.append(p);
+  }
+ }catch{out.textContent='Inbox history is not commissioned or is unavailable.';}
+}
+$('refresh-history').addEventListener('click',loadHistory);
+$('record-draft').addEventListener('click',async()=>{
+ if(!prepared||!pendingMessageId){message.textContent='Prepare a draft first.';return;}
+ // A changed form must never send an older draft without another explicit confirmation.
+ if(agentSelect.value!==prepared.recipientAgentId||$('instruction').value.trim()!==prepared.instruction
+    ||$('command-kind').value!==prepared.kind){
+  message.textContent='Form changed. Prepare the draft again before recording.';return;
+ }
+ $('record-draft').disabled=true;
+ try{
+  const r=await fetch('/api/founder-inbox',{method:'POST',credentials:'same-origin',
+   headers:{'Content-Type':'application/json'},body:JSON.stringify({
+    messageId:pendingMessageId,agentId:prepared.recipientAgentId,
+    kind:prepared.kind,instruction:prepared.instruction
+   })});
+  const payload=await r.json();
+  if(!r.ok||payload?.data?.message?.status!=='RECORDED_NOT_ROUTED')throw Error();
+  message.textContent='Recorded in founder inbox — NOT ROUTED or executed.';
+  pendingMessageId=null;prepared=null;$('draft-panel').hidden=true;
+  await loadHistory();
+ }catch{
+  message.textContent='Recording not confirmed. No agent action occurred. Retry the same prepared draft and ID.';
+ }finally{$('record-draft').disabled=false;}
 });
 $('copy-draft').addEventListener('click',async()=>{
  try{await navigator.clipboard.writeText(preparedText);message.textContent='Draft copied. Not sent.';}

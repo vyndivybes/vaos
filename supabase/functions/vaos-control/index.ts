@@ -67,7 +67,24 @@ Deno.serve(async (req: Request) => {
   let rpcName = ''
   let args: Record<string, unknown> = {}
 
-  if (operation === 'operationalCommissioningSnapshot') {
+  if (operation === 'founderInboxAppend') {
+    rpcName = 'vaos_founder_inbox_append'
+    args = {
+      p_server_key: serverKey,
+      p_message_id: payload.messageId,
+      p_actor_email: payload.actorEmail,
+      p_agent_id: payload.agentId,
+      p_kind: payload.kind,
+      p_instruction: payload.instruction,
+    }
+  } else if (operation === 'founderInboxList') {
+    rpcName = 'vaos_founder_inbox_list'
+    args = {
+      p_server_key: serverKey,
+      p_actor_email: payload.actorEmail,
+      p_agent_id: payload.agentId,
+    }
+  } else if (operation === 'operationalCommissioningSnapshot') {
     rpcName = 'vaos_operational_commissioning_snapshot'
     args = { p_server_key: serverKey }
   } else if (operation === 'createOperatingMission') {

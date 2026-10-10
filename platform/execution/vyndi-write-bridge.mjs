@@ -59,6 +59,13 @@ export function createVyndiWriteBridgeAdapter({transport}={}){
       if(!envelope||envelope.contractVersion!=='vyndi-write-bridge.preparation.v1') throw fail('VYNDI_BRIDGE_ENVELOPE_INVALID');
       const route=getVyndiBridgeRoute(envelope.actionType);
       if(!route) throw fail('VYNDI_BRIDGE_ROUTE_NOT_FOUND');
+      if(
+        route.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION
+        && route.executionEnabled===true
+        && envelope.executionEnabled===true
+      ){
+        throw fail('VYNDI_OPERATIONAL_WRITE_DEDICATED_ADAPTER_REQUIRED');
+      }
       if(!route.executionEnabled||envelope.executionEnabled!==true){
         throw fail('VYNDI_WRITE_BRIDGE_NOT_COMMISSIONED');
       }

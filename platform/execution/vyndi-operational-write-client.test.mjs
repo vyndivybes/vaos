@@ -16,6 +16,7 @@ test('People master operational write signs approval lineage and expected revisi
           readOnly:false,
           actionType:body.actionType,
           sourceAuthority:'savePeopleRecordDraft',
+          operationalWriteProfile:'PEOPLE_DRAFT_MASTER_V1',
           resourceId:body.input.id,
           finalState:'draft',
           initialRevision:body.input.expectedRevision,
@@ -111,6 +112,27 @@ test('People master write treats a 503 response as an unknown outcome and forbid
   await assert.rejects(()=>client.execute(job),(error)=>{
     assert.equal(error.code,'VYNDI_OPERATIONAL_WRITE_FAILED');
     assert.equal(error.retryable,false,'ambiguous business writes must never auto retry');
+    return true;
+  });
+});
+
+test('People master write wraps transport errors as non-retryable unknown outcomes',async()=>{
+  const client=createVyndiOperationalWriteClient({
+    signer:{async signVyndiBridgeRequest(){return {keyId:'vyndi-primary-p256-v1',signature:'sig-test'}}},
+    serviceBinding:{async fetch(){throw new Error('connection_reset')}},now:()=>1760000000000,
+  });
+  await assert.rejects(()=>client.execute({
+    id:'job-stage4-lost',intentId:'intent-stage4-lost',actionType:'PEOPLE.CHANGE_EMPLOYEE_MASTER',
+    payload:{
+      operationalWrite:true,operationalWriteProfile:'PEOPLE_DRAFT_MASTER_V1',
+      id:'role-temp',expectedRevision:1,displayName:'Future role',functionName:'Operations',
+      roleTitle:'Temporary Role',engagementType:'planned_role',startMonth:12,endMonth:null,notes:'',
+      _vaosControl:{idempotencyKey:'stage4-key-lost',approvalId:'approval-stage4-lost',
+        requestedBy:'maker@example.test',approvedBy:'checker@example.test'},
+    },
+  }),error=>{
+    assert.equal(error.code,'VYNDI_OPERATIONAL_WRITE_OUTCOME_UNKNOWN');
+    assert.equal(error.retryable,false);
     return true;
   });
 });

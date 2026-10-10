@@ -409,6 +409,19 @@
       "priority": "optional",
       "subscriptionPolicy": "free-cloud-evaluation",
       "productionRouting": "disabled-pending-live-qualification"
+    },
+    {
+      "providerId": "langgraph",
+      "displayName": "LangGraph",
+      "capabilities": [
+        "agent.supervise",
+        "agent.orchestrate"
+      ],
+      "tier": "A",
+      "implementation": "embedded-library-implemented",
+      "priority": "primary",
+      "subscriptionPolicy": "embedded-library-no-subscription",
+      "productionRouting": "control-disabled-pending-live-qualification"
     }
   ]
 }

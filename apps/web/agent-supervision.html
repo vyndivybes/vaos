@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VAOS · Agent supervision</title>
+  <link rel="stylesheet" href="/styles.css" /><link rel="stylesheet" href="/mission-status.css" />
+</head>
+<body class="mission-status-body">
+  <header class="mission-bar"><div class="mission-brand"><img src="/assets/vayu-shastr-original.webp" alt="" />
+    <div><small>VĀYŪ SHASTR PVT. LTD.</small><strong>VAOS · Agent supervision</strong></div></div>
+    <a href="/workspace" class="mission-link">Control workspace</a></header>
+  <main class="mission-shell">
+    <h1>Agent supervision</h1>
+    <p class="mission-intro">Monitor registered agents, qualification and approval holds. Add a mission ID to inspect handoffs and coordinate one eligible read-only task.</p>
+    <form id="supervision-form" class="mission-lookup"><label for="supervision-mission">Mission ID (optional)</label>
+      <div class="mission-lookup-row"><input id="supervision-mission" type="text" maxlength="96" autocomplete="off" placeholder="Fleet overview or assigned mission ID" />
+      <button type="submit">Refresh monitor</button></div></form>
+    <p id="supervision-message" class="mission-message" role="status" aria-live="polite">Loading agent state…</p>
+    <section id="supervision-report" class="mission-report" hidden>
+      <h2>Agent state</h2><p id="supervision-observed"></p>
+      <p>Lifecycle and qualification come from persisted records. Runtime liveness is unverified; a listed agent is not proof of a running process.</p>
+      <div class="mission-table-scroll"><table class="mission-table"><thead><tr><th>Agent</th><th>Lifecycle</th><th>Qualification</th><th>Last heartbeat</th></tr></thead><tbody id="supervision-agents"></tbody></table></div>
+      <h2>Approval holds</h2><ul id="supervision-approvals"></ul>
+      <h2>Mission coordination</h2><p id="supervision-mission-state"></p>
+      <div class="mission-table-scroll"><table class="mission-table"><thead><tr><th>Handoff</th><th>Owner / job</th><th>State</th><th>Control eligibility</th></tr></thead><tbody id="supervision-handoffs"></tbody></table></div>
+      <div class="mission-lookup-row"><button id="supervision-run" type="button" disabled>Run one read-only handoff</button></div>
+      <p id="supervision-control-state"></p>
+      <p class="mission-footnote">Control records mission evidence and requires a separate verifier. Business writes, lifecycle changes, approval decisions and mission closure retain their existing VAOS gates.</p>
+    </section>
+  </main><script type="module" src="/agent-supervision.mjs"></script>
+</body></html>

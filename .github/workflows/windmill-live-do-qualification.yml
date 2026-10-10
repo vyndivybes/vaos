@@ -37,6 +37,9 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '22'
+
+      - name: Install pinned runtime dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Signed OIDC, isolated persistence and API authority tests
         run: >-
           node --test

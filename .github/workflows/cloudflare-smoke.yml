@@ -8,6 +8,8 @@ on:
       - "packages/**"
       - "wrangler.jsonc"
       - "package.json"
+      - "package-lock.json"
+      - "integrations/langgraph/**"
       - ".github/workflows/cloudflare-smoke.yml"
   push:
     branches: [main]
@@ -16,6 +18,9 @@ on:
       - "platform/**"
       - "packages/**"
       - "wrangler.jsonc"
+      - "package.json"
+      - "package-lock.json"
+      - "integrations/langgraph/**"
       - ".github/workflows/cloudflare-smoke.yml"
 
 permissions:
@@ -30,6 +35,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "22"
+
+      - name: Install pinned runtime dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Test Cloudflare compatibility adapter
         run: node --test apps/web/cloudflare-worker.test.mjs apps/web/lib/cloudflare-adapter.test.mjs apps/web/api/zapier-webhook.test.mjs

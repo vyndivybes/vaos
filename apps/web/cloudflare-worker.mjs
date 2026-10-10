@@ -21,6 +21,7 @@ import windmillScopedRun from './api/windmill-scoped-run.mjs';
 import windmillLiveDoQualification from './api/windmill-live-do-qualification.mjs';
 import slackQualification from './api/slack-qualification.mjs';
 import zapierWebhook from './api/zapier-webhook.mjs';
+import langgraph from './api/langgraph.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
@@ -58,6 +59,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/windmill-live-do-qualification': windmillLiveDoQualification,
   '/api/slack-qualification': slackQualification,
   '/api/zapier-webhook': zapierWebhook,
+  '/api/langgraph': langgraph,
 });
 
 function loginRedirect(request) {

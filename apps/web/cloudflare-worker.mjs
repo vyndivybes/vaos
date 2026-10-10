@@ -17,6 +17,7 @@ import stirlingQualification from './api/stirling-qualification.mjs';
 import missions from './api/missions.mjs';
 import projectSchedule from './api/project-schedule.mjs';
 import windmillRuntimeStatus from './api/windmill-runtime-status.mjs';
+import windmillScopedRun from './api/windmill-scoped-run.mjs';
 import windmillLiveDoQualification from './api/windmill-live-do-qualification.mjs';
 import slackQualification from './api/slack-qualification.mjs';
 import zapierWebhook from './api/zapier-webhook.mjs';
@@ -53,6 +54,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/missions': missions,
   '/api/project-schedule': projectSchedule,
   '/api/windmill-runtime-status': windmillRuntimeStatus,
+  '/api/windmill-scoped-run': windmillScopedRun,
   '/api/windmill-live-do-qualification': windmillLiveDoQualification,
   '/api/slack-qualification': slackQualification,
   '/api/zapier-webhook': zapierWebhook,

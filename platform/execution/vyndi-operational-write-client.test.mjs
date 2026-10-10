@@ -18,6 +18,7 @@ test('People master operational write signs approval lineage and expected revisi
           sourceAuthority:'savePeopleRecordDraft',
           operationalWriteProfile:'PEOPLE_DRAFT_MASTER_V1',
           resourceId:body.input.id,
+          outcome:'EXECUTED',
           finalState:'draft',
           initialRevision:body.input.expectedRevision,
           finalRevision:body.input.expectedRevision+1,

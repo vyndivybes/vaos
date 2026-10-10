@@ -22,7 +22,7 @@ const goodSlot={schemaVersion:'vaos.windmill.durable-admission.v1',
  productionActivation:false,maxConcurrentRuns:1,queuedRuns:0,active:null};
 const jobRunId='019effff-aaaa-7bbb-8ccc-0123456789ab';
 const challenge='a'.repeat(32);
-const ctx=()=>({env:{...goodEnv},provider:{...goodProvider},status:{...goodSlot}});
+const ctx=()=>({env:{...goodEnv},provider:structuredClone(goodProvider),status:structuredClone(goodSlot)});
 
 test('commissioning is HOLD without both distinct scoped credentials, provider authority, and owner flag',()=>{
  for(const key of ['WINDMILL_SCOPED_ENABLED','WINDMILL_ADMISSION_ENABLED','WINDMILL_DISPATCH_TOKEN','WINDMILL_VERIFY_TOKEN']){

@@ -13,7 +13,7 @@ async function retrieveDocuments(repo,q,token,fetchImpl){
   'X-GitHub-Api-Version':'2022-11-28','User-Agent':'VAOS-Federated-ReadOnly'};
  const get=async(path)=>{const r=await fetchImpl('https://api.github.com/repos/'+repo+path,{
   method:'GET',headers,redirect:'manual',signal:AbortSignal.timeout(7000)});
-  if(!r.ok)throw Error('GITHUB_STATUS_'+r.status);
+  if(!r.ok)throw Error(r.status===401?'UNAUTHORIZED':r.status===403?'FORBIDDEN_OR_RATE_LIMITED':r.status===404?'NOT_FOUND':r.status===422?'QUERY_UNPROCESSABLE':r.status===429?'RATE_LIMITED':'UPSTREAM_HTTP_ERROR');
   return r.json();};
  const meta=await get('');
  const branch=meta.default_branch;

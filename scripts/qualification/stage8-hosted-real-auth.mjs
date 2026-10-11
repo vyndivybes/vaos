@@ -46,20 +46,25 @@ try{
  const makerCookie=await auth('maker',maker);
  const checkerCookie=await auth('checker',checker);
  assert.notEqual(makerCookie,checkerCookie);
+ console.log('STAGE8_MAKER_LOGIN_PASS');
+ console.log('STAGE8_CHECKER_LOGIN_PASS');
  // Negative hosted controls: wrong identity/password and forged session rejected.
  const invalidLogin=await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({email:'kaaviyam1519@gmail.com',password:maker})});
  assert.equal(invalidLogin.status,401,'role credential isolation');
+ console.log('STAGE8_ROLE_SESSION_ISOLATION_PASS');
  const [cookieName,cookieToken]=checkerCookie.split('=');
  const [payload,signature]=cookieToken.split('.');
  const forged=cookieName+'='+payload+'.'+(signature[0]==='a'?'b':'a')+signature.slice(1);
  assert.equal((await call('/api/session',{headers:{cookie:forged}})).status,401,'invalid signature rejected');
+ console.log('STAGE8_FORGED_SIGNATURE_REJECTED');
  const expiredPayload=Buffer.from(JSON.stringify({email:'kaaviyam1519@gmail.com',exp:1,v:2,iat:0,
   sid:'0123456789abcdef0123456789abcdef'})).toString('base64url');
  const expiredSignature=crypto.createHmac('sha256',Buffer.from(vars.VAOS_SESSION_HMAC_KEY,'hex'))
   .update(expiredPayload).digest('base64url');
  const expiredCookie='vaos_session='+expiredPayload+'.'+expiredSignature;
  assert.equal((await call('/api/session',{headers:{cookie:expiredCookie}})).status,401,'expired session rejected');
+ console.log('STAGE8_EXPIRED_SESSION_REJECTED');
  for(const cookie of [makerCookie,checkerCookie])assert.equal((await call('/api/session',{headers:{cookie}})).status,200);
  assert.equal((await call('/api/logout',{method:'POST',headers:{cookie:checkerCookie}})).status,200);
  assert.equal((await call('/api/session',{headers:{cookie:checkerCookie}})).status,401,'R2 revoked checker cookie');

@@ -24,7 +24,6 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           STAGE8_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
           VAOS_STAGE8_EVIDENCE_SIGNING_KEY: ${{ secrets.VAOS_STAGE8_EVIDENCE_SIGNING_KEY }}
-          STAGE8_INDEPENDENT_AUDIT_RECORD: ${{ secrets.STAGE8_INDEPENDENT_AUDIT_RECORD }}
         run: node scripts/qualification/stage8-independent-signer.mjs
       - name: Attach signed evidence only after independent verification
         uses: actions/upload-artifact@v4

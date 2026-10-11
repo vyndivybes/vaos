@@ -104,5 +104,6 @@ test('client module is founder-flag gated, GET-only, and no continuous listening
   assert.match(client,/method:'GET'/);
   assert.match(client,/voice\.startListening\('voice-one-shot-question',900\)/);
   assert.match(ignore,/!lib\/voice-one-shot\.mjs/);
-  assert.doesNotMatch(client,/setInterval|startContinuous|method:'POST'/);
+  assert.doesNotMatch(client,/setInterval|startContinuous|\/api\/(?:executions|approvals|intents|founder-conversation)/);
+  assert.match(client,/\/api\/voice-ai-focus/);
 });

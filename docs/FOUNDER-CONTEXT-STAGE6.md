@@ -9,9 +9,10 @@
   founder questions to resolve the focus of a **new** Stage 5 turn.
 - It never feeds a previous model reply into the prompt as authority. A prior
   turn must already have a persisted, source-hashed Stage 4 reply.
-- An eight-field strict JSON response must echo exactly the six authoritative
-  mission facts, plus one \`focus\` from {status,verification,blockers,evidence,closure}
-  and \`refersTo\` matching the preceding request UUID.
+- The model returns **only two fields**: `focus` from
+  {status,verification,blockers,evidence,closure} and `refersTo` equal to the
+  preceding request UUID. It is not allowed to return factual mission fields.
+  All displayed facts come exclusively from the independently verified Stage 3 report.
 - The model's free-form text is NOT displayed. The Worker constructs an
   evidence-only explanation with current authoritative facts, the chosen
   focus and the preceding immutable request identifier.

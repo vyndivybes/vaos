@@ -44,10 +44,10 @@ test('live schema echo can select a contextual focus but cannot invent facts',as
  let calls=0;
  const ai={async run(model,opts){
    calls++;assert.equal(model,FOUNDER_AI_MODEL);
-   assert.equal(opts.max_tokens,256);assert.ok(!Object.hasOwn(opts,'tools'));
+   assert.equal(opts.max_tokens,128);assert.ok(!Object.hasOwn(opts,'tools'));
    assert.match(opts.prompt,/What about closure/);
    assert.match(opts.prompt,/Are any blockers recorded/);
-   return {response:JSON.stringify({...facts,focus:'closure',refersTo:priorId})};
+   return {response:JSON.stringify({focus:'closure',refersTo:priorId})};
  }};
  const context=prepareConversationContext(input);
  const d=await runFounderContextDraft({ai,agentId:'project',
@@ -63,10 +63,10 @@ test('live schema echo can select a contextual focus but cannot invent facts',as
 test('factual drift, invented prior ID, unbounded prose and tools all fail',async()=>{
  const context=prepareConversationContext(input);
  for(const response of [
-  {response:JSON.stringify({...facts,focus:'closure',refersTo:currentId})},
-  {response:JSON.stringify({...facts,focus:'execute',refersTo:priorId})},
-  {response:JSON.stringify({...facts,missionStatus:'CLOSED',focus:'closure',refersTo:priorId})},
-  {response:JSON.stringify({...facts,blockedWorkPackageIds:['made-up'],focus:'blockers',refersTo:priorId})},
+  {response:JSON.stringify({focus:'closure',refersTo:currentId})},
+  {response:JSON.stringify({focus:'execute',refersTo:priorId})},
+  {response:JSON.stringify({focus:'closure',refersTo:priorId,missionStatus:'CLOSED'})},
+  {response:JSON.stringify({focus:'blockers',refersTo:priorId,blockedWorkPackageIds:['made-up']})},
   {response:'All tasks completed and approved'},
   {choices:[{message:{tool_calls:[{id:'x'}]}}]}
  ]){

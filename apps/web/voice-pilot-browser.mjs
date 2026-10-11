@@ -1,4 +1,4 @@
-import {appendVoiceTranscript,VOICE_AUDIO_TEST_MESSAGE} from './lib/voice-pilot.mjs';
+import {appendVoiceTranscript,VOICE_AUDIO_TEST_MESSAGE,isReadOnlyMissionStatusQuestion} from './lib/voice-pilot.mjs';
 import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
 import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
 
@@ -16,7 +16,11 @@ const voiceToneTest = $('voice-tone-test');
 const diagnosticsStatus = $('voice-audio-diagnostics');
 const missionSpeak = $('voice-mission-speak');
 const missionReadback = $('mission-summary');
-const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest];
+const voiceQuestion=$('voice-readonly-question');
+const voiceRequestDictate=$('voice-request-dictate');
+const voiceReadMission=$('voice-read-mission');
+const missionForm=$('mission-form');
+const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest,voiceRequestDictate,voiceReadMission];
 buttons.forEach(button=>{button.disabled=true;});
 let enabled=false;
 
@@ -61,6 +65,8 @@ function updateButtons() {
   voiceShortTest.disabled=!enabled||!audioDiagnostics.speechAvailable;
   voiceToneTest.disabled=!enabled||!(window.AudioContext||window.webkitAudioContext);
   missionSpeak.disabled=!enabled||!voice.speechAvailable;
+  voiceRequestDictate.disabled=!enabled||!voice.dictationAvailable||voice.isListening();
+  voiceReadMission.disabled=!enabled;
 }
 function speakResult(source,id) {
   if(!enabled)return;
@@ -71,6 +77,29 @@ startInstruction.addEventListener('click',()=>{
 });
 startFollowup.addEventListener('click',()=>{
   if(enabled)voice.startListening('conversation-text',900);
+});
+voiceRequestDictate.addEventListener('click',()=>{
+  if(enabled)voice.startListening('voice-readonly-question',900);
+});
+voiceQuestion.addEventListener('input',()=>{
+  // The last retrieved mission must not be presented as answering a new question.
+  delete missionReadback.dataset.voiceReadback;
+});
+voiceReadMission.addEventListener('click',()=>{
+  if(!enabled)return;
+  if(!isReadOnlyMissionStatusQuestion(voiceQuestion.value)){
+    status.textContent='Only status, evidence, progress and blocker questions are allowed. No request sent.';
+    return;
+  }
+  const missionId=$('mission-id').value.trim();
+  if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(missionId)){
+    status.textContent='Enter a valid existing mission ID in Mission evidence lookup. No request sent.';
+    return;
+  }
+  // Explicit button click; the existing authenticated mission form performs only GET.
+  delete missionReadback.dataset.voiceReadback;
+  status.textContent='Reading existing mission snapshot via GET. Review its contents before speaking.';
+  missionForm.requestSubmit();
 });
 stopMic.addEventListener('click',()=>voice.stopListening());
 speakPreview.addEventListener('click',()=>speakResult('preview','report-preview'));

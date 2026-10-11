@@ -36,9 +36,9 @@ export function createVoicePilotController({
     onStatus('Microphone stopped. No request submitted.');
   }
   function startListening(targetId,maxLength) {
-    if(!['instruction','conversation-text'].includes(targetId) ||
+    if(!['instruction','conversation-text','voice-readonly-question'].includes(targetId) ||
       (targetId==='instruction'&&maxLength!==2000) ||
-      (targetId==='conversation-text'&&maxLength!==900))return false;
+      (targetId!=='instruction'&&maxLength!==900))return false;
     if(!dictationAvailable || recognition)return false;
     let current;
     try {

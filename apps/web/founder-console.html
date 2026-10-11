@@ -35,6 +35,13 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <h2 id="voice-pilot-title">Voice · read-only browser pilot</h2>
 <p>Optional, founder-only push-to-talk. Browser speech recognition may transmit audio to the browser vendor. Do not dictate secrets. Transcripts are editable drafts and NEVER sent or executed automatically. Speaking a result does not verify its claims.</p>
 <div class="mission-form">
+<label for="voice-readonly-question">Spoken read-only mission question</label>
+<textarea id="voice-readonly-question" rows="3" maxlength="900" placeholder="What is the current status and blockers for this existing mission?"></textarea>
+<button id="voice-request-dictate" type="button" class="secondary" disabled>Dictate read-only status question</button>
+<button id="voice-read-mission" type="button" class="secondary" disabled>Read selected mission (GET only)</button>
+</div>
+<p class="founder-hint">Enter an existing mission ID under Mission evidence lookup below. After dictating, review the question and click Read selected mission. Then click Speak current mission snapshot above to hear the result. No report request or conversation is recorded.</p>
+<div class="mission-form">
 <button id="voice-instruction-start" type="button" class="secondary" disabled>Dictate instruction draft</button>
 <button id="voice-followup-start" type="button" class="secondary" disabled>Dictate mission follow-up</button>
 <button id="voice-microphone-stop" type="button" class="secondary" disabled>Stop microphone</button>

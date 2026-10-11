@@ -58,3 +58,45 @@ test('mission readback is derived only from a matching read-only mission snapsho
   ])assert.throws(()=>formatMissionSnapshotSpokenPreview(bad,'M-voice-001'));
   assert.throws(()=>formatMissionSnapshotSpokenPreview(record,'BAD\nID'));
 });
+
+
+test('read-only voice status gate requires an explicit report intent and rejects action language',async()=>{
+  const {isReadOnlyMissionStatusQuestion}=await import('./voice-pilot.mjs');
+  assert.equal(isReadOnlyMissionStatusQuestion('What is the current status of our carbon bicycle prototype project?'),true);
+  assert.equal(isReadOnlyMissionStatusQuestion('Show progress and blockers for this mission'),true);
+  for(const unsafe of [
+    'approve this purchase order and report status',
+    'execute the mission status report',
+    'dispatch the mission',
+    'delete the old records',
+    'send a payment and report progress',
+    'hello',
+    'status and override authority',
+    '',
+    'a'.repeat(901),
+  ]) assert.equal(isReadOnlyMissionStatusQuestion(unsafe),false,unsafe);
+});
+
+test('founder UI gates spoken question through explicit existing-mission GET only',async()=>{
+  const {readFile}=await import('node:fs/promises');
+  const html=await readFile(new URL('../founder-console.html',import.meta.url),'utf8');
+  const browser=await readFile(new URL('../voice-pilot-browser.mjs',import.meta.url),'utf8');
+  for(const id of ['voice-readonly-question','voice-request-dictate','voice-read-mission']){
+    assert.match(html,new RegExp('id="'+id+'"'));
+  }
+  assert.match(browser,/isReadOnlyMissionStatusQuestion/);
+  assert.match(browser,/missionForm\.requestSubmit\(\)/);
+  assert.match(browser,/['"]mission-id['"]/);
+  assert.match(browser,/['"]voice-readonly-question['"]/);
+  assert.doesNotMatch(browser,/fetch\s*\([^)]*method:\s*['"]POST['"]/);
+});
+
+
+test('stale asynchronous mission reads are invalidated by changed question or ID',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('../founder-console.mjs',import.meta.url),'utf8');
+ assert.match(source,/missionReadSequence/);
+ assert.match(source,/serial!==missionReadSequence/);
+ assert.match(source,/voice-readonly-question/);
+ assert.match(source,/delete out\.dataset\.voiceReadback/);
+});

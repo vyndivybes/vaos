@@ -186,3 +186,15 @@ test('founder UI exposes two read-only speaker checks gated by founder capabilit
  assert.match(consoleScript,/delete out\.dataset\.voiceReadback/);
  assert.doesNotMatch(script,/fetch\(['"]\/api\/missions/);
 });
+
+test('independent spoken status question populates a local draft without submitting anything',()=>{
+  let current;const saved=[];
+  class Recognition{start(){current=this;}stop(){}abort(){}}
+  const voice=createVoicePilotController({
+    RecognitionClass:Recognition,onTranscript:(id,value)=>saved.push([id,value]),
+  });
+  assert.equal(voice.startListening('voice-readonly-question',900),true);
+  current.onresult({results:[{isFinal:true,0:{transcript:'What is the mission status'}}]});
+  assert.deepEqual(saved,[['voice-readonly-question','What is the mission status']]);
+  assert.equal(voice.startListening('voice-readonly-question',2000),false);
+});

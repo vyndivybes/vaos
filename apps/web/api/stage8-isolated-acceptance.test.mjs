@@ -90,3 +90,28 @@ test('Stage 8 hardened logout revokes copied tokens durably and fails closed wit
   assert.equal(failed.headers['Set-Cookie'],undefined);
  });
 });
+
+test('Stage 8 ingress rejects revoked bearer token on arbitrary API route and store outage',async()=>{
+ await isolated(async passwords=>{
+  const {createCloudflareApp}=await import('../cloudflare-worker.mjs');
+  const entries=new Map();
+  const bucket={
+   async put(key,value){entries.set(key,value);},
+   async get(key){return entries.has(key)?{body:entries.get(key)}:null;}
+  };
+  const env={VAOS_AUTH_HARDENED_CONTROL:'dedicated-hmac-v1',VAOS_ARTIFACTS:bucket};
+  const app=createCloudflareApp({
+   runtimeEnv:env,
+   assetFetcher:async()=>new Response('not found',{status:404}),
+   apiHandlers:{'/api/protected':(_req,res)=>res.status(200).json({ok:true})}
+  });
+  const signed=await invoke(login,{method:'POST',body:{email:MAKER,password:passwords.maker}});
+  const cookie=cookieOf(signed);
+  const request=()=>new Request('https://vaos.example/api/protected',{headers:{cookie}});
+  assert.equal((await app.fetch(request())).status,200);
+  assert.equal((await invoke(logout,{method:'POST',cookie,env})).status,200);
+  assert.equal((await app.fetch(request())).status,401);
+  env.VAOS_ARTIFACTS=null;
+  assert.equal((await app.fetch(request())).status,503);
+ });
+});

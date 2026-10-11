@@ -185,7 +185,8 @@ test('founder UI exposes two read-only speaker checks gated by founder capabilit
  assert.match(consoleScript,/formatMissionSnapshotSpokenPreview/);
  assert.match(consoleScript,/delete out\.dataset\.voiceReadback/);
  assert.match(script,/method:'GET'/);
- assert.doesNotMatch(script,/method:\s*['"]POST['"]/);
+ assert.match(script,/\/api\/voice-ai-focus/);
+ assert.doesNotMatch(script,/\/api\/(?:executions|approvals|intents|founder-conversation)/);
  assert.doesNotMatch(script,/fetch\(['"]\/api\/(?:intents|executions|approvals|founder-chat|founder-conversation)/);
 });
 

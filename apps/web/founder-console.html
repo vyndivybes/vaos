@@ -38,10 +38,13 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <textarea id="voice-v3-question" rows="2" maxlength="900" readonly placeholder="The most recent question appears here and is replaced on each turn."></textarea>
 <div class="mission-form">
 <button id="voice-v3-open" type="button" class="secondary" disabled>Start read-only V3 session</button>
+<button id="voice-v4-open" type="button" class="secondary" disabled>Start AI-assisted V4 read-only session</button>
 <button id="voice-v3-ask" type="button" class="secondary" disabled>Ask next question</button>
 <button id="voice-v3-stop" type="button" class="secondary" disabled>End session / stop voice</button>
 </div>
 <p id="voice-v3-status" role="status" aria-live="polite">Stage V3 is disabled until separately commissioned.</p>
+<p id="voice-v4-status" role="status" aria-live="polite">Stage V4 AI classification disabled until separately qualified.</p>
+<p class="founder-hint">AI-assisted V4 sends each accepted transcribed question and up to two prior topic labels to the existing Cloudflare Workers AI service. It uses a maximum of three AI requests per UTC day across this VAOS pilot. The model selects topics only; all factual speech is generated from the independently retrieved mission snapshot. This does not authorize actions or guarantee a free-of-charge account plan.</p>
 <pre id="voice-v3-report" class="mission-summary" aria-live="polite">No V3 mission evidence retrieved.</pre>
 <p class="founder-hint">No model call or automatic listening. Each question requires a new microphone click. End session clears context immediately; mission changes cancel the session. Always review the spoken evidence before relying on it.</p>
 </section>

@@ -17,6 +17,7 @@ export function selectSpokenReadback(source, text) {
   const markers = {
     preview: ['READ-ONLY PREVIEW — NOT AN AI REPLY', 'No model invoked. No action authorized.'],
     draft: ['UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE', 'No business action authorized.'],
+    'ai-preview': ['AI-ASSISTED READ-ONLY PREVIEW — NOT AGENT EVIDENCE','Model classified topics only. No business action authorized.'],
   };
   const pair = Object.hasOwn(markers, source) ? markers[source] : null;
   if (!pair || typeof text !== 'string' || text.length > 3200

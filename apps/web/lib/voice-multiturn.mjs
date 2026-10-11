@@ -13,17 +13,23 @@ function focus(question){
  if(/\bprogress\b|\bcompleted\b|\bverification\b/.test(q))return 'progress';
  return 'status';
 }
-function focusedReport(record,id,topic,turn){
+function focusedReport(record,id,topics,turn,aiAssisted=false){
+ const topic=topics[0];
  const raw=formatMissionSnapshotSpokenPreview(record,id);
  const line=topic==='evidence'
    ?'Question focus: evidence. This status snapshot provides work-package state counts, not independent proof of engineering validation.'
    :'Question focus: '+topic+'.';
  const prefix='READ-ONLY PREVIEW — NOT AN AI REPLY\n';
- const full=prefix+'Spoken turn '+turn+' of '+MAX_TURNS+'.\n'+line+'\n'+raw.slice(prefix.length);
+ const full=aiAssisted
+  ?'AI-ASSISTED READ-ONLY PREVIEW — NOT AGENT EVIDENCE\n'+
+   'Spoken turn '+turn+' of '+MAX_TURNS+'. Model-selected topics: '+topics.join(', ')+'.\n'+
+   raw.slice(prefix.length).replace('No model invoked. No action authorized.',
+    'Model classified topics only. No business action authorized.')
+  :prefix+'Spoken turn '+turn+' of '+MAX_TURNS+'.\n'+line+'\n'+raw.slice(prefix.length);
  if(full.length>3200)throw Error('VOICE_V3_REPORT_TOO_LONG');
  return full;
 }
-export function createVoiceMultiTurnSession({fetchSnapshot,speak,onReport=()=>{},onState=()=>{},now=()=>Date.now()}={}) {
+export function createVoiceMultiTurnSession({fetchSnapshot,speak,classifyFocus,onReport=()=>{},onState=()=>{},now=()=>Date.now()}={}) {
  if(typeof fetchSnapshot!=='function'||typeof speak!=='function'||typeof now!=='function')
    throw Error('VOICE_V3_CALLBACKS_REQUIRED');
  let session=null,active=null,phase='IDLE',nonce=0;
@@ -38,9 +44,9 @@ export function createVoiceMultiTurnSession({fetchSnapshot,speak,onReport=()=>{}
    }
    return false;
  }
- function open(missionId){
-   if(session||active||typeof missionId!=='string'||!ID.test(missionId))return false;
-   session={missionId,startedAt:now(),turns:[]};
+ function open(missionId,{ai=false}={}){
+   if(session||active||typeof missionId!=='string'||!ID.test(missionId)||typeof ai!=='boolean'||(ai&&typeof classifyFocus!=='function'))return false;
+   session={missionId,startedAt:now(),turns:[],ai};
    set('READY','Session ready: up to three read-only spoken questions within five minutes.');
    return true;
  }
@@ -65,15 +71,29 @@ export function createVoiceMultiTurnSession({fetchSnapshot,speak,onReport=()=>{}
    try{
      const record=await fetchSnapshot(job.session.missionId,{signal:job.controller.signal});
      if(active!==job||job.token!==nonce||expired()||job.controller.signal.aborted)return false;
-     const report=focusedReport(record,job.session.missionId,topic,job.session.turns.length+1);
+     // Validate the current authoritative snapshot BEFORE spending model quota.
+     formatMissionSnapshotSpokenPreview(record,job.session.missionId);
+     let topics=[topic];
+     if(job.session.ai){
+       const prior=job.session.turns.slice(-2).map(item=>item.topic);
+       const picked=await classifyFocus(transcript,prior,{signal:job.controller.signal});
+       if(active!==job||job.token!==nonce||expired()||job.controller.signal.aborted)return false;
+       const ALLOWED=new Set(['status','verification','blockers','evidence','closure']);
+       if(!picked||picked.modelInvoked!==true||picked.actionAuthorized!==false
+          ||!Array.isArray(picked.topics)||picked.topics.length<1||picked.topics.length>5
+          ||picked.topics.some(t=>!ALLOWED.has(t))||new Set(picked.topics).size!==picked.topics.length)
+         throw Error('VOICE_AI_FOCUS_REJECTED');
+       topics=picked.topics;
+     }
+     const report=focusedReport(record,job.session.missionId,topics,job.session.turns.length+1,job.session.ai);
      if(active!==job||job.controller.signal.aborted)return false;
      onReport(report);
-     const queued=speak('preview',report);
+     const queued=speak(job.session.ai?'ai-preview':'preview',report);
      if(active!==job||job.controller.signal.aborted)return false;
      active=null;
      if(!queued){set('FAILED','Voice audio could not be queued; no successful spoken turn was recorded.');return false;}
      // Only a bounded topic is held in memory; no raw transcript or model output.
-     job.session.turns.push(Object.freeze({sequence:job.session.turns.length+1,topic}));
+     job.session.turns.push(Object.freeze({sequence:job.session.turns.length+1,topic:job.session.ai?topics[0]:topic}));
      set('SPOKEN_QUEUED','Turn '+job.session.turns.length+'/'+MAX_TURNS+' queued for speech. Confirm sound on your device.');
      return true;
    }catch{

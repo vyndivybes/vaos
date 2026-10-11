@@ -93,7 +93,7 @@ export async function runFounderContextDraft({ai,agentId,instruction,report,cont
   verification:verified+evid+status,
   blockers:blocked+status+verified,
   evidence:evid+verified+status,
-  closure:status+closed+verified
+  closure:status+closed+verified+evid
  };
  const content=(base+variants[parsed.focus]+
   ' No business action or approval is authorized.').replace(/\s+/g,' ');

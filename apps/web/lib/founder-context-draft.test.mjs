@@ -14,7 +14,7 @@ const history={threadId,agentId:'project',missionId,actionAuthorized:false,turns
  {sequence:2,messageId:currentId,requestStatus:'RECORDED_NOT_ROUTED',
   instruction:'Mission MISSION-0001. What about closure?',reply:null}
 ]};
-const report={status:'READ_ONLY_PREVIEW_NOT_AGENT_REPLY',agentId:'project',missionId,
+const report={status:'READ_ONLY_PREVIEW_NOT_AGENT_REPLY',agentId:'project',missionId,messageId:currentId,
  missionStatus:'READY_FOR_CLOSURE',verifiedWorkPackages:1,totalWorkPackages:1,
  blockedWorkPackageIds:[],evidenceRefs:['ev-1'],modelInvoked:false,actionAuthorized:false};
 const facts={missionId,missionStatus:'READY_FOR_CLOSURE',verifiedWorkPackages:1,

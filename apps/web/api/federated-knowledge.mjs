@@ -26,7 +26,7 @@ export function createFederatedKnowledgeHandler({fetchImpl=globalThis.fetch}={})
     const response=await fetchImpl('https://api.github.com/search/code?q='+query+'&per_page=5',{
       method:'GET',headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,
        'X-GitHub-Api-Version':'2022-11-28','User-Agent':'VAOS-Federated-ReadOnly'},
-      redirect:'error',signal:AbortSignal.timeout(6000),
+      redirect:'manual',signal:AbortSignal.timeout(6000),
     });
     if(!response.ok)throw Error(response.status===401?'UNAUTHORIZED':response.status===403?'FORBIDDEN_OR_RATE_LIMITED':response.status===404?'NOT_FOUND':response.status===422?'QUERY_UNPROCESSABLE':response.status===429?'RATE_LIMITED':'UPSTREAM_HTTP_ERROR');
     const data=await response.json();

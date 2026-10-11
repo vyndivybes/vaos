@@ -29,7 +29,20 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <div id="conversation-history" aria-live="polite" class="conversation-transcript">No conversation loaded.</div>
 <label for="conversation-text">Follow-up report request</label>
 <textarea id="conversation-text" maxlength="900" rows="4" placeholder="Ask about verification, blockers, or evidence. All claims must be checked against this mission."></textarea>
+<section class="founder-voice" aria-labelledby="voice-title">
+<h3 id="voice-title">Voice assistant · read-only pilot</h3>
+<p>Microphone processing may use your browser vendor's speech service. Audio is not uploaded to a separate VAOS voice endpoint. Dictated text is <strong>not automatically submitted</strong>; review it and select the existing report action yourself. No approval or business write is authorized.</p>
+<div class="founder-voice-toolbar">
+<button type="button" id="voice-dictate" class="secondary">Start voice dictation</button>
+<button type="button" id="voice-stop" class="secondary" disabled>Stop microphone</button>
+</div>
+<p id="voice-status" role="status" aria-live="polite">Voice feature not initialized.</p>
+</section>
 <button id="send-conversation" type="button">Record follow-up and generate read-only draft</button>
+<div class="founder-voice-toolbar">
+<button type="button" id="voice-speak" class="secondary" disabled>Speak last unverified reply</button>
+<button type="button" id="voice-silence" class="secondary" disabled>Stop spoken reply</button>
+</div>
 <p id="conversation-status" aria-live="polite">Stage 5 is off until independently commissioned.</p>
-</section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
+</section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live agent dispatch, server-side streaming voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
 </main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script></body></html>

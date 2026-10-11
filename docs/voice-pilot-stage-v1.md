@@ -45,4 +45,13 @@ Deploy `@cloudflare/voice` behind a dedicated authenticated and rate-limited Web
 
 Reference: https://developers.cloudflare.com/agents/communication-channels/voice/
 
-**Status:** Code preparation only. No production flag enabled; no browser/live qualification claimed.
+## Consolidation and verification record (2026-10-11)
+
+- PR #172's controlled recognition lifecycle and cancellation guards have been ported into PR #174's browser-only pilot controller.
+- Regression tests cover stale/late events, cancellation, unsupported browsers, permission failure, manual-only transcripts, and spoken read-only labels.
+- GitHub Actions on the final PR #174 code: web-smoke, Cloudflare bundle-smoke, Dify and both Windmill qualification checks PASS.
+- Cloudflare Worker binding inventory confirms VAOS_VOICE_CONTROL is absent. Production activation is OFF.
+- Live browser microphone/audio, authorized founder session and end-to-end rollback checks still require independent qualification on a deployed/isolated preview.
+- **Release decision: HOLD for merging/deployment/activation pending the remaining browser and authenticated live gates.** An automated build is not live voice qualification.
+
+**Status:** Consolidated and CI-qualified as a draft PR. No production flag enabled; no browser/live qualification claimed.

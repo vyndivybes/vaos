@@ -23,7 +23,8 @@ function req(opts={}){const email=opts.email===undefined?'shyamsundhar1982@gmail
  env:{VAOS_FOUNDER_INBOX_CONTROL:'record-only-v1',VAOS_FOUNDER_AGENT_REPORT_CONTROL:'preview-only-v1',
  VAOS_FOUNDER_CHAT_CONTROL:'qualified-readonly-v1',
  VAOS_FOUNDER_CONVERSATION_CONTROL:opts.stage5===false?'off':'ledger-only-v1',
- VAOS_FOUNDER_CONTEXT_CONTROL:opts.stage6===false?'off':'bounded-v1'}};}
+ VAOS_FOUNDER_CONTEXT_CONTROL:opts.stage6===false?'off':'bounded-v1',
+ VAOS_FOUNDER_MULTITOPIC_CONTROL:opts.stage7===true?'verified-v1':'off'}};}
 function response(){const o={status:200,body:null};const v={
  setHeader(){return v},status(s){o.status=s;return v},json(j){o.body=j;return v}};return {o,v};}
 function fixture({hist=history,stored=null,claim='CLAIMED'}={}){
@@ -40,6 +41,9 @@ function fixture({hist=history,stored=null,claim='CLAIMED'}={}){
     mission:{id:mid,status:'READY_FOR_CLOSURE'},workPackages:[],handoffs:[]}}}),
   runAi:async()=>{calls.push('legacy');return {content:'Standalone report with evidence from Stage 4.',model:FOUNDER_AI_MODEL,
     actionAuthorized:false,status:'AI_DRAFT_UNVERIFIED'}},
+  runMultiAi:async({context})=>{calls.push('multi');assert.equal(context.previousMessageId,prev);
+   return {content:'Verification and blockers and evidence and closure all independently checked.',
+    model:FOUNDER_AI_MODEL,actionAuthorized:false,status:'AI_DRAFT_UNVERIFIED'};},
   runContextAi:async({context})=>{calls.push('context');assert.equal(context.previousMessageId,prev);
    return {content:'Follow-up: evidence and mission closure still require review.',model:FOUNDER_AI_MODEL,
     actionAuthorized:false,status:'AI_DRAFT_UNVERIFIED'};}
@@ -83,4 +87,27 @@ test('persisted replay returns without another history lookup or model invocatio
 test('checker identity denied before a persistent store read',async()=>{
  const f=fixture(),v=await call(f,{email:'kaaviyam1519@gmail.com'});
  assert.equal(v.status,403);assert.deepEqual(f.calls,[]);
+});
+
+test('Stage 7 flag switches to multi-topic classifier after one claim only',async()=>{
+ const f=fixture(),v=await call(f,{stage7:true});
+ assert.equal(v.status,201);
+ assert.equal(v.body.data.actionAuthorized,false);
+ assert.deepEqual(f.calls,['inbox','get','history','mission','claim','multi','append']);
+});
+test('Stage 7 requires prior Stage 6 and Stage 5 gate, before inference claim',async()=>{
+ for(const opt of [{stage7:true,stage6:false},{stage7:true,stage5:false}]){
+  const f=fixture(),v=await call(f,opt);
+  assert.equal(v.status,409);
+  assert.deepEqual(f.calls,['inbox','get']);
+ }
+});
+test('Stage 7 does not change unlinked first turns or already saved replies',async()=>{
+ const first=fixture({hist:{...history,threadId:null,turns:[]}}),a=await call(first,{stage7:true});
+ assert.equal(a.status,201);assert.equal(first.calls.includes('multi'),false);
+ assert.equal(first.calls.includes('legacy'),true);
+ const stored={messageId:id,agentId:'project',missionId:mid,status:'AI_DRAFT_UNVERIFIED',
+ content:'Previously persisted authorized draft.',model:FOUNDER_AI_MODEL,evidenceRefs:[]};
+ const replay=fixture({stored}),b=await call(replay,{stage7:true});
+ assert.equal(b.status,200);assert.deepEqual(replay.calls,['inbox','get']);
 });

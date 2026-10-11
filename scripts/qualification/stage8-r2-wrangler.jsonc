@@ -2,7 +2,7 @@
  "$schema":"../../node_modules/wrangler/config-schema.json",
  "name":"vaos-stage8-r2-local-only",
  "main":"./stage8-r2-fixture-worker.mjs",
- "compatibility_date":"2026-10-07",
+ "compatibility_date":"2026-09-28",
  "compatibility_flags":["nodejs_compat"],
  "vars":{
   "VAOS_AUTH_HARDENED_CONTROL":"dedicated-hmac-v1",

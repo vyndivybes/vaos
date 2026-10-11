@@ -1,6 +1,12 @@
 name: stage8-hosted-actual-auth
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/qualification/stage8-hosted-real-auth.mjs'
+      - 'scripts/qualification/stage8-hosted-auth-fixture.mjs'
+      - '.github/workflows/stage8-hosted-actual-auth.yml'
 permissions:
   contents: read
 jobs:

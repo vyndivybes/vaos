@@ -221,7 +221,23 @@ async function autoReadQuestion(transcript){
    if(autoAbort!==abort)return;
    lastFederatedQuestion=fullQuestion;
    const suggestion=makeGroundedSuggestions(report,question);
-   const spokenAnswer=suggestion?report.answer+' '+suggestion.text:report.answer;
+   let spokenAnswer=suggestion?report.answer+' '+suggestion.text:report.answer;
+   if(suggestion&&report.sources.length>0){
+     try{
+       const aiResponse=await fetch('/api/voice-evidence-ai',{
+         method:'POST',credentials:'same-origin',cache:'no-store',signal:abort.signal,
+         headers:{'Content-Type':'application/json'},
+         body:JSON.stringify({question:fullQuestion.slice(0,119)}),
+       });
+       if(aiResponse.ok){
+         const aiData=(await aiResponse.json())?.data;
+         if(aiData?.modelInvoked===true&&aiData?.readOnly===true
+           &&aiData?.actionAuthorized===false&&aiData?.verifiedFacts===false
+           &&typeof aiData?.answer==='string'&&Array.isArray(aiData.sources)
+           &&autoAbort===abort)spokenAnswer=aiData.answer;
+       }
+     }catch{/* source-grounded deterministic fallback remains available */}
+   }
    autoAnswer.replaceChildren();
    autoAnswer.append(document.createTextNode(spokenAnswer+'\n\nSources:\n'));
    for(const source of report.sources){

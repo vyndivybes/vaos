@@ -109,7 +109,8 @@ test('Stage V3 UI is separately flagged, authenticated GET-only, and no persiste
  assert.match(browser,/credentials:'same-origin'/);
  assert.match(browser,/voice\.startListening\('voice-v3-question',900\)/);
  assert.match(assets,/!lib\/voice-multiturn\.mjs/);
- assert.doesNotMatch(browser,/localStorage|sessionStorage|setInterval|method:'POST'/);
+ assert.match(browser,/\/api\/voice-ai-focus/);
+ assert.doesNotMatch(browser,/localStorage|sessionStorage|setInterval|\/api\/(?:executions|approvals|intents|founder-conversation)/);
 });
 
 

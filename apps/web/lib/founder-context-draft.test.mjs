@@ -44,7 +44,7 @@ test('live schema echo can select a contextual focus but cannot invent facts',as
  let calls=0;
  const ai={async run(model,opts){
    calls++;assert.equal(model,FOUNDER_AI_MODEL);
-   assert.equal(opts.max_tokens,128);assert.ok(!Object.hasOwn(opts,'tools'));
+   assert.equal(opts.max_tokens,96);assert.ok(!Object.hasOwn(opts,'tools'));
    assert.match(opts.prompt,/What about closure/);
    assert.match(opts.prompt,/Are any blockers recorded/);
    return {response:JSON.stringify({focus:'closure',refersTo:priorId})};

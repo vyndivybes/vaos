@@ -45,3 +45,10 @@ No new paid model, database migration, or hosting service is required.
 - Review of billed inference allowance and strict fail-closed behavior
 - Human authorization to merge/deploy, then one authenticated *new* follow-up,
   source-hash persistence and readback. No agent or business writes.
+
+## Model-schema qualification
+A live October 11 synthetic Workers AI run with the shortened two-field prompt returned exact
+`{"focus":"closure","refersTo":"00000000-0000-4000-8000-000000000111"}`
+using 28 output tokens and no tools. Longer prompts were not reliable; the
+production feature flag must remain OFF until a controlled authenticated follow-up and
+independent readback are qualified. All model output is still fail-closed.

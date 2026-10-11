@@ -6,9 +6,9 @@ test('Edge server secret stays server side and operations use exact RPC names',a
  const store=createFounderChatStore({url:'https://example.supabase.co/',serverSecret:'test-only',
  fetchImpl:async(u,o)=>{requests.push([u,o]);return {ok:true,json:async()=>({reply:null})}}});
  const a={actorEmail:'founder@example.test',agentId:'project',messageId:'dummy'};
- await store.get(a);await store.append({...a,content:'draft'});
- assert.equal(requests.length,2);
- assert.deepEqual(requests.map(x=>JSON.parse(x[1].body).operation),['founderChatGet','founderChatAppend']);
+ await store.get(a);await store.claim(a);await store.append({...a,content:'draft'});
+ assert.equal(requests.length,3);
+ assert.deepEqual(requests.map(x=>JSON.parse(x[1].body).operation),['founderChatGet','founderChatClaim','founderChatAppend']);
  assert.equal(requests[0][1].headers['x-vaos-server-key'],'test-only');
  assert.equal(JSON.stringify(a).includes('test-only'),false);
 });

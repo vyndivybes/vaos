@@ -21,15 +21,13 @@ cannot grant a PASS, authorize closure or claim a business transaction occurred.
 - No user-supplied URL/model, tools, function calling, mission dispatch,
   approvals, jobs, overrides, updates or other VYNDI writes.
 - Native Workers AI binding; one fixed free-tier-eligible model
-  \`@cf/meta/llama-3.1-8b-instruct-fast\`, max 256 output tokens per request.
+  \`@cf/zai-org/glm-4.7-flash\`, max 256 output tokens per request. Model availability and output schema verified against live Cloudflare catalog; GLM replies are in choices[0].message.content.
   On paid Workers accounts, usage above any free allowance may incur charges.
   **Check actual account usage limits/billing and obtain cost approval before activation.**
 - Candidate migration \`founder_agent_drafts\` is private, RLS enabled and
   append-only; one AI draft per original request. An exact Edge RPC authenticates
   the server key. Idempotent replay uses persisted text, no model re-invocation
-  for already stored replies. Concurrent first-time requests may still cause
-  duplicate inference *before* the database uniqueness gate; address with an
-  independent lease/claim and strict provider-side cost cap before full scale.
+  for already stored replies. An atomic immutable one-shot claim is reserved BEFORE inference and limits generation attempts to three per minute, with only one attempt per request, preventing concurrent duplicate inference. Failed inference consumes the claim and requires a NEW recorded report request. Account-level billing caps still require separate review.
 - The model output is not evidentiary. A hash of the independent report and
   verified evidence IDs accompany the saved draft. UI uses textContent.
 
@@ -47,6 +45,6 @@ cannot grant a PASS, authorize closure or claim a business transaction occurred.
 
 ## Future work
 Multi-turn context, separate agent personalities, streaming, push/voice, provider
-fallback, reliable FIFO per-agent replies, concurrency cost lease, AI evaluation,
+fallback, reliable FIFO per-agent replies, AI evaluation,
 human escalation, and independent model-output audit are **not** delivered here.
 The UI must not call this a real autonomous digital employee.

@@ -13,6 +13,7 @@ export function createFounderChatStore({url,serverSecret,fetchImpl=globalThis.fe
  }
  return Object.freeze({
   get:input=>invoke('founderChatGet',input),
+  claim:input=>invoke('founderChatClaim',input),
   append:input=>invoke('founderChatAppend',input)
  });
 }

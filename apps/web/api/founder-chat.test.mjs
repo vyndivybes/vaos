@@ -6,7 +6,7 @@ import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 import {FOUNDER_AI_MODEL} from '../lib/founder-ai-draft.mjs';
 const messageId='e71daead-e709-4298-9f9d-04bf2cbf3236';
 const body={operation:'GENERATE_READONLY_DRAFT',agentId:'project',messageId,missionId:'MISSION-0001'};
-const original={messageId,recipientAgentId:'project',kind:'REPORT_REQUEST',status:'RECORDED_NOT_ROUTED',instruction:'Provide a status summary for this mission'};
+const original={messageId,recipientAgentId:'project',kind:'REPORT_REQUEST',status:'RECORDED_NOT_ROUTED',instruction:'Provide a status summary for MISSION-0001'};
 const snapshot={mission:{id:'MISSION-0001',status:'ACTIVE'},workPackages:[],handoffs:[]};
 const goodReply={messageId,agentId:'project',missionId:'MISSION-0001',status:'AI_DRAFT_UNVERIFIED',
  model:FOUNDER_AI_MODEL,content:'A bounded, unverified draft summary based on the mission snapshot.',
@@ -23,11 +23,12 @@ return {method:opts.method||'POST',url:'https://vaos.example/api/founder-chat',
 function response(){const o={status:200,headers:{},body:null};const res={
  setHeader(k,v){o.headers[k]=v;return res},status(n){o.status=n;return res},
  json(x){o.body=x;return res}};return {o,res};}
-function fixture({messages=[original],stored=null,write=true,model=true}={}){
+function fixture({messages=[original],stored=null,write=true,model=true,claim='CLAIMED'}={}){
  const calls=[];
  const handler=createFounderChatHandler({
  getInbox:()=>({async list(x){calls.push(['inbox',x]);return {messages}}}),
  getReplies:()=>({async get(x){calls.push(['get',x]);return {reply:stored}},
+ async claim(x){calls.push(['claim',x]);return {outcome:claim}},
  async append(x){calls.push(['append',x]);return write?{outcome:'RECORDED',reply:goodReply}:{outcome:'RATE_LIMITED'}}}),
  getMission:()=>({async snapshot(x){calls.push(['mission',x]);return snapshot}}),
  runAi:async()=>{calls.push(['model']);if(!model)throw Error('model failed');
@@ -81,7 +82,7 @@ test('new draft requires evidence lookup, bounded model and durable append',asyn
  assert.equal(out.o.status,201);
  assert.equal(out.o.body.data.reply.status,'AI_DRAFT_UNVERIFIED');
  assert.equal(out.o.body.data.actionAuthorized,false);
- assert.deepEqual(f.calls.map(x=>x[0]),['inbox','get','mission','model','append']);
+ assert.deepEqual(f.calls.map(x=>x[0]),['inbox','get','mission','claim','model','append']);
  assert.match(f.calls.find(x=>x[0]==='append')[1].sourceHash,/^[a-f0-9]{64}$/);
 });
 test('provider and persistence failure fail closed without model pass claims',async()=>{
@@ -89,4 +90,18 @@ test('provider and persistence failure fail closed without model pass claims',as
   const f=fixture(opts),out=response();await f.handler(req(),out.res);
   assert.equal(out.o.status,503);assert.doesNotMatch(JSON.stringify(out.o.body),/A successful draft/);
  }
+});
+
+test('billable inference is blocked by an existing claim and rate cap',async()=>{
+ for(const outcome of ['ALREADY_CLAIMED','RATE_LIMITED']){
+  const f=fixture({claim:outcome}),out=response();await f.handler(req(),out.res);
+  assert.equal(out.o.status,outcome==='RATE_LIMITED'?429:409);
+  assert.equal(f.calls.filter(x=>x[0]==='model').length,0);
+  assert.deepEqual(f.calls.map(x=>x[0]),['inbox','get','mission','claim']);
+ }
+});
+test('founder report cannot be repointed at an unrelated mission',async()=>{
+ const f=fixture({messages:[{...original,instruction:'Report status for ANOTHER-MISSION'}]});
+ const out=response();await f.handler(req(),out.res);assert.equal(out.o.status,409);
+ assert.equal(f.calls.length,1);
 });

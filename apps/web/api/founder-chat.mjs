@@ -53,7 +53,7 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
    record=items.messages.find(m=>m?.messageId===messageId);
    if(!record||record.kind!=='REPORT_REQUEST'||record.status!=='RECORDED_NOT_ROUTED'
       ||record.recipientAgentId!==agentId
-      ||typeof record.instruction!=='string')return res.status(409).json(apiError('FOUNDER_CHAT_RECORD_UNVERIFIED','Persisted report request required'));
+      ||typeof record.instruction!=='string'||!record.instruction.includes(missionId))return res.status(409).json(apiError('FOUNDER_CHAT_RECORD_UNVERIFIED','Persisted report request required'));
    store=getReplies(req.env);
    existing=await store.get({messageId,agentId,actorEmail:session.email});
    if(existing?.reply){
@@ -62,11 +62,22 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
     return res.status(200).json({data:{reply:existing.reply,outcome:'REPLAY',modelInvoked:false,actionAuthorized:false}});
    }
   }catch{return res.status(503).json(apiError('FOUNDER_CHAT_STORAGE_UNAVAILABLE','Recorded request or draft storage unavailable'));}
-  let report;let draft;
+  let report;
   try{
    const snapshot=await getMission(req.env).snapshot(missionId);
    report=prepareFounderMissionReport({record,agentId,messageId,missionId,snapshot});
    if(report.evidenceRefs.length>20)throw Error();
+  }catch{return res.status(503).json(apiError('FOUNDER_CHAT_EVIDENCE_UNAVAILABLE','Mission evidence could not be confirmed'));}
+  // Atomic one-time claim is acquired BEFORE billable inference. No blind retries.
+  let claimed;
+  try{claimed=await store.claim({messageId,agentId,missionId,actorEmail:session.email});}
+  catch{return res.status(503).json(apiError('FOUNDER_CHAT_CLAIM_UNAVAILABLE','Inference claim unavailable'));}
+  if(claimed?.outcome==='RATE_LIMITED')
+   return res.status(429).json(apiError('FOUNDER_CHAT_RATE_LIMITED','Founder AI claim limit reached'));
+  if(claimed?.outcome!=='CLAIMED')
+   return res.status(409).json(apiError('FOUNDER_CHAT_ALREADY_CLAIMED','Request already claimed; no retry without a new recorded message'));
+  let draft;
+  try{
    draft=await runAi({ai:req.env?.AI,agentId,instruction:record.instruction,report});
    if(draft?.status!=='AI_DRAFT_UNVERIFIED'||draft.model!==FOUNDER_AI_MODEL
        ||draft.actionAuthorized!==false||typeof draft.content!=='string'
@@ -79,7 +90,7 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
    if(!['RECORDED','REPLAY'].includes(saved?.outcome)
       ||!replyValid(saved.reply,messageId,agentId,missionId))throw Error();
    return res.status(saved.outcome==='RECORDED'?201:200).json({data:{
-    outcome:saved.outcome,reply:saved.reply,modelInvoked:true,actionAuthorized:false}});
+    outcome:saved.outcome,reply:saved.reply,modelInvoked:saved.outcome==='RECORDED',actionAuthorized:false}});
   }catch{return res.status(503).json(apiError('FOUNDER_CHAT_STORAGE_UNAVAILABLE','Draft persistence not verified; do not claim delivery'));}
  };
 }

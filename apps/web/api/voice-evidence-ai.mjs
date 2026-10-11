@@ -11,7 +11,7 @@ export function validateGroundedDraft(out,sources){
  const candidate=out?.response??out?.result?.response??out?.choices?.[0]?.text??out?.choices?.[0]?.message?.content;
  const raw=typeof candidate==='string'?candidate.trim():null;
  if(typeof raw!=='string'||raw.length>1400||raw.length<15)throw Error('AI_OUTPUT_INVALID');
- let data;try{data=JSON.parse(raw.replace(/^```(?:json)?\\s*/i,'').replace(/\\s*```$/,'').trim())}catch{throw Error('AI_OUTPUT_INVALID')}
+ let data;try{data=JSON.parse(raw.replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'').trim())}catch{throw Error('AI_OUTPUT_INVALID')}
  if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!=='analysis,citations,recommendation'
   ||typeof data.analysis!=='string'||data.analysis.length<10||data.analysis.length>460
   ||typeof data.recommendation!=='string'||data.recommendation.length<10||data.recommendation.length>460

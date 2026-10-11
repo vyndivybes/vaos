@@ -18,6 +18,7 @@ begin
    'shyamsundhar1982@gmail.com','project','MISSION-0001');
   raise exception 'INVALID_KEY_ACCEPTED';
  exception when others then
+  if SQLERRM='INVALID_KEY_ACCEPTED' then raise; end if;
   if SQLSTATE <> '28000' then raise; end if;
  end;
  begin
@@ -25,6 +26,7 @@ begin
    'shyamsundhar1982@gmail.com','project','MISSION-0001');
   raise exception 'WRONG_KIND_ACCEPTED';
  exception when others then
+  if SQLERRM in ('WRONG_KIND_ACCEPTED','MISSION_MISMATCH_ACCEPTED','UNCLAIMED_APPEND_ACCEPTED','DRAFT_IMMUTABILITY_BROKEN','CLAIM_IMMUTABILITY_BROKEN') then raise; end if;
   if SQLSTATE <> 'P0001' then raise; end if;
  end;
  begin
@@ -32,6 +34,7 @@ begin
    'shyamsundhar1982@gmail.com','project','MISSION-9999');
   raise exception 'MISSION_MISMATCH_ACCEPTED';
  exception when others then
+  if SQLERRM in ('WRONG_KIND_ACCEPTED','MISSION_MISMATCH_ACCEPTED','UNCLAIMED_APPEND_ACCEPTED','DRAFT_IMMUTABILITY_BROKEN','CLAIM_IMMUTABILITY_BROKEN') then raise; end if;
   if SQLSTATE <> 'P0001' then raise; end if;
  end;
  begin
@@ -41,6 +44,7 @@ begin
    repeat('a',64),array['synthetic-evidence-1']);
   raise exception 'UNCLAIMED_APPEND_ACCEPTED';
  exception when others then
+  if SQLERRM in ('WRONG_KIND_ACCEPTED','MISSION_MISMATCH_ACCEPTED','UNCLAIMED_APPEND_ACCEPTED','DRAFT_IMMUTABILITY_BROKEN','CLAIM_IMMUTABILITY_BROKEN') then raise; end if;
   if SQLSTATE <> 'P0001' then raise; end if;
  end;
  v := public.vaos_founder_chat_claim('synthetic-test-server-key','00000000-0000-4000-8000-000000000001',
@@ -72,12 +76,14 @@ begin
   update vaos_private.founder_agent_drafts set content='illegal mutation' where true;
   raise exception 'DRAFT_IMMUTABILITY_BROKEN';
  exception when others then
+  if SQLERRM in ('WRONG_KIND_ACCEPTED','MISSION_MISMATCH_ACCEPTED','UNCLAIMED_APPEND_ACCEPTED','DRAFT_IMMUTABILITY_BROKEN','CLAIM_IMMUTABILITY_BROKEN') then raise; end if;
   if SQLSTATE <> 'P0001' then raise; end if;
  end;
  begin
   delete from vaos_private.founder_agent_draft_claims where true;
   raise exception 'CLAIM_IMMUTABILITY_BROKEN';
  exception when others then
+  if SQLERRM in ('WRONG_KIND_ACCEPTED','MISSION_MISMATCH_ACCEPTED','UNCLAIMED_APPEND_ACCEPTED','DRAFT_IMMUTABILITY_BROKEN','CLAIM_IMMUTABILITY_BROKEN') then raise; end if;
   if SQLSTATE <> 'P0001' then raise; end if;
  end;
  select count(*) into v_rows from vaos_private.founder_agent_drafts;

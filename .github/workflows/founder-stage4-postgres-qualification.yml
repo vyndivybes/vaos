@@ -1,0 +1,41 @@
+name: founder-stage4-postgres-qualification
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20261011065000_founder_ai_draft_pilot_v1.sql"
+      - "platform/qualification/sql/founder-stage4-*"
+      - ".github/workflows/founder-stage4-postgres-qualification.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-postgres:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vaos_stage4_qualification
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGDATABASE: vaos_stage4_qualification
+      PGPASSWORD: synthetic-ci-pass
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare disposable roles, private schema and synthetic founder requests
+        run: psql -v ON_ERROR_STOP=1 -f platform/qualification/sql/founder-stage4-bootstrap.sql
+      - name: Apply Stage 4 candidate migration in DISPOSABLE database only
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261011065000_founder_ai_draft_pilot_v1.sql
+      - name: Independently verify RLS, RPC ACLs, claims, replay and immutability
+        run: psql -v ON_ERROR_STOP=1 -f platform/qualification/sql/founder-stage4-assert.sql

@@ -1,0 +1,21 @@
+name: stage8-hosted-actual-auth
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  actual-hosted-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    environment: stage8-isolated-qualification
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci
+      - name: Actual hosted VAOS login, persistent R2 replay denial, cleanup
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.STAGE8_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: node scripts/qualification/stage8-hosted-real-auth.mjs

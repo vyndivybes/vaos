@@ -25,7 +25,7 @@ test('temporary commissioning lease is promoted and revoked',()=>{
   assert.match(assertion,/last_authenticated_at/);
 });
 test('Cloudflare native watchdog supersedes GitHub schedule, preserving manual disable',()=>{
-  assert.deepEqual(cloudflareConfig.triggers.crons,['*/15 * * * *']);
+  assert.deepEqual(cloudflareConfig.triggers.crons,['0 * * * *']);
   assert.match(worker,/runCloudflareInfisicalHealth/);
   assert.match(worker,/isCloudflareInfisicalHealthEnabled/);
   assert.match(worker,/VAOS_INFISICAL_WATCHDOG_FAILED/);

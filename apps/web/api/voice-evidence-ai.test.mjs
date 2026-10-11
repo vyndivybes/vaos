@@ -20,3 +20,5 @@ test('strict model output validates citation indices and disallows authority cla
  assert.throws(()=>validateGroundedDraft({response:JSON.stringify({analysis:'Material test results are not established.',recommendation:'Review test certificates and verify production gate.',citations:[2]})},sources));
  assert.throws(()=>validateGroundedDraft({response:'invalid'},sources));
 });
+
+test('natural question ending in question mark reaches evidence search instead of 422',async()=>{let invoked=0;const h=createVoiceEvidenceAiHandler({fetchImpl:async()=>{invoked++;return {ok:false,status:401}},claim:async()=>({allowed:true,remaining:2})});const {state,r}=res();await h(req({body:{question:'What are our carbon frame engineering risks?'}}),r);assert.notEqual(state.status,422);assert.ok(invoked>0);});

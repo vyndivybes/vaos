@@ -111,3 +111,58 @@ test('Stage V3 UI is separately flagged, authenticated GET-only, and no persiste
  assert.match(assets,/!lib\/voice-multiturn\.mjs/);
  assert.doesNotMatch(browser,/localStorage|sessionStorage|setInterval|method:'POST'/);
 });
+
+
+test('AI focus mode produces evidence-only voice readback without model prose as authority',async()=>{
+ const calls=[],spoken=[];
+ const session=createVoiceMultiTurnSession({
+  fetchSnapshot:async()=>record,
+  classifyFocus:async(q,prior,{signal})=>{
+   calls.push({q,prior,signal});
+   return {topics:['status','blockers'],modelInvoked:true,actionAuthorized:false};
+  },
+  speak:(source,s)=>{spoken.push({source,s});return true;},
+ });
+ assert.equal(session.open(MID,{ai:true}),true);
+ assert.equal(session.ask(),true);
+ assert.equal(await session.accept(status),true);
+ assert.equal(calls.length,1);
+ assert.equal(spoken[0].source,'ai-preview');
+ assert.match(spoken[0].s,/AI-ASSISTED READ-ONLY PREVIEW/);
+ assert.match(spoken[0].s,/Status reported by VAOS: HOLD/);
+ assert.match(spoken[0].s,/Blocked status entries: 2/);
+ assert.match(spoken[0].s,/Model classified topics only\. No business action authorized\.$/);
+ assert.equal(session.context()[0].topic,'status');
+});
+
+test('AI mode rejects missing or forged classifier response and does not fallback to unverified text',async()=>{
+ let spoken=0;
+ const unsafe=createVoiceMultiTurnSession({fetchSnapshot:async()=>record,
+   classifyFocus:async()=>({topics:['execute'],modelInvoked:true,actionAuthorized:false}),
+   speak:()=>{spoken++;return true;}
+ });
+ assert.equal(unsafe.open(MID,{ai:true}),true);
+ assert.equal(unsafe.ask(),true);
+ assert.equal(await unsafe.accept(status),false);
+ assert.equal(spoken,0);
+ const noClassifier=createVoiceMultiTurnSession({fetchSnapshot:async()=>record,speak:()=>{spoken++;return true;}});
+ assert.equal(noClassifier.open(MID,{ai:true}),false);
+});
+
+test('cancel during AI classification disarms late reply, leaving no spoken result',async()=>{
+ let finish,aborted,spoken=0;
+ const flow=createVoiceMultiTurnSession({
+   fetchSnapshot:async()=>record,
+   classifyFocus:(_q,_prior,{signal})=>{aborted=signal;return new Promise(resolve=>{finish=resolve;});},
+   speak:()=>{spoken++;return true;},
+ });
+ assert.equal(flow.open(MID,{ai:true}),true);
+ assert.equal(flow.ask(),true);
+ const pending=flow.accept(status);
+ await Promise.resolve();await Promise.resolve();
+ assert.equal(flow.cancel(),true);
+ assert.equal(aborted?.aborted,true);
+ finish({topics:['status'],modelInvoked:true,actionAuthorized:false});
+ assert.equal(await pending,false);
+ assert.equal(spoken,0);
+});

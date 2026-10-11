@@ -86,19 +86,54 @@ export function createVoicePilotController({
     try {content=selectSpokenReadback(source,rawText);}
     catch {onStatus('No eligible read-only result to speak.');return false;}
     if(!speechAvailable){onStatus('Browser speech playback unavailable.');return false;}
-    stopSpeaking();
+    // Chromium can drop speech when an idle synthesis engine receives cancel()
+    // immediately followed by speak(). Only cancel previously queued audio.
+    if(utterance!==null || speechSynthesis.speaking===true || speechSynthesis.pending===true){
+      stopSpeaking();
+    }
     try {
       const current=new SpeechSynthesisUtteranceClass(content);
-      current.lang='en-IN';current.rate=1;
-      current.onstart=()=>{if(current===utterance)onSpeakingChanged(true);};
-      current.onend=()=>{if(current===utterance){utterance=null;onSpeakingChanged(false);}};
-      current.onerror=()=>{if(current===utterance){utterance=null;onSpeakingChanged(false);onStatus('Playback failed. Read the report.');}};
+      const voices=typeof speechSynthesis.getVoices==='function'
+        ?speechSynthesis.getVoices():[];
+      if(Array.isArray(voices) && voices.length>0) {
+        const chosen=voices.find(v=>String(v.lang).toLowerCase()==='en-in')
+          ||voices.find(v=>String(v.lang).toLowerCase().startsWith('en-'))
+          ||voices.find(v=>String(v.lang).toLowerCase()==='en')
+          ||voices.find(v=>v.default===true)
+          ||voices[0];
+        current.voice=chosen;
+        current.lang=chosen.lang;
+      }
+      // When no installed voice is enumerated, do not force en-IN: let
+      // the browser choose its native default, which may not be en-IN.
+      current.rate=1;
+      current.onstart=()=>{
+        if(current!==utterance)return;
+        onSpeakingChanged(true);
+        onStatus('Speech playback started. Check your speakers.');
+      };
+      current.onend=()=>{
+        if(current!==utterance)return;
+        utterance=null;
+        onSpeakingChanged(false);
+        onStatus('Speech playback finished.');
+      };
+      current.onerror=(event)=>{
+        if(current!==utterance)return;
+        utterance=null;
+        onSpeakingChanged(false);
+        const code=typeof event?.error==='string'&&/^[a-z-]{1,50}$/.test(event.error)
+          ?event.error:'unknown';
+        onStatus('Speech playback error: '+code+'. Check browser voice, speaker volume, output device and tab mute.');
+      };
       utterance=current;
       speechSynthesis.speak(current);
+      onStatus('Speech queued. Waiting for the browser audio engine to start.');
       return true;
     }catch{
-      utterance=null;onSpeakingChanged(false);
-      onStatus('Playback could not start. Read the report.');
+      utterance=null;
+      onSpeakingChanged(false);
+      onStatus('Speech playback could not start. Check browser voice and output device.');
       return false;
     }
   }

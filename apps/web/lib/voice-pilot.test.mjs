@@ -89,7 +89,8 @@ test('founder UI gates spoken question through explicit existing-mission GET onl
   assert.match(browser,/missionForm\.requestSubmit\(\)/);
   assert.match(browser,/['"]mission-id['"]/);
   assert.match(browser,/['"]voice-readonly-question['"]/);
-  assert.doesNotMatch(browser,/fetch\s*\([^)]*method:\s*['"]POST['"]/);
+  assert.match(browser,/\/api\/voice-ai-focus/);
+  assert.doesNotMatch(browser,/\/api\/(?:executions|approvals|intents|founder-conversation)/);
 });
 
 

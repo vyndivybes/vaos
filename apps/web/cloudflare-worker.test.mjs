@@ -126,3 +126,14 @@ test('Wrangler Worker Previews require an isolated, unreachable database URL', a
   assert.notEqual(config.previews.vars.SUPABASE_URL, config.vars.SUPABASE_URL);
   assert.equal(config.previews.triggers, undefined, 'previews must not schedule production cron triggers');
 });
+
+
+test('missing JS modules return 404 rather than redirecting to the Command Centre',async()=>{
+ const app=createCloudflareApp({apiHandlers:{},assetFetcher});
+ for(const path of ['/lib/voice-pilot.mjs','/lib/voice-pilot-controller.mjs','/unknown.js']){
+  const response=await app.fetch(new Request('https://vaos.example'+path));
+  assert.equal(response.status,404,path);
+  assert.equal(response.headers.get('location'),null,path);
+  assert.match(response.headers.get('content-type')||'',/text\/plain|application\/json/);
+ }
+});

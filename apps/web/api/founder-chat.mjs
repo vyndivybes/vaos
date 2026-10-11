@@ -6,6 +6,8 @@ import {getFounderChatStore} from '../lib/founder-chat-provider.mjs';
 import {getEightAgentOperatingService} from '../lib/operating-provider.mjs';
 import {prepareFounderMissionReport} from '../lib/founder-report-preview.mjs';
 import {runFounderAiDraft,FOUNDER_AI_MODEL} from '../lib/founder-ai-draft.mjs';
+import {prepareConversationContext,runFounderContextDraft} from '../lib/founder-context-draft.mjs';
+import {getFounderConversationStore} from '../lib/founder-conversation-provider.mjs';
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MISSION=/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/;
 function valid(b){return b&&typeof b==='object'&&!Array.isArray(b)
@@ -24,7 +26,8 @@ function replyValid(reply,messageId,agentId,missionId){
 }
 export function createFounderChatHandler({getInbox=getFounderInboxStore,
  getReplies=getFounderChatStore,getMission=getEightAgentOperatingService,
- runAi=runFounderAiDraft}={}){
+ getConversation=getFounderConversationStore,runAi=runFounderAiDraft,
+ runContextAi=runFounderContextDraft}={}){
  return async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -62,6 +65,22 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
     return res.status(200).json({data:{reply:existing.reply,outcome:'REPLAY',modelInvoked:false,actionAuthorized:false}});
    }
   }catch{return res.status(503).json(apiError('FOUNDER_CHAT_STORAGE_UNAVAILABLE','Recorded request or draft storage unavailable'));}
+  let context=null;
+  // The Stage 6 flag is independently gated; Stage 4 remains unchanged when OFF.
+  if(req.env?.VAOS_FOUNDER_CONTEXT_CONTROL==='bounded-v1'){
+   if(req.env?.VAOS_FOUNDER_CONVERSATION_CONTROL!=='ledger-only-v1')
+    return res.status(409).json(apiError('FOUNDER_CONTEXT_LEDGER_DISABLED','Stage 5 must be commissioned'));
+   try{
+    const history=await getConversation(req.env).history({actorEmail:session.email,agentId,missionId});
+    if(!Array.isArray(history?.turns)||history.agentId!==agentId
+       ||history.missionId!==missionId||history.actionAuthorized!==false)throw Error();
+    const linked=history.turns.some(t=>t?.messageId===messageId);
+    if(linked){
+     context=prepareConversationContext({history,agentId,missionId,
+       messageId,instruction:record.instruction});
+    }
+   }catch{return res.status(503).json(apiError('FOUNDER_CONTEXT_HISTORY_UNAVAILABLE','Authoritative conversation context unavailable'));}
+  }
   let report;
   try{
    const snapshot=await getMission(req.env).snapshot(missionId);
@@ -78,7 +97,9 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
    return res.status(409).json(apiError('FOUNDER_CHAT_ALREADY_CLAIMED','Request already claimed; no retry without a new recorded message'));
   let draft;
   try{
-   draft=await runAi({ai:req.env?.AI,agentId,instruction:record.instruction,report});
+   draft=await (context?.previousMessageId?runContextAi:runAi)({
+    ai:req.env?.AI,agentId,instruction:record.instruction,report,
+    ...(context?.previousMessageId?{context}:{})});
    if(draft?.status!=='AI_DRAFT_UNVERIFIED'||draft.model!==FOUNDER_AI_MODEL
        ||draft.actionAuthorized!==false||typeof draft.content!=='string'
        ||draft.content.length>1200)throw Error();

@@ -41,10 +41,13 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <button id="voice-preview-speak" type="button" class="secondary" disabled>Speak report preview</button>
 <button id="voice-draft-speak" type="button" class="secondary" disabled>Speak unverified AI draft</button>
 <button id="voice-demo-speak" type="button" class="secondary" disabled>Test speaker (no mission needed)</button>
+<button id="voice-short-test" type="button" class="secondary" disabled>Test short voice</button>
+<button id="voice-tone-test" type="button" class="secondary" disabled>Test speaker tone</button>
 <button id="voice-mission-speak" type="button" class="secondary" disabled>Speak current mission snapshot</button>
 <button id="voice-audio-stop" type="button" class="secondary" disabled>Stop speech</button>
 </div>
 <p class="founder-hint">Audio test only: the speaker test is not a project report. To hear a real existing mission's status, use Mission evidence lookup and then Speak current mission snapshot. No records are created.</p>
 <p id="voice-pilot-status" role="status" aria-live="polite">Voice qualification not checked.</p>
+<p id="voice-audio-diagnostics" class="founder-hint" role="status" aria-live="polite">Sound diagnostic not run. These controls never send instructions or access mission data.</p>
 </section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
 </main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/voice-pilot-browser.mjs"></script></body></html>

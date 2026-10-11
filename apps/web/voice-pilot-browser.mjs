@@ -1,5 +1,6 @@
 import {appendVoiceTranscript,VOICE_AUDIO_TEST_MESSAGE} from './lib/voice-pilot.mjs';
 import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
+import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
 
 const $ = id => document.getElementById(id);
 const status = $('voice-pilot-status');
@@ -10,9 +11,12 @@ const speakPreview = $('voice-preview-speak');
 const speakDraft = $('voice-draft-speak');
 const stopAudio = $('voice-audio-stop');
 const demoSpeak = $('voice-demo-speak');
+const voiceShortTest = $('voice-short-test');
+const voiceToneTest = $('voice-tone-test');
+const diagnosticsStatus = $('voice-audio-diagnostics');
 const missionSpeak = $('voice-mission-speak');
 const missionReadback = $('mission-summary');
-const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak];
+const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest];
 buttons.forEach(button=>{button.disabled=true;});
 let enabled=false;
 
@@ -33,6 +37,19 @@ const voice=createVoicePilotController({
   },
 });
 
+const audioDiagnostics=createVoiceAudioDiagnostics({
+  SpeechSynthesisUtteranceClass:window.SpeechSynthesisUtterance,
+  speechSynthesis:window.speechSynthesis,
+  AudioContextClass:window.AudioContext||window.webkitAudioContext,
+  onStatus:message=>{diagnosticsStatus.textContent=message;},
+});
+function updateDiagnostics(){
+  diagnosticsStatus.textContent=audioDiagnostics.describe();
+}
+if(typeof window.speechSynthesis?.addEventListener==='function'){
+  window.speechSynthesis.addEventListener('voiceschanged',updateDiagnostics);
+}
+
 function updateButtons() {
   startInstruction.disabled=!enabled||!voice.dictationAvailable||voice.isListening();
   startFollowup.disabled=!enabled||!voice.dictationAvailable||voice.isListening();
@@ -41,6 +58,8 @@ function updateButtons() {
   speakDraft.disabled=!enabled||!voice.speechAvailable;
   stopAudio.disabled=!enabled||!voice.speechAvailable;
   demoSpeak.disabled=!enabled||!voice.speechAvailable;
+  voiceShortTest.disabled=!enabled||!audioDiagnostics.speechAvailable;
+  voiceToneTest.disabled=!enabled||!(window.AudioContext||window.webkitAudioContext);
   missionSpeak.disabled=!enabled||!voice.speechAvailable;
 }
 function speakResult(source,id) {
@@ -56,7 +75,9 @@ startFollowup.addEventListener('click',()=>{
 stopMic.addEventListener('click',()=>voice.stopListening());
 speakPreview.addEventListener('click',()=>speakResult('preview','report-preview'));
 speakDraft.addEventListener('click',()=>speakResult('draft','founder-ai-response'));
-stopAudio.addEventListener('click',()=>voice.stopSpeaking());
+stopAudio.addEventListener('click',()=>{voice.stopSpeaking();audioDiagnostics.stopSpeech();});
+voiceShortTest.addEventListener('click',()=>{if(enabled){voice.stopSpeaking();audioDiagnostics.testShortSpeech();}});
+voiceToneTest.addEventListener('click',()=>{if(enabled)audioDiagnostics.testTone();});
 demoSpeak.addEventListener('click',()=>{if(enabled)voice.speak('preview',VOICE_AUDIO_TEST_MESSAGE);});
 missionSpeak.addEventListener('click',()=>{
   if(!enabled)return;
@@ -67,7 +88,7 @@ missionSpeak.addEventListener('click',()=>{
   }
   voice.speak('preview',speech);
 });
-window.addEventListener('pagehide',()=>{voice.stopListening();voice.stopSpeaking();});
+window.addEventListener('pagehide',()=>{voice.stopListening();voice.stopSpeaking();audioDiagnostics.stopSpeech();});
 
 async function checkCapability() {
   try {
@@ -87,6 +108,7 @@ async function checkCapability() {
       status.textContent='Speech recognition unsupported in this browser. Use typed commands.';
     }
     updateButtons();
+    if(enabled)updateDiagnostics();
   }catch{
     enabled=false;
     status.textContent='Voice qualification unavailable. Voice controls remain disabled.';

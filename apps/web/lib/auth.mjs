@@ -21,7 +21,8 @@ function hardenedSigningKey() {
   const value = String(process.env.VAOS_SESSION_HMAC_KEY || "").trim();
   const maker = configuredPasswordHash(DEV_PASSWORD_ENV);
   const checker = configuredPasswordHash(DEV_CHECKER_PASSWORD_ENV);
-  if (!maker || !HMAC_KEY_HEX.test(value) || value.length % 2 !== 0
+  if (!maker || maker === LEGACY_DEV_PASSWORD_SHA256 || !checker || checker === maker
+    || !HMAC_KEY_HEX.test(value) || value.length % 2 !== 0
     || value.toLowerCase() === maker || value.toLowerCase() === checker) {
     throw new Error("HARDENED_AUTH_CONFIG_INVALID");
   }

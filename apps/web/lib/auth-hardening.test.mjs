@@ -30,10 +30,12 @@ test('missing or weak independent HMAC key prevents issuing and verifying sessio
  }
 });
 test('Stage 8 HMAC is independent of password hashes and rejects old sessions',()=>{
- withVars({VAOS_AUTH_HARDENED_CONTROL:'off',VAOS_DEV_LOGIN_PASSWORD_SHA256:sha256('password-a')},()=>{
+ withVars({VAOS_AUTH_HARDENED_CONTROL:'off',VAOS_DEV_LOGIN_PASSWORD_SHA256:sha256('password-a'),
+    VAOS_DEV_CHECKER_PASSWORD_SHA256:sha256('checker-isolated-a')},()=>{
   const legacy=createSessionToken(founder,120,1000000);
   withVars({VAOS_AUTH_HARDENED_CONTROL:control,VAOS_SESSION_HMAC_KEY:hmac,
-    VAOS_DEV_LOGIN_PASSWORD_SHA256:sha256('password-a')},()=>{
+    VAOS_DEV_LOGIN_PASSWORD_SHA256:sha256('password-a'),
+    VAOS_DEV_CHECKER_PASSWORD_SHA256:sha256('checker-isolated-a')},()=>{
      assert.equal(verifySessionToken(legacy,1001000),null);
      const signed=createSessionToken(founder,120,1000000);
      assert.equal(verifySessionToken(signed,1001000)?.email,founder);
@@ -46,7 +48,8 @@ test('Stage 8 HMAC is independent of password hashes and rejects old sessions',(
 });
 test('Stage 8 tokens bind issued-at and version and enforce session TTL',()=>{
  withVars({VAOS_AUTH_HARDENED_CONTROL:control,VAOS_SESSION_HMAC_KEY:hmac,
-  VAOS_DEV_LOGIN_PASSWORD_SHA256:sha256('strong-pass')},()=>{
+  VAOS_DEV_LOGIN_PASSWORD_SHA256:sha256('strong-pass'),
+  VAOS_DEV_CHECKER_PASSWORD_SHA256:sha256('checker-isolated-b')},()=>{
   const token=createSessionToken(founder,120,1000000);
   const payload=JSON.parse(Buffer.from(token.split('.')[0],'base64url').toString());
   assert.equal(payload.v,2);

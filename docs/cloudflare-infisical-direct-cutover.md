@@ -8,7 +8,7 @@ It must never activate `infisical.secret.broker` or alter a disabled provider.
 
 ## Runtime controls
 
-- Cloudflare cron remains `*/15 * * * *` and independently runs the mission sweep.
+- Effective 2026-10-11: Cloudflare cron is `0 * * * *` and independently runs the mission sweep.
 - Set plain-text `INFISICAL_DIRECT_WATCHDOG_ENABLED=true` only after approved
   bootstrap credentials have been installed and reviewed.
 - Cloudflare Secrets, not Wrangler vars:
@@ -66,3 +66,8 @@ node --test platform/execution/cloudflare-infisical-direct-health.test.mjs
 npm test
 npx wrangler deploy --dry-run --config wrangler.jsonc
 ```
+ 
+
+## October 11 scheduling revision
+
+Production hourly cadence is Cloudflare at minute 0, Supabase guard at minute 15, and workforce activity monitoring at minute 20. The Infisical routing freshness window is 70 minutes and stale disable is 130 minutes. Earlier mentions of a 15-minute cadence above describe the initial cutover, not current production configuration.

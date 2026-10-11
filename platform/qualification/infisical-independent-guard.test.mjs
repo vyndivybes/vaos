@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {createProviderControlPlane} from '../execution/provider-control-plane.mjs';
 
-const migration=()=>readFileSync(new URL('../../supabase/migrations/20261009030000_infisical_independent_guard.sql',import.meta.url),'utf8');
+const migration=()=>readFileSync(new URL('../../supabase/migrations/20261011014346_vaos_hourly_watchdog_and_monitor_20261011.sql',import.meta.url),'utf8');
 const workflow=()=>readFileSync(new URL('../../.github/workflows/infisical-scoped-commissioning.yml',import.meta.url),'utf8');
 const cloudflareConfig=()=>JSON.parse(readFileSync(new URL('../../wrangler.jsonc',import.meta.url),'utf8'));
 const cloudflareWorker=()=>readFileSync(new URL('../../apps/web/cloudflare-worker.mjs',import.meta.url),'utf8');
@@ -18,13 +18,13 @@ function manifest(id='infisical',cap='secret.broker'){
 }
 const request={dataClassification:'internal',riskClass:'low'};
 
-test('Infisical uses a bounded 20-minute freshness window for 15-minute cadence, then fails closed',async()=>{
+test('Infisical uses a bounded 70-minute freshness window for 60-minute cadence, then fails closed',async()=>{
  let moment='2026-10-09T00:00:00.000Z';
  const cp=createProviderControlPlane({providers:[manifest()],now:()=>new Date(moment)});
  await cp.recordHealth({providerId:'infisical',status:'healthy',checkedAt:moment,evidenceRef:'canary'});
- moment='2026-10-09T00:19:59.000Z';
+ moment='2026-10-09T01:09:59.000Z';
  assert.equal(cp.resolve('secret.broker',request)?.providerId,'infisical');
- moment='2026-10-09T00:20:01.000Z';
+ moment='2026-10-09T01:10:01.000Z';
  assert.equal(cp.resolve('secret.broker',request),null);
 });
 test('Non-Infisical provider keeps existing 5-minute limit',async()=>{
@@ -41,13 +41,15 @@ test('Explicit per-provider TTL override can shorten not globally expand the fre
  moment='2026-10-09T00:01:01.000Z';
  assert.equal(cp.resolve('secret.broker',request),null);
 });
-test('Independent database watchdog schedules every five minutes, without credentials or auto-enabling',()=>{
+test('Independent database watchdog schedules every 60 minutes, without credentials or auto-enabling',()=>{
  const sql=migration();
  assert.match(sql,/CREATE EXTENSION IF NOT EXISTS pg_cron/i);
  assert.match(sql,/cron\.schedule\(/);
- assert.match(sql,/'\*\/5 \* \* \* \*'/);
+ assert.match(sql,/'15 \* \* \* \*'/);
  assert.match(sql,/FOR UPDATE/i);
- assert.match(sql,/30 minutes/i);
+ assert.match(sql,/130 minutes/i);
+ assert.match(sql,/70 minutes/i);
+ assert.match(sql,/'20 \* \* \* \*'/);
  assert.match(sql,/\{enabled\}/);
  assert.match(sql,/\{capabilityEnabled,secret\.broker\}/);
  assert.match(sql,/false/i);
@@ -57,7 +59,7 @@ test('Independent database watchdog schedules every five minutes, without creden
 });
 test('Native Cloudflare cron is scheduled and legacy GitHub job is manual emergency-only',()=>{
   const y=workflow();
-  assert.deepEqual(cloudflareConfig().triggers.crons,['*/15 * * * *']);
+  assert.deepEqual(cloudflareConfig().triggers.crons,['0 * * * *']);
   assert.match(cloudflareWorker(),/runCloudflareInfisicalHealth/);
   assert.doesNotMatch(y,/^  schedule:/m);
   assert.doesNotMatch(y,/^  push:/m);

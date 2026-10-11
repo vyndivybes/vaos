@@ -88,7 +88,7 @@ export function createProviderControlPlane({
   recordAudit = async () => {},
   now = () => new Date(),
   healthTtlMs = 300_000,
-  healthTtlOverridesMs = {infisical: 1_200_000},
+  healthTtlOverridesMs = {infisical: 4_200_000},
   stateStore = null,
 } = {}) {
   if (!Array.isArray(providers)) throw fail('PROVIDER_CONTROL_INVALID:providers');
@@ -208,7 +208,7 @@ export function createProviderControlPlane({
     if (state.manifest.execution.healthProbe !== 'required') return true;
     if (!state.health || state.health.status !== 'healthy') return false;
     const age = timestamp().getTime() - new Date(state.health.checkedAt).getTime();
-    // Infisical: 15-minute probe interval + at most 5 minutes jitter. Other providers retain 5 minutes.
+    // Infisical: 60-minute probe interval + at most 10 minutes jitter. Other providers retain 5 minutes.
     const maxAge = healthTtlOverridesMs[state.manifest.providerId] ?? healthTtlMs;
     return age >= 0 && age <= maxAge;
   }

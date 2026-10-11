@@ -28,16 +28,19 @@ const oneShotStatus=$('voice-one-shot-status');
 const oneShotReport=$('voice-one-shot-report');
 const oneShotQuestion=$('voice-one-shot-question');
 const v3Open=$('voice-v3-open');
+const v4Open=$('voice-v4-open');
+const v4Status=$('voice-v4-status');
 const v3Ask=$('voice-v3-ask');
 const v3Stop=$('voice-v3-stop');
 const v3Status=$('voice-v3-status');
 const v3Report=$('voice-v3-report');
 const v3Question=$('voice-v3-question');
-const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest,voiceRequestDictate,voiceReadMission,oneShotStart,oneShotStop,v3Open,v3Ask,v3Stop];
+const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest,voiceRequestDictate,voiceReadMission,oneShotStart,oneShotStop,v3Open,v4Open,v3Ask,v3Stop];
 buttons.forEach(button=>{button.disabled=true;});
 let enabled=false;
 let oneShotEnabled=false;
 let multiTurnEnabled=false;
+let aiFocusEnabled=false;
 
 const voice=createVoicePilotController({
   RecognitionClass:window.SpeechRecognition||window.webkitSpeechRecognition,
@@ -86,13 +89,29 @@ const oneShot=createOneShotVoiceConversation({
 });
 function oneShotBusy(){return ['LISTENING','READING'].includes(oneShot.state());}
 
-// Multi-turn replies always come from a fresh mission snapshot. No model or writes.
+// Multi-turn replies always come from a fresh mission snapshot. V4 AI classifies topics only; no model-authored facts.
 const multiTurn=createVoiceMultiTurnSession({
   fetchSnapshot:async(missionId,{signal})=>{
     const response=await fetch('/api/missions?missionId='+encodeURIComponent(missionId),
       {method:'GET',credentials:'same-origin',cache:'no-store',signal});
     if(!response.ok)throw new Error('MISSION_READ_UNAVAILABLE');
     return (await response.json())?.data;
+  },
+  classifyFocus:async(question,priorTopics,{signal})=>{
+    if(!aiFocusEnabled)throw new Error('VOICE_AI_DISABLED');
+    const response=await fetch('/api/voice-ai-focus',{
+      method:'POST',credentials:'same-origin',cache:'no-store',signal,
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({question,priorTopics}),
+    });
+    if(!response.ok){
+      if(response.status===429)v4Status.textContent='Daily AI cap reached; use deterministic Stage V3.';
+      throw new Error('VOICE_AI_CLASSIFICATION_UNAVAILABLE');
+    }
+    const data=(await response.json())?.data;
+    if(data?.modelInvoked!==true||data?.actionAuthorized!==false
+       ||!Array.isArray(data?.topics))throw new Error('VOICE_AI_UNVERIFIED');
+    return data;
   },
   speak:(source,report)=>voice.speak(source,report),
   onReport:report=>{v3Report.textContent=report;},
@@ -130,6 +149,7 @@ function updateButtons() {
   oneShotStart.disabled=!enabled||!oneShotEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnOpen();
   oneShotStop.disabled=!enabled||!oneShotEnabled||!(oneShotBusy()||oneShot.state()==='SPOKEN_QUEUED');
   v3Open.disabled=!enabled||!multiTurnEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnOpen();
+  v4Open.disabled=!enabled||!aiFocusEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnOpen();
   v3Ask.disabled=!enabled||!multiTurnEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy()||!['READY','SPOKEN_QUEUED','REJECTED'].includes(multiTurn.state())||multiTurn.context().length>=3;
   v3Stop.disabled=!enabled||!multiTurnEnabled||!multiTurnOpen();
 }
@@ -174,6 +194,17 @@ v3Open.addEventListener('click',()=>{
   v3Report.textContent='No V3 mission evidence retrieved.';
   if(!multiTurn.open($('mission-id').value.trim()))
     v3Status.textContent='Choose an existing valid mission ID below; no request sent.';
+  updateButtons();
+});
+v4Open.addEventListener('click',()=>{
+  if(!enabled||!aiFocusEnabled||voice.isListening()||oneShotBusy())return;
+  voice.stopSpeaking();
+  audioDiagnostics.stopSpeech();
+  v3Question.value='';
+  v3Report.textContent='No AI-assisted mission report retrieved.';
+  if(!multiTurn.open($('mission-id').value.trim(),{ai:true}))
+    v4Status.textContent='Select an existing mission ID. AI session not opened.';
+  else v4Status.textContent='AI-assisted session ready. Click Ask next question (each question uses one daily model allowance).';
   updateButtons();
 });
 v3Ask.addEventListener('click',()=>{
@@ -254,6 +285,11 @@ async function checkCapability() {
       &&payload?.oneShotMode==='FOUNDER_ONE_SHOT_READONLY_GET';
     multiTurnEnabled=oneShotEnabled && payload?.multiTurnEnabled===true
       &&payload?.multiTurnMode==='FOUNDER_MULTITURN_READONLY_GET';
+    aiFocusEnabled=multiTurnEnabled && payload?.aiFocusEnabled===true
+      &&payload?.aiFocusMode==='FOUNDER_AI_FOCUS_READONLY_V1';
+    v4Status.textContent=aiFocusEnabled
+      ?'Stage V4 model-assisted topic classification enabled; 3 daily AI requests maximum.'
+      :'Stage V4 AI voice disabled until separately commissioned.';
     v3Status.textContent=multiTurnEnabled
       ?'Stage V3 ready. Select an existing mission and start a three-question session.'
       :'Stage V3 disabled until separately commissioned.';
@@ -269,7 +305,8 @@ async function checkCapability() {
     updateButtons();
     if(enabled)updateDiagnostics();
   }catch{
-    enabled=false;oneShotEnabled=false;multiTurnEnabled=false;oneShot.cancel();multiTurn.cancel();
+    enabled=false;oneShotEnabled=false;multiTurnEnabled=false;aiFocusEnabled=false;oneShot.cancel();multiTurn.cancel();
+    v4Status.textContent='Stage V4 AI unavailable; deterministic V3 remains separately gated.';
     v3Status.textContent='Stage V3 unavailable. No request sent.';
     oneShotStatus.textContent='One-shot capability unavailable. Nothing sent.';
     status.textContent='Voice qualification unavailable. Voice controls remain disabled.';

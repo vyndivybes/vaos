@@ -184,7 +184,9 @@ test('founder UI exposes two read-only speaker checks gated by founder capabilit
  assert.match(script,/enabled.*voice\.speechAvailable/);
  assert.match(consoleScript,/formatMissionSnapshotSpokenPreview/);
  assert.match(consoleScript,/delete out\.dataset\.voiceReadback/);
- assert.doesNotMatch(script,/fetch\(['"]\/api\/missions/);
+ assert.match(script,/method:'GET'/);
+ assert.doesNotMatch(script,/method:\s*['"]POST['"]/);
+ assert.doesNotMatch(script,/fetch\(['"]\/api\/(?:intents|executions|approvals|founder-chat|founder-conversation)/);
 });
 
 test('independent spoken status question populates a local draft without submitting anything',()=>{

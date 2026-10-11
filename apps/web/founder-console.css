@@ -14,3 +14,10 @@
 .conversation-turn p{white-space:pre-wrap;margin:8px 0}
 .conversation-turn .conversation-reply{border-top:1px solid #34424e;padding-top:10px;color:#d4e5ee}
 .founder-panel button:disabled{opacity:.55;cursor:not-allowed}
+
+/* Read-only browser voice pilot: no extra modal or hidden action path. */
+.founder-voice { margin:1rem 0; padding:1rem; border:1px solid rgba(175,190,205,.27); border-radius:12px; }
+.founder-voice h3 { margin:0 0 .5rem; }
+.founder-voice-toolbar { display:flex; flex-wrap:wrap; gap:.6rem; margin:.65rem 0; }
+.founder-voice-toolbar button:disabled { opacity:.5; cursor:not-allowed; }
+#voice-status { min-height:1.5rem; }

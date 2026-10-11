@@ -26,6 +26,6 @@ test('natural question ending in question mark reaches evidence search instead o
 test('Cloudflare nested response and fenced JSON are accepted without weakening evidence validation',()=>{
  const x={analysis:'Available evidence indicates unresolved verification.',recommendation:'Review validation records and confirm owners.',citations:[1]};
  const sources=[{excerpt:'Validation records pending'}];
- assert.match(validateGroundedDraft({result:{response:'\`\`\`json\\n'+JSON.stringify(x)+'\\n\`\`\`'}},sources).answer,/advisory/);
+ assert.match(validateGroundedDraft({result:{response:'\`\`\`json\n'+JSON.stringify(x)+'\n\`\`\`'}},sources).answer,/advisory/);
  assert.throws(()=>validateGroundedDraft({response:JSON.stringify({...x,citations:[2]})},sources));
 });

@@ -9,7 +9,7 @@ const cfg='scripts/qualification/stage8-r2-wrangler.jsonc';
 const persist=await mkdtemp(join(tmpdir(),'vaos-stage8-r2-'));
 let child;
 async function boot(){
- child=spawn('npx',['wrangler','dev','--local','--config',cfg,'--ip','127.0.0.1','--port','18789','--persist-to',persist],{stdio:['ignore','pipe','pipe'],shell:process.platform==='win32'});
+ child=spawn(process.execPath,['node_modules/wrangler/bin/wrangler.js','dev','--local','--config',cfg,'--ip','127.0.0.1','--port','18789','--persist-to',persist],{stdio:['ignore','pipe','pipe'],detached:process.platform!=='win32'});
  let logs='';
  child.stdout.on('data',d=>{logs+=String(d);});child.stderr.on('data',d=>{logs+=String(d);});
  for(let i=0;i<100;i++){
@@ -21,8 +21,10 @@ async function boot(){
 }
 async function stop(){
  if(!child)return;
- const prev=child;child=null;prev.kill();
+ const prev=child;child=null;
+ if(process.platform!=='win32'){try{process.kill(-prev.pid,'SIGTERM');}catch{prev.kill();}}else prev.kill();
  await Promise.race([new Promise(ok=>prev.once('exit',ok)),new Promise(ok=>setTimeout(ok,3000))]);
+ prev.stdout?.destroy();prev.stderr?.destroy();prev.unref();
 }
 async function req(path,options={}){
  return fetch(base+path,{redirect:'manual',...options});

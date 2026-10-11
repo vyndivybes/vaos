@@ -164,10 +164,10 @@ function updateButtons() {
   v3Stop.disabled=!enabled||!multiTurnEnabled||!multiTurnOpen();
 }
 async function autoReadQuestion(transcript){
-  const question=transcript.trim().replace(/^(hey|hello|hi)\\s+vaos[.,!?\\s]*/i,'').trim();
+  const question=transcript.trim().replace(/^(hey|hello|hi)\s+vaos[.,!?\s]*/i,'').trim();
   if(!question){
     autoStatus.textContent='VAOS ready. Ask a status question using Ask VAOS.';
-    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\\nVAOS is ready to answer a status question. No model invoked. No action authorized.');
+    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\nVAOS is ready to answer a status question. No model invoked. No action authorized.');
     return;
   }
   const abort=new AbortController();autoAbort=abort;
@@ -183,7 +183,7 @@ async function autoReadQuestion(transcript){
     if(autoAbort!==abort)return;
     autoAnswer.textContent=data.answer;
     autoStatus.textContent='Read-only lookup complete. Speaking results.';
-    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\\n'+data.answer+'\\nNo model invoked. No action authorized.');
+    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+data.answer+'\nNo model invoked. No action authorized.');
   }catch(error){
     if(autoAbort===abort){
       autoStatus.textContent=error?.name==='AbortError'?'Voice lookup cancelled.':'Voice lookup unavailable. No status inferred.';

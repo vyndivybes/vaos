@@ -1,0 +1,14 @@
+{
+ "$schema":"../../node_modules/wrangler/config-schema.json",
+ "name":"vaos-stage8-r2-local-only",
+ "main":"./stage8-r2-fixture-worker.mjs",
+ "compatibility_date":"2026-09-28",
+ "compatibility_flags":["nodejs_compat"],
+ "vars":{
+  "VAOS_AUTH_HARDENED_CONTROL":"dedicated-hmac-v1",
+  "VAOS_SESSION_HMAC_KEY":"b7a9e871c99d52faefbf521fa01424d6a02e4bf8c079b57e9e2c184839b370af",
+  "VAOS_DEV_LOGIN_PASSWORD_SHA256":"4e144a216088f24df8b7431016306b610b4150c1ba2545f113e08eabb669c9a3",
+  "VAOS_DEV_CHECKER_PASSWORD_SHA256":"e349801848ee488799ffd4b1ec746301f54adfdc8df405f671b0d0e40e9519e9"
+ },
+ "r2_buckets":[{"binding":"VAOS_ARTIFACTS","bucket_name":"vaos-stage8-local-isolated"}]
+}

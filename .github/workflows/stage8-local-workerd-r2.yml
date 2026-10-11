@@ -1,0 +1,25 @@
+name: stage8-local-workerd-r2
+on:
+  pull_request:
+    paths:
+      - 'scripts/qualification/stage8-r2-*'
+      - '.github/workflows/stage8-local-workerd-r2.yml'
+      - 'apps/web/api/logout.mjs'
+      - 'apps/web/lib/session-revocation.mjs'
+      - 'apps/web/cloudflare-worker.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-r2-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Actual workerd API and local R2 persistence (never remote)
+        run: node scripts/qualification/stage8-r2-live-local.mjs

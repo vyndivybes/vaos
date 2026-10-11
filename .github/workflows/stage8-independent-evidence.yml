@@ -1,0 +1,35 @@
+name: stage8-independent-evidence
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: "Successful stage8-hosted-actual-auth run number (numeric GitHub run ID)"
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independent-verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: stage8-isolated-qualification
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Independently verify source run and signed audit gate
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGE8_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          VAOS_STAGE8_EVIDENCE_SIGNING_KEY: ${{ secrets.VAOS_STAGE8_EVIDENCE_SIGNING_KEY }}
+          STAGE8_INDEPENDENT_AUDIT_RECORD: ${{ secrets.STAGE8_INDEPENDENT_AUDIT_RECORD }}
+        run: node scripts/qualification/stage8-independent-signer.mjs
+      - name: Attach signed evidence only after independent verification
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage8-signed-qualification
+          path: stage8-signed-qualification.json
+          retention-days: 1
+          if-no-files-found: error

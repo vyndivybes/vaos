@@ -65,3 +65,18 @@ export function formatMissionSnapshotSpokenPreview(record,requestedId) {
     'No model invoked. No action authorized.',
   ].join('\n');
 }
+
+
+/**
+ * Explicit, bounded read-only question filter for the founder's manual mission
+ * lookup. This is not NLP authorization: mission ID and the GET action still
+ * require a separate deliberate browser click and an authenticated session.
+ */
+export function isReadOnlyMissionStatusQuestion(text) {
+  if (typeof text !== 'string' || text.length < 5 || text.length > 900
+      || /[\x00-\x1f\x7f]/.test(text)) return false;
+  const question = text.trim().toLowerCase();
+  if (!/\b(status|state|progress|summary|report|blockers?|evidence)\b/.test(question)) return false;
+  if (/\b(approve|authorization|post|dispatch|execute|run|purchase|order|pay|payment|delete|update|create|record|submit|override|change|transfer|send|write|cancel|modify|book)\b/.test(question)) return false;
+  return true;
+}

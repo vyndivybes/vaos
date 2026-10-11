@@ -3,6 +3,7 @@ import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
 import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
 import {createOneShotVoiceConversation} from './lib/voice-one-shot.mjs';
 import {createVoiceMultiTurnSession} from './lib/voice-multiturn.mjs';
+import {formatFederatedVoiceEvidence,expandFollowup} from './lib/federated-voice-report.mjs';
 
 const $ = id => document.getElementById(id);
 const autoAsk=$('vaos-auto-ask'),autoStop=$('vaos-auto-stop'),autoStatus=$('vaos-auto-status'),autoAnswer=$('vaos-auto-answer');
@@ -10,6 +11,7 @@ let autoLookupActive=false;
 let autoSession=false;
 let autoRearmTimer=null;
 let autoAbort=null;
+let lastFederatedQuestion='';
 const status = $('voice-pilot-status');
 const startInstruction = $('voice-instruction-start');
 const startFollowup = $('voice-followup-start');
@@ -178,31 +180,41 @@ function updateButtons() {
   v3Stop.disabled=!enabled||!multiTurnEnabled||!multiTurnOpen();
 }
 async function autoReadQuestion(transcript){
-  const question=transcript.trim().replace(/^(hey|hello|hi)\s+vaos[.,!?\s]*/i,'').trim();
-  if(!question){
-    autoStatus.textContent='VAOS ready. Ask a status question using Ask VAOS.';
-    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\nVAOS is ready to answer a status question. No model invoked. No action authorized.');
-    return;
-  }
-  const abort=new AbortController();autoAbort=abort;
-  autoStatus.textContent='Searching available runnable missions (read-only)...';
-  try{
-    const response=await fetch('/api/voice-discover?q='+encodeURIComponent(question),{
-      method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal
-    });
-    if(!response.ok)throw new Error('VOICE_LOOKUP_UNAVAILABLE');
-    const data=(await response.json())?.data;
-    if(data?.readOnly!==true||data?.actionAuthorized!==false
-      ||data?.scope!=='RUNNABLE_MISSIONS_ONLY'||typeof data?.answer!=='string')throw Error('VOICE_LOOKUP_INVALID');
-    if(autoAbort!==abort)return;
-    autoAnswer.textContent=data.answer;
-    autoStatus.textContent='Read-only lookup complete. Speaking results.';
-    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+data.answer+'\nNo model invoked. No action authorized.');
-  }catch(error){
-    if(autoAbort===abort){
-      autoStatus.textContent=error?.name==='AbortError'?'Voice lookup cancelled.':'Voice lookup unavailable. No status inferred.';
-    }
-  }finally{if(autoAbort===abort)autoAbort=null;}
+ const question=transcript.trim().replace(/^(hey|hello|hi)\s+vaos[.,!?\s]*/i,'').trim();
+ if(!question){
+   autoStatus.textContent='VAOS listening. Ask a read-only engineering question.';
+   voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\nVAOS is ready for your question. No model invoked. No action authorized.');
+   return;
+ }
+ const fullQuestion=expandFollowup(question,lastFederatedQuestion);
+ const abort=new AbortController();autoAbort=abort;
+ autoStatus.textContent='Searching VEDM, VYNDI OS and VAOS evidence...';
+ try{
+   const response=await fetch('/api/federated-knowledge?q='+encodeURIComponent(fullQuestion),{
+     method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal
+   });
+   if(!response.ok)throw new Error('FEDERATED_SEARCH_UNAVAILABLE');
+   const data=(await response.json())?.data;
+   const report=formatFederatedVoiceEvidence(data,fullQuestion);
+   if(autoAbort!==abort)return;
+   lastFederatedQuestion=fullQuestion;
+   autoAnswer.replaceChildren();
+   autoAnswer.append(document.createTextNode(report.answer+'\n\nSources:\n'));
+   for(const source of report.sources){
+     const anchor=document.createElement('a');
+     anchor.href=source.url;anchor.target='_blank';anchor.rel='noopener noreferrer';
+     anchor.textContent=source.repository+' / '+source.path+' : '+source.line;
+     autoAnswer.append(anchor,document.createElement('br'));
+   }
+   autoStatus.textContent='Federated evidence retrieved. Speaking source-grounded answer.';
+   voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+report.answer+'\nNo model invoked. No action authorized.');
+ }catch(error){
+   if(autoAbort===abort){
+     autoStatus.textContent=error?.name==='AbortError'?'Search cancelled.':
+       'Federated evidence unavailable. No engineering status inferred.';
+     autoAnswer.textContent='Unable to verify repository evidence. Nothing reported as fact.';
+   }
+ }finally{if(autoAbort===abort)autoAbort=null;}
 }
 autoAsk.addEventListener('click',()=>{
   if(!enabled||!voice.dictationAvailable)return;

@@ -137,3 +137,16 @@ test('missing JS modules return 404 rather than redirecting to the Command Centr
   assert.match(response.headers.get('content-type')||'',/text\/plain|application\/json/);
  }
 });
+
+test('asset ignore publishes browser-only voice dependencies without exposing server lib',async()=>{
+ const ignore=await readFile(new URL('./.assetsignore',import.meta.url),'utf8');
+ const rules=ignore.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+ const isIgnored=path=>rules.reduce((ignored,rule)=>{
+  if(rule==='lib/*'&&path.startsWith('lib/'))return true;
+  if(rule.startsWith('!')&&rule.slice(1)===path)return false;
+  if(rule===path||rule===path.split('/')[0]+'/')return true;
+  return ignored;
+ },false);
+ for(const p of ['lib/voice-pilot.mjs','lib/voice-pilot-controller.mjs'])assert.equal(isIgnored(p),false,p);
+ for(const p of ['lib/auth.mjs','lib/auth-hardening.test.mjs','lib/durable-control-provider.mjs'])assert.equal(isIgnored(p),true,p);
+});

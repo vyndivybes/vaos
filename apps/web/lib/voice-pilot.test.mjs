@@ -90,3 +90,13 @@ test('founder UI gates spoken question through explicit existing-mission GET onl
   assert.match(browser,/['"]voice-readonly-question['"]/);
   assert.doesNotMatch(browser,/fetch\s*\([^)]*method:\s*['"]POST['"]/);
 });
+
+
+test('stale asynchronous mission reads are invalidated by changed question or ID',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('../founder-console.mjs',import.meta.url),'utf8');
+ assert.match(source,/missionReadSequence/);
+ assert.match(source,/serial!==missionReadSequence/);
+ assert.match(source,/voice-readonly-question/);
+ assert.match(source,/delete out\.dataset\.voiceReadback/);
+});

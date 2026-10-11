@@ -52,7 +52,7 @@ test('scheduler rejects unsupported mission discovery payload and unbounded requ
 test('Cloudflare schedules bounded worker execution without exposing a public runner route', async () => {
   const { readFile } = await import('node:fs/promises');
   const wrangler = JSON.parse(await readFile(new URL('../../wrangler.jsonc', import.meta.url), 'utf8'));
-  assert.deepEqual(wrangler.triggers.crons, ['*/15 * * * *']);
+  assert.deepEqual(wrangler.triggers.crons, ['0 * * * *']);
   const worker = await readFile(new URL('../../apps/web/cloudflare-worker.mjs', import.meta.url), 'utf8');
   assert.match(worker, /async scheduled\(/);
   assert.match(worker, /runScheduledMissionSweep/);

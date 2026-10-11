@@ -26,7 +26,7 @@ test('VAOS enables low-volume, externally exported telemetry with URL redaction'
 
 test('Worker deployment preserves cron, infrastructure bindings and the deployed entry point', () => {
   assert.equal(wrangler.main, './apps/web/cloudflare-entry.mjs');
-  assert.deepEqual(wrangler.triggers.crons, ['*/15 * * * *']);
+  assert.deepEqual(wrangler.triggers.crons, ['0 * * * *']);
   assert.ok(wrangler.durable_objects.bindings.some(b => b.name === 'WINDMILL_ADMISSION'));
   assert.ok(wrangler.durable_objects.bindings.some(b => b.name === 'ACTIVEPIECES_HANDSHAKE'));
   assert.ok(wrangler.r2_buckets.some(b => b.binding === 'VAOS_ARTIFACTS'));

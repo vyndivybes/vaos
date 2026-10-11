@@ -4,6 +4,7 @@ import {VOICE_PILOT_FLAG} from '../lib/voice-pilot.mjs';
 
 const FOUNDER = 'shyamsundhar1982@gmail.com';
 const ONE_SHOT_FLAG = 'founder-readonly-one-shot-v1';
+const MULTITURN_FLAG = 'founder-readonly-multiturn-v1';
 
 // Capability lookup only: no audio bytes, transcripts, tool dispatch or business writes.
 export function createVoiceCapabilitiesHandler() {
@@ -19,10 +20,13 @@ export function createVoiceCapabilitiesHandler() {
     if (session.email !== FOUNDER) return res.status(403).json(apiError('FOUNDER_ONLY', 'Founder identity required'));
     const enabled = req.env?.VAOS_VOICE_CONTROL === VOICE_PILOT_FLAG;
     const oneShotEnabled = enabled && req.env?.VAOS_VOICE_CONVERSATION_CONTROL === ONE_SHOT_FLAG;
+    const multiTurnEnabled = oneShotEnabled && req.env?.VAOS_VOICE_MULTITURN_CONTROL === MULTITURN_FLAG;
     return res.status(200).json({data:{
       enabled,
       oneShotEnabled,
       oneShotMode:oneShotEnabled ? 'FOUNDER_ONE_SHOT_READONLY_GET' : 'DISABLED',
+      multiTurnEnabled,
+      multiTurnMode:multiTurnEnabled ? 'FOUNDER_MULTITURN_READONLY_GET' : 'DISABLED',
       mode: enabled ? 'BROWSER_DICTATION_READONLY' : 'DISABLED',
       transport: 'BROWSER_WEB_SPEECH',
       manualReviewRequired: true,

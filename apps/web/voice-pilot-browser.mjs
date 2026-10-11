@@ -5,6 +5,9 @@ import {createOneShotVoiceConversation} from './lib/voice-one-shot.mjs';
 import {createVoiceMultiTurnSession} from './lib/voice-multiturn.mjs';
 
 const $ = id => document.getElementById(id);
+const autoAsk=$('vaos-auto-ask'),autoStop=$('vaos-auto-stop'),autoStatus=$('vaos-auto-status'),autoAnswer=$('vaos-auto-answer');
+let autoLookupActive=false;
+let autoAbort=null;
 const status = $('voice-pilot-status');
 const startInstruction = $('voice-instruction-start');
 const startFollowup = $('voice-followup-start');
@@ -55,6 +58,11 @@ const voice=createVoicePilotController({
   onSpeakingChanged:updateButtons,
   onTranscript:(targetId,transcript,maxLength)=>{
     if(!enabled)return;
+    if(targetId==='voice-readonly-question'&&autoLookupActive){
+      autoLookupActive=false;
+      void autoReadQuestion(transcript);
+      return;
+    }
     if(targetId==='voice-v3-question'){
       if(!multiTurnEnabled)return;
       v3Question.value=appendVoiceTranscript('',transcript,maxLength);
@@ -134,6 +142,8 @@ if(typeof window.speechSynthesis?.addEventListener==='function'){
 }
 
 function updateButtons() {
+  autoAsk.disabled=!enabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening();
+  autoStop.disabled=!enabled;
   startInstruction.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy();
   startFollowup.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy();
   stopMic.disabled=!enabled||!voice.isListening();
@@ -153,6 +163,50 @@ function updateButtons() {
   v3Ask.disabled=!enabled||!multiTurnEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy()||!['READY','SPOKEN_QUEUED','REJECTED'].includes(multiTurn.state())||multiTurn.context().length>=3;
   v3Stop.disabled=!enabled||!multiTurnEnabled||!multiTurnOpen();
 }
+async function autoReadQuestion(transcript){
+  const question=transcript.trim().replace(/^(hey|hello|hi)\\s+vaos[.,!?\\s]*/i,'').trim();
+  if(!question){
+    autoStatus.textContent='VAOS ready. Ask a status question using Ask VAOS.';
+    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\\nVAOS is ready to answer a status question. No model invoked. No action authorized.');
+    return;
+  }
+  const abort=new AbortController();autoAbort=abort;
+  autoStatus.textContent='Searching available runnable missions (read-only)...';
+  try{
+    const response=await fetch('/api/voice-discover?q='+encodeURIComponent(question),{
+      method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal
+    });
+    if(!response.ok)throw new Error('VOICE_LOOKUP_UNAVAILABLE');
+    const data=(await response.json())?.data;
+    if(data?.readOnly!==true||data?.actionAuthorized!==false
+      ||data?.scope!=='RUNNABLE_MISSIONS_ONLY'||typeof data?.answer!=='string')throw Error('VOICE_LOOKUP_INVALID');
+    if(autoAbort!==abort)return;
+    autoAnswer.textContent=data.answer;
+    autoStatus.textContent='Read-only lookup complete. Speaking results.';
+    voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\\n'+data.answer+'\\nNo model invoked. No action authorized.');
+  }catch(error){
+    if(autoAbort===abort){
+      autoStatus.textContent=error?.name==='AbortError'?'Voice lookup cancelled.':'Voice lookup unavailable. No status inferred.';
+    }
+  }finally{if(autoAbort===abort)autoAbort=null;}
+}
+autoAsk.addEventListener('click',()=>{
+  if(!enabled||!voice.dictationAvailable)return;
+  autoAbort?.abort();autoAbort=null;
+  voice.stopSpeaking();
+  autoLookupActive=true;
+  autoAnswer.textContent='';
+  autoStatus.textContent='Listening for one status question. You may say Hey VAOS followed by your question.';
+  if(!voice.startListening('voice-readonly-question',900)){
+    autoLookupActive=false;autoStatus.textContent='Microphone busy or unavailable.';
+  }
+});
+autoStop.addEventListener('click',()=>{
+  autoLookupActive=false;autoAbort?.abort();autoAbort=null;
+  voice.stopListening();voice.stopSpeaking();
+  autoStatus.textContent='Stopped. No business action performed.';
+});
+
 function speakResult(source,id) {
   if(!enabled)return;
   voice.speak(source,$(id)?.textContent?.trim());

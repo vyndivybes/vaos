@@ -26,7 +26,7 @@ export async function runFounderAiDraft({ai,agentId,instruction,report}={}){
  const content=output?.response;
  if(typeof content!=='string'||content.trim().length<10||content.length>1500
     ||/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(content))throw Error('FOUNDER_AI_OUTPUT_INVALID');
- return Object.freeze({content:content.trim().slice(0,1200),
+ return Object.freeze({content:content.trim().replace(/\s+/g,' ').slice(0,1200),
   provider:'cloudflare-workers-ai',model:FOUNDER_AI_MODEL,
   status:'AI_DRAFT_UNVERIFIED',modelInvoked:true,actionAuthorized:false});
 }

@@ -31,7 +31,20 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <textarea id="conversation-text" maxlength="900" rows="4" placeholder="Ask about verification, blockers, or evidence. All claims must be checked against this mission."></textarea>
 <button id="send-conversation" type="button">Record follow-up and generate read-only draft</button>
 <p id="conversation-status" aria-live="polite">Stage 5 is off until independently commissioned.</p>
-</section><section class="founder-panel" aria-labelledby="voice-pilot-title">
+</section><section class="founder-panel" aria-labelledby="voice-one-shot-title">
+<h2 id="voice-one-shot-title">One-shot voice conversation · read-only</h2>
+<p>Founder-only canary. Choose a real existing mission ID under Mission evidence lookup below. One button press listens once, checks a status-only question, reads that mission with authenticated GET and speaks a deterministic evidence summary. No model call, agent dispatch, approval, writes or recurring microphone access.</p>
+<label for="voice-one-shot-question">Last recognized question</label>
+<textarea id="voice-one-shot-question" maxlength="900" rows="2" readonly placeholder="One spoken status question will appear here."></textarea>
+<div class="mission-form">
+<button id="voice-one-shot-start" type="button" class="secondary" disabled>Ask VAOS · one-shot read-only</button>
+<button id="voice-one-shot-stop" type="button" class="secondary" disabled>Cancel voice conversation</button>
+</div>
+<p id="voice-one-shot-status" role="status" aria-live="polite">One-shot conversation not commissioned.</p>
+<pre id="voice-one-shot-report" class="mission-summary" aria-live="polite">No spoken mission report requested.</pre>
+<p class="founder-hint">Press once, speak a question about status, progress, evidence or blockers, and listen. Speech recognition may use browser-vendor processing. Use Cancel to stop listening or invalidate an in-flight read. A queued speech response is not proof that audio was heard.</p>
+</section>
+<section class="founder-panel" aria-labelledby="voice-pilot-title">
 <h2 id="voice-pilot-title">Voice · read-only browser pilot</h2>
 <p>Optional, founder-only push-to-talk. Browser speech recognition may transmit audio to the browser vendor. Do not dictate secrets. Transcripts are editable drafts and NEVER sent or executed automatically. Speaking a result does not verify its claims.</p>
 <div class="mission-form">

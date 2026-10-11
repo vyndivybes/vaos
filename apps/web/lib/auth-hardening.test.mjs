@@ -60,3 +60,11 @@ test('Stage 8 tokens bind issued-at and version and enforce session TTL',()=>{
   assert.throws(()=>createSessionToken(founder,60*60*10,1000000),/HARDENED_AUTH_TTL_INVALID/);
  });
 });
+
+test('hardened sessions also reject legacy digest reused as checker credential',()=>{
+ withVars({VAOS_AUTH_HARDENED_CONTROL:control,VAOS_SESSION_HMAC_KEY:hmac,
+  VAOS_DEV_LOGIN_PASSWORD_SHA256:sha256('maker-fresh-and-distinct'),
+  VAOS_DEV_CHECKER_PASSWORD_SHA256:'11c5ab3591e9d8c06eeac2afa5d6639021b569e46ae1efbb74f8dc4b81bf08d1'},()=>{
+   assert.throws(()=>createSessionToken(founder,60,1000000),/HARDENED_AUTH_CONFIG/);
+ });
+});

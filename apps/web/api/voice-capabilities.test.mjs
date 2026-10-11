@@ -4,9 +4,9 @@ import {createSessionToken, SESSION_COOKIE} from '../lib/auth.mjs';
 import {createVoiceCapabilitiesHandler} from './voice-capabilities.mjs';
 import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 
-function request({email='shyamsundhar1982@gmail.com',method='GET',control='off',conversation='off',multiturn='off'}={}) {
+function request({email='shyamsundhar1982@gmail.com',method='GET',control='off',conversation='off',multiturn='off',ai='off'}={}) {
   return {method,headers:{cookie:email ? `${SESSION_COOKIE}=${createSessionToken(email)}` : ''},
-    env:{VAOS_VOICE_CONTROL:control,VAOS_VOICE_CONVERSATION_CONTROL:conversation,VAOS_VOICE_MULTITURN_CONTROL:multiturn},url:'https://vaos.example/api/voice-capabilities'};
+    env:{VAOS_VOICE_CONTROL:control,VAOS_VOICE_CONVERSATION_CONTROL:conversation,VAOS_VOICE_MULTITURN_CONTROL:multiturn,VAOS_VOICE_AI_CONTROL:ai},url:'https://vaos.example/api/voice-capabilities'};
 }
 function response() {
   const state={status:200,body:null,headers:{}};
@@ -38,7 +38,7 @@ test('qualified founder-only browser pilot exposes no dispatch or automatic subm
   const state=await handle({control:'founder-readonly-browser-v1'});
   assert.equal(state.status,200);
   assert.deepEqual(state.body.data,{
-    enabled:true,oneShotEnabled:false,oneShotMode:'DISABLED',multiTurnEnabled:false,multiTurnMode:'DISABLED',mode:'BROWSER_DICTATION_READONLY',transport:'BROWSER_WEB_SPEECH',
+    enabled:true,oneShotEnabled:false,oneShotMode:'DISABLED',multiTurnEnabled:false,multiTurnMode:'DISABLED',aiFocusEnabled:false,aiFocusMode:'DISABLED',mode:'BROWSER_DICTATION_READONLY',transport:'BROWSER_WEB_SPEECH',
     manualReviewRequired:true,speechRecognitionMayUseBrowserVendorService:true,
     automaticSubmission:false,agentDispatch:false,actionAuthorized:false,serverAudioEnabled:false,
   });
@@ -72,4 +72,15 @@ test('Stage V3 requires all three independent flags and founder identity',async(
  }
  assert.equal((await handle({...flags,email:'kaaviyam1519@gmail.com'})).status,403);
  assert.equal((await handle({...flags,email:null})).status,401);
+});
+
+test('AI voice focus requires all independent V1/V2/V3/V4 flags',async()=>{
+ const flags={control:'founder-readonly-browser-v1',conversation:'founder-readonly-one-shot-v1',multiturn:'founder-readonly-multiturn-v1',ai:'founder-readonly-ai-focus-v1'};
+ const ok=await handle(flags);
+ assert.equal(ok.status,200);
+ assert.equal(ok.body.data.aiFocusEnabled,true);
+ assert.equal(ok.body.data.aiFocusMode,'FOUNDER_AI_FOCUS_READONLY_V1');
+ assert.equal(ok.body.data.actionAuthorized,false);
+ for(const k of Object.keys(flags))assert.equal((await handle({...flags,[k]:'off'})).body.data.aiFocusEnabled,false,k);
+ assert.equal((await handle({...flags,email:'kaaviyam1519@gmail.com'})).status,403);
 });

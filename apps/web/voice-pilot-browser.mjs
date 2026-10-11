@@ -2,6 +2,7 @@ import {appendVoiceTranscript,VOICE_AUDIO_TEST_MESSAGE,isReadOnlyMissionStatusQu
 import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
 import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
 import {createOneShotVoiceConversation} from './lib/voice-one-shot.mjs';
+import {createVoiceMultiTurnSession} from './lib/voice-multiturn.mjs';
 
 const $ = id => document.getElementById(id);
 const status = $('voice-pilot-status');
@@ -26,10 +27,17 @@ const oneShotStop=$('voice-one-shot-stop');
 const oneShotStatus=$('voice-one-shot-status');
 const oneShotReport=$('voice-one-shot-report');
 const oneShotQuestion=$('voice-one-shot-question');
-const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest,voiceRequestDictate,voiceReadMission,oneShotStart,oneShotStop];
+const v3Open=$('voice-v3-open');
+const v3Ask=$('voice-v3-ask');
+const v3Stop=$('voice-v3-stop');
+const v3Status=$('voice-v3-status');
+const v3Report=$('voice-v3-report');
+const v3Question=$('voice-v3-question');
+const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest,voiceRequestDictate,voiceReadMission,oneShotStart,oneShotStop,v3Open,v3Ask,v3Stop];
 buttons.forEach(button=>{button.disabled=true;});
 let enabled=false;
 let oneShotEnabled=false;
+let multiTurnEnabled=false;
 
 const voice=createVoicePilotController({
   RecognitionClass:window.SpeechRecognition||window.webkitSpeechRecognition,
@@ -39,10 +47,17 @@ const voice=createVoicePilotController({
   onListeningChanged:()=>{
     updateButtons();
     if(!voice.isListening() && oneShot?.state()==='LISTENING')oneShot.cancel();
+    if(!voice.isListening() && multiTurn?.state()==='LISTENING')multiTurn.cancel();
   },
   onSpeakingChanged:updateButtons,
   onTranscript:(targetId,transcript,maxLength)=>{
     if(!enabled)return;
+    if(targetId==='voice-v3-question'){
+      if(!multiTurnEnabled)return;
+      v3Question.value=appendVoiceTranscript('',transcript,maxLength);
+      void multiTurn.accept(v3Question.value);
+      return;
+    }
     if(targetId==='voice-one-shot-question'){
       if(!oneShotEnabled)return;
       oneShotQuestion.value=appendVoiceTranscript('',transcript,maxLength);
@@ -71,6 +86,21 @@ const oneShot=createOneShotVoiceConversation({
 });
 function oneShotBusy(){return ['LISTENING','READING'].includes(oneShot.state());}
 
+// Multi-turn replies always come from a fresh mission snapshot. No model or writes.
+const multiTurn=createVoiceMultiTurnSession({
+  fetchSnapshot:async(missionId,{signal})=>{
+    const response=await fetch('/api/missions?missionId='+encodeURIComponent(missionId),
+      {method:'GET',credentials:'same-origin',cache:'no-store',signal});
+    if(!response.ok)throw new Error('MISSION_READ_UNAVAILABLE');
+    return (await response.json())?.data;
+  },
+  speak:(source,report)=>voice.speak(source,report),
+  onReport:report=>{v3Report.textContent=report;},
+  onState:(_state,message)=>{v3Status.textContent=message;updateButtons();},
+});
+function multiTurnBusy(){return ['LISTENING','READING'].includes(multiTurn.state());}
+function multiTurnOpen(){return !['IDLE','EXPIRED'].includes(multiTurn.state());}
+
 const audioDiagnostics=createVoiceAudioDiagnostics({
   SpeechSynthesisUtteranceClass:window.SpeechSynthesisUtterance,
   speechSynthesis:window.speechSynthesis,
@@ -85,8 +115,8 @@ if(typeof window.speechSynthesis?.addEventListener==='function'){
 }
 
 function updateButtons() {
-  startInstruction.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy();
-  startFollowup.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy();
+  startInstruction.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy();
+  startFollowup.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy();
   stopMic.disabled=!enabled||!voice.isListening();
   speakPreview.disabled=!enabled||!voice.speechAvailable;
   speakDraft.disabled=!enabled||!voice.speechAvailable;
@@ -95,10 +125,13 @@ function updateButtons() {
   voiceShortTest.disabled=!enabled||!audioDiagnostics.speechAvailable;
   voiceToneTest.disabled=!enabled||!(window.AudioContext||window.webkitAudioContext);
   missionSpeak.disabled=!enabled||!voice.speechAvailable;
-  voiceRequestDictate.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy();
-  voiceReadMission.disabled=!enabled||oneShotBusy();
-  oneShotStart.disabled=!enabled||!oneShotEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy();
+  voiceRequestDictate.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy();
+  voiceReadMission.disabled=!enabled||oneShotBusy()||multiTurnBusy();
+  oneShotStart.disabled=!enabled||!oneShotEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnOpen();
   oneShotStop.disabled=!enabled||!oneShotEnabled||!(oneShotBusy()||oneShot.state()==='SPOKEN_QUEUED');
+  v3Open.disabled=!enabled||!multiTurnEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnOpen();
+  v3Ask.disabled=!enabled||!multiTurnEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy()||multiTurnBusy()||!['READY','SPOKEN_QUEUED','REJECTED'].includes(multiTurn.state())||multiTurn.context().length>=3;
+  v3Stop.disabled=!enabled||!multiTurnEnabled||!multiTurnOpen();
 }
 function speakResult(source,id) {
   if(!enabled)return;
@@ -133,6 +166,33 @@ voiceReadMission.addEventListener('click',()=>{
   status.textContent='Reading existing mission snapshot via GET. Review its contents before speaking.';
   missionForm.requestSubmit();
 });
+v3Open.addEventListener('click',()=>{
+  if(!enabled||!multiTurnEnabled||voice.isListening()||oneShotBusy())return;
+  voice.stopSpeaking();
+  audioDiagnostics.stopSpeech();
+  v3Question.value='';
+  v3Report.textContent='No V3 mission evidence retrieved.';
+  if(!multiTurn.open($('mission-id').value.trim()))
+    v3Status.textContent='Choose an existing valid mission ID below; no request sent.';
+  updateButtons();
+});
+v3Ask.addEventListener('click',()=>{
+  if(!enabled||!multiTurnEnabled||voice.isListening()||oneShotBusy())return;
+  voice.stopSpeaking();
+  audioDiagnostics.stopSpeech();
+  if(!multiTurn.ask()){updateButtons();return;}
+  v3Question.value='';
+  if(!voice.startListening('voice-v3-question',900))multiTurn.cancel();
+  updateButtons();
+});
+v3Stop.addEventListener('click',()=>{
+  multiTurn.cancel();
+  voice.stopListening();
+  voice.stopSpeaking();
+  v3Question.value='';
+  v3Report.textContent='V3 session ended. Context erased from this tab.';
+  updateButtons();
+});
 oneShotStart.addEventListener('click',()=>{
   if(!enabled||!oneShotEnabled||oneShotBusy()||voice.isListening())return;
   const missionId=$('mission-id').value.trim();
@@ -156,6 +216,7 @@ oneShotStop.addEventListener('click',()=>{
 });
 $('mission-id').addEventListener('input',()=>{
   if(oneShotBusy()){oneShot.cancel();voice.stopListening();}
+  if(multiTurnOpen()){multiTurn.cancel();voice.stopListening();v3Question.value='';v3Report.textContent='Mission changed; V3 context cleared.';}
   voice.stopSpeaking();
   oneShotReport.textContent='Selection changed; previous spoken result is no longer current.';
   updateButtons();
@@ -176,7 +237,7 @@ missionSpeak.addEventListener('click',()=>{
   }
   voice.speak('preview',speech);
 });
-window.addEventListener('pagehide',()=>{oneShot.cancel();voice.stopListening();voice.stopSpeaking();audioDiagnostics.stopSpeech();});
+window.addEventListener('pagehide',()=>{multiTurn.cancel();oneShot.cancel();voice.stopListening();voice.stopSpeaking();audioDiagnostics.stopSpeech();});
 
 async function checkCapability() {
   try {
@@ -191,6 +252,11 @@ async function checkCapability() {
       &&payload?.serverAudioEnabled===false;
     oneShotEnabled=enabled && payload?.oneShotEnabled===true
       &&payload?.oneShotMode==='FOUNDER_ONE_SHOT_READONLY_GET';
+    multiTurnEnabled=oneShotEnabled && payload?.multiTurnEnabled===true
+      &&payload?.multiTurnMode==='FOUNDER_MULTITURN_READONLY_GET';
+    v3Status.textContent=multiTurnEnabled
+      ?'Stage V3 ready. Select an existing mission and start a three-question session.'
+      :'Stage V3 disabled until separately commissioned.';
     oneShotStatus.textContent=oneShotEnabled
       ?'Ready: select an existing mission, then press Ask VAOS once.'
       :'One-shot conversation disabled until separately commissioned.';
@@ -203,7 +269,8 @@ async function checkCapability() {
     updateButtons();
     if(enabled)updateDiagnostics();
   }catch{
-    enabled=false;oneShotEnabled=false;oneShot.cancel();
+    enabled=false;oneShotEnabled=false;multiTurnEnabled=false;oneShot.cancel();multiTurn.cancel();
+    v3Status.textContent='Stage V3 unavailable. No request sent.';
     oneShotStatus.textContent='One-shot capability unavailable. Nothing sent.';
     status.textContent='Voice qualification unavailable. Voice controls remain disabled.';
     updateButtons();

@@ -3,6 +3,7 @@ lib/*
 !lib/voice-pilot.mjs
 !lib/voice-pilot-controller.mjs
 !lib/voice-one-shot.mjs
+!lib/voice-multiturn.mjs
 README.md
 package.json
 vercel.json

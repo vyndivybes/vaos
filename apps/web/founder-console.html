@@ -31,5 +31,17 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <textarea id="conversation-text" maxlength="900" rows="4" placeholder="Ask about verification, blockers, or evidence. All claims must be checked against this mission."></textarea>
 <button id="send-conversation" type="button">Record follow-up and generate read-only draft</button>
 <p id="conversation-status" aria-live="polite">Stage 5 is off until independently commissioned.</p>
+</section><section class="founder-panel" aria-labelledby="voice-pilot-title">
+<h2 id="voice-pilot-title">Voice · read-only browser pilot</h2>
+<p>Optional, founder-only push-to-talk. Browser speech recognition may transmit audio to the browser vendor. Do not dictate secrets. Transcripts are editable drafts and NEVER sent or executed automatically. Speaking a result does not verify its claims.</p>
+<div class="mission-form">
+<button id="voice-instruction-start" type="button" class="secondary" disabled>Dictate instruction draft</button>
+<button id="voice-followup-start" type="button" class="secondary" disabled>Dictate mission follow-up</button>
+<button id="voice-microphone-stop" type="button" class="secondary" disabled>Stop microphone</button>
+<button id="voice-preview-speak" type="button" class="secondary" disabled>Speak report preview</button>
+<button id="voice-draft-speak" type="button" class="secondary" disabled>Speak unverified AI draft</button>
+<button id="voice-audio-stop" type="button" class="secondary" disabled>Stop speech</button>
+</div>
+<p id="voice-pilot-status" role="status" aria-live="polite">Voice qualification not checked.</p>
 </section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
-</main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script></body></html>
+</main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/voice-pilot-browser.mjs"></script></body></html>

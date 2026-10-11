@@ -29,3 +29,15 @@ test('Cloudflare nested response and fenced JSON are accepted without weakening 
  assert.match(validateGroundedDraft({result:{response:'\`\`\`json\n'+JSON.stringify(x)+'\n\`\`\`'}},sources).answer,/advisory/);
  assert.throws(()=>validateGroundedDraft({response:JSON.stringify({...x,citations:[2]})},sources));
 });
+
+test('invalid hosted AI response produces clearly unqualified sourced fallback',async()=>{
+ const {state,r}=res();
+ const fetchImpl=async url=>({ok:true,json:async()=>url.includes('/search/code?')?{items:[]}:url.includes('/git/trees/')?{tree:[{type:'blob',path:'docs/carbon-frame.md',size:50,sha:'a'.repeat(40)}]}:url.includes('/contents/')?{encoding:'base64',size:50,content:btoa('Carbon frame risks require additional verification.')}: {default_branch:'main'}});
+ const handler=createVoiceEvidenceAiHandler({fetchImpl,claim:async()=>({allowed:true,remaining:1}),run:async()=>({response:'not JSON'})});
+ await handler(req(),r);
+ assert.equal(state.status,200);
+ assert.equal(state.body.data.mode,'DETERMINISTIC_FALLBACK_AI_UNVERIFIED');
+ assert.equal(state.body.data.modelInvoked,false);
+ assert.equal(state.body.data.aiQualification,'HOLD');
+ assert.equal(state.body.data.actionAuthorized,false);
+});

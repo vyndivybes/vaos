@@ -50,7 +50,9 @@ try{
  const invalidLogin=await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
   body:JSON.stringify({email:'kaaviyam1519@gmail.com',password:maker})});
  assert.equal(invalidLogin.status,401,'role credential isolation');
- const forged=checkerCookie.slice(0,-1)+(checkerCookie.endsWith('a')?'b':'a');
+ const [cookieName,cookieToken]=checkerCookie.split('=');
+ const [payload,signature]=cookieToken.split('.');
+ const forged=cookieName+'='+payload+'.'+(signature[0]==='a'?'b':'a')+signature.slice(1);
  assert.equal((await call('/api/session',{headers:{cookie:forged}})).status,401,'invalid signature rejected');
  const expiredPayload=Buffer.from(JSON.stringify({email:'kaaviyam1519@gmail.com',exp:1,v:2,iat:0,
   sid:'0123456789abcdef0123456789abcdef'})).toString('base64url');

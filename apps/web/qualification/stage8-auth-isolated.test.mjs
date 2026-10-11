@@ -81,3 +81,22 @@ test('invalid or shared signer never permits synthetic sign-in; expiry remains b
   assert.throws(()=>createSessionToken(maker,SESSION_TTL_SECONDS+1,1000000));
  });
 });
+
+test('hardening rejects the publicly known legacy maker digest even with a strong HMAC key',()=>{
+ isolated(()=>{
+  process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256='11c5ab3591e9d8c06eeac2afa5d6639021b569e46ae1efbb74f8dc4b81bf08d1';
+  assert.throws(()=>createSessionToken(maker,60,1000000),/HARDENED_AUTH_CONFIG/);
+  assert.notEqual(signIn(maker,pwMaker).status,200);
+ });
+});
+test('hardening requires distinct, configured maker and checker credential hashes',()=>{
+ isolated(()=>{
+  const original=process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256;
+  delete process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256;
+  assert.throws(()=>createSessionToken(maker,60,1000000),/HARDENED_AUTH_CONFIG/);
+  process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256=process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+  assert.throws(()=>createSessionToken(maker,60,1000000),/HARDENED_AUTH_CONFIG/);
+  process.env.VAOS_DEV_CHECKER_PASSWORD_SHA256=original;
+  assert.equal(verifySessionToken(createSessionToken(maker,60,1000000),1001000)?.email,maker);
+ });
+});

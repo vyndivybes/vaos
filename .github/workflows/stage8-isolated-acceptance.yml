@@ -7,6 +7,8 @@ on:
       - 'apps/web/api/logout.mjs'
       - 'apps/web/api/session.mjs'
       - 'apps/web/lib/auth.mjs'
+      - 'apps/web/lib/session-revocation.mjs'
+      - 'apps/web/cloudflare-worker.mjs'
       - '.github/workflows/stage8-isolated-acceptance.yml'
   workflow_dispatch:
 permissions:

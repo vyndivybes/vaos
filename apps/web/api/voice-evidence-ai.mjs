@@ -79,6 +79,20 @@ export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=c
    return res.status(200).json({data:{...result,sources:result.citationIndices.map(i=>sources[i-1]),
     readOnly:true,actionAuthorized:false,modelInvoked:true,verifiedFacts:false,provider:'cloudflare-workers-ai',remainingDaily:quota.remaining}});
   }catch(error){
+   // Preserve a useful sourced answer if the hosted model returns malformed JSON.
+   // This is NOT a qualified AI inference result and never claims model success.
+   if(error?.message!=='AI_TOOL_CALL_DENIED'&&sources.length>0){
+     const refs=sources.slice(0,3).map(x=>({repository:x.repository,path:x.path,line:x.line,sha:x.sha,excerpt:x.excerpt}));
+     return res.status(200).json({data:{
+       answer:'I found '+refs.length+' repository evidence excerpts. '+
+         refs.map((x,i)=>'Source '+(i+1)+', '+x.repository+', '+x.path+', line '+x.line+': '+x.excerpt).join(' ')+
+         ' Suggested next action: verify these items against the latest approved engineering baseline and obtain independent review before any release decision.',
+       sources:refs,readOnly:true,actionAuthorized:false,modelInvoked:false,
+       verifiedFacts:false,mode:'DETERMINISTIC_FALLBACK_AI_UNVERIFIED',
+       aiQualification:'HOLD',provider:'cloudflare-workers-ai',
+       failureStage:['AI_OUTPUT_INVALID','AI_OUTPUT_UNVERIFIED','AI_CLAIM_DISALLOWED'].includes(error?.message)?error.message:'AI_PROVIDER_FAILURE'
+     }});
+   }
    const reason=['AI_TOOL_CALL_DENIED','AI_OUTPUT_INVALID','AI_OUTPUT_UNVERIFIED','AI_CLAIM_DISALLOWED'].includes(error?.message)?error.message:'AI_PROVIDER_FAILURE';
    return res.status(503).json({...apiError('AI_ANALYSIS_UNVERIFIED','AI output did not pass advisory validation'),failureStage:reason});
   }

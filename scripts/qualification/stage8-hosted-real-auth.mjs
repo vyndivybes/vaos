@@ -46,6 +46,20 @@ try{
  const makerCookie=await auth('maker',maker);
  const checkerCookie=await auth('checker',checker);
  assert.notEqual(makerCookie,checkerCookie);
+ // Negative hosted controls: wrong identity/password and forged session rejected.
+ const invalidLogin=await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({email:'kaaviyam1519@gmail.com',password:maker})});
+ assert.equal(invalidLogin.status,401,'role credential isolation');
+ const [cookieName,cookieToken]=checkerCookie.split('=');
+ const [payload,signature]=cookieToken.split('.');
+ const forged=cookieName+'='+payload+'.'+(signature[0]==='a'?'b':'a')+signature.slice(1);
+ assert.equal((await call('/api/session',{headers:{cookie:forged}})).status,401,'invalid signature rejected');
+ const expiredPayload=Buffer.from(JSON.stringify({email:'kaaviyam1519@gmail.com',exp:1,v:2,iat:0,
+  sid:'0123456789abcdef0123456789abcdef'})).toString('base64url');
+ const expiredSignature=crypto.createHmac('sha256',Buffer.from(vars.VAOS_SESSION_HMAC_KEY,'hex'))
+  .update(expiredPayload).digest('base64url');
+ const expiredCookie='vaos_session='+expiredPayload+'.'+expiredSignature;
+ assert.equal((await call('/api/session',{headers:{cookie:expiredCookie}})).status,401,'expired session rejected');
  for(const cookie of [makerCookie,checkerCookie])assert.equal((await call('/api/session',{headers:{cookie}})).status,200);
  assert.equal((await call('/api/logout',{method:'POST',headers:{cookie:checkerCookie}})).status,200);
  assert.equal((await call('/api/session',{headers:{cookie:checkerCookie}})).status,401,'R2 revoked checker cookie');
@@ -55,6 +69,18 @@ try{
  assert.equal((await call('/api/session',{headers:{cookie:checkerCookie}})).status,401,'R2 persistent replay rejection');
  assert.equal((await call('/api/logout',{method:'POST',headers:{cookie:makerCookie}})).status,200);
  assert.equal((await call('/api/session',{headers:{cookie:makerCookie}})).status,401);
+ // Cutover rehearsal in the isolated Worker: rotate the HMAC key,
+ // verify old sessions cannot authenticate, then restore a healthy signer.
+ const preRotation=await auth('maker',maker);
+ config.vars.VAOS_SESSION_HMAC_KEY=crypto.randomBytes(48).toString('hex');
+ await writeFile(configPath,JSON.stringify(config),{mode:0o600});
+ wrangler('deploy','--config',configPath);
+ assert.equal((await call('/api/session',{headers:{cookie:preRotation}})).status,401,
+  'old token must not survive signer rotation');
+ const recovered=await auth('checker',checker);
+ assert.equal((await call('/api/session',{headers:{cookie:recovered}})).status,200,
+  'recovered isolated authentication');
+ console.log('STAGE8_HOSTED_ROLLBACK_SIGNER_ROTATION_PASS');
  console.log('STAGE8_HOSTED_ACTUAL_HANDLERS_REVOKE_REDEPLOY_PASS');
 }finally{
  if(deployed){

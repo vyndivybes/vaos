@@ -7,6 +7,7 @@ import {getEightAgentOperatingService} from '../lib/operating-provider.mjs';
 import {prepareFounderMissionReport} from '../lib/founder-report-preview.mjs';
 import {runFounderAiDraft,FOUNDER_AI_MODEL} from '../lib/founder-ai-draft.mjs';
 import {prepareConversationContext,runFounderContextDraft} from '../lib/founder-context-draft.mjs';
+import {runFounderMultiTopicDraft} from '../lib/founder-multitopic-draft.mjs';
 import {getFounderConversationStore} from '../lib/founder-conversation-provider.mjs';
 const ID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const MISSION=/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/;
@@ -27,7 +28,7 @@ function replyValid(reply,messageId,agentId,missionId){
 export function createFounderChatHandler({getInbox=getFounderInboxStore,
  getReplies=getFounderChatStore,getMission=getEightAgentOperatingService,
  getConversation=getFounderConversationStore,runAi=runFounderAiDraft,
- runContextAi=runFounderContextDraft}={}){
+ runContextAi=runFounderContextDraft,runMultiAi=runFounderMultiTopicDraft}={}){
  return async function handler(req,res){
   res.setHeader('Cache-Control','no-store');
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -65,6 +66,10 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
     return res.status(200).json({data:{reply:existing.reply,outcome:'REPLAY',modelInvoked:false,actionAuthorized:false}});
    }
   }catch{return res.status(503).json(apiError('FOUNDER_CHAT_STORAGE_UNAVAILABLE','Recorded request or draft storage unavailable'));}
+  if(req.env?.VAOS_FOUNDER_MULTITOPIC_CONTROL==='verified-v1'
+    &&(req.env?.VAOS_FOUNDER_CONTEXT_CONTROL!=='bounded-v1'
+       ||req.env?.VAOS_FOUNDER_CONVERSATION_CONTROL!=='ledger-only-v1'))
+   return res.status(409).json(apiError('FOUNDER_MULTITOPIC_PREREQUISITES_OFF','Stage 6 and Stage 5 must be commissioned'));
   let context=null;
   // The Stage 6 flag is independently gated; Stage 4 remains unchanged when OFF.
   if(req.env?.VAOS_FOUNDER_CONTEXT_CONTROL==='bounded-v1'){
@@ -97,7 +102,10 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
    return res.status(409).json(apiError('FOUNDER_CHAT_ALREADY_CLAIMED','Request already claimed; no retry without a new recorded message'));
   let draft;
   try{
-   draft=await (context?.previousMessageId?runContextAi:runAi)({
+   const selectedInference=context?.previousMessageId
+     ? (req.env?.VAOS_FOUNDER_MULTITOPIC_CONTROL==='verified-v1' ? runMultiAi : runContextAi)
+     : runAi;
+   draft=await selectedInference({
     ai:req.env?.AI,agentId,instruction:record.instruction,report,
     ...(context?.previousMessageId?{context}:{})});
    if(draft?.status!=='AI_DRAFT_UNVERIFIED'||draft.model!==FOUNDER_AI_MODEL

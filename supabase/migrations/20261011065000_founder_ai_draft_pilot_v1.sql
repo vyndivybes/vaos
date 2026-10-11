@@ -137,4 +137,4 @@ grant execute on function public.vaos_founder_chat_claim(text,uuid,text,text,tex
 revoke all on function public.vaos_founder_chat_get(text,uuid,text,text) from public,anon,authenticated;
 revoke all on function public.vaos_founder_chat_append(text,uuid,text,text,text,text,text,text[]) from public,anon,authenticated;
 grant execute on function public.vaos_founder_chat_get(text,uuid,text,text) to service_role;
-grant execute on function public.vaos_founder_chat_append(text,uuid,text,text,text,text,text,text,text[]) to service_role;
+grant execute on function public.vaos_founder_chat_append(text,uuid,text,text,text,text,text,text[]) to service_role;

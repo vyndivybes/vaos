@@ -29,10 +29,8 @@ assert.equal(steps.find(s=>s.name==='Actual hosted VAOS login, persistent R2 rep
 // A successful workflow alone does not establish every independent check. Require the
 // test runner to emit a verifiable, structured proof artifact in a future revision.
 // Fail closed until authenticated audit readback is available independently.
-const proof=process.env.STAGE8_INDEPENDENT_AUDIT_RECORD;
-if(!proof)throw Error('STAGE8_INDEPENDENT_AUDIT_READBACK_MISSING');
-let audit;
-try{audit=JSON.parse(proof)}catch{throw Error('STAGE8_AUDIT_RECORD_INVALID')}
+const {collectStage8Audit}=await import('./stage8-audit-collector.mjs');
+const audit=await collectStage8Audit({runId,repository,token});
 const checks=['maker_sign_in','checker_sign_in','session_isolation','invalid_signature_rejected',
 'expired_session_rejected','logout_rejected','environment_isolation','audit_readback'];
 if(audit.workflowRunId!==Number(runId)||audit.revision!==run.head_sha

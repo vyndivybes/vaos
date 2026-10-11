@@ -22,3 +22,10 @@ test('strict model output validates citation indices and disallows authority cla
 });
 
 test('natural question ending in question mark reaches evidence search instead of 422',async()=>{let invoked=0;const h=createVoiceEvidenceAiHandler({fetchImpl:async()=>{invoked++;return {ok:false,status:401}},claim:async()=>({allowed:true,remaining:2})});const {state,r}=res();await h(req({body:{question:'What are our carbon frame engineering risks?'}}),r);assert.notEqual(state.status,422);assert.ok(invoked>0);});
+
+test('Cloudflare nested response and fenced JSON are accepted without weakening evidence validation',()=>{
+ const x={analysis:'Available evidence indicates unresolved verification.',recommendation:'Review validation records and confirm owners.',citations:[1]};
+ const sources=[{excerpt:'Validation records pending'}];
+ assert.match(validateGroundedDraft({result:{response:'\`\`\`json\n'+JSON.stringify(x)+'\n\`\`\`'}},sources).answer,/advisory/);
+ assert.throws(()=>validateGroundedDraft({response:JSON.stringify({...x,citations:[2]})},sources));
+});

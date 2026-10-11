@@ -137,3 +137,32 @@ test('speech errors explain the actual browser failure without claiming playback
   assert.match(states.at(-1),/language-unavailable/i);
   assert.match(states.at(-1),/voice|speaker|audio/i);
 });
+
+test('long reply is spoken in sequential bounded chunks, with the disclaimer retained',()=>{
+ const queued=[];const status=[];
+ class Utterance{constructor(text){this.text=text;}}
+ const synth={getVoices:()=>[{lang:'en-US',default:true}],speak:u=>queued.push(u),cancel(){}};
+ const voice=createVoicePilotController({SpeechSynthesisUtteranceClass:Utterance,speechSynthesis:synth,onStatus:x=>status.push(x)});
+ const content='UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\n'+('The prototype remains in engineering review. '.repeat(35))+'\nNo business action authorized.';
+ assert.equal(voice.speak('draft',content),true);
+ assert.equal(queued.length,1);
+ assert.ok(queued[0].text.length<=180);
+ let index=0;
+ while(index<queued.length && index<100){const current=queued[index++];current.onstart();current.onend();}
+ assert.ok(queued.length>3);
+ assert.ok(queued.every(u=>u.text.length<=180));
+ assert.match(queued.map(u=>u.text).join(' '),/No business action authorized\./);
+ assert.match(status.at(-1),/finished/i);
+});
+
+test('stop speaking prevents subsequent chunks and ignores late completion callbacks',()=>{
+ const queued=[];let cancellations=0;
+ class Utterance{constructor(text){this.text=text;}}
+ const voice=createVoicePilotController({SpeechSynthesisUtteranceClass:Utterance,
+ speechSynthesis:{getVoices:()=>[],speak:u=>queued.push(u),cancel(){cancellations++;}}});
+ const content='UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\n'+('Under review and not approved. '.repeat(30))+'\nNo business action authorized.';
+ assert.equal(voice.speak('draft',content),true);
+ const first=queued[0];voice.stopSpeaking();first.onend();
+ assert.equal(queued.length,1);
+ assert.equal(cancellations,1);
+});

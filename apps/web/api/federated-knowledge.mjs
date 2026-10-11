@@ -19,7 +19,7 @@ export function createFederatedKnowledgeHandler({fetchImpl=globalThis.fetch}={})
   const token=req.env?.VAOS_FEDERATED_GITHUB_TOKEN;
   if(typeof token!=='string'||token.length<20)
     return res.status(503).json(apiError('SOURCE_CREDENTIAL_UNAVAILABLE','Read-only GitHub credential missing'));
-  const results=[],failed=[];
+  const results=[],failed=[],failures=[];
   for(const repo of SOURCES){
    try{
     const query=encodeURIComponent(q+' repo:'+repo);
@@ -28,7 +28,7 @@ export function createFederatedKnowledgeHandler({fetchImpl=globalThis.fetch}={})
        'X-GitHub-Api-Version':'2022-11-28','User-Agent':'VAOS-Federated-ReadOnly'},
       redirect:'error',signal:AbortSignal.timeout(6000),
     });
-    if(!response.ok)throw Error('GITHUB_STATUS_'+response.status);
+    if(!response.ok)throw Error(response.status===401?'UNAUTHORIZED':response.status===403?'FORBIDDEN_OR_RATE_LIMITED':response.status===404?'NOT_FOUND':response.status===422?'QUERY_UNPROCESSABLE':response.status===429?'RATE_LIMITED':'UPSTREAM_HTTP_ERROR');
     const data=await response.json();
     if(!Array.isArray(data?.items))throw Error('GITHUB_INVALID');
     for(const item of data.items.slice(0,5)){
@@ -37,10 +37,10 @@ export function createFederatedKnowledgeHandler({fetchImpl=globalThis.fetch}={})
       results.push({repository:repo,path:item.path,sha:item.sha,
         url:'https://github.com/'+repo+'/blob/'+encodeURIComponent(item.sha)+'/'+item.path.split('/').map(encodeURIComponent).join('/')});
     }
-   }catch{failed.push(repo);}
+   }catch(error){failed.push(repo);failures.push({repository:repo,code:['UNAUTHORIZED','FORBIDDEN_OR_RATE_LIMITED','NOT_FOUND','QUERY_UNPROCESSABLE','RATE_LIMITED','UPSTREAM_HTTP_ERROR','GITHUB_INVALID'].includes(error?.message)?error.message:error?.name==='TimeoutError'?'TIMEOUT':'NETWORK_OR_PROVIDER_ERROR'});}
   }
-  return res.status(200).json({data:{scope:'ALLOWLISTED_GITHUB_CODE_METADATA',readOnly:true,
-    actionAuthorized:false,sourceCount:SOURCES.length,results,failedSources:failed,
+  return res.status(failed.length===SOURCES.length?503:200).json({data:{scope:'ALLOWLISTED_GITHUB_CODE_METADATA',readOnly:true,
+    actionAuthorized:false,sourceCount:SOURCES.length,results,failedSources:failed,sourceFailures:failures,
     answer:results.length?'Found '+results.length+' source files. File metadata is not proof of engineering approval.':
       'No indexed source files found. Some repositories may be inaccessible or unindexed.',
     evidenceQualified:false}});

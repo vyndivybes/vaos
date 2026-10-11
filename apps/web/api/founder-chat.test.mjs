@@ -97,7 +97,7 @@ test('billable inference is blocked by an existing claim and rate cap',async()=>
   const f=fixture({claim:outcome}),out=response();await f.handler(req(),out.res);
   assert.equal(out.o.status,outcome==='RATE_LIMITED'?429:409);
   assert.equal(f.calls.filter(x=>x[0]==='model').length,0);
-  assert.deepEqual(f.calls.map(x=>x[0]),['inbox','get','mission','claim']);
+  assert.deepEqual(f.calls.map(x=>x[0]),outcome==='ALREADY_CLAIMED' ? ['inbox','get','mission','claim','get'] : ['inbox','get','mission','claim']);
  }
 });
 test('founder report cannot be repointed at an unrelated mission',async()=>{

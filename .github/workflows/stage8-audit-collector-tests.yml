@@ -1,0 +1,22 @@
+name: stage8-audit-collector-tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/qualification/stage8-audit-collector.mjs'
+      - 'scripts/qualification/stage8-audit-collector.test.mjs'
+      - 'scripts/qualification/stage8-independent-signer.mjs'
+      - '.github/workflows/stage8-independent-evidence.yml'
+      - '.github/workflows/stage8-audit-collector-tests.yml'
+permissions:
+  contents: read
+jobs:
+  audit-collector:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test scripts/qualification/stage8-audit-collector.test.mjs
+      - run: node --check scripts/qualification/stage8-independent-signer.mjs

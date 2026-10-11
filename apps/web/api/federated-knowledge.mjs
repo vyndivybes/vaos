@@ -65,6 +65,7 @@ export function createFederatedKnowledgeHandler({fetchImpl=globalThis.fetch}={})
   const results=[],failed=[],failures=[],evidence=[],truncatedSources=[];
   for(const repo of SOURCES){
    try{
+    try{
     const query=encodeURIComponent(q+' repo:'+repo);
     const response=await fetchImpl('https://api.github.com/search/code?q='+query+'&per_page=5',{
       method:'GET',headers:{'Accept':'application/vnd.github+json','Authorization':'Bearer '+token,
@@ -80,6 +81,7 @@ export function createFederatedKnowledgeHandler({fetchImpl=globalThis.fetch}={})
       results.push({repository:repo,path:item.path,sha:item.sha,
         url:'https://github.com/'+repo+'/blob/'+encodeURIComponent(item.sha)+'/'+item.path.split('/').map(encodeURIComponent).join('/')});
     }
+    }catch { /* code-search indexing optional; tree-based evidence remains authoritative */ }
     // Content evidence discovery is independent of code-search indexing.
     const documents=await retrieveDocuments(repo,q,token,fetchImpl);
     evidence.push(...documents.evidence);

@@ -1,0 +1,28 @@
+name: stage8-hosted-r2-probe
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/stage8-hosted-r2-probe.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hosted-r2-readback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - name: Verify isolated hosted Cloudflare Worker R2 read/write
+        shell: bash
+        run: |
+          set -euo pipefail
+          response="$(curl --fail --silent --show-error --retry 2 --max-time 15 \
+            -X POST 'https://vaos-stage8-qualification.vayushastr.workers.dev/stage8/synthetic-r2')"
+          RESPONSE="$response" node -e '
+            const assert=require("node:assert/strict");
+            const r=JSON.parse(process.env.RESPONSE);
+            assert.equal(r.result,"PASS");
+            assert.equal(r.hostedR2ReadWrite,true);
+            assert.equal(r.syntheticRevocationReadback,true);
+            assert.equal(r.productionAuthenticationAffected,false);
+            console.log("STAGE8_HOSTED_R2_SYNTHETIC_READBACK_PASS");
+          '

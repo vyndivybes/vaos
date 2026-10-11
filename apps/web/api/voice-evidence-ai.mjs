@@ -4,7 +4,7 @@ import {createFederatedKnowledgeHandler} from './federated-knowledge.mjs';
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {FOUNDER_AI_MODEL} from '../lib/founder-ai-draft.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
-const RE=/^[A-Za-z0-9][A-Za-z0-9 _.-]{4,119}$/;
+const RE=/^[A-Za-z0-9][A-Za-z0-9 _.,?!'-]{4,119}$/;
 export function validateGroundedDraft(out,sources){
  if(out?.choices?.[0]?.message?.tool_calls?.length||out?.choices?.[0]?.finish_reason==='tool_calls')
   throw Error('AI_TOOL_CALL_DENIED');
@@ -38,7 +38,8 @@ export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=c
   if(!/^application\/json(?:;|$)/i.test(req.headers?.['content-type']||''))
    return res.status(415).json(apiError('CONTENT_TYPE_REQUIRED','JSON required'));
   const question=req.body?.question;
-  if(Object.keys(req.body||{}).length!==1||!RE.test(question||'')
+  const searchQuestion=typeof question==='string'?question.replace(/[?!,']/g,' ').replace(/\s+/g,' ').trim():'';
+  if(Object.keys(req.body||{}).length!==1||!RE.test(question||'')||searchQuestion.length<5
     ||/\b(password|secret|token|credentials|private key|api key)\b/i.test(question||''))
    return res.status(422).json(apiError('QUESTION_REJECTED','Bounded read-only question required'));
   if(typeof req.env?.AI?.run!=='function'||!req.env?.VAOS_ARTIFACTS)
@@ -48,7 +49,7 @@ export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=c
    setHeader(){return inner},status(x){code=x;return inner},json(x){evidenceReply=x;return inner}
   };
   await createFederatedKnowledgeHandler({fetchImpl})({
-   method:'GET',url:origin+'/api/federated-knowledge?q='+encodeURIComponent(question),
+   method:'GET',url:origin+'/api/federated-knowledge?q='+encodeURIComponent(searchQuestion),
    headers:req.headers,env:req.env},inner);
   const data=evidenceReply?.data;
   if(code!==200||!Array.isArray(data?.evidence)||data.failedSources?.length

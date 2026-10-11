@@ -61,7 +61,14 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <pre id="voice-one-shot-report" class="mission-summary" aria-live="polite">No spoken mission report requested.</pre>
 <p class="founder-hint">Press once, speak a question about status, progress, evidence or blockers, and listen. Speech recognition may use browser-vendor processing. Use Cancel to stop listening or invalidate an in-flight read. A queued speech response is not proof that audio was heard.</p>
 </section>
-<section class="founder-panel" aria-labelledby="voice-pilot-title">
+<section class="founder-panel" aria-labelledby="vaos-auto-title">
+<h2 id="vaos-auto-title">Ask VAOS · automatic mission lookup</h2>
+<p>Activate the microphone, ask a read-only question, and VAOS checks available runnable missions automatically. No Mission ID is required. Searches do not cover archived or non-runnable missions. No business actions are permitted.</p>
+<button id="vaos-auto-ask" type="button" class="secondary" disabled>Ask VAOS (microphone)</button>
+<button id="vaos-auto-stop" type="button" class="secondary" disabled>Stop VAOS</button>
+<p id="vaos-auto-status" role="status" aria-live="polite">Automatic lookup not commissioned.</p>
+<pre id="vaos-auto-answer" class="mission-summary" aria-live="polite"></pre>
+</section><section class="founder-panel" aria-labelledby="voice-pilot-title">
 <h2 id="voice-pilot-title">Voice · read-only browser pilot</h2>
 <p>Optional, founder-only push-to-talk. Browser speech recognition may transmit audio to the browser vendor. Do not dictate secrets. Transcripts are editable drafts and NEVER sent or executed automatically. Speaking a result does not verify its claims.</p>
 <div class="mission-form">

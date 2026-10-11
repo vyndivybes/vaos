@@ -1,0 +1,22 @@
+name: stage9-procurement-preflight
+on:
+  pull_request:
+    paths:
+      - "platform/qualification/stage9-procurement-preflight.test.mjs"
+      - "docs/STAGE9-PROCUREMENT-QUALIFICATION.md"
+      - ".github/workflows/stage9-procurement-preflight.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Stage 9 preflight
+        run: node --test platform/qualification/stage9-procurement-preflight.test.mjs
+      - name: Existing bridge regressions
+        run: node --test platform/execution/vyndi-write-bridge.test.mjs platform/execution/vyndi-read-bridge-client.test.mjs

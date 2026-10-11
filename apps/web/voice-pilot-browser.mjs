@@ -1,6 +1,7 @@
 import {appendVoiceTranscript,VOICE_AUDIO_TEST_MESSAGE,isReadOnlyMissionStatusQuestion} from './lib/voice-pilot.mjs';
 import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
 import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
+import {createOneShotVoiceConversation} from './lib/voice-one-shot.mjs';
 
 const $ = id => document.getElementById(id);
 const status = $('voice-pilot-status');
@@ -20,19 +21,34 @@ const voiceQuestion=$('voice-readonly-question');
 const voiceRequestDictate=$('voice-request-dictate');
 const voiceReadMission=$('voice-read-mission');
 const missionForm=$('mission-form');
-const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest,voiceRequestDictate,voiceReadMission];
+const oneShotStart=$('voice-one-shot-start');
+const oneShotStop=$('voice-one-shot-stop');
+const oneShotStatus=$('voice-one-shot-status');
+const oneShotReport=$('voice-one-shot-report');
+const oneShotQuestion=$('voice-one-shot-question');
+const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak,voiceShortTest,voiceToneTest,voiceRequestDictate,voiceReadMission,oneShotStart,oneShotStop];
 buttons.forEach(button=>{button.disabled=true;});
 let enabled=false;
+let oneShotEnabled=false;
 
 const voice=createVoicePilotController({
   RecognitionClass:window.SpeechRecognition||window.webkitSpeechRecognition,
   SpeechSynthesisUtteranceClass:window.SpeechSynthesisUtterance,
   speechSynthesis:window.speechSynthesis,
   onStatus:message=>{status.textContent=message;},
-  onListeningChanged:updateButtons,
+  onListeningChanged:()=>{
+    updateButtons();
+    if(!voice.isListening() && oneShot?.state()==='LISTENING')oneShot.cancel();
+  },
   onSpeakingChanged:updateButtons,
   onTranscript:(targetId,transcript,maxLength)=>{
     if(!enabled)return;
+    if(targetId==='voice-one-shot-question'){
+      if(!oneShotEnabled)return;
+      oneShotQuestion.value=appendVoiceTranscript('',transcript,maxLength);
+      void oneShot.acceptTranscript(oneShotQuestion.value);
+      return;
+    }
     const target=$(targetId);
     if(!target)return;
     // Only mutate an editable draft; never send or execute a request.
@@ -40,6 +56,20 @@ const voice=createVoicePilotController({
     target.dispatchEvent(new Event('input',{bubbles:true}));
   },
 });
+
+// No server-side voice model or write-capable tool is involved.
+const oneShot=createOneShotVoiceConversation({
+  fetchSnapshot:async (missionId,{signal})=>{
+    const url='/api/missions?missionId='+encodeURIComponent(missionId);
+    const response=await fetch(url,{method:'GET',credentials:'same-origin',cache:'no-store',signal});
+    if(!response.ok)throw new Error('MISSION_READ_FAILED');
+    return (await response.json())?.data;
+  },
+  speak:(source,report)=>voice.speak(source,report),
+  onReport:report=>{oneShotReport.textContent=report;},
+  onState:(_state,message)=>{oneShotStatus.textContent=message;updateButtons();},
+});
+function oneShotBusy(){return ['LISTENING','READING'].includes(oneShot.state());}
 
 const audioDiagnostics=createVoiceAudioDiagnostics({
   SpeechSynthesisUtteranceClass:window.SpeechSynthesisUtterance,
@@ -55,8 +85,8 @@ if(typeof window.speechSynthesis?.addEventListener==='function'){
 }
 
 function updateButtons() {
-  startInstruction.disabled=!enabled||!voice.dictationAvailable||voice.isListening();
-  startFollowup.disabled=!enabled||!voice.dictationAvailable||voice.isListening();
+  startInstruction.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy();
+  startFollowup.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy();
   stopMic.disabled=!enabled||!voice.isListening();
   speakPreview.disabled=!enabled||!voice.speechAvailable;
   speakDraft.disabled=!enabled||!voice.speechAvailable;
@@ -65,8 +95,10 @@ function updateButtons() {
   voiceShortTest.disabled=!enabled||!audioDiagnostics.speechAvailable;
   voiceToneTest.disabled=!enabled||!(window.AudioContext||window.webkitAudioContext);
   missionSpeak.disabled=!enabled||!voice.speechAvailable;
-  voiceRequestDictate.disabled=!enabled||!voice.dictationAvailable||voice.isListening();
-  voiceReadMission.disabled=!enabled;
+  voiceRequestDictate.disabled=!enabled||!voice.dictationAvailable||voice.isListening()||oneShotBusy();
+  voiceReadMission.disabled=!enabled||oneShotBusy();
+  oneShotStart.disabled=!enabled||!oneShotEnabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening()||oneShotBusy();
+  oneShotStop.disabled=!enabled||!oneShotEnabled||!(oneShotBusy()||oneShot.state()==='SPOKEN_QUEUED');
 }
 function speakResult(source,id) {
   if(!enabled)return;
@@ -101,6 +133,33 @@ voiceReadMission.addEventListener('click',()=>{
   status.textContent='Reading existing mission snapshot via GET. Review its contents before speaking.';
   missionForm.requestSubmit();
 });
+oneShotStart.addEventListener('click',()=>{
+  if(!enabled||!oneShotEnabled||oneShotBusy()||voice.isListening())return;
+  const missionId=$('mission-id').value.trim();
+  voice.stopSpeaking();
+  audioDiagnostics.stopSpeech();
+  oneShotQuestion.value='';
+  oneShotReport.textContent='No retrieved report yet.';
+  if(!oneShot.begin(missionId)){
+    oneShotStatus.textContent='Select a valid existing mission ID below. Nothing sent.';
+    return;
+  }
+  if(!voice.startListening('voice-one-shot-question',900))oneShot.cancel();
+  updateButtons();
+});
+oneShotStop.addEventListener('click',()=>{
+  oneShot.cancel();
+  voice.stopListening();
+  voice.stopSpeaking();
+  oneShotStatus.textContent='Voice stopped. No additional read or speech authorized.';
+  updateButtons();
+});
+$('mission-id').addEventListener('input',()=>{
+  if(oneShotBusy()){oneShot.cancel();voice.stopListening();}
+  voice.stopSpeaking();
+  oneShotReport.textContent='Selection changed; previous spoken result is no longer current.';
+  updateButtons();
+});
 stopMic.addEventListener('click',()=>voice.stopListening());
 speakPreview.addEventListener('click',()=>speakResult('preview','report-preview'));
 speakDraft.addEventListener('click',()=>speakResult('draft','founder-ai-response'));
@@ -117,7 +176,7 @@ missionSpeak.addEventListener('click',()=>{
   }
   voice.speak('preview',speech);
 });
-window.addEventListener('pagehide',()=>{voice.stopListening();voice.stopSpeaking();audioDiagnostics.stopSpeech();});
+window.addEventListener('pagehide',()=>{oneShot.cancel();voice.stopListening();voice.stopSpeaking();audioDiagnostics.stopSpeech();});
 
 async function checkCapability() {
   try {
@@ -130,6 +189,11 @@ async function checkCapability() {
       &&payload?.agentDispatch===false
       &&payload?.automaticSubmission===false
       &&payload?.serverAudioEnabled===false;
+    oneShotEnabled=enabled && payload?.oneShotEnabled===true
+      &&payload?.oneShotMode==='FOUNDER_ONE_SHOT_READONLY_GET';
+    oneShotStatus.textContent=oneShotEnabled
+      ?'Ready: select an existing mission, then press Ask VAOS once.'
+      :'One-shot conversation disabled until separately commissioned.';
     status.textContent=enabled
       ?'Founder voice pilot ready. Press Start to dictate; no command is sent automatically.'
       :'Voice pilot disabled until separately qualified and enabled.';
@@ -139,7 +203,8 @@ async function checkCapability() {
     updateButtons();
     if(enabled)updateDiagnostics();
   }catch{
-    enabled=false;
+    enabled=false;oneShotEnabled=false;oneShot.cancel();
+    oneShotStatus.textContent='One-shot capability unavailable. Nothing sent.';
     status.textContent='Voice qualification unavailable. Voice controls remain disabled.';
     updateButtons();
   }

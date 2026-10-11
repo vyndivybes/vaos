@@ -4,9 +4,9 @@ import {createSessionToken, SESSION_COOKIE} from '../lib/auth.mjs';
 import {createVoiceCapabilitiesHandler} from './voice-capabilities.mjs';
 import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 
-function request({email='shyamsundhar1982@gmail.com',method='GET',control='off'}={}) {
+function request({email='shyamsundhar1982@gmail.com',method='GET',control='off',conversation='off'}={}) {
   return {method,headers:{cookie:email ? `${SESSION_COOKIE}=${createSessionToken(email)}` : ''},
-    env:{VAOS_VOICE_CONTROL:control},url:'https://vaos.example/api/voice-capabilities'};
+    env:{VAOS_VOICE_CONTROL:control,VAOS_VOICE_CONVERSATION_CONTROL:conversation},url:'https://vaos.example/api/voice-capabilities'};
 }
 function response() {
   const state={status:200,body:null,headers:{}};
@@ -38,8 +38,22 @@ test('qualified founder-only browser pilot exposes no dispatch or automatic subm
   const state=await handle({control:'founder-readonly-browser-v1'});
   assert.equal(state.status,200);
   assert.deepEqual(state.body.data,{
-    enabled:true,mode:'BROWSER_DICTATION_READONLY',transport:'BROWSER_WEB_SPEECH',
+    enabled:true,oneShotEnabled:false,oneShotMode:'DISABLED',mode:'BROWSER_DICTATION_READONLY',transport:'BROWSER_WEB_SPEECH',
     manualReviewRequired:true,speechRecognitionMayUseBrowserVendorService:true,
     automaticSubmission:false,agentDispatch:false,actionAuthorized:false,serverAudioEnabled:false,
   });
+});
+
+test('one-shot voice capability is separately enabled only for authenticated founder with base pilot active',async()=>{
+ const accepted=await handle({control:'founder-readonly-browser-v1',conversation:'founder-readonly-one-shot-v1'});
+ assert.equal(accepted.status,200);
+ assert.equal(accepted.body.data.oneShotEnabled,true);
+ assert.equal(accepted.body.data.oneShotMode,'FOUNDER_ONE_SHOT_READONLY_GET');
+ assert.equal(accepted.body.data.automaticSubmission,false);
+ assert.equal(accepted.body.data.agentDispatch,false);
+ assert.equal(accepted.body.data.actionAuthorized,false);
+ assert.equal((await handle({control:'off',conversation:'founder-readonly-one-shot-v1'})).body.data.oneShotEnabled,false);
+ assert.equal((await handle({control:'founder-readonly-browser-v1',conversation:'invalid'})).body.data.oneShotEnabled,false);
+ assert.equal((await handle({email:'kaaviyam1519@gmail.com',control:'founder-readonly-browser-v1',conversation:'founder-readonly-one-shot-v1'})).status,403);
+ assert.equal((await handle({email:null,control:'founder-readonly-browser-v1',conversation:'founder-readonly-one-shot-v1'})).status,401);
 });

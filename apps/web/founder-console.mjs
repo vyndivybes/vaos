@@ -74,6 +74,24 @@ $('prepare-report').addEventListener('click',async()=>{
   '\nUpdated: '+(x.sourceUpdatedAt||'Not recorded')+'\nNo model invoked. No action authorized.';
  }catch{out.textContent='Report preview unavailable or not commissioned. No agent response inferred.';}
 });
+$('founder-ai-draft').addEventListener('click',async()=>{
+ const out=$('founder-ai-response'),messageId=$('report-request').value;
+ const missionId=$('report-mission-id').value.trim();
+ if(!messageId||!missionId){out.textContent='First choose a persisted report request and mission ID above.';return;}
+ $('founder-ai-draft').disabled=true;out.textContent='Checking Stage 4 read-only AI gate…';
+ try{
+  const r=await fetch('/api/founder-chat',{method:'POST',credentials:'same-origin',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({operation:'GENERATE_READONLY_DRAFT',agentId:agentSelect.value,messageId,missionId})});
+  if(!r.ok)throw Error();
+  const x=(await r.json()).data;
+  if(x?.reply?.status!=='AI_DRAFT_UNVERIFIED'||x.actionAuthorized!==false)throw Error();
+  out.textContent='UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\n'+x.reply.content+
+   '\n\nGrounded evidence references: '+(x.reply.evidenceRefs||[]).join(', ')+
+   '\nNo business action authorized.';
+ }catch{out.textContent='Stage 4 is disabled or could not produce a verified-persistence draft. No action occurred.';}
+ finally{$('founder-ai-draft').disabled=false;}
+});
 $('record-draft').addEventListener('click',async()=>{
  if(!prepared||!pendingMessageId){message.textContent='Prepare a draft first.';return;}
  // A changed form must never send an older draft without another explicit confirmation.

@@ -15,5 +15,9 @@
 <label for="report-mission-id">Mission ID</label><input id="report-mission-id" maxlength="96" placeholder="Existing mission ID" autocomplete="off"/>
 <button id="prepare-report" type="button" class="secondary">Prepare evidence report</button>
 <pre id="report-preview" class="mission-summary" aria-live="polite">No report generated.</pre>
+</section><section class="founder-panel"><h2>Stage 4 · Governed AI draft (pilot)</h2>
+<p>Using the selected recorded report request and mission ID above, request an unverified AI wording draft grounded in VAOS evidence. No tools or business writes. Disabled until independently commissioned.</p>
+<button id="founder-ai-draft" type="button" class="secondary">Generate read-only AI draft</button>
+<pre id="founder-ai-response" class="mission-summary" aria-live="polite">Stage 4 conversation pilot not yet commissioned.</pre>
 </section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
 </main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script></body></html>

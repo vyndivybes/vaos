@@ -7,6 +7,8 @@ import {createVoiceMultiTurnSession} from './lib/voice-multiturn.mjs';
 const $ = id => document.getElementById(id);
 const autoAsk=$('vaos-auto-ask'),autoStop=$('vaos-auto-stop'),autoStatus=$('vaos-auto-status'),autoAnswer=$('vaos-auto-answer');
 let autoLookupActive=false;
+let autoSession=false;
+let autoRearmTimer=null;
 let autoAbort=null;
 const status = $('voice-pilot-status');
 const startInstruction = $('voice-instruction-start');
@@ -55,7 +57,19 @@ const voice=createVoicePilotController({
     if(!voice.isListening() && oneShot?.state()==='LISTENING')oneShot.cancel();
     if(!voice.isListening() && multiTurn?.state()==='LISTENING')multiTurn.cancel();
   },
-  onSpeakingChanged:updateButtons,
+  onSpeakingChanged:speaking=>{
+    updateButtons();
+    if(!speaking&&autoSession&&!autoAbort){
+      clearTimeout(autoRearmTimer);
+      autoRearmTimer=setTimeout(()=>{
+        if(autoSession&&!voice.isListening()&&!autoAbort){
+          autoLookupActive=true;
+          autoStatus.textContent='VAOS listening for your next question.';
+          if(!voice.startListening('voice-readonly-question',900))autoStatus.textContent='Microphone needs a new tap. Select Ask VAOS.';
+        }
+      },450);
+    }
+  },
   onTranscript:(targetId,transcript,maxLength)=>{
     if(!enabled)return;
     if(targetId==='voice-readonly-question'&&autoLookupActive){
@@ -193,6 +207,8 @@ async function autoReadQuestion(transcript){
 autoAsk.addEventListener('click',()=>{
   if(!enabled||!voice.dictationAvailable)return;
   autoAbort?.abort();autoAbort=null;
+  clearTimeout(autoRearmTimer);
+  autoSession=true;
   voice.stopSpeaking();
   autoLookupActive=true;
   autoAnswer.textContent='';
@@ -202,7 +218,7 @@ autoAsk.addEventListener('click',()=>{
   }
 });
 autoStop.addEventListener('click',()=>{
-  autoLookupActive=false;autoAbort?.abort();autoAbort=null;
+  autoSession=false;autoLookupActive=false;clearTimeout(autoRearmTimer);autoAbort?.abort();autoAbort=null;
   voice.stopListening();voice.stopSpeaking();
   autoStatus.textContent='Stopped. No business action performed.';
 });
@@ -322,7 +338,7 @@ missionSpeak.addEventListener('click',()=>{
   }
   voice.speak('preview',speech);
 });
-window.addEventListener('pagehide',()=>{multiTurn.cancel();oneShot.cancel();voice.stopListening();voice.stopSpeaking();audioDiagnostics.stopSpeech();});
+window.addEventListener('pagehide',()=>{autoSession=false;clearTimeout(autoRearmTimer);autoAbort?.abort();multiTurn.cancel();oneShot.cancel();voice.stopListening();voice.stopSpeaking();audioDiagnostics.stopSpeech();});
 
 async function checkCapability() {
   try {

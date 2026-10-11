@@ -99,6 +99,15 @@ Deno.serve(async (req: Request) => {
       p_actor_email:payload.actorEmail,p_agent_id:payload.agentId,
       p_mission_id:payload.missionId,p_content:payload.content,
       p_source_hash:payload.sourceHash,p_evidence_refs:payload.evidenceRefs}
+  } else if (operation === 'founderConversationHistory') {
+    rpcName = 'vaos_founder_conversation_history'
+    args = {p_server_key:serverKey,p_actor_email:payload.actorEmail,
+      p_agent_id:payload.agentId,p_mission_id:payload.missionId}
+  } else if (operation === 'founderConversationLink') {
+    rpcName = 'vaos_founder_conversation_link'
+    args = {p_server_key:serverKey,p_actor_email:payload.actorEmail,
+      p_agent_id:payload.agentId,p_mission_id:payload.missionId,
+      p_thread_id:payload.threadId,p_message_id:payload.messageId}
   } else if (operation === 'operationalCommissioningSnapshot') {
     rpcName = 'vaos_operational_commissioning_snapshot'
     args = { p_server_key: serverKey }

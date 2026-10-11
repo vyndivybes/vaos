@@ -1,0 +1,43 @@
+name: founder-stage5-multiturn-qualification
+on:
+  pull_request:
+    paths:
+      - "supabase/migrations/20261011082000_founder_conversation_threads_v1.sql"
+      - "platform/qualification/sql/founder-stage5-*"
+      - ".github/workflows/founder-stage5-multiturn-qualification.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-postgres-multiturn:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_DB: vaos_stage5_qualification
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: synthetic-ci-pass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: postgres
+      PGDATABASE: vaos_stage5_qualification
+      PGPASSWORD: synthetic-ci-pass
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare disposable founder and database roles
+        run: psql -v ON_ERROR_STOP=1 -f platform/qualification/sql/founder-stage4-bootstrap.sql
+      - name: Apply already-qualified Stage 4 SQL in isolated DB
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261011065000_founder_ai_draft_pilot_v1.sql
+      - name: Apply Stage 5 conversation migration in isolated DB
+        run: psql -v ON_ERROR_STOP=1 -f supabase/migrations/20261011082000_founder_conversation_threads_v1.sql
+      - name: Verify sequence, agent isolation, replay, privileges and immutable history
+        run: psql -v ON_ERROR_STOP=1 -f platform/qualification/sql/founder-stage5-assert.sql

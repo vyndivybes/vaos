@@ -132,4 +132,95 @@ $('mission-form').addEventListener('submit',async event=>{
   out.textContent='Mission: '+id+'\nStatus: '+(record.mission.status||'UNVERIFIED')+'\nWork packages: '+work.length+'\nCompleted: '+work.filter(p=>p.status==='COMPLETED').length+'\n\nView full evidence in Mission Status.';
  }catch{out.textContent='Mission unavailable. No completion or verification inferred.';}
 });
+
+let conversationThreadId=null;
+let conversationKey=null;
+let pendingConversationPost=null;
+function clearConversation(){
+ conversationThreadId=null;conversationKey=null;pendingConversationPost=null;
+ $('conversation-history').textContent='Load a mission conversation to see its persisted turns.';
+ $('conversation-status').textContent='Conversations are separate for each agent and mission.';
+}
+agentSelect.addEventListener('change',clearConversation);
+function selectedConversation(){
+ const agentId=agentSelect.value,missionId=$('thread-mission-id').value.trim();
+ if(!['project','orchestrator'].includes(agentId)||
+    !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(missionId))return null;
+ return {agentId,missionId,key:agentId+'|'+missionId};
+}
+async function loadConversation(){
+ const selected=selectedConversation();
+ if(!selected){clearConversation();$('conversation-status').textContent='Select Project Controls or Orchestrator and a valid existing mission.';return false;}
+ $('conversation-status').textContent='Reading immutable conversation history…';
+ try{
+  const url='/api/founder-conversation?agentId='+encodeURIComponent(selected.agentId)+'&missionId='+encodeURIComponent(selected.missionId);
+  const r=await fetch(url,{credentials:'same-origin',cache:'no-store'});
+  if(!r.ok)throw Error();
+  const data=(await r.json()).data;
+  if(!Array.isArray(data?.turns)||data.agentId!==selected.agentId||
+    data.missionId!==selected.missionId||data.actionAuthorized!==false)throw Error();
+  if(data.threadId!==null&&!/^[0-9a-f-]{36}$/i.test(data.threadId))throw Error();
+  conversationKey=selected.key;conversationThreadId=data.threadId;
+  const out=$('conversation-history');out.replaceChildren();
+  if(!data.turns.length)out.textContent='No stored turns yet. Start a read-only report conversation.';
+  for(const turn of data.turns){
+   const block=document.createElement('div');block.className='conversation-turn';
+   const heading=document.createElement('strong');
+   heading.textContent='Founder · request '+turn.sequence;block.append(heading);
+   const request=document.createElement('p');request.textContent=turn.instruction;block.append(request);
+   const reply=document.createElement('p');reply.className='conversation-reply';
+   reply.textContent=turn.reply?.status==='AI_DRAFT_UNVERIFIED'
+    ?'UNVERIFIED AI DRAFT\n'+turn.reply.content+'\nEvidence: '+(turn.reply.evidenceRefs||[]).join(', ')
+    :'No independently persisted AI reply. Do not infer completion.';
+   block.append(reply);out.append(block);
+  }
+  $('conversation-status').textContent='Recorded turns: '+data.turns.length+' / 12. No business action authorized.';
+  return true;
+ }catch{
+  conversationKey=null;conversationThreadId=null;
+  $('conversation-history').textContent='Conversation unavailable or not commissioned.';
+  $('conversation-status').textContent='Read failed closed. No action taken.';
+  return false;
+ }
+}
+$('load-conversation').addEventListener('click',loadConversation);
+$('send-conversation').addEventListener('click',async()=>{
+ const selected=selectedConversation(),instruction=$('conversation-text').value.trim();
+ if(!selected||instruction.length<5||instruction.length>900){
+  $('conversation-status').textContent='Select a qualified pilot agent, a mission, and a 5–900 character request.';return;
+ }
+ $('send-conversation').disabled=true;
+ try{
+  if(conversationKey!==selected.key&&!(await loadConversation()))return;
+  const post=pendingConversationPost&&pendingConversationPost.key===selected.key
+    &&pendingConversationPost.instruction===instruction
+    ?pendingConversationPost
+    :{...selected,instruction,threadId:conversationThreadId||crypto.randomUUID(),messageId:crypto.randomUUID()};
+  pendingConversationPost=post;
+  $('conversation-status').textContent='Recording the immutable founder request…';
+  const saved=await fetch('/api/founder-conversation',{method:'POST',credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({threadId:post.threadId,messageId:post.messageId,
+      agentId:post.agentId,missionId:post.missionId,instruction:post.instruction})});
+  if(!saved.ok)throw Error();
+  const payload=(await saved.json()).data;
+  if(!['LINKED','REPLAY'].includes(payload?.outcome)||payload.actionAuthorized!==false)throw Error();
+  pendingConversationPost=null;conversationThreadId=post.threadId;
+  $('conversation-text').value='';
+  $('conversation-status').textContent='Request recorded. Generating one evidence-grounded AI draft…';
+  // One explicit user click authorizes ONE bounded model request. Never blindly retry.
+  const generated=await fetch('/api/founder-chat',{method:'POST',credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({operation:'GENERATE_READONLY_DRAFT',agentId:post.agentId,
+      messageId:post.messageId,missionId:post.missionId})});
+  if(!generated.ok)throw Error();
+  const reply=(await generated.json()).data;
+  if(reply?.reply?.status!=='AI_DRAFT_UNVERIFIED'||reply?.actionAuthorized!==false)throw Error();
+  await loadConversation();
+  $('conversation-status').textContent='Persisted read-only AI draft. No business action authorized.';
+ }catch{
+  $('conversation-status').textContent='Reply or recording not confirmed. Refresh history before taking any further action; never blindly regenerate.';
+ }finally{$('send-conversation').disabled=false;}
+});
+
 authenticate();

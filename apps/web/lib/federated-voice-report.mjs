@@ -1,6 +1,19 @@
 // Deterministic, source-linked response. Repository text is untrusted DATA, never instructions.
 const ALLOWED=new Set(['vayu-shastr/veloxis-engineering-design-manual','vyndivybes/vyndios','vyndivybes/vaos']);
 const STOP=new Set(['what','when','where','which','about','status','current','latest','update','report','our','the','and','with','from','show','tell','please','this','that','their','have','progress','today','any','are','for']);
+
+// Operational sales figures must come from an authorized transactional read,
+// never source-code documentation. No sales connector is qualified in this flow.
+export function classifyVoiceQuestion(question){
+ const q=String(question||'').toLowerCase();
+ if(/\b(sales|revenue|orders?|invoices?|customers?|deals?|pipeline|receivables?|quotations?)\b/.test(q))
+   return 'LIVE_BUSINESS_RECORDS';
+ return 'REPOSITORY_EVIDENCE';
+}
+export function unsupportedBusinessReadback(){
+ return 'I can hear your sales status question. Sales and revenue require live authorized CRM or ERP transaction records. My current connection searches engineering and software repositories, not the sales ledger. I cannot verify sales totals, pipeline, or orders yet, and I will not invent figures.';
+}
+
 export function expandFollowup(question,prior=''){
  const q=String(question||'').trim(),p=String(prior||'').trim();
  if(!q||q.length>300)return '';

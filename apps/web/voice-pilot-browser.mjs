@@ -3,7 +3,7 @@ import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
 import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
 import {createOneShotVoiceConversation} from './lib/voice-one-shot.mjs';
 import {createVoiceMultiTurnSession} from './lib/voice-multiturn.mjs';
-import {formatFederatedVoiceEvidence,expandFollowup} from './lib/federated-voice-report.mjs';
+import {formatFederatedVoiceEvidence,expandFollowup,classifyVoiceQuestion,unsupportedBusinessReadback} from './lib/federated-voice-report.mjs';
 
 const $ = id => document.getElementById(id);
 const autoAsk=$('vaos-auto-ask'),autoStop=$('vaos-auto-stop'),autoStatus=$('vaos-auto-status'),autoAnswer=$('vaos-auto-answer');
@@ -187,6 +187,13 @@ async function autoReadQuestion(transcript){
    return;
  }
  const fullQuestion=expandFollowup(question,lastFederatedQuestion);
+ if(classifyVoiceQuestion(question)==='LIVE_BUSINESS_RECORDS'){
+   const answer=unsupportedBusinessReadback();
+   autoAnswer.textContent=answer;
+   autoStatus.textContent='Sales ledger not connected for qualified read-only voice answers.';
+   voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+answer+'\nNo model invoked. No action authorized.');
+   return;
+ }
  const abort=new AbortController();autoAbort=abort;
  autoStatus.textContent='Searching VEDM, VYNDI OS and VAOS evidence...';
  try{

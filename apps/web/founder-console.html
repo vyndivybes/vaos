@@ -31,7 +31,21 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <textarea id="conversation-text" maxlength="900" rows="4" placeholder="Ask about verification, blockers, or evidence. All claims must be checked against this mission."></textarea>
 <button id="send-conversation" type="button">Record follow-up and generate read-only draft</button>
 <p id="conversation-status" aria-live="polite">Stage 5 is off until independently commissioned.</p>
-</section><section class="founder-panel" aria-labelledby="voice-one-shot-title">
+</section><section class="founder-panel" aria-labelledby="voice-v3-title">
+<h2 id="voice-v3-title">Stage V3 · Bounded multi-turn voice pilot</h2>
+<p>Founder-only, read-only canary. Choose an existing mission ID under Mission evidence lookup. Start a short session and ask up to three separate status, blocker, progress or evidence questions. Each turn independently reads the current mission via authenticated GET. Only a topic label is retained in this browser tab for five minutes; no raw transcript, cloud conversation or business record is stored. Responses are deterministic evidence summaries, not AI-generated wording.</p>
+<label for="voice-v3-question">Most recent spoken question</label>
+<textarea id="voice-v3-question" rows="2" maxlength="900" readonly placeholder="The most recent question appears here and is replaced on each turn."></textarea>
+<div class="mission-form">
+<button id="voice-v3-open" type="button" class="secondary" disabled>Start read-only V3 session</button>
+<button id="voice-v3-ask" type="button" class="secondary" disabled>Ask next question</button>
+<button id="voice-v3-stop" type="button" class="secondary" disabled>End session / stop voice</button>
+</div>
+<p id="voice-v3-status" role="status" aria-live="polite">Stage V3 is disabled until separately commissioned.</p>
+<pre id="voice-v3-report" class="mission-summary" aria-live="polite">No V3 mission evidence retrieved.</pre>
+<p class="founder-hint">No model call or automatic listening. Each question requires a new microphone click. End session clears context immediately; mission changes cancel the session. Always review the spoken evidence before relying on it.</p>
+</section>
+<section class="founder-panel" aria-labelledby="voice-one-shot-title">
 <h2 id="voice-one-shot-title">One-shot voice conversation · read-only</h2>
 <p>Founder-only canary. Choose a real existing mission ID under Mission evidence lookup below. One button press listens once, checks a status-only question, reads that mission with authenticated GET and speaks a deterministic evidence summary. No model call, agent dispatch, approval, writes or recurring microphone access.</p>
 <label for="voice-one-shot-question">Last recognized question</label>

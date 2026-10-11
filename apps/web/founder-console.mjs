@@ -1,4 +1,5 @@
 import {AGENTS,prepareFounderCommand,safeAgentSnapshot} from './founder-command.mjs';
+import {createFounderVoiceController} from './founder-voice.mjs';
 const $=id=>document.getElementById(id),shell=$('founder-shell'),message=$('command-message'),agentSelect=$('agent');
 let preparedText='';let pendingMessageId=null;let prepared=null;
 for(const agent of AGENTS){const option=document.createElement('option');option.value=agent.id;option.textContent=agent.name;agentSelect.append(option);}
@@ -136,7 +137,58 @@ $('mission-form').addEventListener('submit',async event=>{
 let conversationThreadId=null;
 let conversationKey=null;
 let pendingConversationPost=null;
+let lastSpeakableReply=null;
+function resetSpokenReply(){
+  lastSpeakableReply=null;
+  $('voice-speak').disabled=true;
+  voice.stopSpeaking();
+}
+const voice=createFounderVoiceController({
+  RecognitionClass:globalThis.SpeechRecognition||globalThis.webkitSpeechRecognition,
+  SpeechSynthesisUtteranceClass:globalThis.SpeechSynthesisUtterance,
+  synthesis:globalThis.speechSynthesis,
+  onTranscript:(transcript)=>{
+    if(!selectedConversation()){
+      $('voice-status').textContent='Choose Project Controls or Orchestrator and an existing mission. Nothing submitted.';
+      return;
+    }
+    $('conversation-text').value=transcript;
+  },
+  onStatus:(status)=>{$('voice-status').textContent=status;},
+  onListeningChanged:(active)=>{
+    $('voice-dictate').disabled=active||!voice.dictationAvailable;
+    $('voice-stop').disabled=!active;
+  },
+  onSpeakingChanged:(active)=>{
+    $('voice-silence').disabled=!active;
+  },
+});
+$('voice-dictate').disabled=!voice.dictationAvailable;
+$('voice-stop').disabled=true;
+$('voice-speak').disabled=true;
+$('voice-silence').disabled=true;
+$('voice-status').textContent=voice.dictationAvailable
+  ?'Ready for manually initiated English (India) dictation. No automatic submission.'
+  :'This browser has no supported speech-recognition interface. Text requests remain available.';
+$('voice-dictate').addEventListener('click',()=>{
+  if(!selectedConversation()){
+    $('voice-status').textContent='Choose Project Controls or Orchestrator and an existing mission first.';
+    return;
+  }
+  voice.startDictation();
+});
+$('voice-stop').addEventListener('click',()=>voice.stopDictation());
+$('voice-speak').addEventListener('click',()=>{
+  if(!lastSpeakableReply||conversationKey!==selectedConversation()?.key){
+    $('voice-status').textContent='Load the current mission conversation first. No audio produced.';
+    return;
+  }
+  voice.speakDraft(lastSpeakableReply);
+});
+$('voice-silence').addEventListener('click',()=>voice.stopSpeaking());
+
 function clearConversation(){
+ voice.stopDictation();resetSpokenReply();
  conversationThreadId=null;conversationKey=null;pendingConversationPost=null;
  $('conversation-history').textContent='Load a mission conversation to see its persisted turns.';
  $('conversation-status').textContent='Conversations are separate for each agent and mission.';
@@ -149,6 +201,7 @@ function selectedConversation(){
  return {agentId,missionId,key:agentId+'|'+missionId};
 }
 async function loadConversation(){
+ resetSpokenReply();
  const selected=selectedConversation();
  if(!selected){clearConversation();$('conversation-status').textContent='Select Project Controls or Orchestrator and a valid existing mission.';return false;}
  $('conversation-status').textContent='Reading immutable conversation history…';
@@ -161,6 +214,11 @@ async function loadConversation(){
     data.missionId!==selected.missionId||data.actionAuthorized!==false)throw Error();
   if(data.threadId!==null&&!/^[0-9a-f-]{36}$/i.test(data.threadId))throw Error();
   conversationKey=selected.key;conversationThreadId=data.threadId;
+  const last=data.turns.at(-1);
+  lastSpeakableReply=last?.reply?.status==='AI_DRAFT_UNVERIFIED'
+    ?{...last.reply,actionAuthorized:data.actionAuthorized}
+    :null;
+  $('voice-speak').disabled=!lastSpeakableReply||!voice.speechAvailable;
   const out=$('conversation-history');out.replaceChildren();
   if(!data.turns.length)out.textContent='No stored turns yet. Start a read-only report conversation.';
   for(const turn of data.turns){
@@ -185,6 +243,7 @@ async function loadConversation(){
 }
 $('load-conversation').addEventListener('click',loadConversation);
 $('send-conversation').addEventListener('click',async()=>{
+ voice.stopDictation();resetSpokenReply();
  const selected=selectedConversation(),instruction=$('conversation-text').value.trim();
  if(!selected||instruction.length<5||instruction.length>900){
   $('conversation-status').textContent='Select a qualified pilot agent, a mission, and a 5–900 character request.';return;

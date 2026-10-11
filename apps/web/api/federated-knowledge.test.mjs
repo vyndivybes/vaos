@@ -26,3 +26,11 @@ test('search only three approved repositories through GET without business effec
  assert.equal(r.x.body.data.actionAuthorized,false);
  assert.equal(r.x.body.data.evidenceQualified,false);
 });
+
+test('total upstream failure returns 503 with safe diagnostic categories',async()=>{
+ const {x,res}=response();const req={method:'GET',url:'https://vaos.example/api/federated-knowledge?q=carbon%20frame',headers:{cookie:`${SESSION_COOKIE}=${createSessionToken('shyamsundhar1982@gmail.com')}`},env:{VAOS_FEDERATED_KNOWLEDGE_CONTROL:'founder-readonly-v1',VAOS_FEDERATED_GITHUB_TOKEN:'012345678901234567890123456789'}};
+ await createFederatedKnowledgeHandler({fetchImpl:async()=>({ok:false,status:401})})(req,res);
+ assert.equal(x.status,503);assert.equal(x.body.data.sourceFailures.length,3);
+ assert.ok(x.body.data.sourceFailures.every(f=>f.code==='UNAUTHORIZED'));
+ assert.equal(JSON.stringify(x.body).includes('012345678901234567890123456789'),false);
+});

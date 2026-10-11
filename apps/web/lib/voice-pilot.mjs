@@ -56,11 +56,12 @@ export function formatMissionSnapshotSpokenPreview(record,requestedId) {
     throw new Error('VOICE_MISSION_NOT_VERIFIED');
   }
   const completed = record.workPackages.filter(work => work.status === 'COMPLETED').length;
+  const blocked = record.workPackages.filter(work => work.status === 'BLOCKED').length;
   return [
     'READ-ONLY PREVIEW — NOT AN AI REPLY',
     'Mission: ' + requestedId + '.',
     'Status reported by VAOS: ' + status + '.',
-    'Work packages: ' + record.workPackages.length + '. Completed status entries: ' + completed + '.',
+    'Work packages: ' + record.workPackages.length + '. Completed status entries: ' + completed + '. Blocked status entries: ' + blocked + '.',
     'This is a read-only snapshot, not independent evidence of completion.',
     'No model invoked. No action authorized.',
   ].join('\n');

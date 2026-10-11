@@ -47,6 +47,7 @@ test('mission readback is derived only from a matching read-only mission snapsho
   assert.match(speech,/IN_PROGRESS/);
   assert.match(speech,/Work packages: 3/);
   assert.match(speech,/Completed status entries: 1/);
+  assert.match(speech,/Blocked status entries: 1/);
   assert.match(speech,/not independent evidence of completion/i);
   assert.match(speech,/No model invoked\. No action authorized\.$/);
   for(const bad of [
@@ -99,4 +100,14 @@ test('stale asynchronous mission reads are invalidated by changed question or ID
  assert.match(source,/serial!==missionReadSequence/);
  assert.match(source,/voice-readonly-question/);
  assert.match(source,/delete out\.dataset\.voiceReadback/);
+});
+
+test('status report speaks blocked count without inventing causes or decisions',async()=>{
+  const {formatMissionSnapshotSpokenPreview}=await import('./voice-pilot.mjs');
+  const report=formatMissionSnapshotSpokenPreview({mission:{id:'VAOS-VOICE-DEMO-20261011',status:'HOLD'},workPackages:[
+    {status:'BLOCKED'},{status:'BLOCKED'},{status:'BLOCKED'},{status:'PLANNED'},{status:'COMPLETED'}
+  ]},'VAOS-VOICE-DEMO-20261011');
+  assert.match(report,/Blocked status entries: 3/);
+  assert.match(report,/Completed status entries: 1/);
+  assert.doesNotMatch(report,/approved|released|signed off/i);
 });

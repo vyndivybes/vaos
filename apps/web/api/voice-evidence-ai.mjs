@@ -8,9 +8,10 @@ const RE=/^[A-Za-z0-9][A-Za-z0-9 _.,?!'-]{4,119}$/;
 export function validateGroundedDraft(out,sources){
  if(out?.choices?.[0]?.message?.tool_calls?.length||out?.choices?.[0]?.finish_reason==='tool_calls')
   throw Error('AI_TOOL_CALL_DENIED');
- const raw=out?.response??out?.choices?.[0]?.text??out?.choices?.[0]?.message?.content;
+ const candidate=out?.response??out?.result?.response??out?.choices?.[0]?.text??out?.choices?.[0]?.message?.content;
+ const raw=typeof candidate==='string'?candidate.trim():null;
  if(typeof raw!=='string'||raw.length>1400||raw.length<15)throw Error('AI_OUTPUT_INVALID');
- let data;try{data=JSON.parse(raw)}catch{throw Error('AI_OUTPUT_INVALID')}
+ let data;try{data=JSON.parse(raw.replace(/^```(?:json)?\\s*/i,'').replace(/\\s*```$/,'').trim())}catch{throw Error('AI_OUTPUT_INVALID')}
  if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!=='analysis,citations,recommendation'
   ||typeof data.analysis!=='string'||data.analysis.length<10||data.analysis.length>460
   ||typeof data.recommendation!=='string'||data.recommendation.length<10||data.recommendation.length>460
@@ -77,7 +78,10 @@ export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=c
    const result=validateGroundedDraft(await run(req.env.AI,prompt),sources);
    return res.status(200).json({data:{...result,sources:result.citationIndices.map(i=>sources[i-1]),
     readOnly:true,actionAuthorized:false,modelInvoked:true,verifiedFacts:false,provider:'cloudflare-workers-ai',remainingDaily:quota.remaining}});
-  }catch{return res.status(503).json(apiError('AI_ANALYSIS_UNVERIFIED','AI output did not pass advisory validation'))}
+  }catch(error){
+   const reason=['AI_TOOL_CALL_DENIED','AI_OUTPUT_INVALID','AI_OUTPUT_UNVERIFIED','AI_CLAIM_DISALLOWED'].includes(error?.message)?error.message:'AI_PROVIDER_FAILURE';
+   return res.status(503).json({...apiError('AI_ANALYSIS_UNVERIFIED','AI output did not pass advisory validation'),failureStage:reason});
+  }
  };
 }
 export default createVoiceEvidenceAiHandler();

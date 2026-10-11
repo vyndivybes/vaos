@@ -1,0 +1,45 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createSessionToken, SESSION_COOKIE} from '../lib/auth.mjs';
+import {createVoiceCapabilitiesHandler} from './voice-capabilities.mjs';
+import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
+
+function request({email='shyamsundhar1982@gmail.com',method='GET',control='off'}={}) {
+  return {method,headers:{cookie:email ? `${SESSION_COOKIE}=${createSessionToken(email)}` : ''},
+    env:{VAOS_VOICE_CONTROL:control},url:'https://vaos.example/api/voice-capabilities'};
+}
+function response() {
+  const state={status:200,body:null,headers:{}};
+  const res={setHeader(k,v){state.headers[k]=v;return res;},status(n){state.status=n;return res;},json(v){state.body=v;return res;}};
+  return {res,state};
+}
+async function handle(params) {
+  const {res,state}=response(); await createVoiceCapabilitiesHandler()(request(params),res);return state;
+}
+test('voice capability is an explicit, registered Worker route',()=>{
+  assert.equal(typeof DEFAULT_API_HANDLERS['/api/voice-capabilities'],'function');
+});
+test('deny unauthenticated callers and other identities',async()=>{
+  assert.equal((await handle({email:null})).status,401);
+  assert.equal((await handle({email:'kaaviyam1519@gmail.com'})).status,403);
+  assert.equal((await handle({method:'POST'})).status,405);
+});
+test('default and unknown flags remain off, with no action authority',async()=>{
+  for(const control of ['off','enabled',undefined]){
+    const state=await handle({control});
+    assert.equal(state.status,200);
+    assert.equal(state.body.data.enabled,false);
+    assert.equal(state.body.data.actionAuthorized,false);
+    assert.equal(state.body.data.serverAudioEnabled,false);
+    assert.equal(state.headers['Cache-Control'],'no-store');
+  }
+});
+test('qualified founder-only browser pilot exposes no dispatch or automatic submission',async()=>{
+  const state=await handle({control:'founder-readonly-browser-v1'});
+  assert.equal(state.status,200);
+  assert.deepEqual(state.body.data,{
+    enabled:true,mode:'BROWSER_DICTATION_READONLY',transport:'BROWSER_WEB_SPEECH',
+    manualReviewRequired:true,speechRecognitionMayUseBrowserVendorService:true,
+    automaticSubmission:false,agentDispatch:false,actionAuthorized:false,serverAudioEnabled:false,
+  });
+});

@@ -39,6 +39,7 @@ test('Missing, short, malformed, copied, legacy and shared hashes fail closed',(
   {...good,VAOS_SESSION_HMAC_KEY:good.VAOS_DEV_CHECKER_PASSWORD_SHA256},
   {...good,VAOS_DEV_LOGIN_PASSWORD_SHA256:legacy},
   {...good,VAOS_DEV_CHECKER_PASSWORD_SHA256:undefined},
+  {...good,VAOS_DEV_CHECKER_PASSWORD_SHA256:legacy},
   {...good,VAOS_DEV_CHECKER_PASSWORD_SHA256:good.VAOS_DEV_LOGIN_PASSWORD_SHA256},
   {...good,VAOS_DEV_LOGIN_PASSWORD_SHA256:'wrong'},
  ];

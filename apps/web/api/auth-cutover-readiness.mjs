@@ -17,6 +17,7 @@ export function evaluateHardenedCutoverReadiness(env={}){
  if(!DIGEST.test(maker))holds.push('MAKER_CREDENTIAL_DIGEST_INVALID');
  if(maker===LEGACY_MAKER_SHA256)holds.push('LEGACY_MAKER_CREDENTIAL_FORBIDDEN');
  if(!DIGEST.test(checker))holds.push('CHECKER_CREDENTIAL_DIGEST_INVALID');
+ if(checker===LEGACY_MAKER_SHA256)holds.push('LEGACY_CHECKER_CREDENTIAL_FORBIDDEN');
  if(DIGEST.test(maker)&&DIGEST.test(checker)&&maker===checker)holds.push('MAKER_CHECKER_CREDENTIAL_COLLISION');
  if(secret&&((DIGEST.test(maker)&&secret.toLowerCase()===maker)
            ||(DIGEST.test(checker)&&secret.toLowerCase()===checker)))holds.push('HMAC_CREDENTIAL_COLLISION');

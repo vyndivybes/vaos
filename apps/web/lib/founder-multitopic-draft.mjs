@@ -4,7 +4,7 @@ import {FOUNDER_AI_MODEL} from './founder-ai-draft.mjs';
 
 const ORDER=Object.freeze(['status','verification','blockers','evidence','closure']);
 const PATTERNS=Object.freeze({
- status:/\bstatus\b|\bstate\b|\bprogress\b/i,
+ status:/\bstatus\b|\bcurrent\s+state\b|\bprogress\b/i,
  verification:/\bverif(?:y|ied|ication|ying)\b|\bwork[\s-]*packages?\b|\bcompleted\b/i,
  blockers:/\bblock(?:er|ers|ed|ing)?\b|\boutstanding\b|\bunresolved\b/i,
  evidence:/\bevidence\b|\bproof\b|\breferences?\b|\bcitations?\b|\baudit\b/i,
@@ -71,9 +71,9 @@ export async function runFounderMultiTopicDraft({ai,agentId,instruction,report,c
  const blocks=report.blockedWorkPackageIds;
  const evidence=report.evidenceRefs;
  const chunks={
-  status:'Status: mission '+report.missionId+' is recorded as '+stat+'.',
+  status:'Status: Mission '+report.missionId+' is recorded as '+stat+'.',
   verification:'Verification: '+report.verifiedWorkPackages+' of '+report.totalWorkPackages+' work packages independently verified.',
-  blockers:blocks.length?'Blockers recorded: '+blocks.join(', ')+'.':'Blockers: no blocked work packages appear in the current authoritative snapshot.',
+  blockers:blocks.length?'Blockers recorded: '+blocks.join(', ')+'.':'No blocked work packages appear in the current authoritative snapshot.',
   evidence:evidence.length?'Evidence references: '+evidence.join(', ')+'.':'Evidence: no independently verified evidence references were supplied.',
   closure:stat==='CLOSED'?'Formal closure: mission status is CLOSED.':
    'Formal closure: NOT formally closed; recorded mission status is '+stat+'.'

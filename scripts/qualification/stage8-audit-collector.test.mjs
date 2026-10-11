@@ -7,7 +7,7 @@ const jobs={jobs:[{id:456,name:'actual-hosted-auth',conclusion:'success',steps:[
  {name:'Actual hosted VAOS login, persistent R2 replay denial, cleanup',conclusion:'success'}]}]};
 function mock({missing='',outcome='success'}={}){
  return async url=>{
-  if(url.includes('/actions/runs/'))return {ok:true,json:async()=>({...run,conclusion:outcome})};
+  if(url.includes('/actions/runs/') && !url.includes('/jobs?'))return {ok:true,json:async()=>({...run,conclusion:outcome})};
   if(url.includes('/jobs?'))return {ok:true,json:async()=>jobs};
   if(url.includes('/actions/jobs/456/logs')){
    return {ok:true,text:async()=>Object.values(EVIDENCE_MARKERS).filter(s=>s!==missing)

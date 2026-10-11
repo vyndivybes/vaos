@@ -54,6 +54,6 @@ test('one-shot voice capability is separately enabled only for authenticated fou
  assert.equal(accepted.body.data.actionAuthorized,false);
  assert.equal((await handle({control:'off',conversation:'founder-readonly-one-shot-v1'})).body.data.oneShotEnabled,false);
  assert.equal((await handle({control:'founder-readonly-browser-v1',conversation:'invalid'})).body.data.oneShotEnabled,false);
- assert.equal((await handle({email:'another@example.com',control:'founder-readonly-browser-v1',conversation:'founder-readonly-one-shot-v1'})).status,403);
+ assert.equal((await handle({email:'kaaviyam1519@gmail.com',control:'founder-readonly-browser-v1',conversation:'founder-readonly-one-shot-v1'})).status,403);
  assert.equal((await handle({email:null,control:'founder-readonly-browser-v1',conversation:'founder-readonly-one-shot-v1'})).status,401);
 });

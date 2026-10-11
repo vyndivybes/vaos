@@ -1,0 +1,22 @@
+name: stage8-governance-regression
+on:
+  pull_request:
+    paths:
+      - 'scripts/qualification/stage8-governance-gates.test.mjs'
+      - '.github/workflows/stage8-governance-regression.yml'
+      - 'apps/web/lib/auth.mjs'
+      - 'apps/web/lib/stage8-qualification-evidence.mjs'
+      - 'apps/web/api/auth-cutover-readiness.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test scripts/qualification/stage8-governance-gates.test.mjs

@@ -4,7 +4,7 @@
   "version": "0.0.3",
   "type": "module",
   "scripts": {
-    "test": "node --test router.test.mjs lib/auth.test.mjs lib/workspace-model.test.mjs lib/control-plane.test.mjs",
-    "lint": "node --check app.mjs && node --check router.mjs && node --check workspace.mjs && node --check lib/auth.mjs && node --check lib/workspace-model.mjs && node --check lib/control-plane.mjs && node --check api/login.mjs && node --check api/session.mjs && node --check api/logout.mjs && node --check api/control-plane.mjs"
+    "test": "node --test founder-voice.test.mjs router.test.mjs lib/auth.test.mjs lib/workspace-model.test.mjs lib/control-plane.test.mjs",
+    "lint": "node --check app.mjs && node --check router.mjs && node --check workspace.mjs && node --check lib/auth.mjs && node --check lib/workspace-model.mjs && node --check lib/control-plane.mjs && node --check api/login.mjs && node --check api/session.mjs && node --check api/logout.mjs && node --check api/control-plane.mjs && node --check founder-voice.mjs && node --check founder-voice.test.mjs"
   }
 }

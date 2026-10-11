@@ -1,0 +1,26 @@
+name: stage8-isolated-acceptance
+on:
+  pull_request:
+    paths:
+      - 'apps/web/api/stage8-isolated-acceptance.test.mjs'
+      - 'apps/web/api/login.mjs'
+      - 'apps/web/api/logout.mjs'
+      - 'apps/web/api/session.mjs'
+      - 'apps/web/lib/auth.mjs'
+      - 'apps/web/lib/session-revocation.mjs'
+      - 'apps/web/cloudflare-worker.mjs'
+      - '.github/workflows/stage8-isolated-acceptance.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-auth:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Isolated synthetic auth acceptance (no production credentials)
+        run: node --test apps/web/api/stage8-isolated-acceptance.test.mjs

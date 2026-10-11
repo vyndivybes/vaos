@@ -188,10 +188,25 @@ async function autoReadQuestion(transcript){
  }
  const fullQuestion=expandFollowup(question,lastFederatedQuestion);
  if(classifyVoiceQuestion(question)==='LIVE_BUSINESS_RECORDS'){
-   const answer=unsupportedBusinessReadback();
-   autoAnswer.textContent=answer;
-   autoStatus.textContent='Sales ledger not connected for qualified read-only voice answers.';
-   voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+answer+'\nNo model invoked. No action authorized.');
+   const abort=new AbortController();autoAbort=abort;
+   autoStatus.textContent='Reading authorized VYNDI OS sales-order pipeline...';
+   try{
+     const response=await fetch('/api/voice-commercial',{method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal});
+     if(!response.ok)throw Error('COMMERCIAL_SOURCE_NOT_QUALIFIED');
+     const data=(await response.json())?.data;
+     if(data?.sourceSystem!=='VYNDI_OS'||data?.readOnly!==true||data?.actionAuthorized!==false
+        ||typeof data?.answer!=='string')throw Error('COMMERCIAL_DATA_INVALID');
+     if(autoAbort!==abort)return;
+     autoAnswer.textContent=data.answer;
+     autoStatus.textContent='Authorized commercial snapshot received. Speaking result.';
+     voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+data.answer+'\nNo model invoked. No action authorized.');
+   }catch{
+     if(autoAbort===abort){
+       const answer=unsupportedBusinessReadback();
+       autoAnswer.textContent=answer;autoStatus.textContent='Sales read unavailable or not qualified.';
+       voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+answer+'\nNo model invoked. No action authorized.');
+     }
+   }finally{if(autoAbort===abort)autoAbort=null;}
    return;
  }
  const abort=new AbortController();autoAbort=abort;

@@ -33,6 +33,7 @@ import founderChat from './api/founder-chat.mjs';
 import founderConversation from './api/founder-conversation.mjs';
 import voiceCapabilities from './api/voice-capabilities.mjs';
 import voiceDiscover from './api/voice-discover.mjs';
+import voiceCommercial from './api/voice-commercial.mjs';
 import federatedKnowledge from './api/federated-knowledge.mjs';
 import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
@@ -80,6 +81,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/founder-conversation': founderConversation,
   '/api/voice-capabilities': voiceCapabilities,
   '/api/voice-discover': voiceDiscover,
+  '/api/voice-commercial': voiceCommercial,
   '/api/federated-knowledge': federatedKnowledge,
   '/api/voice-ai-focus': voiceAiFocus,
 });

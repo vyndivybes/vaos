@@ -9,7 +9,7 @@ create table if not exists vaos_private.founder_agent_drafts (
  source_hash text not null check (source_hash ~ '^[a-f0-9]{64}$'),
  evidence_refs text[] not null default '{}'::text[],
  provider text not null default 'cloudflare-workers-ai' check (provider='cloudflare-workers-ai'),
- model text not null default '@cf/zai-org/glm-4.7-flash' check (model='@cf/zai-org/glm-4.7-flash'),
+ model text not null default '@cf/meta/llama-3.1-8b-instruct-fp8' check (model='@cf/meta/llama-3.1-8b-instruct-fp8'),
  status text not null default 'AI_DRAFT_UNVERIFIED' check(status='AI_DRAFT_UNVERIFIED'),
  created_at timestamptz not null default now(),
  constraint founder_agent_draft_source_count check (cardinality(evidence_refs) <= 20)

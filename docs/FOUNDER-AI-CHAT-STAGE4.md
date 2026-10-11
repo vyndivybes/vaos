@@ -7,7 +7,7 @@ records a REPORT_REQUEST message to **Project Controls** or **VAOS Orchestrator*
 the already-commissioned Stage 2 inbox; optionally enters a mission ID; and can
 request one natural-language model draft from Cloudflare Workers AI.
 
-This is **not a qualified digital-employee response**. Outputs are explicitly
+This is **not a qualified digital-employee response**. The first pilot accepts only an exact JSON echo of authoritative mission facts; it does not use free-form AI narrative to make factual claims. Outputs are explicitly
 \`AI_DRAFT_UNVERIFIED\`. An independent database mission snapshot and Stage 3
 verifier-derived facts are the only sources of authoritative evidence; model text
 cannot grant a PASS, authorize closure or claim a business transaction occurred.
@@ -21,9 +21,9 @@ cannot grant a PASS, authorize closure or claim a business transaction occurred.
 - No user-supplied URL/model, tools, function calling, mission dispatch,
   approvals, jobs, overrides, updates or other VYNDI writes.
 - Native Workers AI binding; one fixed free-tier-eligible model
-  \`@cf/zai-org/glm-4.7-flash\`, max 256 output tokens per request. Model availability and output schema verified against live Cloudflare catalog; GLM replies are in choices[0].message.content.
-  On paid Workers accounts, usage above any free allowance may incur charges.
-  **Check actual account usage limits/billing and obtain cost approval before activation.**
+  \`@cf/meta/llama-3.1-8b-instruct-fp8\`, max 256 output tokens per request. Live Cloudflare tests showed GLM-4.7 Flash produced no usable text within 256 tokens, and Granite invented an unsupported blocker. The selected Llama 3.1 8B FP8 model returned correctly structured JSON in a synthetic test. The Worker independently compares every echoed mission fact and formats the final text ONLY from authoritative data; extra model prose or contradictory facts fail closed.
+  Live synthetic model tests consumed small amounts of quota. Cloudflare subscription and account billing read endpoints returned authorization failures; a Workers & Pages usage screenshot does not verify Workers AI neuron balance. On paid Workers accounts, usage above any free allowance may incur charges.
+  **HOLD: account-specific Workers AI billing/usage is not independently confirmed; obtain spend-limit evidence before activation.**
 - Candidate migration \`founder_agent_drafts\` is private, RLS enabled and
   append-only; one AI draft per original request. An exact Edge RPC authenticates
   the server key. Idempotent replay uses persisted text, no model re-invocation

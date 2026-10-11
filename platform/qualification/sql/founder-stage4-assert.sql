@@ -57,7 +57,7 @@ begin
   'shyamsundhar1982@gmail.com','project','MISSION-0001',
   'A test draft with independent evidence only.',repeat('a',64),array['synthetic-evidence-1']);
  if v->>'outcome'<>'RECORDED' or v->'reply'->>'status'<>'AI_DRAFT_UNVERIFIED'
-    or v->'reply'->>'model'<>'@cf/zai-org/glm-4.7-flash' then
+    or v->'reply'->>'model'<>'@cf/meta/llama-3.1-8b-instruct-fp8' then
   raise exception 'APPEND_FAILED: %',v; end if;
  v := public.vaos_founder_chat_append('synthetic-test-server-key','00000000-0000-4000-8000-000000000001',
   'shyamsundhar1982@gmail.com','project','MISSION-0001',

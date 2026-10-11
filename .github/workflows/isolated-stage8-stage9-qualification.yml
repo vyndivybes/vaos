@@ -51,9 +51,9 @@ jobs:
               VAOS_DEV_CHECKER_PASSWORD_SHA256:crypto.createHash('sha256').update('synthetic-checker-only').digest('hex')}};
           fs.writeFileSync('wrangler-isolated-qual.json',JSON.stringify(cfg),{mode:0o600});
           NODE
-          npx wrangler dev --config wrangler-isolated-qual.json --local --port 8789 > stage8-isolated-runtime.log 2>&1 &
+          npx --yes wrangler@4.149.0 dev --config wrangler-isolated-qual.json --local --port 8789 > stage8-isolated-runtime.log 2>&1 &
           worker_pid=$!
-          trap 'status=$?; if [ $status -ne 0 ]; then echo "SANITIZED LOCAL STARTUP DIAGNOSTIC"; sed -E "s/[[:xdigit:]]{64,128}/[REDACTED_HEX]/g" stage8-isolated-runtime.log | tail -75; fi; kill $worker_pid 2>/dev/null || true; rm -f wrangler-isolated-qual.json stage8-isolated-runtime.log' EXIT
+          trap 'status=$?; if [ $status -ne 0 ]; then echo "SANITIZED LOCAL STARTUP DIAGNOSTIC"; sed -E "s/(env\\.(VAOS_SESSION_HMAC_KEY|VAOS_DEV_LOGIN_PASSWORD_SHA256|VAOS_DEV_CHECKER_PASSWORD_SHA256)).*/\\1 [REDACTED_SYNTHETIC_BINDING]/; s/[[:xdigit:]]{64,128}/[REDACTED_HEX]/g" stage8-isolated-runtime.log | tail -75; fi; kill $worker_pid 2>/dev/null || true; rm -f wrangler-isolated-qual.json stage8-isolated-runtime.log' EXIT
           node --input-type=module <<'NODE'
           import assert from 'node:assert/strict';
           const base='http://127.0.0.1:8789';

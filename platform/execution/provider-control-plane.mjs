@@ -97,7 +97,7 @@ export function createProviderControlPlane({
   if (!Number.isInteger(healthTtlMs) || healthTtlMs < 1) throw fail('PROVIDER_CONTROL_INVALID:healthTtlMs');
   if (!healthTtlOverridesMs || typeof healthTtlOverridesMs !== 'object' || Array.isArray(healthTtlOverridesMs)
       || Object.entries(healthTtlOverridesMs).some(([key,value]) =>
-        !PROVIDER_ID.test(key) || !Number.isInteger(value) || value < 1 || value > 3_600_000)) {
+        !PROVIDER_ID.test(key) || !Number.isInteger(value) || value < 1 || value > (key === 'infisical' ? 4_200_000 : 3_600_000))) {
     throw fail('PROVIDER_CONTROL_INVALID:healthTtlOverridesMs');
   }
   if (stateStore !== null && (typeof stateStore?.load !== 'function' || typeof stateStore?.save !== 'function')) {

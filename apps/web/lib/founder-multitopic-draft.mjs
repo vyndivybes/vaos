@@ -80,7 +80,7 @@ export async function runFounderMultiTopicDraft({ai,agentId,instruction,report,c
  };
  const content=('Follow-up to previous request '+(context.sequence-1)+'. '+
   ordered.map(x=>chunks[x]).join(' ')+
-  ' This is an unverified, read-only AI-assisted classification; no business action or approval is authorized.')
+  ' This is an unverified, read-only AI-assisted classification. No business action or approval is authorized.')
   .replace(/\s+/g,' ');
  if(content.length>1200)throw Error('FOUNDER_MULTITOPIC_DRAFT_TOO_LONG');
  return Object.freeze({content,status:'AI_DRAFT_UNVERIFIED',model:FOUNDER_AI_MODEL,

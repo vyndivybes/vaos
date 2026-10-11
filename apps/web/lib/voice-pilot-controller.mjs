@@ -107,13 +107,10 @@ export function createVoicePilotController({
     if(utterance||playback||speechSynthesis.speaking===true||speechSynthesis.pending===true){
       stopSpeaking();
     }
-    let voices=[];
-    try{voices=typeof speechSynthesis.getVoices==='function'?speechSynthesis.getVoices():[];}catch{}
-    const chosen=Array.isArray(voices)?(
-      voices.find(v=>String(v.lang).toLowerCase()==='en-in')||
-      voices.find(v=>String(v.lang).toLowerCase().startsWith('en-'))||
-      voices.find(v=>String(v.lang).toLowerCase()==='en')||
-      voices.find(v=>v.default===true)||voices[0]):undefined;
+    // Match the independently audible short-speech test: let Chromium resolve
+    // its native en-US speech voice. Explicit voice objects can select a silent
+    // engine on devices that advertise dozens of language packs.
+    const playbackLang='en-US';
     const state={chunks:splitSpeech(content),index:0};
     playback=state;
     function playNext(){
@@ -125,7 +122,7 @@ export function createVoicePilotController({
       }
       try{
         const current=new SpeechSynthesisUtteranceClass(state.chunks[state.index]);
-        if(chosen){current.voice=chosen;current.lang=chosen.lang;}
+        current.lang=playbackLang;
         current.rate=1;
         current.onstart=()=>{
           if(playback!==state||utterance!==current)return;

@@ -21,6 +21,9 @@ export default function handler(req, res) {
   }
 
   const normalizedEmail = String(email).trim().toLowerCase();
-  res.setHeader("Set-Cookie", buildSessionCookie(createSessionToken(normalizedEmail)));
+  let token;
+  try { token = createSessionToken(normalizedEmail); }
+  catch { return res.status(503).json({ error:"authentication_configuration_unavailable" }); }
+  res.setHeader("Set-Cookie", buildSessionCookie(token));
   return res.status(200).json({ authenticated: true, email: normalizedEmail, environment: "development" });
 }

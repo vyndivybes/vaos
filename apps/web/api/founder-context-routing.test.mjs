@@ -37,7 +37,7 @@ function fixture({hist=history,stored=null,claim='CLAIMED'}={}){
     status:'AI_DRAFT_UNVERIFIED',model:FOUNDER_AI_MODEL,evidenceRefs:p.evidenceRefs}}}}),
   getConversation:()=>({async history(){calls.push('history');return hist}}),
   getMission:()=>({async snapshot(){calls.push('mission');return {
-    mission:{id:mid,status:'READY_FOR_CLOSURE'},workPackages:[],handoffs:[]}}}}),
+    mission:{id:mid,status:'READY_FOR_CLOSURE'},workPackages:[],handoffs:[]}}}),
   runAi:async()=>{calls.push('legacy');return {content:'Standalone report with evidence from Stage 4.',model:FOUNDER_AI_MODEL,
     actionAuthorized:false,status:'AI_DRAFT_UNVERIFIED'}},
   runContextAi:async({context})=>{calls.push('context');assert.equal(context.previousMessageId,prev);

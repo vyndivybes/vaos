@@ -13,7 +13,7 @@ function validBody(x){return x&&typeof x==='object'&&!Array.isArray(x)
  &&UUID.test(x.threadId)&&UUID.test(x.messageId)&&x.threadId!==x.messageId
  &&validMission(x.agentId,x.missionId)
  &&typeof x.instruction==='string'&&x.instruction.trim().length>=5&&x.instruction.length<=900
- &&!/[\\x00-\\x1f\\x7f]/.test(x.instruction);}
+ &&!/[\x00-\x1f\x7f]/.test(x.instruction);}
 export function createFounderConversationHandler({getStore=getFounderConversationStore,getInbox=getFounderInboxStore}={}){
  return async function handler(req,res){
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');

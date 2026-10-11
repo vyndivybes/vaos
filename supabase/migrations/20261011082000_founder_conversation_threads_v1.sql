@@ -100,9 +100,10 @@ begin
    return jsonb_build_object('outcome','REPLAY','threadId',p_thread_id,'messageId',p_message_id); end if;
   return jsonb_build_object('outcome','IDEMPOTENCY_CONFLICT');
  end if;
- select count(*),max(message_id) filter(where sequence_no=(
-  select max(sequence_no) from vaos_private.founder_conversation_turns where thread_id=p_thread_id))
- into v_count,v_last from vaos_private.founder_conversation_turns where thread_id=p_thread_id;
+ select count(*) into v_count from vaos_private.founder_conversation_turns
+  where thread_id=p_thread_id;
+ select message_id into v_last from vaos_private.founder_conversation_turns
+  where thread_id=p_thread_id order by sequence_no desc limit 1;
  if v_count>=12 then return jsonb_build_object('outcome','THREAD_LIMIT'); end if;
  if v_last is not null and not exists(
   select 1 from vaos_private.founder_agent_drafts where request_message_id=v_last

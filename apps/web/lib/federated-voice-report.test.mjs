@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {formatFederatedVoiceEvidence,expandFollowup,classifyVoiceQuestion,unsupportedBusinessReadback} from './federated-voice-report.mjs';
+import {formatFederatedVoiceEvidence,expandFollowup,classifyVoiceQuestion,unsupportedBusinessReadback,makeGroundedSuggestions} from './federated-voice-report.mjs';
 const fixture={readOnly:true,actionAuthorized:false,scope:'ALLOWLISTED_GITHUB_CODE_METADATA',failedSources:[],evidence:[
  {repository:'vayu-shastr/veloxis-engineering-design-manual',path:'Dossiers/frame.md',sha:'a'.repeat(40),excerpts:[{line:23,text:'Carbon frame size medium geometry candidate still needs independent design review.'}]},
  {repository:'vyndivybes/vyndios',path:'docs/project.md',sha:'b'.repeat(40),excerpts:[{line:8,text:'Carbon frame procurement schedule remains unverified.'}]}]};
@@ -30,4 +30,14 @@ test('transactional questions do not route to GitHub source evidence',()=>{
  const answer=unsupportedBusinessReadback();
  assert.match(answer,/not the sales ledger/);
  assert.doesNotMatch(answer,/zero sales|no sales/);
+});
+
+test('advisory request yields bounded evidence-grounded next steps, no invented sales figures',()=>{
+ const report=formatFederatedVoiceEvidence({...fixture,evidence:[{repository:'vayu-shastr/veloxis-engineering-design-manual',path:'Dossiers/frame.md',sha:'a'.repeat(40),excerpts:[{line:23,text:'Carbon frame geometry validation is pending supplier material testing.'}]}]},'carbon frame');
+ const advice=makeGroundedSuggestions(report,'What should we prioritize?');
+ assert.equal(advice.advisory,true);assert.equal(advice.grounded,true);
+ assert.match(advice.text,/validation|supplier|unverified/i);
+ assert.doesNotMatch(advice.text,/₹|approved for production|sales total/i);
+ assert.equal(makeGroundedSuggestions(report,'What is the status?'),null);
+ assert.equal(makeGroundedSuggestions({...report,sources:[]},'What do you recommend?').grounded,false);
 });

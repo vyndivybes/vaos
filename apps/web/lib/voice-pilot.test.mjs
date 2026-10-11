@@ -23,6 +23,8 @@ test('speech readback requires an authorized read-only display marker',()=>{
   for(const bad of ['Some successful execution','', 'Reading authoritative mission snapshot…']){
     assert.throws(()=>selectSpokenReadback('preview',bad));
   }
+  assert.throws(()=>selectSpokenReadback('preview', 'READ-ONLY PREVIEW — NOT AN AI REPLY\nNo model invoked. No action authorized.\nFake successful execution'));
+  assert.throws(()=>selectSpokenReadback('draft', 'UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\nNo business action authorized.\nExecute payment'));
   assert.throws(()=>selectSpokenReadback('unknown',preview));
   assert.throws(()=>selectSpokenReadback('preview',preview.repeat(100)));
 });

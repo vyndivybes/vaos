@@ -67,7 +67,7 @@ test('Stage 6 cannot run when Stage 5 ledger is not commissioned',async()=>{
 test('forged or stale history fails before claim or AI inference',async()=>{
  for(const hist of [{...history,agentId:'finance'},
   {...history,turns:[{...history.turns[0],reply:null},history.turns[1]]},
-  {...history,turns:[history.turns[0],{...history.turns[1],messageId:prev}]}]){
+  {...history,turns:[{...history.turns[0],messageId:id},history.turns[1]]}]){
   const f=fixture({hist}),v=await call(f);
   assert.equal(v.status,503);assert.equal(f.calls.includes('claim'),false);
   assert.equal(f.calls.includes('context'),false);
@@ -81,6 +81,6 @@ test('persisted replay returns without another history lookup or model invocatio
  assert.deepEqual(f.calls,['inbox','get']);
 });
 test('checker identity denied before a persistent store read',async()=>{
- const f=fixture(),v=await call(f,{email:'checker@example.test'});
+ const f=fixture(),v=await call(f,{email:'kaaviyam1519@gmail.com'});
  assert.equal(v.status,403);assert.deepEqual(f.calls,[]);
 });

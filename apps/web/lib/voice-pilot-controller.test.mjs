@@ -86,3 +86,54 @@ test('voice browser UI is flag checked and contains no autonomous posting',async
   assert.doesNotMatch(script,/fetch\(['"]\/api\/(?:intents|executions|approvals|founder-chat|founder-conversation)/);
   assert.doesNotMatch(script,/\.submit\s*\(/);
 });
+
+test('speech uses an installed English voice when en-IN is unavailable',()=>{
+  let current;
+  class FakeUtterance {constructor(text){this.text=text;current=this;}}
+  const voice=createVoicePilotController({
+    SpeechSynthesisUtteranceClass:FakeUtterance,
+    speechSynthesis:{
+      getVoices:()=>[{name:'Windows English',lang:'en-US',default:true}],
+      speak:()=>{},
+      cancel:()=>{},
+    },
+  });
+  const content='UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\nSimulation only.\nNo business action authorized.';
+  assert.equal(voice.speak('draft',content),true);
+  assert.equal(current.voice?.name,'Windows English');
+  assert.equal(current.lang,'en-US');
+});
+
+test('audio playback confirms actual onstart rather than immediately claiming success',()=>{
+  let queued, canceled=0;const states=[];
+  class FakeUtterance {constructor(text){this.text=text;}}
+  const engine={getVoices:()=>[],speaking:false,pending:false,speak:u=>{queued=u;},cancel:()=>{canceled++;}};
+  const voice=createVoicePilotController({
+    SpeechSynthesisUtteranceClass:FakeUtterance,
+    speechSynthesis:engine,
+    onStatus:x=>states.push(x),
+  });
+  const content='UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\nSimulation only.\nNo business action authorized.';
+  assert.equal(voice.speak('draft',content),true);
+  assert.equal(canceled,0,'do not cancel the idle engine immediately before speech starts');
+  assert.equal(states.some(x=>/playback started/i.test(x)),false);
+  queued.onstart();
+  assert.equal(states.some(x=>/playback started/i.test(x)),true);
+  queued.onend();
+  assert.equal(states.at(-1).includes('finished'),true);
+});
+
+test('speech errors explain the actual browser failure without claiming playback',()=>{
+  let queued;const states=[];
+  class FakeUtterance {constructor(text){this.text=text;}}
+  const voice=createVoicePilotController({
+    SpeechSynthesisUtteranceClass:FakeUtterance,
+    speechSynthesis:{getVoices:()=>[],speak:u=>{queued=u;},cancel(){}},
+    onStatus:x=>states.push(x),
+  });
+  const content='UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\nSimulation only.\nNo business action authorized.';
+  assert.equal(voice.speak('draft',content),true);
+  queued.onerror({error:'language-unavailable'});
+  assert.match(states.at(-1),/language-unavailable/i);
+  assert.match(states.at(-1),/voice|speaker|audio/i);
+});

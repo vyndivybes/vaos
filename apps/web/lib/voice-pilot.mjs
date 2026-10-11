@@ -20,7 +20,7 @@ export function selectSpokenReadback(source, text) {
   };
   const pair = Object.hasOwn(markers, source) ? markers[source] : null;
   if (!pair || typeof text !== 'string' || text.length > 3200
-      || !text.startsWith(pair[0] + '\n') || !text.includes(pair[1])) {
+      || !text.startsWith(pair[0] + '\n') || !text.endsWith(pair[1])) {
     throw new Error('VOICE_REPLY_UNVERIFIED');
   }
   return text;

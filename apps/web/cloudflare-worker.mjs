@@ -30,6 +30,7 @@ import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
 import founderChat from './api/founder-chat.mjs';
 import founderConversation from './api/founder-conversation.mjs';
+import voiceCapabilities from './api/voice-capabilities.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
@@ -73,6 +74,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/founder-agent-report': founderAgentReport,
   '/api/founder-chat': founderChat,
   '/api/founder-conversation': founderConversation,
+  '/api/voice-capabilities': voiceCapabilities,
 });
 
 function loginRedirect(request) {

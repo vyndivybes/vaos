@@ -22,7 +22,7 @@ test('reject sensitive queries without external requests',async()=>{
 });
 test('search only three approved repositories through GET without business effects',async()=>{
  const r=await call();assert.equal(r.x.status,200);assert.equal(r.calls.length,3);
- assert.ok(r.calls.every(c=>c.options.method==='GET'&&c.url.startsWith('https://api.github.com/search/code?')));
+ assert.ok(r.calls.every(c=>c.options.method==='GET'&&c.options.redirect==='manual'&&c.url.startsWith('https://api.github.com/search/code?')));
  assert.equal(r.x.body.data.actionAuthorized,false);
  assert.equal(r.x.body.data.evidenceQualified,false);
 });
@@ -33,4 +33,12 @@ test('total upstream failure returns 503 with safe diagnostic categories',async(
  assert.equal(x.status,503);assert.equal(x.body.data.sourceFailures.length,3);
  assert.ok(x.body.data.sourceFailures.every(f=>f.code==='UNAUTHORIZED'));
  assert.equal(JSON.stringify(x.body).includes('012345678901234567890123456789'),false);
+});
+
+test('GitHub redirect is never followed with bearer token',async()=>{
+ const {x,res}=response();let count=0;
+ const req={method:'GET',url:'https://vaos.example/api/federated-knowledge?q=carbon%20frame',headers:{cookie:`${SESSION_COOKIE}=${createSessionToken('shyamsundhar1982@gmail.com')}`},env:{VAOS_FEDERATED_KNOWLEDGE_CONTROL:'founder-readonly-v1',VAOS_FEDERATED_GITHUB_TOKEN:'012345678901234567890123456789'}};
+ await createFederatedKnowledgeHandler({fetchImpl:async(_url,options)=>{count++;assert.equal(options.redirect,'manual');return {ok:false,status:302};}})(req,res);
+ assert.equal(count,3);assert.equal(x.status,503);
+ assert.ok(x.body.data.sourceFailures.every(x=>x.code==='UPSTREAM_HTTP_ERROR'));
 });

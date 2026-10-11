@@ -27,6 +27,7 @@ import zapierWebhook from './api/zapier-webhook.mjs';
 import langgraph from './api/langgraph.mjs';
 import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
+import founderChat from './api/founder-chat.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
@@ -67,6 +68,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/langgraph': langgraph,
   '/api/founder-inbox': founderInbox,
   '/api/founder-agent-report': founderAgentReport,
+  '/api/founder-chat': founderChat,
 });
 
 function loginRedirect(request) {

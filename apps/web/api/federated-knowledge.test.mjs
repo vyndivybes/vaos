@@ -39,7 +39,7 @@ test('GitHub redirect is never followed with bearer token',async()=>{
  const {x,res}=response();let count=0;
  const req={method:'GET',url:'https://vaos.example/api/federated-knowledge?q=carbon%20frame',headers:{cookie:`${SESSION_COOKIE}=${createSessionToken('shyamsundhar1982@gmail.com')}`},env:{VAOS_FEDERATED_KNOWLEDGE_CONTROL:'founder-readonly-v1',VAOS_FEDERATED_GITHUB_TOKEN:'012345678901234567890123456789'}};
  await createFederatedKnowledgeHandler({fetchImpl:async(_url,options)=>{count++;assert.equal(options.redirect,'manual');return {ok:false,status:302};}})(req,res);
- assert.equal(count,3);assert.equal(x.status,503);
+ assert.equal(count,6);assert.equal(x.status,503);
  assert.ok(x.body.data.sourceFailures.every(x=>x.code==='UPSTREAM_HTTP_ERROR'));
 });
 

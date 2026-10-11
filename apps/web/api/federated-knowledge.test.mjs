@@ -5,7 +5,7 @@ import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 function response(){const x={status:200,body:null};const res={setHeader(){return res;},status(n){x.status=n;return res;},json(b){x.body=b;return res;}};return {x,res};}
 async function call({email='shyamsundhar1982@gmail.com',flag='founder-readonly-v1',q='carbon frame',token='012345678901234567890123456789',method='GET'}={}){
  const {x,res}=response();const calls=[];
- const fetchImpl=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>({items:[]})};};
+ const fetchImpl=async(url,options)=>{calls.push({url,options});return {ok:true,json:async()=>url.includes('/search/code?')?{items:[]}:url.includes('/git/trees/')?{tree:[],truncated:false}:{default_branch:'main'}};};
  const req={method,url:'https://vaos.example/api/federated-knowledge?q='+encodeURIComponent(q),
  headers:{cookie:email?`${SESSION_COOKIE}=${createSessionToken(email)}`:''},
  env:{VAOS_FEDERATED_KNOWLEDGE_CONTROL:flag,VAOS_FEDERATED_GITHUB_TOKEN:token}};
@@ -21,8 +21,8 @@ test('reject sensitive queries without external requests',async()=>{
  const r=await call({q:'show api key secrets'});assert.equal(r.x.status,422);assert.equal(r.calls.length,0);
 });
 test('search only three approved repositories through GET without business effects',async()=>{
- const r=await call();assert.equal(r.x.status,200);assert.equal(r.calls.length,3);
- assert.ok(r.calls.every(c=>c.options.method==='GET'&&c.options.redirect==='manual'&&c.url.startsWith('https://api.github.com/search/code?')));
+ const r=await call();assert.equal(r.x.status,200);assert.equal(r.calls.length,9);
+ assert.ok(r.calls.every(c=>c.options.method==='GET'&&c.options.redirect==='manual'&&c.url.startsWith('https://api.github.com/')));
  assert.equal(r.x.body.data.actionAuthorized,false);
  assert.equal(r.x.body.data.evidenceQualified,false);
 });

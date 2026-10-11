@@ -57,7 +57,25 @@ try{
  assert.equal((await call('/api/session',{headers:{cookie:makerCookie}})).status,401);
  console.log('STAGE8_HOSTED_ACTUAL_HANDLERS_REVOKE_REDEPLOY_PASS');
 }finally{
- if(deployed){try{wrangler('delete','--name',worker,'--force');console.log('STAGE8_EPHEMERAL_WORKER_DELETED');}
- catch{console.error('HOLD_EPHEMERAL_WORKER_CLEANUP_REQUIRED');process.exitCode=1;}}
+ if(deployed){
+  try{wrangler('delete','--name',worker,'--force');}
+  catch{console.warn('STAGE8_WRANGLER_DELETE_NONZERO_VERIFYING_REMOTE_STATE');}
+  try{
+   const response=await fetch('https://api.cloudflare.com/client/v4/accounts/'+
+    encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+
+    '/workers/scripts/'+encodeURIComponent(worker),{
+     headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN}
+    });
+   const result=await response.json().catch(()=>({}));
+   const absent=response.status===404 || result.errors?.some(e=>e.code===10007);
+   if(!absent){
+    console.error('HOLD_EPHEMERAL_WORKER_CLEANUP_REQUIRED',response.status);
+    process.exitCode=1;
+   }else console.log('STAGE8_EPHEMERAL_WORKER_DELETED_AND_VERIFIED');
+  }catch{
+   console.error('HOLD_EPHEMERAL_WORKER_CLEANUP_UNVERIFIED');
+   process.exitCode=1;
+  }
+ }
  await rm(dir,{recursive:true,force:true});
 }

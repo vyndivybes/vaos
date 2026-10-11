@@ -19,7 +19,7 @@ function makeRes(){const result={status:200,body:null,headers:{}};
   status(n){result.status=n;return res},json(j){result.body=j;return res}};
  return {res,result};}
 function call(req){const {res,result}=makeRes();
- createAuthCutoverReadinessHandler()(req,res);return result;}
+ createAuthCutoverReadinessHandler({runtimeEnv:()=>req.env})(req,res);return result;}
 
 test('Stage 8 preflight accepts independent valid bindings without exposing values',()=>{
  const data=evaluateHardenedCutoverReadiness(good);
@@ -75,4 +75,14 @@ test('Preflight is GET-only and cannot enable hardening or mutate env',()=>{
  const hold=call(makeReq({env:{...good,VAOS_SESSION_HMAC_KEY:undefined}}));
  assert.equal(hold.status,200);assert.equal(hold.body.data.state,'HOLD');
  assert.equal(hold.body.data.productionCutoverAuthorized,false);
+});
+
+test('Stage 8 live preflight fails on runtime/Worker binding mismatch without exposing values',()=>{
+ const req=makeReq();
+ const {res,result}=makeRes();
+ createAuthCutoverReadinessHandler({runtimeEnv:()=>({...good,VAOS_SESSION_HMAC_KEY:'ca'.repeat(32)})})(req,res);
+ assert.equal(result.status,200);
+ assert.equal(result.body.data.state,'HOLD');
+ assert.ok(result.body.data.holds.includes('RUNTIME_BINDING_MISMATCH'));
+ for(const value of Object.values(good))assert.equal(JSON.stringify(result).includes(value),false);
 });

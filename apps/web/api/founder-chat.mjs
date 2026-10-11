@@ -98,8 +98,19 @@ export function createFounderChatHandler({getInbox=getFounderInboxStore,
   catch{return res.status(503).json(apiError('FOUNDER_CHAT_CLAIM_UNAVAILABLE','Inference claim unavailable'));}
   if(claimed?.outcome==='RATE_LIMITED')
    return res.status(429).json(apiError('FOUNDER_CHAT_RATE_LIMITED','Founder AI claim limit reached'));
-  if(claimed?.outcome!=='CLAIMED')
-   return res.status(409).json(apiError('FOUNDER_CHAT_ALREADY_CLAIMED','Request already claimed; no retry without a new recorded message'));
+  if(claimed?.outcome!=='CLAIMED'){
+   // Read-only reconciliation: another request may have committed the reply.
+   // Never invoke AI twice or clear an immutable claim.
+   let afterClaim;
+   try{afterClaim=await store.get({messageId,agentId,actorEmail:session.email});}
+   catch{return res.status(503).json(apiError('FOUNDER_CHAT_READBACK_UNAVAILABLE','Reply reconciliation unavailable'));}
+   if(afterClaim?.reply){
+    if(!replyValid(afterClaim.reply,messageId,agentId,missionId))
+     return res.status(409).json(apiError('FOUNDER_CHAT_MISSION_CONFLICT','Persisted reply conflicts with mission identity'));
+    return res.status(200).json({data:{reply:afterClaim.reply,outcome:'REPLAY',modelInvoked:false,actionAuthorized:false}});
+   }
+   return res.status(409).json(apiError('FOUNDER_CHAT_CLAIMED_NO_REPLY','Inference previously claimed but no reply committed; recovery requires independent review'));
+  }
   let draft;
   try{
    const selectedInference=context?.previousMessageId

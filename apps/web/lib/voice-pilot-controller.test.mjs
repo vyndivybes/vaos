@@ -166,3 +166,23 @@ test('stop speaking prevents subsequent chunks and ignores late completion callb
  assert.equal(queued.length,1);
  assert.equal(cancellations,1);
 });
+
+
+test('founder UI exposes two read-only speaker checks gated by founder capability',async()=>{
+ const [page,script,consoleScript]=await Promise.all([
+   readFile(new URL('../founder-console.html',import.meta.url),'utf8'),
+   readFile(new URL('../voice-pilot-browser.mjs',import.meta.url),'utf8'),
+   readFile(new URL('../founder-console.mjs',import.meta.url),'utf8'),
+ ]);
+ assert.match(page,/id="voice-demo-speak"[^>]*disabled/);
+ assert.match(page,/id="voice-mission-speak"[^>]*disabled/);
+ assert.match(page,/audio test only/i);
+ assert.match(script,/VOICE_AUDIO_TEST_MESSAGE/);
+ assert.match(script,/voice\.speak\('preview',VOICE_AUDIO_TEST_MESSAGE\)/);
+ assert.match(script,/missionReadback\.dataset\.voiceReadback/);
+ assert.match(script,/voice\.speak\('preview',speech\)/);
+ assert.match(script,/enabled.*voice\.speechAvailable/);
+ assert.match(consoleScript,/formatMissionSnapshotSpokenPreview/);
+ assert.match(consoleScript,/delete out\.dataset\.voiceReadback/);
+ assert.doesNotMatch(script,/fetch\(['"]\/api\/missions/);
+});

@@ -1,4 +1,4 @@
-import {appendVoiceTranscript} from './lib/voice-pilot.mjs';
+import {appendVoiceTranscript,VOICE_AUDIO_TEST_MESSAGE} from './lib/voice-pilot.mjs';
 import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
 
 const $ = id => document.getElementById(id);
@@ -9,7 +9,10 @@ const stopMic = $('voice-microphone-stop');
 const speakPreview = $('voice-preview-speak');
 const speakDraft = $('voice-draft-speak');
 const stopAudio = $('voice-audio-stop');
-const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio];
+const demoSpeak = $('voice-demo-speak');
+const missionSpeak = $('voice-mission-speak');
+const missionReadback = $('mission-summary');
+const buttons=[startInstruction,startFollowup,stopMic,speakPreview,speakDraft,stopAudio,demoSpeak,missionSpeak];
 buttons.forEach(button=>{button.disabled=true;});
 let enabled=false;
 
@@ -37,6 +40,8 @@ function updateButtons() {
   speakPreview.disabled=!enabled||!voice.speechAvailable;
   speakDraft.disabled=!enabled||!voice.speechAvailable;
   stopAudio.disabled=!enabled||!voice.speechAvailable;
+  demoSpeak.disabled=!enabled||!voice.speechAvailable;
+  missionSpeak.disabled=!enabled||!voice.speechAvailable;
 }
 function speakResult(source,id) {
   if(!enabled)return;
@@ -52,6 +57,16 @@ stopMic.addEventListener('click',()=>voice.stopListening());
 speakPreview.addEventListener('click',()=>speakResult('preview','report-preview'));
 speakDraft.addEventListener('click',()=>speakResult('draft','founder-ai-response'));
 stopAudio.addEventListener('click',()=>voice.stopSpeaking());
+demoSpeak.addEventListener('click',()=>{if(enabled)voice.speak('preview',VOICE_AUDIO_TEST_MESSAGE);});
+missionSpeak.addEventListener('click',()=>{
+  if(!enabled)return;
+  const id=$('mission-id').value.trim(),speech=missionReadback.dataset.voiceReadback;
+  if(!speech||!id||!missionReadback.textContent.startsWith('Mission: '+id+'\n')){
+    status.textContent='Read an existing mission snapshot first. No record created.';
+    return;
+  }
+  voice.speak('preview',speech);
+});
 window.addEventListener('pagehide',()=>{voice.stopListening();voice.stopSpeaking();});
 
 async function checkCapability() {

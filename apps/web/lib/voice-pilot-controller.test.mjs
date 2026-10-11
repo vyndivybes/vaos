@@ -87,7 +87,7 @@ test('voice browser UI is flag checked and contains no autonomous posting',async
   assert.doesNotMatch(script,/\.submit\s*\(/);
 });
 
-test('speech uses an installed English voice when en-IN is unavailable',()=>{
+test('speech uses native en-US without explicitly selecting a potentially silent installed voice',()=>{
   let current;
   class FakeUtterance {constructor(text){this.text=text;current=this;}}
   const voice=createVoicePilotController({
@@ -100,7 +100,7 @@ test('speech uses an installed English voice when en-IN is unavailable',()=>{
   });
   const content='UNVERIFIED AI DRAFT — NOT AGENT EVIDENCE\nSimulation only.\nNo business action authorized.';
   assert.equal(voice.speak('draft',content),true);
-  assert.equal(current.voice?.name,'Windows English');
+  assert.equal(current.voice,undefined);
   assert.equal(current.lang,'en-US');
 });
 

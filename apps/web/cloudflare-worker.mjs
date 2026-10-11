@@ -142,6 +142,18 @@ export function createCloudflareApp({
       const assetResponse = await assetFetcher(request);
       if (assetResponse.status !== 404) return uncachedWorkspaceAsset(path, assetResponse);
 
+      // Missing executable modules must never be redirected to HTML/login.
+      // Browser module loaders reject HTML; surface a real 404 for diagnosis.
+      if (/\.(?:mjs|js)$/i.test(path)) {
+        return new Response('JavaScript module not found', {
+          status: 404,
+          headers: {
+            'Content-Type': 'text/plain; charset=utf-8',
+            'Cache-Control': 'no-store',
+            'X-Content-Type-Options': 'nosniff',
+          },
+        });
+      }
       return loginRedirect(request);
     },
   });

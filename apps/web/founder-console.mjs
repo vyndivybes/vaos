@@ -120,10 +120,17 @@ $('copy-draft').addEventListener('click',async()=>{
  try{await navigator.clipboard.writeText(preparedText);message.textContent='Draft copied. Not sent.';}
  catch{message.textContent='Clipboard unavailable. Copy the displayed draft manually.';}
 });
-// An edited mission ID invalidates any previously qualified spoken snapshot.
-$('mission-id').addEventListener('input',()=>{delete $('mission-summary').dataset.voiceReadback;});
+// Editing the question or mission ID invalidates any in-flight and prior spoken snapshot.
+let missionReadSequence=0;
+function invalidateMissionVoiceReadback(){
+  ++missionReadSequence;
+  delete $('mission-summary').dataset.voiceReadback;
+}
+$('mission-id').addEventListener('input',invalidateMissionVoiceReadback);
+$('voice-readonly-question').addEventListener('input',invalidateMissionVoiceReadback);
 $('mission-form').addEventListener('submit',async event=>{
  event.preventDefault();const id=$('mission-id').value.trim(),out=$('mission-summary');
+ const serial=++missionReadSequence;
  delete out.dataset.voiceReadback;
  if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(id)){out.textContent='Enter a valid existing mission ID.';return;}
  out.textContent='Reading authoritative mission snapshot…';
@@ -131,12 +138,13 @@ $('mission-form').addEventListener('submit',async event=>{
   const response=await fetch('/api/missions?missionId='+encodeURIComponent(id),{credentials:'same-origin',cache:'no-store'});
   if(!response.ok)throw new Error('MISSION_UNAVAILABLE');
   const record=(await response.json())?.data;
+  if(serial!==missionReadSequence||$('mission-id').value.trim()!==id)return;
   if(!record?.mission||record.mission.id!==id||!Array.isArray(record.workPackages))throw new Error('MISSION_INVALID');
   const work=record.workPackages;
   out.textContent='Mission: '+id+'\nStatus: '+(record.mission.status||'UNVERIFIED')+'\nWork packages: '+work.length+'\nCompleted: '+work.filter(p=>p.status==='COMPLETED').length+'\n\nView full evidence in Mission Status.';
   try{out.dataset.voiceReadback=formatMissionSnapshotSpokenPreview(record,id);}
   catch{delete out.dataset.voiceReadback;}
- }catch{out.textContent='Mission unavailable. No completion or verification inferred.';}
+ }catch{if(serial===missionReadSequence)out.textContent='Mission unavailable. No completion or verification inferred.';}
 });
 
 let conversationThreadId=null;

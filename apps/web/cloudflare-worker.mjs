@@ -4,6 +4,7 @@ import { getDurableControlService } from './lib/durable-control-provider.mjs';
 import { getExecutionEngine } from './lib/execution-provider.mjs';
 import { runCloudflareInfisicalHealth, isCloudflareInfisicalHealthEnabled } from '../../platform/execution/cloudflare-infisical-direct-health.mjs';
 import login from './api/login.mjs';
+import {hardenedRevocationRequired,checkHardenedRevocation} from './lib/session-revocation.mjs';
 import session from './api/session.mjs';
 import authCutoverReadiness from './api/auth-cutover-readiness.mjs';
 import logout from './api/logout.mjs';
@@ -136,6 +137,14 @@ export function createCloudflareApp({
       if (path === '/api' || path.startsWith('/api/')) {
         const handler = apiHandlers[path];
         if (!handler) return jsonError(404, 'NOT_FOUND', 'API route not found');
+        if(hardenedRevocationRequired(runtimeEnv)){
+          try{
+            const checked=await checkHardenedRevocation(request.headers.get('cookie')||'',runtimeEnv?.VAOS_ARTIFACTS);
+            if(checked.revoked)return jsonError(401,'SESSION_REVOKED','Session is no longer valid');
+          }catch{
+            return jsonError(503,'SESSION_REVOCATION_UNAVAILABLE','Authentication verification unavailable');
+          }
+        }
         return invokeCloudflareHandler(handler, request, runtimeEnv);
       }
 

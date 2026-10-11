@@ -3,7 +3,7 @@ import {createVoicePilotController} from './lib/voice-pilot-controller.mjs';
 import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
 import {createOneShotVoiceConversation} from './lib/voice-one-shot.mjs';
 import {createVoiceMultiTurnSession} from './lib/voice-multiturn.mjs';
-import {formatFederatedVoiceEvidence,expandFollowup,classifyVoiceQuestion,unsupportedBusinessReadback} from './lib/federated-voice-report.mjs';
+import {formatFederatedVoiceEvidence,expandFollowup,classifyVoiceQuestion,unsupportedBusinessReadback,makeGroundedSuggestions} from './lib/federated-voice-report.mjs';
 
 const $ = id => document.getElementById(id);
 const autoAsk=$('vaos-auto-ask'),autoStop=$('vaos-auto-stop'),autoStatus=$('vaos-auto-status'),autoAnswer=$('vaos-auto-answer');
@@ -205,8 +205,10 @@ async function autoReadQuestion(transcript){
    const report=formatFederatedVoiceEvidence(data,fullQuestion);
    if(autoAbort!==abort)return;
    lastFederatedQuestion=fullQuestion;
+   const suggestion=makeGroundedSuggestions(report,question);
+   const spokenAnswer=suggestion?report.answer+' '+suggestion.text:report.answer;
    autoAnswer.replaceChildren();
-   autoAnswer.append(document.createTextNode(report.answer+'\n\nSources:\n'));
+   autoAnswer.append(document.createTextNode(spokenAnswer+'\n\nSources:\n'));
    for(const source of report.sources){
      const anchor=document.createElement('a');
      anchor.href=source.url;anchor.target='_blank';anchor.rel='noopener noreferrer';
@@ -214,7 +216,7 @@ async function autoReadQuestion(transcript){
      autoAnswer.append(anchor,document.createElement('br'));
    }
    autoStatus.textContent='Federated evidence retrieved. Speaking source-grounded answer.';
-   voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+report.answer+'\nNo model invoked. No action authorized.');
+   voice.speak('preview','READ-ONLY PREVIEW — NOT AN AI REPLY\n'+spokenAnswer.slice(0,2900)+'\nNo model invoked. No action authorized.');
  }catch(error){
    if(autoAbort===abort){
      autoStatus.textContent=error?.name==='AbortError'?'Search cancelled.':

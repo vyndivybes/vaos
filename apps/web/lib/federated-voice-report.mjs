@@ -51,3 +51,25 @@ export function formatFederatedVoiceEvidence(data,query){
  const caveat=failed.length?' Some repositories were unavailable: '+failed.join(', ')+'.':'';
  return {answer:(answer+caveat).slice(0,2400),sources,failedSources:failed,actionAuthorized:false,mode:'DETERMINISTIC_SOURCE_EXCERPTS'};
 }
+
+/** Evidence-aware decision support, not a generative-model conclusion. */
+export function makeGroundedSuggestions(report,question){
+ if(!report||!Array.isArray(report.sources)||typeof question!=='string')throw Error('ADVICE_INVALID');
+ const q=question.toLowerCase();
+ if(!/\b(suggest|recommend|should|priority|prioriti[sz]e|risk|next step|improve|analyse|analyze)\b/.test(q))
+   return null;
+ if(report.sources.length===0)return {
+   text:'I cannot recommend a project-specific action without matching verified source excerpts. Connect the relevant operational system or ask about an engineering record.',
+   advisory:true,grounded:false};
+ const corpus=report.sources.map(s=>s.excerpt.toLowerCase()).join(' ');
+ const actions=[];
+ if(/\b(block|hold|pending|open|unverified|not approved|failed|risk)\b/.test(corpus))
+   actions.push('Prioritize a review of the open or unverified items in the linked source records before making a release decision.');
+ if(/\b(test|fea|validate|validation|qualif|prototype)\b/.test(corpus))
+   actions.push('Confirm the applicable validation evidence and acceptance criteria against the cited engineering documents.');
+ if(/\b(supply|material|supplier|procure|lead time)\b/.test(corpus))
+   actions.push('Check supplier readiness and material specifications against the current approved baseline.');
+ if(actions.length===0)actions.push('Compare the cited evidence with the current approved baseline and identify owners for any unresolved decisions.');
+ return {text:'Suggested next checks, not an authorization: '+actions.slice(0,3).join(' ')+' These are conservative suggestions based on the linked excerpts, not conclusions from a generative AI model.',
+ advisory:true,grounded:true};
+}

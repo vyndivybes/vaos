@@ -5,6 +5,7 @@ import { getExecutionEngine } from './lib/execution-provider.mjs';
 import { runCloudflareInfisicalHealth, isCloudflareInfisicalHealthEnabled } from '../../platform/execution/cloudflare-infisical-direct-health.mjs';
 import login from './api/login.mjs';
 import session from './api/session.mjs';
+import authCutoverReadiness from './api/auth-cutover-readiness.mjs';
 import logout from './api/logout.mjs';
 import controlPlane from './api/control-plane.mjs';
 import intents from './api/intents.mjs';
@@ -37,6 +38,7 @@ import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/login': login,
   '/api/session': session,
+  '/api/auth-cutover-readiness': authCutoverReadiness,
   '/api/logout': logout,
   '/api/control-plane': controlPlane,
   '/api/intents': intents,

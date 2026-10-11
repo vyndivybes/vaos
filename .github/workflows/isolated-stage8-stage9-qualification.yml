@@ -1,0 +1,81 @@
+name: isolated-stage8-auth-stage9-p2p-qualification
+on:
+  pull_request:
+    paths:
+      - "apps/web/qualification/stage8-auth-isolated-worker.mjs"
+      - "apps/web/qualification/stage8-auth-isolated.test.mjs"
+      - "platform/qualification/stage9-p2p-inmemory-sandbox.test.mjs"
+      - "docs/STAGE8-9-ISOLATED-QUALIFICATION.md"
+      - ".github/workflows/isolated-stage8-stage9-qualification.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  isolated-auth-code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Unit acceptance with random synthetic credentials
+        run: node --test apps/web/qualification/stage8-auth-isolated.test.mjs apps/web/lib/auth-hardening.test.mjs
+  isolated-procurement-sandbox:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Simulated P2P and production-write denial
+        run: node --test platform/qualification/stage9-p2p-inmemory-sandbox.test.mjs platform/qualification/stage9-procurement-preflight.test.mjs platform/execution/vyndi-write-bridge.test.mjs
+  isolated-cloudflare-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Install pinned dependencies
+        run: npm ci --ignore-scripts
+      - name: Wrangler local-only auth runtime with ephemeral credentials
+        run: |
+          node --input-type=module <<'NODE'
+          import crypto from 'node:crypto';
+          import fs from 'node:fs';
+          const cfg={name:'vaos-auth-isolated-qual',main:'./apps/web/qualification/stage8-auth-isolated-worker.mjs',
+            compatibility_date:'2026-10-07',compatibility_flags:['nodejs_compat'],
+            vars:{VAOS_AUTH_HARDENED_CONTROL:'dedicated-hmac-v1',
+              VAOS_SESSION_HMAC_KEY:crypto.randomBytes(32).toString('hex'),
+              VAOS_DEV_LOGIN_PASSWORD_SHA256:crypto.createHash('sha256').update('synthetic-founder-only').digest('hex'),
+              VAOS_DEV_CHECKER_PASSWORD_SHA256:crypto.createHash('sha256').update('synthetic-checker-only').digest('hex')}};
+          fs.writeFileSync('wrangler-isolated-qual.json',JSON.stringify(cfg),{mode:0o600});
+          NODE
+          npx --yes wrangler@4.149.0 dev --config wrangler-isolated-qual.json --local --port 8789 > stage8-isolated-runtime.log 2>&1 &
+          worker_pid=$!
+          trap 'status=$?; if [ $status -ne 0 ]; then echo "SANITIZED LOCAL STARTUP DIAGNOSTIC"; sed -E "s/(env\\.(VAOS_SESSION_HMAC_KEY|VAOS_DEV_LOGIN_PASSWORD_SHA256|VAOS_DEV_CHECKER_PASSWORD_SHA256)).*/\\1 [REDACTED_SYNTHETIC_BINDING]/; s/[[:xdigit:]]{64,128}/[REDACTED_HEX]/g" stage8-isolated-runtime.log | tail -75; fi; kill $worker_pid 2>/dev/null || true; rm -f wrangler-isolated-qual.json stage8-isolated-runtime.log' EXIT
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          const base='http://127.0.0.1:8789';
+          let connected=false;
+          for(let i=0;i<25;i++){
+            try{const r=await fetch(base+'/qualification/session'); if(r.status===401){connected=true;break;}}catch{}
+            await new Promise(resolve=>setTimeout(resolve,800));
+          }
+          assert.equal(connected,true,'Isolated local Worker did not start');
+          for(const [email,password,role] of [['shyamsundhar1982@gmail.com','synthetic-founder-only','maker'],
+            ['kaaviyam1519@gmail.com','synthetic-checker-only','checker']]){
+            const r=await fetch(base+'/qualification/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password})});
+            assert.equal(r.status,200,role+' login');
+            const cookie=r.headers.get('set-cookie');
+            assert.match(cookie,/HttpOnly/);
+            const check=await fetch(base+'/qualification/session',{headers:{Cookie:cookie.split(';')[0]}});
+            assert.equal(check.status,200,role+' signed-session');
+            assert.equal((await check.json()).role,role);
+          }
+          const denied=await fetch(base+'/qualification/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:'kaaviyam1519@gmail.com',password:'synthetic-founder-only'})});
+          assert.equal(denied.status,401);
+          const unauth=await fetch(base+'/qualification/session');
+          assert.equal(unauth.status,401);
+          console.log('STAGE8_ISOLATED_CLOUDFLARE_RUNTIME_PASS');
+          NODE

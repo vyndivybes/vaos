@@ -5,6 +5,9 @@ on:
       - 'scripts/qualification/stage8-certificate-install-preflight.mjs'
       - 'scripts/qualification/stage8-certificate-install-preflight.test.mjs'
       - '.github/workflows/stage8-certificate-install-preflight.yml'
+      - 'scripts/qualification/stage8-certificate-bulk-package.mjs'
+      - 'scripts/qualification/stage8-certificate-bulk-package.test.mjs'
+      - '.github/workflows/stage8-auto-independent-qualification.yml'
 permissions:
   contents: read
 jobs:
@@ -17,4 +20,6 @@ jobs:
         with:
           node-version: '22'
       - run: node --test scripts/qualification/stage8-certificate-install-preflight.test.mjs
+      - run: node --test scripts/qualification/stage8-certificate-bulk-package.test.mjs
       - run: node --check scripts/qualification/stage8-certificate-install-preflight.mjs
+      - run: node --check scripts/qualification/stage8-certificate-bulk-package.mjs

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult} from './main-voice.mjs';
+import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult,splitDecisionBrief} from './main-voice.mjs';
 test('voice bot is read-only and blocks operational write or approval commands',()=>{
  for(const s of ['approve PO 123','delete all records','transfer salary','pay supplier','dispatch an agent','post invoice','execute mission','create an order','update a customer'])
   assert.equal(classifyDashboardQuestion(s).kind,'DENY',s);
@@ -89,4 +89,24 @@ test('founder requests business planning, scenario forecasting and comparisons t
  const code=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.match(html,/id="vaos-voice-language"/);
  assert.match(code,/api\/business-advisor\?q=/);
+});
+
+test('decision brief is short, card-safe and available as separate spoken executive summary',async()=>{
+ const normalized=formatReadOnlyResult('ADVISORY',{sourceSystem:'BUSINESS_ADVISORY',
+  status:'OBSERVED',readOnly:true,actionAuthorized:false,advisoryOnly:true,
+  language:'en',translationQualified:true,
+  answer:'Business review (read-only)\n\nDECISION — Reconcile shortages.\n\nKEY EVIDENCE — 47 shortage lines.\n\nDO FIRST — Rank affected job cards.',
+  spokenAnswer:'First clear the most critical shortage lines before spending.',
+  webSources:[]});
+ assert.equal(normalized.spokenAnswer,'First clear the most critical shortage lines before spending.');
+ const blocks=splitDecisionBrief(normalized.answer);
+ assert.equal(blocks.length,4);
+ assert.equal(blocks[1].label,'DECISION');
+ assert.equal(blocks[2].detail,'47 shortage lines.');
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
+ const voice=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.ok(html.includes('/main-voice.mjs?v=20261013-decision-brief'));
+ assert.ok(voice.includes('player.speak(spokenAnswer||lastAnswer)'));
+ assert.doesNotMatch(voice,/innerHTML\\s*=/);
 });

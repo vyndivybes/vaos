@@ -518,3 +518,21 @@
  padding:9px 14px;min-width:176px;border:1px solid #a9cdd7;border-radius:10px;background:#fff;color:#1f364b}
 .workspace-body .va-advisor-options small{font-size:14px;line-height:1.45;color:#536d80;flex:1}
 @media(max-width:700px){.workspace-body .va-advisor-options{display:grid}.workspace-body .va-advisor-options select{width:100%}}
+
+/* Advisor decision cards: conclusion first, clear evidence and actions.
+   Works in the narrow founder workspace and does not mimic a ledger. */
+.workspace-body #vaos-voice-answer{font-size:16px;line-height:1.6;color:#24445a}
+.workspace-body .va-brief-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+ gap:12px;margin:14px 0 4px}
+.workspace-body .va-brief-card{min-width:0;padding:15px 16px;border:1px solid #dce7ed;
+ border-radius:12px;background:#f8fbfd;box-shadow:0 2px 8px rgba(15,57,88,.035)}
+.workspace-body .va-brief-card:first-child{grid-column:1/-1;background:#eaf6f7;padding:10px 16px}
+.workspace-body .va-brief-card--priority{background:#edf9f5;border-color:#b4ddcc}
+.workspace-body .va-brief-card h3{margin:0 0 8px;font-size:13px;font-weight:850;
+ text-transform:uppercase;letter-spacing:.06em;color:#236d74}
+.workspace-body .va-brief-card--priority h3{color:#146451}
+.workspace-body .va-brief-card p{margin:0!important;font-size:16px!important;
+ line-height:1.62!important;color:#223c4d!important;overflow-wrap:anywhere}
+@media(max-width:1080px){.workspace-body .va-brief-grid{grid-template-columns:1fr}}
+@media(max-width:650px){.workspace-body .va-brief-card{padding:12px 13px}
+ .workspace-body .va-brief-card p{font-size:16px!important}}

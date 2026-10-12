@@ -23,7 +23,7 @@ export function parsePublicNewsFeed(xml){
  const found=[];
  for(const [,item] of items){
   const title=clean(item.match(/<title>([\s\S]*?)<\/title>/i)?.[1]);
-  const url=clean(item.match(/<link>([\s\S]*?)<\/link>/i)?.[1]);
+  const url=clean(item.match(/<link>([\s\S]*?)<\/link>/i)?.[1]).replace(/\?oc=\d{1,2}$/, '');
   const published=clean(item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i)?.[1]);
   if(title.length<8||title.length>230||!/^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(url))continue;
   found.push({title,url,published:Number.isFinite(Date.parse(published))?new Date(published).toISOString():'unknown'});
@@ -100,7 +100,7 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
     const quota=await claim(req.env.VAOS_ARTIFACTS);
     if(quota?.allowed===true){
      const ranking=await rankAdvisoryOptions({ai:req.env.AI,domain:specs[0].domain,observations});
-     data.answer+=' Model-assisted option ranking (unverified advisory): prefer option '+ranking.choice+
+     data.answer+='\n\nAI RANKING — Model-assisted option ranking (unverified advisory): prefer option '+ranking.choice+
       '. Reason: '+ranking.reason+' Human approval is still required.';
      data.agenticRecommendation='MODEL_ASSISTED_UNVERIFIED';
      data.modelInvoked=true;
@@ -115,7 +115,9 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
     if(quota?.allowed===true){
      const translated=await translate(req.env.AI,data.answer,lang);
      if(checkTranslation(data.answer,translated)){
-      data.answer=translated;data.translationQualified=true;
+      data.answer=translated;
+      data.spokenAnswer=translated.trim().replace(/\s+/g,' ').slice(0,310);
+      data.translationQualified=true;
       data.languageNote='Verified numerical consistency; qualitative translation is advisory';
      }
     }

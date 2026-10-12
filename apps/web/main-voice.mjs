@@ -49,7 +49,10 @@ export function formatReadOnlyResult(kind,data){
   const refs=Array.isArray(data.webSources)?data.webSources.filter(x=>x&&typeof x.title==='string'
    &&/^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(x.url)).slice(0,3)
    .map(x=>({url:x.url,repository:'Unverified web headline',path:x.title.slice(0,150)})):[];
-  return {status:data.status,answer:data.answer.slice(0,3400),sources:refs,language:data.translationQualified?data.language:'en'};
+  return {status:data.status,answer:data.answer.slice(0,3400),sources:refs,
+   language:data.translationQualified?data.language:'en',
+   spokenAnswer:typeof data.spokenAnswer==='string'&&data.spokenAnswer.length>=20
+     &&data.spokenAnswer.length<=450?data.spokenAnswer:data.answer.slice(0,320)};
  }
  if(kind==='INSIGHT'){
   if(data?.readOnly!==true||data.actionAuthorized!==false
@@ -72,6 +75,17 @@ export function formatReadOnlyResult(kind,data){
  }
  throw Error('READ_ONLY_INTENT_REQUIRED');
 }
+/** Safely render decision sections as selectable cards rather than a wall of
+ * ledger text. All content uses textContent, never untrusted HTML.
+ */
+export function splitDecisionBrief(answer){
+ if(typeof answer!=='string'||answer.length>4000)return [];
+ return answer.split(/\n\n+/).slice(0,9).map(section=>{
+  const dash=section.indexOf(' — ');
+  return dash<0?{label:'BUSINESS REVIEW',detail:section.slice(0,1000)}:
+   {label:section.slice(0,dash).slice(0,40),detail:section.slice(dash+3).slice(0,1000)};
+ });
+}
 function init(){
  const root=document.querySelector('#vaos-main-voice');
  if(!root)return;
@@ -81,7 +95,7 @@ function init(){
   note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
   wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test'),replyLanguage=$('vaos-voice-language');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
- let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en';
+ let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en';
  const setStatus=message=>{note.textContent=message;};
  const player=createVoiceReadback({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
@@ -106,7 +120,7 @@ function init(){
  const speakAnswer=()=>{
   if(!voiceEnabled||!lastAnswer)return false;
   wake?.pause();
-  const started=player.speak(lastAnswer);
+  const started=player.speak(spokenAnswer||lastAnswer);
   if(!started)wake?.resume();
   state();return started;
  };
@@ -148,7 +162,7 @@ function init(){
   const intent=classifyDashboardQuestion(input.value);
   if(intent.kind==='DENY'){setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
-  cancel();busy=true;lastAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
+  cancel();busy=true;lastAnswer='';spokenAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
   const abort=new AbortController();controller=abort;
   const timer=setTimeout(()=>abort.abort(),25000);
   let speaking=false;
@@ -168,8 +182,25 @@ function init(){
      :formatReadOnlyResult(intent.kind==='ADVISORY'?'ADVISORY':'INSIGHT',data);
    if(controller!==abort||abort.signal.aborted)return;
    lastAnswer=normalized.answer;
+   spokenAnswer=normalized.spokenAnswer||normalized.answer;
    answerLanguage=normalized.language||'en';
    answer.textContent=normalized.answer;
+   answer.className='';
+   if(intent.kind==='ADVISORY'&&answerLanguage==='en'&&typeof document.createElement==='function'){
+    const blocks=splitDecisionBrief(normalized.answer);
+    if(blocks.length>=3){
+     answer.replaceChildren();
+     answer.className='va-brief-grid';
+     for(const block of blocks){
+      const card=document.createElement('section');
+      const head=document.createElement('h3');
+      const body=document.createElement('p');
+      card.className='va-brief-card'+(/^(DECISION|DO FIRST|WHAT-IF|FORECAST)$/.test(block.label)?' va-brief-card--priority':'');
+      head.textContent=block.label;body.textContent=block.detail;
+      card.append(head,body);answer.append(card);
+     }
+    }
+   }
    for(const ref of normalized.sources||[]){
     if(!/^https:\/\/github\.com\/vyndivybes\/(?:vaos|vyndios)\/blob\/|^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/|^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(ref.url))continue;
     const a=document.createElement('a');a.href=ref.url;a.rel='noopener noreferrer';a.target='_blank';
@@ -183,6 +214,7 @@ function init(){
    const expired=abort.signal.aborted;
    const expiredText='I could not retrieve a verified business answer within 25 seconds. The source may be unavailable.';
    lastAnswer=expired?expiredText:'I could not retrieve a verified business answer. No records were changed.';
+   spokenAnswer=lastAnswer;
    answer.textContent=lastAnswer;
    setStatus(expired?'Request timed out. Try again or check source connections.':String(error?.message||'Read-only lookup unavailable.'));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;

@@ -84,3 +84,8 @@ test('model-assisted planning ranks only bounded observations and never makes bu
  assert.equal(calls.length,1);
  assert.ok(!calls[0].prompt.includes('PRIVATE NAME'));
 });
+
+test('Google News RSS links with safe oc query suffix are retained as externally unverified sources',()=>{
+ const feed='<rss><item><title>Bicycle manufacturing report</title><link>https://news.google.com/rss/articles/abc123?oc=5</link></item></rss>';
+ assert.equal(parsePublicNewsFeed(feed)[0].url,'https://news.google.com/rss/articles/abc123');
+});

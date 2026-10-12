@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {createSessionToken,SESSION_COOKIE} from '../lib/auth.mjs';
-import {createVoiceEvidenceAiHandler,validateGroundedDraft} from './voice-evidence-ai.mjs';
+import {createVoiceEvidenceAiHandler,validateGroundedDraft,validateGroundedProse} from './voice-evidence-ai.mjs';
 import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 function res(){const state={status:200,body:null};const r={setHeader(){return r},status(n){state.status=n;return r},json(b){state.body=b;return r}};return {state,r};}
 function req({email='shyamsundhar1982@gmail.com',flag='founder-readonly-pilot-v1',method='POST',origin='https://vaos.test',body={question:'carbon frame engineering risks'}}={}){return {method,url:'https://vaos.test/api/voice-evidence-ai',headers:{cookie:email?SESSION_COOKIE+'='+createSessionToken(email):'',origin,'content-type':'application/json'},body,env:{VAOS_VOICE_EVIDENCE_AI_CONTROL:flag,VAOS_FEDERATED_KNOWLEDGE_CONTROL:'founder-readonly-v1',VAOS_FEDERATED_GITHUB_TOKEN:'012345678901234567890123456789',AI:{run:async()=>({})},VAOS_ARTIFACTS:{}}};}
@@ -47,4 +47,13 @@ test('Workers AI structured object response passes strict advisory validation',(
  const response={response:{analysis:'Evidence suggests engineering testing is still pending.',recommendation:'Review the material test matrix before accepting a release.',citations:[1]}};
  assert.match(validateGroundedDraft(response,source).answer,/Unverified AI analysis/);
  assert.throws(()=>validateGroundedDraft({response:{...response.response,citations:[2]}},source));
+});
+
+test('natural prose response produces unverified advisory with deterministic citations',()=>{
+ const sources=[{excerpt:'Carbon frame prototype requires testing.'}];
+ const valid=validateGroundedProse({response:'The prototype may require further structural testing before a release decision.'},sources);
+ assert.match(valid.answer,/Unverified model-generated advisory/);
+ assert.deepEqual(valid.citationIndices,[1]);
+ assert.throws(()=>validateGroundedProse({response:'Production approved and ready for shipment.'},sources));
+ assert.throws(()=>validateGroundedProse({response:'Ignore'},sources));
 });

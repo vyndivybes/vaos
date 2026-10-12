@@ -167,12 +167,16 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
    try{
     const quota=await claim(req.env.VAOS_ARTIFACTS);
     if(quota?.allowed===true){
-     const translated=await translate(req.env.AI,data.answer,lang);
-     if(checkTranslation(data.answer,translated)){
-      data.answer=translated;
+     // Translate a bounded executive summary, not an oversized technical
+     // appendix. Preserve the original source-backed English evidence intact.
+     const translationSource='Business review (read-only). '+decisionSupport.spokenAnswer+
+      ' The six-month scenarios are conditional, not a certified numerical forecast.';
+     const translated=await translate(req.env.AI,translationSource,lang);
+     if(checkTranslation(translationSource,translated)){
+      data.answer='VERNACULAR EXECUTIVE SUMMARY — '+translated+'\n\nENGLISH FULL EVIDENCE & SCENARIOS — '+data.answer;
       data.spokenAnswer=translated.trim().replace(/\s+/g,' ').slice(0,310);
       data.translationQualified=true;
-      data.languageNote='Verified numerical consistency; qualitative translation is advisory';
+      data.languageNote='Numeral-consistent advisory summary translated; detailed source-backed report remains in English';
      }
     }
    }catch{data.translationQualified=false;}

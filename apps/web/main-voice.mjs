@@ -1,6 +1,6 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
-import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs';
+import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-mic-handoff';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.

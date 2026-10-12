@@ -238,3 +238,20 @@ test('one-shot command recognizes Slack ChatGPT message attribution without perm
  const slack=s.map.get('qualification/zapier/slack-one-shot-20261012.json');
  assert.equal(Boolean(slack),true);
 });
+
+test('Slack founder one-shot tolerates extra proprietary attribution beyond the known format',async()=>{
+ const s=setup(),out=[];
+ s.env.VAOS_ZAPIER_ONESHOT_CONTROL='approved-synthetic-v1';
+ s.env.ZAPIER_CATCH_HOOK_URL='https://hooks.zapier.com/hooks/catch/123456/secureAbC/';
+ s.fetchImpl=async(url,opts)=>{
+  out.push(url);
+  if(url.startsWith('https://hooks.zapier.com/'))return new Response('accepted',{status:200});
+  const body=JSON.parse(opts.body);
+  return new Response(JSON.stringify({ok:true,channel:body.channel,ts:'1791763200.000089'}),{status:200});
+ };
+ const extra={...dm,text:'VAOS Zapier synthetic verification once'+String.fromCharCode(10)+
+    'Sent using ChatGPT proprietary attribution metadata https://example.invalid'};
+ const r=await invoke(makeRequest(payload(extra,'EvVAOS220')),s);
+ assert.equal(r.status,200);await Promise.all(s.ctx.pending);
+ assert.equal(out.filter(x=>x.startsWith('https://hooks.zapier.com/')).length,1);
+});

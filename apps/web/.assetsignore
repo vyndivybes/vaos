@@ -10,6 +10,8 @@ lib/*
 !lib/voice-intelligence.mjs
 !lib/business-advice.mjs
 !lib/voice-readback.mjs
+!lib/adaptive-read-planner.mjs
+!lib/microphone-diagnostics.mjs
 README.md
 package.json
 vercel.json

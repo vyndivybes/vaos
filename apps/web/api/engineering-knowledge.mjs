@@ -15,7 +15,7 @@ const CORE=[
  'VIBPE_Copilot/KNOWLEDGE_PACK_REGISTER.md',
 ];
 function permittedIssue(value){
- return typeof value==='string'&&/^00_CONTROL\/CURRENT_CONFIGURATION_STATUS_Rev-[0-9A-Za-z.-]+\.md$/.test(value)&&value.length<=175;
+ return typeof value==='string'&&/^00_CONTROL\/CURRENT_CONFIGURATION_STATUS_Rev-[0-9A-Za-z._-]+\.md$/.test(value)&&value.length<=175;
 }
 async function repoReader(repo,token,fetchImpl){
  const headers={'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json',

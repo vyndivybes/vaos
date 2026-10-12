@@ -385,3 +385,89 @@
 @media(prefers-reduced-motion:reduce){
  .workspace-body .va-unit,.workspace-body .va-launch-grid button {transition:none}
 }
+
+/* 2026 legibility correction: prior .55-.78rem labels were too small for an
+   operational dashboard. Improve text and hit-target sizes at all viewports. */
+.workspace-body {font-size:16px;line-height:1.52}
+.workspace-body :is(.nav-item,.va-launch-grid strong,.va-unit__copy strong,.va-domain-row__name strong,.va-next strong) {font-size:16px}
+.workspace-body :is(.workspace-breadcrumb,.workspace-overline,.panel-kicker,.section-strapline,.va-eyebrow,
+  .va-kpi-card small,.va-launch-grid small,.va-unit__copy small,.va-unit__flag,
+  .va-domain-row__name small,.va-next p,.va-tag,.va-chip,
+  .sidebar-section-title,.nav-group__label,.sidebar-footer__note,
+  .va-chart-footnote,.va-group-footer,.va-home-welcome p:not(.va-eyebrow),
+  .va-group-hero__copy>p:not(.va-eyebrow),.va-group-hero__stat>span,
+  .va-focus-panel p,.va-home-group>p:not(.va-eyebrow),.va-home-group__status span,
+  .command-status,.workspace-search__copy small,.pulse-card p,
+  .agent-card p,.agent-card__meta,.approval-row__body small,
+  .approval-row__body em,.empty-state) {font-size:14px;letter-spacing:normal;line-height:1.55}
+.workspace-body :is(.control-header .header-brand__copy em,.identity-chip strong,.hero-status,
+  .panel-action,.workspace-search__action,.va-button,.va-small-link,
+  .va-domain-row__link,.va-coverage__legend p,.va-voice-status,
+  .va-hold-note,.sidebar-mission-link,.va-voice-privacy) {font-size:15px}
+.workspace-body .workspace-search__copy input{font-size:16px}
+.workspace-body .workspace-hero__row>div>p:last-child {font-size:16px}
+.workspace-body .panel-heading h2{font-size:20px}
+.workspace-body .va-panel h3,.workspace-body .va-section-head h3{font-size:20px}
+.workspace-body .pulse-card small,.workspace-body .agent-card h3,
+.workspace-body .agent-status,.workspace-body .approval-row__body strong,
+.workspace-body .va-home-group__status strong {font-size:15px}
+.workspace-body .va-kpi-card p {font-size:14px}
+.workspace-body .nav-item {min-height:49px}
+.workspace-body .sidebar-brand-card small {font-size:12px}
+.workspace-body .sidebar-brand-card span {font-size:13px}
+.workspace-body .workspace-license {font-size:13px}
+.workspace-body .va-launch-grid button {min-height:130px}
+.workspace-body .va-domain-row {padding:15px 13px}
+.workspace-body .va-unit {min-height:125px}
+.workspace-body .va-group-hero h2{font-size:clamp(28px,2.8vw,40px)}
+/* Native VAOS assistant, not an AI-generated decorative placeholder. */
+.workspace-body .va-voice-widget{
+  padding:24px;margin:0 0 20px;border:1px solid #c4e6e2;border-radius:19px;
+  background:linear-gradient(115deg,#f7fffd,#f0f9ff 80%,#f9f6ff);
+  box-shadow:0 8px 26px rgba(25,100,117,.06);
+}
+.workspace-body .va-voice-widget__intro {display:flex;align-items:center;gap:17px;margin-bottom:17px}
+.workspace-body .va-voice-avatar {
+  flex:0 0 58px;width:58px;height:58px;border-radius:19px;display:grid;place-items:center;
+  background:linear-gradient(135deg,#236b91,#35b79b);box-shadow:0 8px 18px #19748b30;
+  color:white;font-size:36px;
+}
+.workspace-body .va-voice-widget__intro>div{flex:1;min-width:0}
+.workspace-body .va-voice-widget h2{font-size:25px;line-height:1.16;margin:0 0 5px;color:#203a51}
+.workspace-body .va-voice-widget__intro p:not(.va-eyebrow){color:#56788a;margin:3px 0 0;font-size:15px;line-height:1.52}
+.workspace-body .va-voice-badge {font-size:13px;font-weight:800;letter-spacing:.035em;
+ padding:8px 12px;border-radius:100px;background:#d5f0e4;color:#267961}
+.workspace-body .va-voice-label{display:block;margin:0 0 8px;color:#304f62;font-weight:800;font-size:15px}
+.workspace-body .va-voice-compose{display:flex;gap:10px;align-items:stretch}
+.workspace-body .va-voice-compose input{
+  flex:1;min-width:0;border-radius:13px;border:1px solid #bfd6e2;background:#fff;
+  padding:15px 17px;color:#254158;font-size:16px;outline-offset:2px}
+.workspace-body .va-voice-compose input::placeholder{color:#8da5b3}
+.workspace-body .va-voice-icon-button{width:55px;flex:0 0 55px;border-radius:13px;
+ border:1px solid #aedbd8;background:white;color:#246778;font-size:24px}
+.workspace-body .va-voice-icon-button:disabled{opacity:.55;cursor:not-allowed}
+.workspace-body .va-voice-toolbar {display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-top:12px}
+.workspace-body .va-voice-toolbar>div{display:flex;gap:8px;flex-wrap:wrap}
+.workspace-body .va-voice-toolbar button{padding:7px 11px;color:#347183;border:1px solid #c8e2e7;background:#fff;border-radius:9px;font-size:14px}
+.workspace-body .va-voice-toolbar button:disabled{opacity:.45;cursor:not-allowed}
+.workspace-body .va-voice-switch{display:inline-flex;align-items:center;gap:8px;font-size:14px;color:#57758a}
+.workspace-body .va-voice-switch input {accent-color:#37888e;width:17px;height:17px}
+.workspace-body .va-voice-status {min-height:19px;margin:13px 0;color:#527d88;font-size:14px}
+.workspace-body .va-voice-response {margin-top:11px;border:1px solid #d7e8ed;background:#fff;border-radius:14px;padding:17px 18px}
+.workspace-body .va-voice-response>strong{font-size:14px;color:#268480}
+.workspace-body .va-voice-response p{font-size:16px;line-height:1.65;color:#25465d;white-space:pre-wrap;margin:8px 0}
+.workspace-body .va-voice-sources{display:flex;flex-wrap:wrap;gap:10px}
+.workspace-body .va-voice-sources a{font-size:14px;color:#277c9b;text-decoration:underline;overflow-wrap:anywhere}
+.workspace-body .va-voice-privacy{margin:11px 0 0;color:#778d9e;font-size:13px;line-height:1.55}
+@media(max-width:760px){
+ .workspace-body .va-voice-widget {padding:16px}
+ .workspace-body .va-voice-widget__intro{gap:10px;align-items:start;flex-wrap:wrap}
+ .workspace-body .va-voice-avatar{width:44px;height:44px;flex-basis:44px;font-size:28px;border-radius:13px}
+ .workspace-body .va-voice-badge{margin-left:auto}
+ .workspace-body .va-voice-compose{flex-wrap:wrap}
+ .workspace-body .va-voice-compose input{flex:1 0 100%}
+ .workspace-body .va-voice-compose .va-button{flex:1}
+ .workspace-body .va-launch-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .workspace-body .workspace-search__copy input {font-size:16px}
+ .workspace-body .nav-item{min-height:45px}
+}

@@ -1,0 +1,130 @@
+import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
+// Same signed VYNDI reads and repository evidence used by existing Founder Voice.
+// This small home assistant deliberately performs no commands, approvals or writes.
+const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
+const SALES=/\b(sales|revenue|orders?|invoices?|customers?|deals?|pipeline|receivables?|quotations?)\b/i;
+export function sanitizeVoiceTranscript(value){
+ if(typeof value!=='string')return null;
+ const s=value.trim().replace(/^(hey|hello|hi)\s+vaos\s*[,.:!?-]?\s*/i,'').trim();
+ return s.length>=5&&s.length<=300&&!/[\x00-\x1f\x7f]/.test(s)?s:null;
+}
+export function classifyDashboardQuestion(value){
+ const q=sanitizeVoiceTranscript(value);
+ if(!q||MODIFICATION.test(q))return {kind:'DENY',question:q};
+ return {kind:SALES.test(q)?'COMMERCIAL':'EVIDENCE',question:q};
+}
+export function voiceCapabilityReady(x){
+ return x?.enabled===true&&x?.manualReviewRequired===true
+ &&x.actionAuthorized===false&&x.agentDispatch===false
+ &&x.automaticSubmission===false&&x.serverAudioEnabled===false;
+}
+export function formatReadOnlyResult(kind,data){
+ if(kind==='COMMERCIAL'){
+  if(data?.readOnly!==true||data?.actionAuthorized!==false
+    ||data?.sourceSystem!=='VYNDI_OS'||typeof data?.answer!=='string'
+    ||data.answer.length>4000)throw Error('COMMERCIAL_EVIDENCE_INVALID');
+  return {status:'OBSERVED',answer:data.answer.slice(0,2100),sources:[]};
+ }
+ if(kind==='EVIDENCE'){
+  if(typeof data?.answer!=='string'||!Array.isArray(data.sources)
+     ||data.actionAuthorized!==false)return data?.sources?.length===0
+      ?{status:'HOLD',answer:'No independently relevant evidence was found. No business conclusion can be drawn.',sources:[]}
+      :(()=>{throw Error('EVIDENCE_UNVERIFIED')})();
+  return {status:data.sources.length?'OBSERVED':'HOLD',answer:data.answer.slice(0,2500),sources:data.sources.slice(0,4)};
+ }
+ throw Error('READ_ONLY_INTENT_REQUIRED');
+}
+function init(){
+ const root=document.querySelector('#vaos-main-voice');
+ if(!root)return;
+ const $=id=>root.querySelector('#'+id);
+ const mic=$('vaos-voice-mic'),stop=$('vaos-voice-stop'),ask=$('vaos-voice-ask'),
+  speech=$('vaos-voice-speak'),input=$('vaos-voice-question'),answer=$('vaos-voice-answer'),
+  note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle');
+ const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+ let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false;
+ const setStatus=message=>{note.textContent=message;};
+ const state=()=>{mic.disabled=!voiceEnabled||!SpeechRecognition||!!recognition||busy;
+  ask.disabled=busy; stop.disabled=!recognition&&!controller&&!window.speechSynthesis?.speaking;
+  speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
+ const cancel=()=>{
+  const active=recognition;recognition=null;
+  if(active)try{active.abort()}catch{}
+  if(controller){controller.abort();controller=null}
+  window.speechSynthesis?.cancel();
+  busy=false;state();
+ };
+ const speakAnswer=()=>{
+  if(!voiceEnabled||!lastAnswer||typeof window.SpeechSynthesisUtterance!=='function')return;
+  window.speechSynthesis?.cancel();
+  const chunks=lastAnswer.match(/.{1,180}(?:\s|$)/g)?.slice(0,20)||[lastAnswer.slice(0,180)];
+  let index=0;
+  const play=()=>{
+   if(index>=chunks.length||!window.speechSynthesis)return;
+   const utterance=new window.SpeechSynthesisUtterance(chunks[index++]);
+   utterance.lang='en-IN';utterance.rate=.96;utterance.onend=play;utterance.onerror=()=>setStatus('Speech playback unavailable. The verified answer is still displayed.');
+   window.speechSynthesis.speak(utterance);
+  };play();state();
+ };
+ mic.addEventListener('click',()=>{
+  if(!voiceEnabled||!SpeechRecognition||recognition||busy)return;
+  window.speechSynthesis?.cancel();
+  const active=new SpeechRecognition();recognition=active;
+  active.lang='en-IN';active.interimResults=false;active.continuous=false;active.maxAlternatives=1;
+  active.onresult=event=>{
+   if(recognition!==active||!event.results?.[0]?.isFinal)return;
+   const t=sanitizeVoiceTranscript(event.results[0][0]?.transcript);
+   if(t){input.value=t;setStatus('Heard your question. Review it and select Ask VAOS to make a read-only request.');}
+   else setStatus('Speech was not recognized as a supported question. Nothing was submitted.');
+  };
+  active.onerror=()=>{if(recognition===active)setStatus('Microphone unavailable. Type a question instead.');};
+  active.onend=()=>{if(recognition===active){recognition=null;state();}};
+  try{active.start();setStatus('Listening once. Browser speech recognition may use a vendor service.');}
+  catch{recognition=null;setStatus('Microphone blocked or unsupported. Type a question instead.');}
+  state();
+ });
+ stop.addEventListener('click',()=>{cancel();setStatus('Stopped. No business actions authorized.');});
+ speech.addEventListener('click',speakAnswer);
+ ask.addEventListener('click',async()=>{
+  if(busy)return;
+  const intent=classifyDashboardQuestion(input.value);
+  if(intent.kind==='DENY'){setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
+  cancel();busy=true;lastAnswer='';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
+  const abort=new AbortController();controller=abort;
+  try{
+   const route=intent.kind==='COMMERCIAL'?'/api/voice-commercial'
+    :'/api/federated-knowledge?q='+encodeURIComponent(intent.question);
+   const response=await fetch(route,{method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal});
+   if(!response.ok)throw Error(response.status===401?'Session expired. Please sign in again.':'This source is not commissioned or cannot be verified.');
+   const data=(await response.json())?.data;
+   const normalized=intent.kind==='EVIDENCE'
+     ?formatReadOnlyResult('EVIDENCE',formatFederatedVoiceEvidence(data,intent.question))
+     :formatReadOnlyResult('COMMERCIAL',data);
+   if(controller!==abort||abort.signal.aborted)return;
+   lastAnswer=normalized.answer;
+   answer.textContent=normalized.answer;
+   for(const ref of normalized.sources||[]){
+    if(!/^https:\/\/github\.com\/vyndivybes\/(?:vaos|vyndios)\/blob\/|^https:\/\/github\.com\/vayu-shastr\/veloxis-engineering-design-manual\/blob\//.test(ref.url))continue;
+    const a=document.createElement('a');a.href=ref.url;a.rel='noopener noreferrer';a.target='_blank';
+    a.textContent=ref.repository+' · '+ref.path+' : '+ref.line;sources.append(a);
+   }
+   setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.');
+   if(normalized.status==='OBSERVED'&&speakToggle.checked&&voiceEnabled)speakAnswer();
+  }catch(error){
+   if(controller!==abort||abort.signal.aborted)return;
+   answer.textContent='HOLD — evidence unavailable. No figures or conclusions inferred.';
+   setStatus(error?.message||'Read-only lookup unavailable.');
+  }finally{if(controller===abort)controller=null;busy=false;state();}
+ });
+ input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask.click();}});
+ state();
+ fetch('/api/voice-capabilities',{credentials:'same-origin',cache:'no-store'}).then(x=>x.ok?x.json():null).then(x=>{
+  voiceEnabled=voiceCapabilityReady(x?.data);
+  if(!voiceEnabled)setStatus('Voice microphone is not qualified for this session. Text-based, read-only queries remain available.');
+  else if(!SpeechRecognition)setStatus('Microphone recognition is unavailable in this browser. Type your question or use another supported browser.');
+  else setStatus('Ready. Tap the microphone, or type a read-only question.');
+  state();
+ }).catch(()=>{setStatus('Voice qualification cannot be verified. Type a read-only question.');state();});
+ window.addEventListener('pagehide',cancel,{once:true});
+}
+if(typeof document!=='undefined')init();

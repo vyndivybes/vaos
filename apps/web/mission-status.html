@@ -9,6 +9,7 @@
   <link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/mission-status.css" />
+  <link rel="stylesheet" href="/operations-refresh.css" />
 </head>
 <body class="mission-status-body">
   <header class="mission-bar">
@@ -18,7 +19,14 @@
     </div>
     <a href="/workspace" class="mission-link">← Control workspace</a>
   </header>
-  <main class="mission-shell">
+  <nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
+  <a href="/workspace">Dashboard &amp; voice</a>
+  <a href="/mission-status.html" aria-current="page">Mission tracking</a>
+  <a href="/agent-supervision.html" >Agent monitoring</a>
+  <a href="/founder-console.html" >Founder command lab</a>
+</nav>
+<main class="mission-shell">
+<section class="va-ops-explain"><h2>What is Mission Tracking for?</h2><p>See what a VAOS mission has completed, which work packages remain blocked, who independently reviewed them, and which evidence exists. It is a read-only accountability view—not a second dashboard or a shortcut around approvals. For a quick spoken question, use <a href="/workspace">Ask VAOS on the home screen</a>.</p></section>
     <div class="mission-overline">GOVERNED OPERATIONS / LIVE EVIDENCE</div>
     <h1>Mission status</h1>
     <p class="mission-intro">Read-only progress sourced from the authenticated VAOS mission service. This screen cannot approve work or close a mission.</p>

@@ -1,0 +1,122 @@
+/* Shared VAOS operator workspace — readable typography and visual continuity.
+   Authentication and governed action boundaries are inherited, not changed. */
+body.mission-status-body,body.founder-body{
+  background:#f3f7fb;color:#20344f;font:16px/1.6 Inter,"Segoe UI",Arial,sans-serif;min-height:100vh;
+}
+body.mission-status-body :is(input,select,button,textarea),
+body.founder-body :is(input,select,button,textarea){font:inherit}
+body.mission-status-body :is(button,a,input,select):focus-visible,
+body.founder-body :is(button,a,input,select,textarea):focus-visible{
+  outline:3px solid #439d94;outline-offset:3px;
+}
+body.mission-status-body .mission-bar,body.founder-body .founder-header{
+  background:#fff;border-bottom:1px solid #dfe8f0;box-shadow:0 4px 15px #20415b09;color:#1c3752;
+}
+body.mission-status-body .mission-brand strong,body.founder-body .founder-header strong{color:#204567;font-size:19px}
+body.mission-status-body .mission-brand small,body.founder-body .founder-header small{
+  color:#72879d;font-size:13px;letter-spacing:normal;
+}
+body.mission-status-body .mission-brand .mission-product-name{font-size:13px;color:#8ca0ae}
+body.mission-status-body .mission-link,body.founder-body .founder-back{color:#247a91;text-decoration:none;font-size:15px;font-weight:700}
+body.mission-status-body .mission-shell,body.founder-body .founder-shell{
+  max-width:1290px;margin-inline:auto;padding:clamp(20px,3vw,38px);
+}
+body.mission-status-body .mission-shell h1,body.founder-body .founder-heading h1{
+  color:#1f3652;font-size:clamp(30px,3.3vw,43px);line-height:1.17;letter-spacing:-.035em;
+}
+body.mission-status-body .mission-intro,body.founder-body .founder-heading span{
+  max-width:980px;color:#627a92;font-size:16px;line-height:1.7;
+}
+body.mission-status-body .mission-overline,body.founder-body .founder-heading p{
+  color:#2e8e90;font-size:14px;font-weight:800;letter-spacing:.07em;
+}
+body.mission-status-body .mission-lookup,body.mission-status-body .mission-report,
+body.founder-body .founder-panel{
+  border:1px solid #e0e9f1;border-radius:18px;background:#fff;
+  box-shadow:0 9px 24px #243f6409;color:#243c56;
+}
+body.mission-status-body .mission-lookup label,body.founder-body .founder-panel label{
+  color:#35576c;font-size:15px;font-weight:750;
+}
+body.mission-status-body .mission-lookup input,
+body.founder-body .founder-panel :is(input,textarea,select){
+  background:#fbfdff;border:1px solid #cddce8;border-radius:10px;color:#1b324a;
+  font-size:16px;padding:13px;
+}
+body.mission-status-body .mission-lookup button,
+body.mission-status-body #supervision-run,
+body.founder-body .founder-panel button:not(.secondary){
+  border:0;background:#2c607d;color:white;border-radius:10px;font-size:15px;padding:12px 18px;font-weight:750;
+}
+body.mission-status-body .mission-lookup button:hover,body.founder-body .founder-panel button:hover{filter:brightness(.97)}
+body.mission-status-body .mission-message{color:#567991;font-size:15px}
+body.mission-status-body .mission-report h2,body.founder-body .founder-panel h2{color:#234160;font-size:21px}
+body.mission-status-body .mission-report h3{color:#234160;font-size:18px}
+body.mission-status-body .mission-report-heading small,body.mission-status-body .mission-stats small{
+  color:#74899c;font-size:14px;letter-spacing:normal;
+}
+body.mission-status-body .mission-state{
+  border:1px solid #e3d09f;background:#fff7e5;color:#966e2e;font-size:14px;
+}
+body.mission-status-body .mission-stats>div{background:#f7fafc;border:1px solid #e1e9f0}
+body.mission-status-body .mission-stats strong{color:#23435d;font-size:24px}
+body.mission-status-body .mission-table{font-size:15px;line-height:1.52}
+body.mission-status-body .mission-table th{background:#edf4f9;color:#38586e;font-weight:800}
+body.mission-status-body .mission-table th,body.mission-status-body .mission-table td{
+  padding:15px 13px;border-bottom:1px solid #e1ebf1;
+}
+body.mission-status-body .mission-report progress{accent-color:#2eac8c}
+body.mission-status-body .mission-footnote{font-size:14px;color:#6a8399}
+body.mission-status-body .mission-warning{color:#974c31;background:#fff0e9;border-color:#d9855a}
+body.mission-status-body .mission-footer{color:#8094a5;font-size:14px}
+body.mission-status-body .mission-report>p,body.mission-status-body #supervision-report li,
+body.mission-status-body #supervision-control-state,
+body.founder-body .founder-panel p,
+body.founder-body .founder-hint {color:#627991;font-size:15px;line-height:1.65}
+body.mission-status-body .mission-report ul{padding-left:25px}
+body.founder-body .founder-header{gap:15px}
+body.founder-body .founder-mode{
+  color:#348273;background:#e8f6f0;border-color:#b7dfd2;font-size:14px;
+}
+body.founder-body .founder-panel button.secondary{
+  background:#e7f2f6;color:#2a6478;border:1px solid #c5e0e9;
+}
+body.founder-body .founder-draft{background:#f8fbfd;border:1px solid #dce7ef}
+body.founder-body .founder-draft h3{color:#29877b}
+body.founder-body .founder-draft pre,body.founder-body .mission-summary{
+  font:15px/1.6 Inter,"Segoe UI",Arial,sans-serif;color:#3f6780;white-space:pre-wrap;
+}
+body.founder-body .conversation-transcript{background:#f8fbfd;border-color:#dce6ef}
+body.founder-body .conversation-turn{background:#fff;border-left-color:#39a28f}
+body.founder-body .conversation-turn strong{color:#2c6d87}
+body.founder-body .conversation-turn .conversation-reply{color:#34566f;border-top-color:#dbe8f0}
+body.founder-body .founder-auth{color:#456b85;font-size:16px}
+body .va-ops-header-nav{
+  display:flex;flex-wrap:wrap;gap:10px;align-items:center;
+  padding:13px clamp(20px,3vw,38px);max-width:1335px;margin:auto;
+}
+body .va-ops-header-nav a{
+  text-decoration:none;color:#31647e;background:#fff;border:1px solid #d8e6ef;
+  border-radius:9px;padding:8px 12px;font-size:15px;font-weight:700;
+}
+body .va-ops-header-nav a[aria-current="page"]{
+  background:#235a72;color:#fff;border-color:#235a72;
+}
+body .va-ops-explain{
+  padding:19px 23px;border-radius:16px;
+  color:#2c5871;border:1px solid #d0e5e5;
+  background:linear-gradient(115deg,#e8faf3,#edf6ff);
+  margin:18px 0 20px;
+}
+body .va-ops-explain h2{font-size:20px;color:#275269;margin:0 0 6px}
+body .va-ops-explain p{font-size:16px;line-height:1.65;margin:0;color:#536d82}
+body .va-ops-explain a{color:#226d87;font-weight:750}
+@media(max-width:690px){
+ body .va-ops-header-nav{padding:10px 16px;gap:7px}
+ body .va-ops-header-nav a{font-size:14px}
+ body.founder-body .founder-header{gap:12px}
+ body.founder-body .founder-mode{width:auto}
+ body.mission-status-body .mission-bar{flex-direction:column;align-items:flex-start}
+ body.mission-status-body .mission-stats{grid-template-columns:1fr}
+ body.mission-status-body .mission-table{min-width:620px}
+}

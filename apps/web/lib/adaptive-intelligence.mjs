@@ -2,7 +2,7 @@
  * Raw business rows never go to the model; no model output grants execution authority.
  */
 import {FOUNDER_AI_MODEL} from './founder-ai-draft.mjs';
-import {buildCoachingInstructions} from './adaptive-coaching.mjs';
+import {buildCoachingInstructions,suggestCoachedNextCheck} from './adaptive-coaching.mjs';
 export const ADAPTIVE_TOOLS=Object.freeze(['COMMERCIAL','FINANCE','PROCUREMENT','INVENTORY','PRODUCTION','PEOPLE','ENGINEERING']);
 const ALLOWED=new Set(ADAPTIVE_TOOLS);
 const UNSAFE=/\b(approve(?:d)?|authoriz(?:ed|e)|pay(?:ment)?|transfer funds|send money|delete|deploy|execute|dispatch|post invoice|certif(?:ied|y)|guarantee(?:d)?|release (?:the )?design|secrets?|password|token|credentials?|api key)\b/i;
@@ -123,6 +123,7 @@ export function buildAdaptiveFallback({question,observations=[]}={}){
  const answer=available.length
   ?'EVIDENCE REVIEW — '+available.map((x,i)=>'['+(i+1)+'] '+x.tool+': '+x.summary).join(' ')+
     '\n\nNEXT INVESTIGATION — Verify record completeness, trace these observations to a controlled decision and compare available options; current evidence does not independently prove causes or future outcomes.'+
+    '\n\nCOACHED NEXT STEP — '+suggestCoachedNextCheck(evidence)+
     (missing.length?'\n\nSOURCE LIMITS — '+missing.join(', ')+' unavailable.':'')
   :'SOURCE LIMITS — I cannot substantiate this question from currently available authorized VAOS records. '+
    (missing.length?'Requested sources unavailable: '+missing.join(', ')+'. ':'')+

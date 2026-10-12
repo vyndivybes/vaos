@@ -41,3 +41,10 @@ test('invalid hosted AI response produces clearly unqualified sourced fallback',
  assert.equal(state.body.data.aiQualification,'HOLD');
  assert.equal(state.body.data.actionAuthorized,false);
 });
+
+test('Workers AI structured object response passes strict advisory validation',()=>{
+ const source=[{excerpt:'Carbon frame engineering tests pending'}];
+ const response={response:{analysis:'Evidence suggests engineering testing is still pending.',recommendation:'Review the material test matrix before accepting a release.',citations:[1]}};
+ assert.match(validateGroundedDraft(response,source).answer,/Unverified AI analysis/);
+ assert.throws(()=>validateGroundedDraft({response:{...response.response,citations:[2]}},source));
+});

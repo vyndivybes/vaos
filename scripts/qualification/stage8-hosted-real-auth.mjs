@@ -80,8 +80,14 @@ try{
  config.vars.VAOS_SESSION_HMAC_KEY=crypto.randomBytes(48).toString('hex');
  await writeFile(configPath,JSON.stringify(config),{mode:0o600});
  wrangler('deploy','--config',configPath);
- assert.equal((await call('/api/session',{headers:{cookie:preRotation}})).status,401,
-  'old token must not survive signer rotation');
+ let rotated=false;
+ for(let attempt=0;attempt<20;attempt++){
+  const status=(await call('/api/session',{headers:{cookie:preRotation}})).status;
+  if(status===401){rotated=true;break;}
+  assert.equal(status,200,'unexpected signer-rotation response');
+  await new Promise(ok=>setTimeout(ok,1500));
+ }
+ assert.ok(rotated,'old token must be rejected after bounded propagation');
  const recovered=await auth('checker',checker);
  assert.equal((await call('/api/session',{headers:{cookie:recovered}})).status,200,
   'recovered isolated authentication');
@@ -101,22 +107,23 @@ try{
  if(deployed){
   try{wrangler('delete','--name',worker,'--force');}
   catch{console.warn('STAGE8_WRANGLER_DELETE_NONZERO_VERIFYING_REMOTE_STATE');}
-  try{
-   const response=await fetch('https://api.cloudflare.com/client/v4/accounts/'+
-    encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+
-    '/workers/scripts/'+encodeURIComponent(worker),{
-     headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN}
-    });
-   const result=await response.json().catch(()=>({}));
-   const absent=response.status===404 || result.errors?.some(e=>e.code===10007);
-   if(!absent){
-    console.error('HOLD_EPHEMERAL_WORKER_CLEANUP_REQUIRED',response.status);
-    process.exitCode=1;
-   }else console.log('STAGE8_EPHEMERAL_WORKER_DELETED_AND_VERIFIED');
-  }catch{
-   console.error('HOLD_EPHEMERAL_WORKER_CLEANUP_UNVERIFIED');
-   process.exitCode=1;
+  let absent=false;
+  for(let attempt=0;attempt<16;attempt++){
+   try{
+    const response=await fetch('https://api.cloudflare.com/client/v4/accounts/'+
+     encodeURIComponent(process.env.CLOUDFLARE_ACCOUNT_ID)+
+     '/workers/scripts/'+encodeURIComponent(worker),{
+      headers:{Authorization:'Bearer '+process.env.CLOUDFLARE_API_TOKEN}
+     });
+    const result=await response.json().catch(()=>({}));
+    if(response.status===404||result.errors?.some(e=>e.code===10007)){
+     absent=true;break;
+    }
+   }catch{}
+   await new Promise(ok=>setTimeout(ok,1500));
   }
+  if(absent)console.log('STAGE8_EPHEMERAL_WORKER_DELETED_AND_VERIFIED');
+  else{console.error('HOLD_EPHEMERAL_WORKER_CLEANUP_UNVERIFIED');process.exitCode=1;}
  }
  await rm(dir,{recursive:true,force:true});
 }

@@ -96,3 +96,10 @@ test('autonomous response never invents unobserved numeric quantities or permits
  assert.equal(state.status,200);assert.notEqual(state.payload.data.reasoningMode,'MODEL_VERIFIED');
  assert.doesNotMatch(state.payload.data.answer,/100000|Pay supplier immediately/i);
 });
+
+test('broad founder operating performance questions retain finance/material/production coverage when model quota is exhausted',async()=>{
+ const {fallbackAdaptivePlan}=await import('./adaptive-intelligence.mjs');
+ const plan=fallbackAdaptivePlan('Identify main performance risk, recommend a better operating plan');
+ assert.deepEqual(plan.tools,['FINANCE','PROCUREMENT','PRODUCTION']);
+ assert.equal(plan.mode,'RULE_FALLBACK');
+});

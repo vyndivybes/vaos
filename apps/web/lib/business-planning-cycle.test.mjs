@@ -17,7 +17,8 @@ test('history must be signed, reconciled, 12 complete non-duplicated closed cons
  const hold1=qualifyForecastHistory({monthlyHistory:months,sourceQualified:true,reconciled:false,complete:true,asOf:'2026-10-13'});
  assert.equal(hold1.qualified,false);
  assert.ok(hold1.holds.includes('RECONCILIATION_REQUIRED'));
- const hold2=qualifyForecastHistory({monthlyHistory:months,sourceQualified:true,reconciled:true,complete:true,asOf:'2026-10-13'});
+ const withCurrent=[...months];withCurrent[11]={period:'2026-10',units:14};
+ const hold2=qualifyForecastHistory({monthlyHistory:withCurrent,sourceQualified:true,reconciled:true,complete:true,asOf:'2026-10-13'});
  assert.equal(hold2.qualified,false); // includes current Oct partial and one missing contiguous period under strict gate
  const approved=Array.from({length:12},(_,i)=>({period:new Date(Date.UTC(2025,i+9,1)).toISOString().slice(0,7),units:3+i}));
  approved[11].period='2026-08'; // duplicated period / missing month must hold

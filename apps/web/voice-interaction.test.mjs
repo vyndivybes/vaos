@@ -72,7 +72,7 @@ test('current voice handoff module and wake listener use distinct cache-busted p
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.match(html,/main-voice\.mjs\?v=20261013-mic-diagnostic-v1/);
+ assert.match(html,/main-voice\.mjs\?v=20261013-voice-esm-restored/);
  assert.match(script,/hey-vaos\.mjs\?v=20261012-handsfree-unified/);
 });
 

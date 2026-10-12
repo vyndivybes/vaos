@@ -15,7 +15,7 @@ export function splitVoiceText(value,max=180){
  return parts.slice(0,24);
 }
 export function createVoiceReadback({
- synthesis,UtteranceClass,
+ synthesis,UtteranceClass,language=()=> 'en-US',
  onState=()=>{},onError=()=>{},onFinished=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
 }={}){
@@ -46,7 +46,7 @@ export function createVoiceReadback({
    let utterance;
    try{
     utterance=new UtteranceClass(st.chunks[index]);
-    utterance.lang='en-US';utterance.rate=1; // Chromium native voice is more reliable than en-IN on some Windows installs.
+    utterance.lang=['en-US','en-IN','ta-IN','ml-IN','hi-IN'].includes(language())?language():'en-US';utterance.rate=1; // Chromium native voice is more reliable than en-IN on some Windows installs.
     utterance.onstart=()=>{
      if(active!==st)return;
      st.started=true;clearTimer(st);onState('SPEAKING');

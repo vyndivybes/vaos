@@ -53,7 +53,7 @@ export function fallbackAdaptivePlan(question){
  let tools=matches.filter(([,regex])=>regex.test(q)).map(([tool])=>tool).slice(0,3);
  // Never lose a broad founder risk inquiry merely because free-tier model calls
  // are exhausted. This fallback retrieves evidence, not a prewritten answer.
- if(!tools.length&&/\\b(performance|risks?|operat\\w*|strateg\\w*|forecast|improv\\w*|better plan|business health|company-wide)\\b/.test(q))
+ if(!tools.length&&/\b(performance|risks?|operat\w*|strateg\w*|forecast|improv\w*|better plan|business health|company-wide)\b/.test(q))
   tools=['FINANCE','PROCUREMENT','PRODUCTION'];
  return {tools,focus:'Source-limited inquiry',mode:'RULE_FALLBACK'};
 }

@@ -32,3 +32,16 @@ test('evidence reader never reads arbitrary keys or discloses hook secret',async
  assert.equal(JSON.stringify(r).includes('hooks.zapier.com'),false);
  assert.equal(r.actionAuthorized,false);
 });
+
+test('readback distinguishes rejected Zapier HTTP status without exposing credentials',async()=>{
+ const a=storage([[key,JSON.stringify({providerId:'zapier',status:'PROVIDER_REJECTED',providerStatus:404})]]);
+ const r=await readZapierQualificationEvidence({VAOS_ARTIFACTS:a,ZAPIER_CATCH_HOOK_URL:'https://hooks.zapier.com/hooks/catch/123/secret/'});
+ assert.equal(r.status,'HOLD');assert.equal(r.reason,'ZAPIER_PROVIDER_HTTP_404');
+ assert.equal(JSON.stringify(r).includes('hooks.zapier.com'),false);
+});
+test('readback distinguishes uncertain webhook transport without claiming Zap execution',async()=>{
+ const a=storage([[key,JSON.stringify({providerId:'zapier',status:'OUTCOME_UNKNOWN',providerStatus:null})]]);
+ const r=await readZapierQualificationEvidence({VAOS_ARTIFACTS:a});
+ assert.equal(r.status,'HOLD');assert.equal(r.reason,'ZAPIER_TRANSPORT_OUTCOME_UNKNOWN');
+ assert.equal(r.independentReadbackVerified,false);
+});

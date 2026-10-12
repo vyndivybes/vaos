@@ -1,0 +1,62 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createSessionToken,SESSION_COOKIE} from '../lib/auth.mjs';
+import {createVoiceInsightHandler} from './voice-insight.mjs';
+import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
+const response=()=>{const state={code:200,body:null,headers:{}};const res={
+ setHeader(k,v){state.headers[k]=v;return res},status(n){state.code=n;return res},json(v){state.body=v;return res}
+};return {state,res};};
+const req=(q,{email='shyamsundhar1982@gmail.com',method='GET',enabled='founder-readonly-browser-v1'}={})=>({
+ url:'https://vaos.example/api/voice-insight?q='+encodeURIComponent(q),method,
+ headers:{cookie:email?SESSION_COOKIE+'='+createSessionToken(email):''},
+ env:{VAOS_VOICE_CONTROL:enabled},
+});
+test('voice intelligence registered; no unauthorized signed reads without founder identity and enabled voice',async()=>{
+ assert.equal(typeof DEFAULT_API_HANDLERS['/api/voice-insight'],'function');
+ let calls=0;
+ const h=createVoiceInsightHandler({getReader:()=>{calls++;return {execute:async()=>({})}}});
+ for(const o of [{email:''},{email:'someone@example.com'},{method:'POST'},{enabled:'off'}]){
+  const {state,res}=response();await h(req('sales orders',o),res);assert.notEqual(state.code,200);
+ }
+ assert.equal(calls,0);
+});
+test('sales, HR, finance and material-shortage questions call only their signed read contract',async()=>{
+ for(const [q,action,data] of [
+  ['How are sales orders?','COMMERCIAL.OBSERVE_PIPELINE',{records:[{status:'confirmed',units:2}]}],
+  ['How many people?','PEOPLE.OBSERVE_WORKFORCE',{people:[{id:'P1',name:'Secret',salary:99000}],authority:[]}],
+  ['How many finance journals?','FINANCE.OBSERVE_LEDGER',{ledger:[],journals:[{id:'J1',debit:10000}]}],
+  ['How many material shortages?','PROCUREMENT.OBSERVE_SHORTAGE',{records:[{shortage_quantity:3,id:'M1'}]}],
+ ]){
+  const calls=[];
+  const h=createVoiceInsightHandler({getReader:()=>({execute:async job=>{
+   calls.push(job.actionType);
+   return {actionType:job.actionType,sourceAuthority:{
+    'COMMERCIAL.OBSERVE_PIPELINE':'listSalesOrders','PEOPLE.OBSERVE_WORKFORCE':'listPeopleOfficeAuthority',
+    'FINANCE.OBSERVE_LEDGER':'getAccountingWorkbench','PROCUREMENT.OBSERVE_SHORTAGE':'getConfiguredDemandShortages'
+   }[job.actionType],data};}})});
+  const {state,res}=response();await h(req(q),res);
+  assert.equal(state.code,200,q);
+  assert.deepEqual(calls,[action],q);
+  assert.equal(state.body.data.readOnly,true);
+  assert.equal(state.body.data.actionAuthorized,false);
+  assert.equal(state.body.data.status,'OBSERVED');
+  assert.ok(!JSON.stringify(state.body).includes('Secret'));
+  assert.ok(!JSON.stringify(state.body).includes('99000'));
+ }
+});
+test('unsupported, CRM conversion and group profit answer transparently without doing unrelated reads',async()=>{
+ let executed=0;
+ const h=createVoiceInsightHandler({getReader:()=>({execute:async()=>{executed++;throw Error('must not call')}})});
+ for(const q of ['What is our CRM lead conversion?','What is our group profit?','Approve supplier payment','What is your favorite movie?']){
+  const {state,res}=response();await h(req(q),res);
+  assert.equal(state.code,q.startsWith('Approve')?422:200,q);
+  if(state.code===200){assert.equal(state.body.data.status,'HOLD');assert.ok(state.body.data.answer.length>35);}
+ }
+ assert.equal(executed,0);
+});
+test('bridge wrong authority, malformed rows and missing service cause HOLD with no raw exception or PII',async()=>{
+ const reader={execute:async()=>({actionType:'INVENTORY.OBSERVE_STOCK',sourceAuthority:'wrong',data:{records:[{id:'n'}]}})};
+ const h=createVoiceInsightHandler({getReader:()=>reader});
+ const {state,res}=response();await h(req('What is our stock?'),res);
+ assert.equal(state.code,200);assert.equal(state.body.data.status,'HOLD');
+ assert.doesNotMatch(JSON.stringify(state.body),/wrong|stock shortage is zero/i);
+});

@@ -43,6 +43,7 @@ export function observeAdviceDomain(domain,data){
  // Interpret validates the bounded signed contract before any summarization.
  const observed=interpretVoiceRecords(domain,data,{limit:50});
  let confirmedUnits=null,summary='',details={};
+ const label=(count,thing)=>count+' '+thing+(count===1?'':'s');
  const rows=observed.recordsObserved;
  if(domain==='commercial'){
   const records=data.records;
@@ -52,12 +53,12 @@ export function observeAdviceDomain(domain,data){
    if(!Number.isSafeInteger(confirmedUnits))confirmedUnits=null;
   }
   const confirmed=records.filter(x=>String(x.status||'').toLowerCase()==='confirmed').length;
-  summary=rows+' sales orders ('+confirmed+' confirmed); '+
+  summary=label(rows,'sales order')+' ('+confirmed+' confirmed); '+
    (confirmedUnits===null?'confirmed unit total unverified':confirmedUnits+' confirmed ordered units');
   details={confirmedOrders:confirmed};
- }else if(domain==='procurement')summary=rows+' shortage lines (material)';
- else if(domain==='production')summary=rows+' production job cards';
- else if(domain==='inventory')summary=rows+' inventory-balance records';
+ }else if(domain==='procurement')summary=label(rows,'shortage line')+' (material)';
+ else if(domain==='production')summary=label(rows,'production job card');
+ else if(domain==='inventory')summary=label(rows,'inventory-balance record');
  else if(domain==='finance'){
   const ledger=data.ledger.length,journals=data.journals.length;
   summary=ledger+' general-ledger entries and '+journals+' journals';
@@ -93,13 +94,13 @@ export function buildAdvisoryReport({question,sources=[],web=[]}={}){
  const evidence=active.slice(0,4).map(x=>String(x.observation.summary||'').slice(0,110))
   .filter(Boolean);
  const fallback='No qualified live business observation was returned. I cannot assert current performance.';
- const headline=group?'GROUP DECISION — Reconcile finances, operating constraints and division attribution before committing resources.':
-  selected.domain==='procurement'?'PROCUREMENT PRIORITY — Clear production-critical shortage lines first.':
-  selected.domain==='production'?'PRODUCTION PRIORITY — Confirm what blocks job cards before expanding capacity.':
-  selected.domain==='commercial'?'SALES PRIORITY — Verify committed orders before raising production or inventory.':
-  selected.domain==='finance'?'FINANCE PRIORITY — Reconcile cash evidence before committing spending.':
-  selected.domain==='inventory'?'INVENTORY PRIORITY — Reconcile stock, reservations and actual shortages.':
-  'HR PRIORITY — Verify workforce skills and approved staffing needs.';
+ const headline=group?'Reconcile finances, operating constraints and division attribution before committing resources.':
+  selected.domain==='procurement'?'Clear production-critical shortage lines first.':
+  selected.domain==='production'?'Confirm what blocks job cards before expanding capacity.':
+  selected.domain==='commercial'?'Verify committed orders before raising production or inventory.':
+  selected.domain==='finance'?'Reconcile cash evidence before committing spending.':
+  selected.domain==='inventory'?'Reconcile stock, reservations and actual shortages.':
+  'Verify workforce skills and approved staffing needs.';
  const [first,second]=group?[
   'Reconcile company-wide accounting and tag transactions, stock and jobs to the relevant division; rank material shortages by the job cards they block.',
   'Compare staffing, lead times, validated engineering release gates and capacity before adding expense or committing delivery dates.'

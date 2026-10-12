@@ -110,17 +110,17 @@
           <div class="va-voice-compose">
             <input id="vaos-voice-question" type="text" maxlength="300" autocomplete="off"
               placeholder="E.g. What is the current sales pipeline or engineering status?" />
-            <button type="button" id="vaos-voice-mic" class="va-voice-icon-button" aria-label="Start microphone" disabled>🎙</button>
+            <button type="button" id="vaos-voice-mic" class="va-voice-icon-button" aria-label="Ask a question once using microphone" title="Ask once, then stop listening" disabled>🎙</button>
             <button type="button" id="vaos-voice-ask" class="va-button va-button--primary">Ask VAOS ↗</button>
           </div>
           <div class="va-wake-controls">
-            <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>◉ Enable “Hey VAOS”</button>
+            <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>◉ Enable hands-free voice</button>
             <div class="va-wake-readiness">
               <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Wake-word microphone is off">Microphone off</span>
-              <span class="va-wake-instructions">Enable once. Say “Hey VAOS, what is our sales status?” and VAOS will answer read-only questions automatically. You can also say “Hey VAOS”, then your question.</span>
+              <span class="va-wake-instructions">Tap the microphone for one question, or enable hands-free for repeated questions. In hands-free mode ask “What is our production status?” directly; “Hey VAOS” is optional.</span>
             </div>
           </div>
-          <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Wake-word listening is off.</p>
+          <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Hands-free listening is off.</p>
           <div class="va-voice-toolbar">
             <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
             <div><button id="vaos-voice-test" type="button">◉ Test speaker</button><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
@@ -131,7 +131,7 @@
             <strong>VAOS response</strong><p id="vaos-voice-answer">Ask a question to retrieve evidence. No actions will be executed.</p>
             <div id="vaos-voice-sources" class="va-voice-sources"></div>
           </div>
-          <p class="va-voice-privacy">Microphone is OFF by default. “Hey VAOS” listens only after you enable it, while this VAOS tab remains visible; the Stop button disables it. Browser speech recognition may use a vendor service. Each intentional wake phrase and question requests one read-only answer without a separate confirmation; business actions remain blocked. No business writes, approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
+          <p class="va-voice-privacy">Microphone is OFF by default. Hands-free listens only after you explicitly enable it, while this VAOS tab remains visible. The single microphone button listens for one question only. Read-only business questions may be asked directly in hands-free mode; “Hey VAOS” is optional. Stop disables listening. Browser speech recognition may use a vendor service; business actions remain blocked. No business writes, approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
         </section>
         <div class="va-launch-grid" aria-label="Business application shortcuts">
           <button type="button" data-view="portfolio"><span class="va-launch-icon va-launch-icon--violet">◈</span><strong>Group overview</strong><small>Six divisions</small></button>
@@ -422,6 +422,6 @@
   </dialog>
 
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
-  <script type="module" src="/main-voice.mjs?v=20261012-mic-handoff"></script>
+  <script type="module" src="/main-voice.mjs?v=20261012-handsfree-unified"></script>
 </body>
 </html>

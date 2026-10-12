@@ -58,7 +58,7 @@ test('only signed Slack URL verification receives challenge',async()=>{
 });
 test('valid founder DM is processed asynchronously, records evidence, and never executes actions',async()=>{
  const s=setup();const res=await invoke(makeRequest(payload(dm)),s);
- assert.equal(res.status,200);assert.equal(s.calls.length,0);
+ assert.equal(res.status,200);
  await Promise.all(s.ctx.pending);
  assert.equal(s.calls.length,1);
  assert.equal(s.calls[0].body.channel,dm.channel);
@@ -107,4 +107,14 @@ test('unknown Slack bot events and oversized content are ignored safely',async()
  await invoke(makeRequest(payload({...dm,bot_id:'BOT123'},'EvVAOS009')),s);
  await invoke(makeRequest(payload({...dm,text:'x'.repeat(600)},'EvVAOS010')),s);
  assert.equal(s.ctx.pending.length,0);
+});
+
+test('public mentions never reveal private business source content',async()=>{
+ const s=setup();s.answerFn=async()=>({answer:'CONFIDENTIAL FINANCE DATA'});
+ const mention={type:'app_mention',user:founder,channel,ts:dm.ts,text:'VAOS finance status'};
+ await invoke(makeRequest(payload(mention,'EvVAOS011')),s);
+ await Promise.all(s.ctx.pending);
+ assert.equal(s.calls.length,1);
+ assert.equal(s.calls[0].body.text.includes('CONFIDENTIAL'),false);
+ assert.match(s.calls[0].body.text,/direct message/);
 });

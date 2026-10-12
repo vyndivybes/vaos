@@ -121,6 +121,7 @@ function init(){
   wake?.pause();
   cancel();busy=true;lastAnswer='';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
   const abort=new AbortController();controller=abort;
+  const timer=setTimeout(()=>abort.abort(),25000);
   let speaking=false;
   try{
    const route=intent.kind==='EVIDENCE'
@@ -140,13 +141,14 @@ function init(){
     const a=document.createElement('a');a.href=ref.url;a.rel='noopener noreferrer';a.target='_blank';
     a.textContent=ref.repository+' · '+ref.path+' : '+ref.line;sources.append(a);
    }
-   setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.');
+   const diagnostic=typeof data?.diagnosticCode==='string'&&/^VOICE_[A-Z_]{3,45}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
+   setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic);
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
    if(controller!==abort||abort.signal.aborted)return;
    answer.textContent='HOLD — evidence unavailable. No figures or conclusions inferred.';
    setStatus(error?.message||'Read-only lookup unavailable.');
-  }finally{if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
+  }finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
  });
  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask.click();}});
  wake=createWakeListener({

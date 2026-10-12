@@ -89,3 +89,30 @@ test('Google News RSS links with safe oc query suffix are retained as externally
  const feed='<rss><item><title>Bicycle manufacturing report</title><link>https://news.google.com/rss/articles/abc123?oc=5</link></item></rss>';
  assert.equal(parsePublicNewsFeed(feed)[0].url,'https://news.google.com/rss/articles/abc123');
 });
+
+test('business advice returns deterministic non-executing verify/diagnose/compare/decide cycle and qualified forecast HOLD',async()=>{
+ const handler=createBusinessAdvisorHandler({getReader:()=>sources(),fetchImpl:async()=>{throw Error('offline')}});
+ const {res,x}=capture();
+ await handler(mk('Recommend a better group operating plan and forecast six months'),res);
+ assert.equal(x.code,200);
+ assert.equal(x.body.data.planningCycle.authority,'READ_ONLY_ADVISORY');
+ assert.equal(x.body.data.planningCycle.actionAuthorized,false);
+ assert.equal(x.body.data.planningCycle.automationExecuted,false);
+ assert.deepEqual(x.body.data.planningCycle.steps.map(s=>s.phase),['VERIFY','DIAGNOSE','COMPARE','DECIDE']);
+ assert.equal(x.body.data.planningCycle.forecastReadiness.qualified,false);
+ assert.equal(x.body.data.planningCycle.forecastReadiness.projection,null);
+ assert.ok(x.body.data.planningCycle.holds.includes('GROUP_ELIMINATION_UNVERIFIED'));
+ assert.match(x.body.data.answer,/PLAN GATES/);
+ assert.match(x.body.data.answer,/FORECAST QUALIFICATION/);
+ assert.ok(!JSON.stringify(x.body.data).includes('PRIVATE NAME'));
+});
+test('missing signed sources never trigger model-directed business writes',async()=>{
+ const handler=createBusinessAdvisorHandler({getReader:()=>({execute:async()=>{throw Error('backend offline')}}),
+  fetchImpl:async()=>{throw Error('offline')}});
+ const {res,x}=capture();await handler(mk('Plan production bottlenecks'),res);
+ assert.equal(x.code,200);
+ assert.equal(x.body.data.status,'HOLD');
+ assert.equal(x.body.data.planningCycle.state,'EVIDENCE_INCOMPLETE');
+ assert.equal(x.body.data.planningCycle.actionAuthorized,false);
+ assert.match(x.body.data.answer,/DATA GAPS/);
+});

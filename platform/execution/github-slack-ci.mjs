@@ -14,13 +14,20 @@ function eligibleRun(x){
 }
 async function fetchActions(env,fetchImpl){
   const token=env?.VAOS_FEDERATED_GITHUB_TOKEN;
-  if(typeof token!=='string'||token.length<8)throw Error('GITHUB_TOKEN_MISSING');
-  const r=await fetchImpl(GITHUB,{method:'GET',headers:{
-    Authorization:'Bearer '+token,Accept:'application/vnd.github+json',
-    'X-GitHub-Api-Version':'2022-11-28','User-Agent':'vaos-readonly-ci-observer'
+  const headers={Accept:'application/vnd.github+json',
+    'X-GitHub-Api-Version':'2022-11-28','User-Agent':'vaos-readonly-ci-observer'};
+  // This single explicitly pinned repository is public. A stale or
+  // wrongly scoped credential must not prevent public read-only CI checks.
+  const run=async authorized=>fetchImpl(GITHUB,{method:'GET',headers:{
+    ...headers,...(authorized?{Authorization:'Bearer '+token}:{})
   },redirect:'error',signal:AbortSignal.timeout(8000)});
-  if(r.status!==200)throw Error('GITHUB_API_NOT_QUALIFIED');
-  const p=await r.json();
+  let response;
+  if(typeof token==='string'&&token.length>=8){
+    response=await run(true);
+    if([401,403,404].includes(response.status))response=await run(false);
+  }else response=await run(false);
+  if(response.status!==200)throw Error('GITHUB_API_NOT_QUALIFIED');
+  const p=await response.json();
   if(!Array.isArray(p?.workflow_runs))throw Error('GITHUB_RUNS_INVALID');
   return p.workflow_runs.filter(eligibleRun).slice(0,30);
 }

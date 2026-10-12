@@ -5,14 +5,23 @@ const OPS_CHANNEL='C0C90LK78KA';
 const INCIDENT_BOT='U0C894NQVG9';
 const CURSOR='runtime/slack-incident/cursor.json';
 const PREFIX='runtime/slack-incident/announcements/';
-const unverified=()=>({status:'HOLD',reason:'INCIDENT_SOURCE_UNVERIFIED',actionAuthorized:false,answer:'VAOS incident feed: HOLD. The read-only Slack incident channel could not be qualified.'});
+const unverified=(reason='INCIDENT_SOURCE_UNVERIFIED')=>({status:'HOLD',reason,actionAuthorized:false,answer:'VAOS incident feed: HOLD ('+reason+'). The read-only Slack incident channel could not be qualified.'});
 async function fetchRecent(env,fetchImpl){
  const token=env?.SLACK_BOT_TOKEN;
  if(typeof token!=='string'||!token.startsWith('xoxb-'))throw Error('SLACK_TOKEN_UNAVAILABLE');
  const url='https://slack.com/api/conversations.history?channel='+INCIDENT_CHANNEL+'&limit=30';
  const r=await fetchImpl(url,{method:'GET',headers:{Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(8000)});
  if(r.status!==200)throw Error('SLACK_HISTORY_FAILED');
- const p=await r.json();if(p?.ok!==true||!Array.isArray(p.messages))throw Error('SLACK_HISTORY_NOT_QUALIFIED');
+ const p=await r.json();
+ if(p?.ok!==true){
+   const errors={missing_scope:'INCIDENT_SLACK_SCOPE_MISSING',
+     not_in_channel:'INCIDENT_SLACK_MEMBERSHIP_MISSING',
+     channel_not_found:'INCIDENT_SLACK_CHANNEL_NOT_FOUND',
+     invalid_auth:'INCIDENT_SLACK_AUTH_INVALID',
+     token_revoked:'INCIDENT_SLACK_AUTH_INVALID'};
+   throw Error(errors[p?.error]||'INCIDENT_SLACK_API_FAILED');
+ }
+ if(!Array.isArray(p.messages))throw Error('INCIDENT_HISTORY_INVALID');
  return p.messages.filter(x=>x?.type==='message'&&x?.user===INCIDENT_BOT&&
   !x?.subtype&&/^\d{10,12}\.\d+$/.test(x?.ts||'')).slice(0,30);
 }
@@ -22,7 +31,7 @@ export async function readSlackIncidentStatus(env,{fetchImpl=fetch}={}){
   return {status:'PASS',announcements:messages.length,actionAuthorized:false,
    answer:'VAOS incident.io Slack feed: '+messages.length+
      ' recent allowlisted announcements visible in #incidents. This is a message-read verification, not proof of current open incidents or incident.io API access.'};
- }catch{return unverified();}
+ }catch(error){const code=typeof error?.message==='string'&&/^INCIDENT_[A-Z_]+$/.test(error.message)?error.message:'INCIDENT_SOURCE_UNVERIFIED';return unverified(code);}
 }
 async function put(store,key,entry,more={}){
  return store.put(key,JSON.stringify(entry),{...more,httpMetadata:{contentType:'application/json'}});

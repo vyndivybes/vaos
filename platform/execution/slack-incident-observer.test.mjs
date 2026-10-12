@@ -61,3 +61,17 @@ test('uncertain delivery records HOLD and never resends',async()=>{
  assert.equal(r.status,'HOLD');assert.equal(sends,1);
  await runHourlyIncidentAlerts(e,{fetchImpl,postImpl:badPost});assert.equal(sends,1);
 });
+
+test('incident hold exposes only a safe allowlisted Slack error code',async()=>{
+ const e=env();
+ const fetchImpl=async()=>new Response(JSON.stringify({ok:false,error:'missing_scope',response_metadata:{messages:['secret']}}),{status:200});
+ const r=await readSlackIncidentStatus(e,{fetchImpl});
+ assert.equal(r.status,'HOLD');assert.equal(r.reason,'INCIDENT_SLACK_SCOPE_MISSING');
+ assert.equal(JSON.stringify(r).includes('secret'),false);
+});
+test('incident channel missing uses a safe status without publishing credentials',async()=>{
+ const e=env();
+ const fetchImpl=async()=>new Response(JSON.stringify({ok:false,error:'not_in_channel'}),{status:200});
+ const r=await readSlackIncidentStatus(e,{fetchImpl});
+ assert.equal(r.status,'HOLD');assert.equal(r.reason,'INCIDENT_SLACK_MEMBERSHIP_MISSING');
+});

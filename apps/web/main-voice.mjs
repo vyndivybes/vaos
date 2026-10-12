@@ -1,6 +1,7 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
 import {createWakeListener} from './lib/hey-vaos.mjs';
+import {createVoiceReadback} from './lib/voice-readback.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
@@ -54,43 +55,46 @@ function init(){
  const mic=$('vaos-voice-mic'),stop=$('vaos-voice-stop'),ask=$('vaos-voice-ask'),
   speech=$('vaos-voice-speak'),input=$('vaos-voice-question'),answer=$('vaos-voice-answer'),
   note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
-  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status');
+  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false,speechRun=0,wake=null;
  const setStatus=message=>{note.textContent=message;};
+ const player=createVoiceReadback({
+  synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
+  onState:mode=>{if(mode==='QUEUED')setStatus('Voice queued; checking audio output.');
+    if(mode==='SPEAKING')setStatus('VAOS is speaking.');},
+  onError:code=>setStatus('Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
+  onFinished:mode=>{if(mode==='FINISHED')setStatus('Spoken answer completed.');wake?.resume();state();}
+ });
  const state=()=>{mic.disabled=!voiceEnabled||!SpeechRecognition||!!recognition||busy||!!wake?.state().active;
   ask.disabled=busy;
   if(wakeToggle)wakeToggle.disabled=!voiceEnabled||!SpeechRecognition;
-  stop.disabled=!recognition&&!controller&&!window.speechSynthesis?.speaking&&!wake?.isEnabled();
+  stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
   speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
  const cancel=()=>{
-  speechRun++;
   const active=recognition;recognition=null;
   if(active)try{active.abort()}catch{}
   if(controller){controller.abort();controller=null}
-  window.speechSynthesis?.cancel();
+  player.cancel();
   busy=false;state();
  };
  const speakAnswer=()=>{
-  if(!voiceEnabled||!lastAnswer||typeof window.SpeechSynthesisUtterance!=='function')return false;
+  if(!voiceEnabled||!lastAnswer)return false;
   wake?.pause();
-  const run=++speechRun;
-  window.speechSynthesis?.cancel();
-  const chunks=lastAnswer.match(/.{1,180}(?:\s|$)/g)?.slice(0,20)||[lastAnswer.slice(0,180)];
-  let index=0;
-  const play=()=>{
-   if(run!==speechRun)return;
-   if(index>=chunks.length||!window.speechSynthesis){if(!busy)wake?.resume();state();return;}
-   const utterance=new window.SpeechSynthesisUtterance(chunks[index++]);
-   utterance.lang='en-IN';utterance.rate=.96;utterance.onend=play;
-   utterance.onerror=()=>{if(run!==speechRun)return;setStatus('Speech playback unavailable. The verified answer is still displayed.');if(!busy)wake?.resume();state();};
-   window.speechSynthesis.speak(utterance);
-  };play();state();return true;
+  const started=player.speak(lastAnswer);
+  if(!started)wake?.resume();
+  state();return started;
  };
+ testSpeaker?.addEventListener('click',()=>{
+  wake?.pause();
+  const started=player.speak('VAOS speaker test. If you can hear this voice, your browser audio output is working.');
+  if(!started)wake?.resume();
+  state();
+ });
  mic.addEventListener('click',()=>{
   if(!voiceEnabled||!SpeechRecognition||recognition||busy)return;
   wake?.pause();
-  window.speechSynthesis?.cancel();
+  player.cancel();
   const active=new SpeechRecognition();recognition=active;
   active.lang='en-IN';active.interimResults=false;active.continuous=false;active.maxAlternatives=1;
   active.onresult=event=>{
@@ -117,6 +121,7 @@ function init(){
   wake?.pause();
   cancel();busy=true;lastAnswer='';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
   const abort=new AbortController();controller=abort;
+  const timer=setTimeout(()=>abort.abort(),25000);
   let speaking=false;
   try{
    const route=intent.kind==='EVIDENCE'
@@ -136,13 +141,18 @@ function init(){
     const a=document.createElement('a');a.href=ref.url;a.rel='noopener noreferrer';a.target='_blank';
     a.textContent=ref.repository+' · '+ref.path+' : '+ref.line;sources.append(a);
    }
-   setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.');
+   const diagnostic=typeof data?.diagnosticCode==='string'&&/^VOICE_[A-Z_]{3,45}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
+   setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic);
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
-   if(controller!==abort||abort.signal.aborted)return;
-   answer.textContent='HOLD — evidence unavailable. No figures or conclusions inferred.';
-   setStatus(error?.message||'Read-only lookup unavailable.');
-  }finally{if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
+   if(controller!==abort)return;
+   const expired=abort.signal.aborted;
+   const expiredText='I could not retrieve a verified business answer within 25 seconds. The source may be unavailable.';
+   lastAnswer=expired?expiredText:'I could not retrieve a verified business answer. No records were changed.';
+   answer.textContent=lastAnswer;
+   setStatus(expired?'Request timed out. Try again or check source connections.':String(error?.message||'Read-only lookup unavailable.'));
+   if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
+  }finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
  });
  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask.click();}});
  wake=createWakeListener({

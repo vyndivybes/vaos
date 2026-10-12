@@ -123,7 +123,7 @@
           <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Wake-word listening is off.</p>
           <div class="va-voice-toolbar">
             <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
-            <div><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
+            <div><button id="vaos-voice-test" type="button">◉ Test speaker</button><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
               <button id="vaos-voice-stop" type="button" disabled>■ Stop</button></div>
           </div>
           <p class="va-voice-status" id="vaos-voice-status" role="status" aria-live="polite">Checking voice qualification…</p>
@@ -422,6 +422,6 @@
   </dialog>
 
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
-  <script type="module" src="/main-voice.mjs?v=20261012-response-fix"></script>
+  <script type="module" src="/main-voice.mjs?v=20261012-audio-diagnostic"></script>
 </body>
 </html>

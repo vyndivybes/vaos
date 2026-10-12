@@ -41,9 +41,13 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader}={}){
    return res.status(200).json({data:{...formatVoiceAnswer(intent,counted),
     readOnly:true,actionAuthorized:false,sourceSystem:'VYNDI_OS',
     observedAt:new Date().toISOString(),dataCompleteness:'BOUNDED_SOURCE_WINDOW'}});
-  }catch{
+  }catch(error){
+   const diagnosticCode=error?.code==='VYNDI_BRIDGE_SIGNER_REQUIRED'
+    ?'VOICE_SIGNER_NOT_READY'
+    :String(error?.message||'').includes('SOURCE_SCHEMA_UNVERIFIED')
+      ?'VOICE_SOURCE_SCHEMA':'VOICE_SOURCE_UNAVAILABLE';
    return res.status(200).json({data:{...formatVoiceAnswer(intent,null),
-    readOnly:true,actionAuthorized:false,sourceSystem:'VAOS_INTELLIGENCE'}});
+    diagnosticCode,readOnly:true,actionAuthorized:false,sourceSystem:'VAOS_INTELLIGENCE'}});
   }
  };
 }

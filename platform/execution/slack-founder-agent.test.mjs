@@ -150,3 +150,19 @@ test('free-tier question does not authorize paid Zapier or write actions',async(
  assert.match(r.answer,/not activated|not provisioned/i);
  assert.equal(r.actionAuthorized,false);
 });
+
+
+test('live UI footer tolerates encoded newline and attribution formatting variations',async()=>{
+ const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
+ const forms=[
+  'hello'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>',
+  'hello'+String.fromCharCode(92)+'n*Sent using* <@U0C2DMN2TG8|ChatGPT>',
+  'hello'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>'+String.fromCharCode(10)+' ',
+  'hello'+String.fromCharCode(10)+'Sent using <@U0C2DMN2TG8|ChatGPT>'
+ ];
+ for(const text of forms){
+  const r=await answerFounderSlackQuestion(text,{});
+  assert.equal(r.route,'GREETING',JSON.stringify(text));
+  assert.equal(r.actionAuthorized,false);
+ }
+});

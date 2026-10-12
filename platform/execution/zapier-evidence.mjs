@@ -16,7 +16,7 @@ export async function readZapierQualificationEvidence(env){
   if(keys.length===0)return HOLD('ZAPIER_QUALIFICATION_EVIDENCE_MISSING');
   // Never substitute our own dispatch acknowledgement for Zapier run-history
   // or the independent, matching Slack message readback.
-  let acknowledged=false;
+  let acknowledged=false,rejected=null,unknown=false;
   for(const key of keys){
    const file=await store.get(key);
    if(!file)continue;
@@ -24,7 +24,14 @@ export async function readZapierQualificationEvidence(env){
    if(entry?.providerId==='zapier'&&entry.status==='ACKNOWLEDGED_UNVERIFIED'&&
       Number.isInteger(entry.providerStatus)&&entry.providerStatus>=200&&entry.providerStatus<300)
     acknowledged=true;
+   if(entry?.providerId==='zapier'&&entry.status==='PROVIDER_REJECTED'&&
+      Number.isInteger(entry.providerStatus))rejected=entry.providerStatus;
+   if(entry?.providerId==='zapier'&&entry.status==='OUTCOME_UNKNOWN')unknown=true;
   }
-  return HOLD(acknowledged?'ZAPIER_INDEPENDENT_EXECUTION_EVIDENCE_REQUIRED':'ZAPIER_SYNTHETIC_DELIVERY_UNVERIFIED',acknowledged);
+  if(acknowledged)return HOLD('ZAPIER_INDEPENDENT_EXECUTION_EVIDENCE_REQUIRED',true);
+  if(rejected!==null)return HOLD('ZAPIER_PROVIDER_HTTP_'+
+    ([400,401,403,404,409,429,500,502,503].includes(rejected)?rejected:'OTHER'));
+  if(unknown)return HOLD('ZAPIER_TRANSPORT_OUTCOME_UNKNOWN');
+  return HOLD('ZAPIER_SYNTHETIC_DELIVERY_UNVERIFIED');
  }catch{return HOLD('ZAPIER_AUDIT_READ_FAILED')}
 }

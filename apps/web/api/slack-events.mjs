@@ -1,3 +1,4 @@
+import {runZapierOneShot} from '../../../platform/execution/zapier-slack-one-shot.mjs';
 // Signed Slack Events API ingress. Only founder read-only observations are permitted.
 // Subscription configuration and production enablement are separate live approval gates.
 import {answerFounderSlackQuestion} from '../../../platform/execution/slack-founder-agent.mjs';
@@ -89,7 +90,9 @@ async function processEvent(entry,env,{answerFn,fetchImpl,now}){
     // Public channel never discloses read-side business evidence.
     const answer=entry.kind==='mention'
       ? 'VAOS founder channel ingress is active. Use my direct message for private read-only business questions.'
-      : (await answerFn(entry.text,env))?.answer;
+      : entry.kind==='dm' && entry.text.trim().toLowerCase()==='vaos zapier synthetic verification once'
+        ? (await runZapierOneShot(env,{send:fetchImpl,now}))?.answer
+        : (await answerFn(entry.text,env))?.answer;
     if(typeof answer!=='string'||!answer.trim())throw Error('SLACK_ANSWER_UNAVAILABLE');
     const ts=await slackPost(env,entry,answer,fetchImpl);
     await env.VAOS_ARTIFACTS.put(key,JSON.stringify({...base,state:'SENT',replyTs:ts,

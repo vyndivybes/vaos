@@ -30,6 +30,22 @@ export function isDirectBusinessQuestion(value){
  const intent=classifyDashboardQuestion(text);
  return intent.kind!=='DENY';
 }
+/** Founder-visible, privacy-safe runtime classification; no model prose is trusted. */
+export function formatAdaptiveStatus(data){
+ const count=data?.sourceCoverage?.observed;
+ const observed=Number.isInteger(count)&&count>=0&&count<=3?count:0;
+ const verified=data?.reasoningMode==='MODEL_CHECKED_ADVISORY'
+  &&data?.verification?.status==='BOUNDED_CONSISTENCY_PASS';
+ const label=verified?'model draft checked (bounded)':'evidence-only fallback';
+ const reason=data?.diagnostics?.modelAvailability;
+ const why=reason==='BUDGET_EXHAUSTED'?' · Daily AI quota reached'
+  :reason==='DRAFT_REJECTED'?' · Unverified model draft withheld'
+   :reason==='AI_BINDING_UNAVAILABLE'?' · AI inference unavailable':'';
+ const elapsed=data?.diagnostics?.elapsedMs;
+ const timing=Number.isInteger(elapsed)&&elapsed>=0&&elapsed<=60000
+  ?' · '+(elapsed/1000).toFixed(1)+'s':'';
+ return 'Adaptive '+label+' · '+observed+' sources observed'+why+timing+'. No business changes.';
+}
 export function voiceCapabilityReady(x){
  return x?.enabled===true&&x?.manualReviewRequired===true
  &&x.actionAuthorized===false&&x.agentDispatch===false
@@ -229,8 +245,7 @@ function init(){
    }
    const diagnostic=typeof data?.diagnosticCode==='string'&&/^[A-Z][A-Z_]{4,55}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
    setStatus(investigate
-    ?'Adaptive '+(data?.reasoningMode==='MODEL_GROUNDED_ADVISORY'?'model-grounded advisory':'bounded evidence fallback')+
-      ' · '+(data?.sourceCoverage?.observed||0)+' sources observed. No business changes.'
+    ?formatAdaptiveStatus(data)
     :normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic);
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){

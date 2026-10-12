@@ -1,3 +1,4 @@
+import {runHourlyCiAlerts} from '../../platform/execution/github-slack-ci.mjs';
 import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
 import { runProductionReadOnlyObservation } from '../../platform/execution/production-l5-observer.mjs';
 import { getDurableControlService } from './lib/durable-control-provider.mjs';
@@ -261,6 +262,11 @@ export default {
         ?error.code:'STIRLING_LIVE_UNAVAILABLE';
       console.warn('VAOS_STIRLING_CLOUD_QUALIFICATION_HOLD',code);
     });
+    const githubCiAlert = Promise.resolve().then(async()=>{
+      if(env.VAOS_GITHUB_SLACK_CONTROL!=='failure-alerts-v1')return;
+      const result=await runHourlyCiAlerts(env);
+      console.log('VAOS_GITHUB_CI_HOURLY',JSON.stringify(result));
+    }).catch(()=>console.warn('VAOS_GITHUB_CI_HOURLY_HOLD'));
     const slackAgent = Promise.resolve().then(async()=>{
       if(env.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return;
       const result=await runSlackFounderAgent({env});
@@ -284,7 +290,7 @@ export default {
     });
     // Keep the optional, fail-closed observer within waitUntil without changing
     // any existing mission/watchdog/synthetic/Stirling result semantics.
-    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent]).then(results=>{
+    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert]).then(results=>{
       if(results[0].status==='rejected')throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 

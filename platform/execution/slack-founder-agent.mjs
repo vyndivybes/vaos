@@ -76,6 +76,17 @@ async function slackApi(env,method,payload,fetchImpl){
   }
   return data;
 }
+export async function probeSlackFounderAgent({env,fetchImpl=fetch}={}){
+  if(env?.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return {status:'DISABLED',readable:false,founderVisible:false,actionAuthorized:false};
+  try{
+    const history=await slackApi(env,'conversations.history',{channel:CHANNEL,limit:'20'},fetchImpl);
+    const founderVisible=(Array.isArray(history.messages)?history.messages:[]).some(m=>m?.type==='message'&&!m.subtype&&m.user===FOUNDER_SLACK_USER);
+    return {status:'PASS',readable:true,founderVisible,actionAuthorized:false};
+  }catch(error){
+    const reason=typeof error?.message==='string'&&/^SLACK_[A-Z_]+$/.test(error.message)?error.message:'SLACK_AGENT_UNAVAILABLE';
+    return {status:'HOLD',readable:false,founderVisible:false,reason,actionAuthorized:false};
+  }
+}
 async function getCursor(env){
   try{const obj=await env.VAOS_ARTIFACTS.get(CURSOR);if(!obj)return null;const data=JSON.parse(await obj.text());return /^\d+\.\d+$/.test(data?.lastTs||'')?data.lastTs:null;}catch{return null}
 }

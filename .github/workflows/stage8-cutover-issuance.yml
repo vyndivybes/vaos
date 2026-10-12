@@ -1,0 +1,39 @@
+name: stage8-cutover-issuance
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Passing Stage 8 hosted qualification GitHub run ID'
+        required: true
+        type: string
+      founder_authorization:
+        description: 'Enter approved only when founder authorization is recorded'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  cutover-issuance:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: stage8-isolated-qualification
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify rollback and issue signed cutover evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGE8_SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          STAGE8_FOUNDER_AUTHORIZED: ${{ inputs.founder_authorization }}
+          VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY: ${{ secrets.VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY }}
+        run: node scripts/qualification/stage8-cutover-signer.mjs
+      - name: Upload short-lived signed cutover
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage8-signed-cutover
+          path: stage8-signed-cutover.json
+          retention-days: 1
+          if-no-files-found: error

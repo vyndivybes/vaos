@@ -26,7 +26,7 @@ test('no unaudited financial metrics are synthesized and malformed data fails cl
 });
 test('main workspace voice region and ops navigation surfaces exist and use common UX skin',async()=>{
  const {readFile}=await import('node:fs/promises');
- const root=new URL('../',import.meta.url);
+ const root=new URL('./',import.meta.url);
  const html=await readFile(new URL('workspace.html',root),'utf8');
  const css=await readFile(new URL('workspace-saas.css',root),'utf8');
  assert.match(html,/id="vaos-main-voice"/);

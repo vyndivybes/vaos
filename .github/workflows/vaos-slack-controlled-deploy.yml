@@ -1,4 +1,4 @@
-# One-time VAOS free-first founder Slack attribution and plan status deployment (12 Oct 2026)
+# One-time founder Slack footer normalization fix with no-cost service (12 Oct 2026)
 name: vaos-slack-controlled-deploy
 on:
   push:

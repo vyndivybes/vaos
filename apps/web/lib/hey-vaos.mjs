@@ -23,14 +23,18 @@ export function parseWakePhrase(value){
  if(!match)return {wake:false,question:''};
  return {wake:true,question:text.slice(match[0].length).replace(/^[ ,.!?:-]+/,'').trim()};
 }
-export function advanceWakeTurn(input,utterance,validateQuestion=()=>true){
+export function advanceWakeTurn(input,utterance,validateQuestion=()=>true,{acceptDirectQuestion=()=>false}={}){
  const state=input?.mode?input:initial();
  const text=typeof utterance==='string'?utterance.trim():'';
  if(COMMAND_CANCEL.test(text))return {event:'CANCELLED',state:initial()};
  const wake=parseWakePhrase(text);
- if(state.mode==='WAKE'&&!wake.wake)return {event:'IGNORED',state};
+ // User explicitly opted into hands-free listening; only supported business
+ // questions are accepted without a wake phrase. Ambient speech is ignored.
+ if(state.mode==='WAKE'&&!wake.wake&&!acceptDirectQuestion(text))
+  return {event:'IGNORED',state};
  const question=state.mode==='QUESTION'
-  ?(wake.wake?wake.question:text):wake.question;
+  ?(wake.wake?wake.question:text)
+  :wake.wake?wake.question:text;
  if(!question)return {event:'PROMPT',state:{mode:'QUESTION',pending:null}};
  if(question.length<5||question.length>300||!validateQuestion(question))
   return {event:'REJECTED',state:initial()};
@@ -39,7 +43,7 @@ export function advanceWakeTurn(input,utterance,validateQuestion=()=>true){
  return {event:'SUBMIT',question,state:initial()};
 }
 export function createWakeListener({
- RecognitionClass,isVisible=()=>true,validateQuestion=()=>true,
+ RecognitionClass,isVisible=()=>true,validateQuestion=()=>true,acceptDirectQuestion=()=>false,
  onStatus=()=>{},onDraft=()=>{},onConfirm=()=>{},onChange=()=>{},onHeard=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
  clock=()=>Date.now(),
@@ -58,14 +62,14 @@ export function createWakeListener({
  }
  function expire(g){
   if(!enabled||paused||generation!==g)return;
-  turn=initial();tell('Confirmation timed out. Say Hey VAOS for another question.');
+  turn=initial();tell('Question window expired. Ask a business question or say Hey VAOS again.');
  }
  function armExpiry(){if(timer!==null)clear(timer);const g=generation;timer=schedule(()=>{timer=null;expire(g);},16000);}
  function listen(){
   if(!enabled||paused||current||!isVisible())return;
   const now=clock();
   starts=starts.filter(t=>now-t<60000);
-  if(starts.length>=70){disable('Hey VAOS paused after repeated microphone restarts. Enable it again to retry.');return;}
+  if(starts.length>=70){disable('Hands-free listening paused after repeated microphone restarts. Enable it again to retry.');return;}
   starts.push(now);
   let next;try{next=new RecognitionClass();}catch{disable('Microphone recognition is unavailable in this browser.');return;}
   current=next;
@@ -75,11 +79,11 @@ export function createWakeListener({
    if(current!==next||!enabled||paused||generation!==g||!isVisible())return;
    const transcript=extractFinalTranscript(event);
    if(!transcript)return;
-   const result=advanceWakeTurn(turn,transcript,validateQuestion);
+   const result=advanceWakeTurn(turn,transcript,validateQuestion,{acceptDirectQuestion});
    onHeard(result.event);
    turn=result.state;
    if(result.event==='IGNORED'){
-    tell('Speech was recognized, but the wake phrase was not detected. Say “Hey VAOS” first, or tap the microphone for one question.');
+    tell('Speech recognized, but not a supported business question. Ask about sales, production or materials; “Hey VAOS” is optional in hands-free mode.');
     return;
    }
    if(result.event==='PROMPT'){tell('Hey VAOS activated. Say your read-only question.');}
@@ -87,8 +91,12 @@ export function createWakeListener({
    else if(result.event==='CANCELLED'){tell('Question cancelled. Listening for Hey VAOS.');}
    else if(result.event==='SUBMIT'){
     transientFailures=0;onDraft(result.question);
-    tell('Hey VAOS heard your read-only question. Retrieving verified source evidence.');
+    tell('Business question recognized: '+result.question+'. Retrieving an authorized read-only answer.');
+    // Pause BEFORE dispatch so only one GET is sent and VAOS does not
+    // recognize its own reply as a new question.
+    pause();
     onConfirm(result.question);
+    return;
    }
    if(turn.mode!=='WAKE')armExpiry();
    else if(timer!==null){clear(timer);timer=null;}
@@ -111,7 +119,7 @@ export function createWakeListener({
    if(!enabled||paused||!isVisible())return;
    restart=schedule(()=>{restart=null;listen();},550);
   };
-  try{next.start();tell(turn.mode==='WAKE'?'Hey VAOS listening in this active tab. Say “Hey VAOS” to begin.':'Listening for '+('your question')+'.');}
+  try{next.start();tell(turn.mode==='WAKE'?'Hands-free listening. Ask a business question directly, or say “Hey VAOS”.':'Listening for your question.');}
   catch{current=null;transientFailures++;if(transientFailures>=3)disable('Microphone cannot be restarted. Hey VAOS is off.');
    else restart=schedule(()=>{restart=null;listen();},1000);}
  }

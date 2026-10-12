@@ -7,6 +7,7 @@ lib/*
 !lib/federated-voice-report.mjs
 !lib/group-portfolio.mjs
 !lib/hey-vaos.mjs
+!lib/voice-intelligence.mjs
 README.md
 package.json
 vercel.json

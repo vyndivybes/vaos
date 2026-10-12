@@ -21,7 +21,7 @@ test('Secret metadata alone cannot pretend to certify signed Slack event deliver
  assert.equal(x.state,'HOLD');assert.deepEqual(x.holds,['SIGNED_EVENT_DELIVERY_UNVERIFIED']);
  const passed=assessSlackSigningCommissioning(secure,{signedEventVerified:true});
  assert.equal(passed.state,'PASS');assert.equal(passed.commissioned,true);
- assert.equal(passed.dataSource,'BINDING_METADATA_ONLY');
+ assert.equal(passed.dataSource,'BINDING_METADATA_PLUS_DELIVERY_ATTESTATION');
 });
 test('Wrong type, absent bot token, malformed evidence and extra secret values never leak',()=>{
  const secretValue='NO_SHOW_TOP_SECRET';

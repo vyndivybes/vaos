@@ -43,16 +43,18 @@ export function createStage9IsolatedSandbox(options={}){
     deny('STAGE9_SANDBOX_ENVELOPE_REQUIRED');
    if(materialRevision!=='CANDIDATE-ONLY')deny('STAGE9_CANDIDATE_MATERIAL_ONLY');
    if(!nonEmpty(maker))deny('STAGE9_MAKER_REQUIRED');
-   const input=envelope.input;
-   if(input?.supplier!=='SYNTHETIC_NOT_REAL')deny('STAGE9_SYNTHETIC_SUPPLIER_ONLY');
-   if(input?.model!=='VYNDI Altitude'||input.currency!=='INR'||input.materialStatus!=='UNFROZEN'||
-    !itemShape(input.variants,true))deny('STAGE9_PILOT_SCOPE_INVALID');
    const fingerprint=hash({envelope,materialRevision,maker}),key=envelope.idempotencyKey;
+   // Deny reuse of an admitted key before validating its new payload.
+   // Otherwise malformed replays could mask an idempotency collision.
    if(byKey.has(key)){
     const prev=byKey.get(key);
     if(prev.fingerprint!==fingerprint)deny('STAGE9_IDEMPOTENCY_CONFLICT');
     return {...view(load(prev.id)),replay:true};
    }
+   const input=envelope.input;
+   if(input?.supplier!=='SYNTHETIC_NOT_REAL')deny('STAGE9_SYNTHETIC_SUPPLIER_ONLY');
+   if(input?.model!=='VYNDI Altitude'||input.currency!=='INR'||input.materialStatus!=='UNFROZEN'||
+    !itemShape(input.variants,true))deny('STAGE9_PILOT_SCOPE_INVALID');
    const r={id:'SYNTHETIC-PO-'+hash(key).slice(0,16).toUpperCase(),version:1,state:'DRAFT',
     model:input.model,variantsAreConfigurations:true,items:copy(input.variants),
     supplier:input.supplier,currency:input.currency,materialRevision,materialStatus:'UNFROZEN',

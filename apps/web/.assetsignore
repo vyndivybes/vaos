@@ -8,6 +8,7 @@ lib/*
 !lib/group-portfolio.mjs
 !lib/hey-vaos.mjs
 !lib/voice-intelligence.mjs
+!lib/business-advice.mjs
 !lib/voice-readback.mjs
 README.md
 package.json

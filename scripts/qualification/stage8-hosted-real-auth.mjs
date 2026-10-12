@@ -34,10 +34,16 @@ async function call(path,options={}){
  return fetch(base+path,{redirect:'manual',...options});
 }
 async function auth(role,password){
- const r=await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
- body:JSON.stringify({email:role==='maker'?'shyamsundhar1982@gmail.com':'kaaviyam1519@gmail.com',password})});
- assert.equal(r.status,200,role+' hosted login');
- return r.headers.get('set-cookie').split(';')[0];
+ let lastStatus=0;
+ for(let attempt=0;attempt<20;attempt++){
+  const r=await call('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({email:role==='maker'?'shyamsundhar1982@gmail.com':'kaaviyam1519@gmail.com',password})});
+  lastStatus=r.status;
+  if(r.status===200)return r.headers.get('set-cookie').split(';')[0];
+  assert.ok([404,401].includes(r.status),role+' unexpected hosted-login response');
+  await new Promise(ok=>setTimeout(ok,1500));
+ }
+ assert.equal(lastStatus,200,role+' hosted login after bounded propagation');
 }
 let deployed=false;
 try{

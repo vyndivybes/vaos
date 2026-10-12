@@ -220,3 +220,21 @@ test('signed founder DM sends one qualified synthetic Zapier webhook; unauthoriz
  await invoke(makeRequest(payload(command,'EvVAOS102')),s);await Promise.all(s.ctx.pending);
  assert.equal(outbound.filter(x=>x.url.startsWith('https://hooks.zapier.com/')).length,1);
 });
+
+test('one-shot command recognizes Slack ChatGPT message attribution without permitting additional instructions',async()=>{
+ const s=setup(),urls=[];
+ s.env.VAOS_ZAPIER_ONESHOT_CONTROL='approved-synthetic-v1';
+ s.env.ZAPIER_CATCH_HOOK_URL='https://hooks.zapier.com/hooks/catch/123456/secureAbC/';
+ s.fetchImpl=async(url,opts)=>{
+  urls.push(url);
+  if(url.startsWith('https://hooks.zapier.com/'))return new Response('accepted',{status:200});
+  const b=JSON.parse(opts.body);
+  return new Response(JSON.stringify({ok:true,channel:b.channel,ts:'1791763200.000077'}),{status:200});
+ };
+ const attributed={...dm,text:'VAOS Zapier synthetic verification once'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>'};
+ const r=await invoke(makeRequest(payload(attributed,'EvVAOS201')),s);
+ assert.equal(r.status,200);await Promise.all(s.ctx.pending);
+ assert.equal(urls.filter(x=>x.startsWith('https://hooks.zapier.com/')).length,1);
+ const slack=s.map.get('qualification/zapier/slack-one-shot-20261012.json');
+ assert.equal(Boolean(slack),true);
+});

@@ -41,12 +41,15 @@ export function formatReadOnlyResult(kind,data){
  }
  if(kind==='INSIGHT'){
   if(data?.readOnly!==true||data.actionAuthorized!==false
-   ||!['VAOS_INTELLIGENCE','VYNDI_OS'].includes(data.sourceSystem)
+   ||!['VAOS_INTELLIGENCE','VYNDI_OS','ENGINEERING_FEDERATION'].includes(data.sourceSystem)
    ||!['OBSERVED','HOLD'].includes(data.status)
    ||typeof data.answer!=='string'||data.answer.length<8||data.answer.length>5000
-   ||data.status==='OBSERVED'&&data.sourceSystem!=='VYNDI_OS')
+   ||data.status==='OBSERVED'&&!['VYNDI_OS','ENGINEERING_FEDERATION'].includes(data.sourceSystem))
    throw Error('VOICE_INSIGHT_UNVERIFIED');
-  return {status:data.status,answer:data.answer.slice(0,2900),sources:[]};
+  const refs=data.sourceSystem==='ENGINEERING_FEDERATION'&&Array.isArray(data.sources)
+   ?data.sources.filter(x=>x&&typeof x.url==='string'
+    &&/^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/[0-9a-f]{40}\//.test(x.url)).slice(0,6):[];
+  return {status:data.status,answer:data.answer.slice(0,2900),sources:refs};
  }
  if(kind==='EVIDENCE'){
   if(typeof data?.answer!=='string'||!Array.isArray(data.sources)
@@ -139,7 +142,9 @@ function init(){
   try{
    const route=intent.kind==='EVIDENCE'
     ?'/api/federated-knowledge?q='+encodeURIComponent(intent.question)
-    :'/api/voice-insight?q='+encodeURIComponent(intent.question);
+    :intent.domain==='engineering'
+      ?'/api/engineering-knowledge?q='+encodeURIComponent(intent.question)
+      :'/api/voice-insight?q='+encodeURIComponent(intent.question);
    const response=await fetch(route,{method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal});
    if(!response.ok)throw Error(response.status===401?'Session expired. Please sign in again.':response.status===422?'This request is not an allowed read-only question.':'This source is not commissioned or cannot be verified.');
    const data=(await response.json())?.data;
@@ -150,11 +155,11 @@ function init(){
    lastAnswer=normalized.answer;
    answer.textContent=normalized.answer;
    for(const ref of normalized.sources||[]){
-    if(!/^https:\/\/github\.com\/vyndivybes\/(?:vaos|vyndios)\/blob\/|^https:\/\/github\.com\/vayu-shastr\/veloxis-engineering-design-manual\/blob\//.test(ref.url))continue;
+    if(!/^https:\/\/github\.com\/vyndivybes\/(?:vaos|vyndios)\/blob\/|^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\//.test(ref.url))continue;
     const a=document.createElement('a');a.href=ref.url;a.rel='noopener noreferrer';a.target='_blank';
-    a.textContent=ref.repository+' · '+ref.path+' : '+ref.line;sources.append(a);
+    a.textContent=ref.repository+' · '+ref.path+(Number.isInteger(ref.line)?' : '+ref.line:'');sources.append(a);
    }
-   const diagnostic=typeof data?.diagnosticCode==='string'&&/^VOICE_[A-Z_]{3,45}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
+   const diagnostic=typeof data?.diagnosticCode==='string'&&/^[A-Z][A-Z_]{4,55}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
    setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic);
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){

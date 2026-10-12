@@ -55,3 +55,18 @@ test('hands-free responds honestly to explicit unsupported questions rather than
  assert.equal(isDirectBusinessQuestion('Please approve supplier payment'),false);
  assert.equal(isDirectBusinessQuestion('I spoke about production earlier'),false);
 });
+
+test('engineering voice uses VEDM + VIBPE instead of raw ERP counts',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const code=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.match(code,/intent\.domain==='engineering'/);
+ assert.match(code,/\/api\/engineering-knowledge\?q=/);
+ const result=formatReadOnlyResult('INSIGHT',{
+  sourceSystem:'ENGINEERING_FEDERATION',status:'OBSERVED',readOnly:true,actionAuthorized:false,
+  answer:'Controlled VEDM authority and VIBPE Co-Pilot method evidence retrieved.',
+  sources:[{repository:'vayu-shastr/veloxis-engineering-design-manual',
+   path:'CURRENT_CONFIGURATION_STATUS.md',sha:'a'.repeat(40),
+   url:'https://github.com/vayu-shastr/veloxis-engineering-design-manual/blob/'+('a'.repeat(40))+'/CURRENT_CONFIGURATION_STATUS.md'}]});
+ assert.equal(result.sources.length,1);
+ assert.match(result.answer,/VIBPE Co-Pilot/);
+});

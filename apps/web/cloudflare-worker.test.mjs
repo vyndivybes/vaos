@@ -112,7 +112,7 @@ test('workspace entrypoints use the current cache-busted module version', async 
     readFile(new URL('./workspace.mjs', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(html, /\/workspace\.mjs\?v=20261008-q2-workforce/);
+  assert.match(html, /\/workspace\.mjs\?v=20261012-erp-group/);
   assert.match(workspace, /\.\/command-router\.mjs\?v=20261008-q2-workforce/);
 });
 

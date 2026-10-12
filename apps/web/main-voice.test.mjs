@@ -106,7 +106,7 @@ test('decision brief is short, card-safe and available as separate spoken execut
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const voice=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.ok(html.includes('/main-voice.mjs?v=20261013-decision-brief'));
+ assert.ok(html.includes('/main-voice.mjs?v=20261013-adaptive-v1'));
  assert.ok(voice.includes('player.speak(spokenAnswer||lastAnswer)'));
  assert.doesNotMatch(voice,/innerHTML\\s*=/);
 });

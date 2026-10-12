@@ -27,6 +27,17 @@ export function validateGroundedDraft(out,sources){
  return {answer:'Unverified AI analysis based on cited repository excerpts: '+text+' This is advisory only, not independent technical verification or permission to act.',
   citationIndices:data.citations};
 }
+// Some Workers AI text-generation models return prose despite JSON instructions.
+// Accept it only as visibly unverified advisory text with server-selected citations.
+export function validateGroundedProse(out,sources){
+ if(out?.choices?.[0]?.message?.tool_calls?.length||out?.choices?.[0]?.finish_reason==='tool_calls')throw Error('AI_TOOL_CALL_DENIED');
+ const candidate=out?.response??out?.result?.response??out?.choices?.[0]?.text??out?.choices?.[0]?.message?.content;
+ if(typeof candidate!=='string')throw Error('AI_OUTPUT_INVALID');
+ const text=candidate.replace(/<[^>]*>/g,' ').replace(/[\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim();
+ if(text.length<25||text.length>1200||/^\s*[\[{]/.test(text)||/\b(approved|certified|verified revenue|authorized release)\b/i.test(text))throw Error('AI_OUTPUT_INVALID');
+ if(!Array.isArray(sources)||sources.length===0)throw Error('EVIDENCE_UNAVAILABLE');
+ return {answer:'Unverified model-generated advisory (check cited evidence): '+text+' This is not an engineering approval or independently verified conclusion.',citationIndices:[1,2,3].filter(i=>i<=sources.length)};
+}
 export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,
  run=async(ai,prompt)=>ai.run(FOUNDER_AI_MODEL,{prompt,max_tokens:400,temperature:0,stream:false})}={}){
  return async(req,res)=>{
@@ -78,7 +89,12 @@ export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=c
    'Cite only provided indices. State uncertainty, recommend next verification steps; never imply approval. '+
    'QUESTION='+JSON.stringify(question)+'\nSOURCES='+JSON.stringify(sources.slice(0,8));
   try{
-   const result=validateGroundedDraft(await run(req.env.AI,prompt),sources);
+   const modelOutput=await run(req.env.AI,prompt);
+   let result;
+   try{result=validateGroundedDraft(modelOutput,sources)}catch(error){
+     if(error?.message!=='AI_OUTPUT_INVALID')throw error;
+     result=validateGroundedProse(modelOutput,sources);
+   }
    return res.status(200).json({data:{...result,sources:result.citationIndices.map(i=>sources[i-1]),
     readOnly:true,actionAuthorized:false,modelInvoked:true,verifiedFacts:false,provider:'cloudflare-workers-ai',remainingDaily:quota.remaining}});
   }catch(error){

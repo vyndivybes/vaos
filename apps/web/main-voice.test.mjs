@@ -106,7 +106,7 @@ test('decision brief is short, card-safe and available as separate spoken execut
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const voice=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.ok(html.includes('/main-voice.mjs?v=20261013-adaptive-v2-upgradeprep'));
+ assert.ok(html.includes('/main-voice.mjs?v=20261013-v3-supervised-canary'));
  assert.ok(voice.includes('player.speak(spokenAnswer||lastAnswer)'));
  assert.doesNotMatch(voice,/innerHTML\\s*=/);
 });
@@ -116,7 +116,7 @@ test('adaptive intelligence is user-visible, read-only, and never trusts unverif
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const js=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.match(html,/id="vaos-voice-adaptive" type="checkbox" checked/);
- assert.match(html,/main-voice\.mjs\?v=20261013-adaptive-v2-upgradeprep/);
+ assert.match(html,/main-voice\.mjs\?v=20261013-v3-supervised-canary/);
  assert.match(js,/\/api\/adaptive-intelligence\?q=/);
  const sha='a'.repeat(40);
  const safe='https://github.com/vayu-shastr/adv-vibpe/blob/'+sha+'/docs/KP.md';

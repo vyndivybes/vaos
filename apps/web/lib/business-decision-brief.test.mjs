@@ -6,7 +6,7 @@ test('group advice leads with actionable decision and four distinct concise doma
  const report=buildAdvisoryReport({question:'Analyse group business performance and recommend a better way',
  sources:[source('finance',6),source('commercial',5,{confirmedUnits:4}),source('procurement',47),source('production',4)]});
  assert.match(report.answer,/Business review/);
- assert.match(report.answer,/GROUP DECISION/);
+ assert.match(report.answer,/DECISION — Reconcile finances/);
  assert.match(report.answer,/47 shortage lines/i);
  assert.match(report.answer,/4 production job cards/i);
  assert.match(report.answer,/4 confirmed ordered units/i);

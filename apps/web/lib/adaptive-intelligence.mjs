@@ -88,7 +88,7 @@ export function validateAdaptiveDraft(draft,observations){
    throw Error('ADAPTIVE_DRAFT_REJECTED');
  const facts=observations.filter(x=>x.status==='OBSERVED').map(x=>x.summary).join(' ');
  const numerals=(draft.finding+' '+draft.recommendation).match(/\b\d[\d,.]*\b/g)||[];
- const sourceNumbers=new Set(facts.match(/\\b\\d[\\d,.]*\\b/g)||[]);
+ const sourceNumbers=new Set(facts.match(/\b\d[\d,.]*\b/g)||[]);
  if(numerals.some(n=>!sourceNumbers.has(n)))throw Error('ADAPTIVE_DRAFT_NUMERIC_UNSOURCED');
  return {finding:draft.finding.trim(),recommendation:draft.recommendation.trim(),
   citations:[...draft.citations]};

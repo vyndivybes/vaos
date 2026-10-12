@@ -26,5 +26,8 @@ jobs:
       - name: Verify login surface
         run: npm test
 
+      - name: Evaluate v3 synthetic upgrade preparation (no live calls)
+        run: node scripts/qualification/adaptive-v3-offline-benchmark.mjs
+
       - name: Verify Slack adapter and Worker runtime contract
         run: node --test integrations/slack/notification-adapter.test.mjs apps/web/api/slack-qualification.test.mjs

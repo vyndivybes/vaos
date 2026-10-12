@@ -241,3 +241,56 @@ test('qualification: fallback for unrelated public knowledge is unsupported and 
  const {fallbackAdaptivePlan}=await import('./adaptive-intelligence.mjs');
  assert.deepEqual(fallbackAdaptivePlan('What is the weather forecast in Oslo?').tools,[]);
 });
+
+test('upgrade preflight: quota exhaustion is disclosed as a reason, never a fabricated model answer',async()=>{
+ let tick=0;
+ const handler=createAdaptiveIntelligenceHandler({
+  now:()=>{tick+=100;return tick;},
+  claim:async()=>({allowed:false}),
+  getReader:()=>({execute:async job=>({actionType:job.actionType,
+   sourceAuthority:'getConfiguredDemandShortages',data:{records:[{id:'s1',shortage_quantity:2}]}})}),
+ });
+ const {state,res}=collect();
+ await handler(req('What is our procurement shortage status?'),res);
+ assert.equal(state.status,200);
+ const d=state.payload.data;
+ assert.equal(d.diagnostics.modelAvailability,'BUDGET_EXHAUSTED');
+ assert.equal(d.diagnostics.reasoningMode,'DETERMINISTIC_EVIDENCE');
+ assert.equal(d.diagnostics.modelCalls,0);
+ assert.equal(d.diagnostics.elapsedMs,100);
+ assert.equal(d.diagnostics.freeOnly,true);
+ assert.equal(d.diagnostics.actionAuthorized,false);
+});
+test('upgrade preflight: cited model draft is labeled as checked rather than as evidence fallback',async()=>{
+ let tick=0;
+ const h=createAdaptiveIntelligenceHandler({
+  now:()=>{tick+=40;return tick;},
+  claim:async()=>({allowed:true}),
+  getReader:()=>({execute:async job=>({actionType:job.actionType,
+   sourceAuthority:'getConfiguredDemandShortages',data:{records:[{id:'s1',shortage_quantity:2}]}})}),
+  plan:async()=>({tools:['PROCUREMENT'],focus:'Assess supplier shortage'}),
+  synthesize:async()=>({finding:'The observed shortage lines require material readiness review.',
+   recommendation:'Check which production jobs require the missing inputs.',citations:[1]})
+ });
+ const {state,res}=collect();await h(req('What supplier shortages are affecting our materials?'),res);
+ assert.equal(state.status,200);
+ assert.equal(state.payload.data.diagnostics.reasoningMode,'MODEL_CHECKED_ADVISORY');
+ assert.equal(state.payload.data.diagnostics.modelCalls,2);
+ assert.equal(state.payload.data.diagnostics.modelAvailability,'NONE');
+ assert.equal(state.payload.data.diagnostics.upgradeStatus,'HOLD_PENDING_LIVE_ACCEPTANCE');
+});
+test('upgrade preflight: rejected model conclusions are explicitly diagnosed without leaking unsafe text',async()=>{
+ const h=createAdaptiveIntelligenceHandler({
+  claim:async()=>({allowed:true}),
+  getReader:()=>({execute:async job=>({actionType:job.actionType,
+   sourceAuthority:'getConfiguredDemandShortages',data:{records:[{id:'s1',shortage_quantity:2}]}})}),
+  plan:async()=>({tools:['PROCUREMENT'],focus:'Review missing materials'}),
+  synthesize:async()=>({finding:'Revenue is 2 crore in this period.',
+   recommendation:'Pay suppliers immediately to release design.',citations:[1]})
+ });
+ const {state,res}=collect();await h(req('What supplier shortages need review?'),res);
+ assert.equal(state.status,200);
+ assert.equal(state.payload.data.diagnostics.modelAvailability,'DRAFT_REJECTED');
+ assert.equal(state.payload.data.diagnostics.reasoningMode,'DETERMINISTIC_EVIDENCE');
+ assert.doesNotMatch(JSON.stringify(state.payload.data),/2 crore in this period|Pay suppliers immediately/i);
+});

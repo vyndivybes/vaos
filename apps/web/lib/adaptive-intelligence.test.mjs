@@ -103,3 +103,90 @@ test('broad founder operating performance questions retain finance/material/prod
  assert.deepEqual(plan.tools,['FINANCE','PROCUREMENT','PRODUCTION']);
  assert.equal(plan.mode,'RULE_FALLBACK');
 });
+
+import {selectEvidenceGapRead,independentlyCheckDraft} from './adaptive-investigation.mjs';
+
+test('v2 examines a failed primary source and selects one distinct approved complementary read',()=>{
+ const next=selectEvidenceGapRead({tools:['PROCUREMENT','PRODUCTION'],observations:[
+  {tool:'PROCUREMENT',status:'HOLD'},
+  {tool:'PRODUCTION',status:'OBSERVED',summary:'4 recent job cards'}]});
+ assert.equal(next,'INVENTORY');
+ assert.equal(selectEvidenceGapRead({tools:['PROCUREMENT','PRODUCTION','ENGINEERING'],
+  observations:[{tool:'PROCUREMENT',status:'HOLD'}]}),null);
+ assert.equal(selectEvidenceGapRead({tools:['PROCUREMENT'],
+  observations:[{tool:'PROCUREMENT',status:'OBSERVED',summary:'3 shortage lines'}]}),null);
+});
+
+test('v2 independent verifier rejects numbers appearing in uncited domains even if overall evidence contains them',()=>{
+ const evidence=[
+  {tool:'FINANCE',status:'OBSERVED',summary:'47 general ledger entries'},
+  {tool:'PROCUREMENT',status:'OBSERVED',summary:'3 material shortage lines'},
+ ];
+ const candidate={finding:'There are 47 material shortages reported for this operation.',
+  recommendation:'Review suppliers before committing production.',citations:[2]};
+ const audit=independentlyCheckDraft(candidate,evidence);
+ assert.equal(audit.status,'REJECTED');
+ assert.ok(audit.reasons.includes('NUMERIC_CITATION_MISMATCH'));
+});
+
+test('v2 independent verifier refuses fictitious financial value inferred from ledger row count',()=>{
+ const evidence=[{tool:'FINANCE',status:'OBSERVED',summary:'4 general-ledger entries and 2 journals'}];
+ const draft={finding:'Revenue is 4 lakh rupees in this period.',
+  recommendation:'Review reconciled finance evidence before further projections.',citations:[1]};
+ const audit=independentlyCheckDraft(draft,evidence);
+ assert.equal(audit.status,'REJECTED');
+ assert.ok(audit.reasons.includes('FINANCIAL_METRIC_UNQUALIFIED'));
+});
+
+test('v2 verifier permits cautious grounded advice but never certifies real-world causation or approvals',()=>{
+ const evidence=[{tool:'PROCUREMENT',status:'OBSERVED',summary:'3 shortage lines in recent selected source records'},
+  {tool:'INVENTORY',status:'HOLD',summary:'Inventory source unavailable'}];
+ const draft={finding:'The 3 observed shortage lines may warrant review.',
+  recommendation:'Compare the active jobs with reservations before committing resources.',citations:[1]};
+ const audit=independentlyCheckDraft(draft,evidence);
+ assert.equal(audit.status,'BOUNDED_CONSISTENCY_PASS');
+ assert.equal(audit.causalClaimsCertified,false);
+ assert.equal(audit.businessActionAuthorized,false);
+ assert.ok(audit.limitations.includes('PARTIAL_SOURCE_COVERAGE'));
+});
+
+test('v2 one supplemental read never substitutes for original HOLD and cannot dispatch writes',async()=>{
+ const actions=[];
+ const reader=()=>({execute:async job=>{
+  actions.push(job.actionType);
+  if(job.actionType==='PROCUREMENT.OBSERVE_SHORTAGE')throw Error('upstream offline');
+  if(job.actionType==='PRODUCTION.OBSERVE_WIP')
+   return {actionType:job.actionType,sourceAuthority:'getProductionJobCards',
+    data:{records:[{id:'job-1',status:'open'}]}};
+  if(job.actionType==='INVENTORY.OBSERVE_STOCK')
+   return {actionType:job.actionType,sourceAuthority:'getAuthoritativeInventory',
+    data:{records:[]}};
+  throw Error('unexpected tool');
+ }});
+ const h=createAdaptiveIntelligenceHandler({getReader:reader,claim:async()=>({allowed:false})});
+ const {res,state}=collect();
+ await h(req('Why are supplier shortages and production job cards not aligned?'),res);
+ assert.equal(state.status,200);
+ assert.equal(state.payload.data.actionAuthorized,false);
+ assert.equal(state.payload.data.followupRead,'INVENTORY');
+ assert.equal(state.payload.data.executionCount,3);
+ assert.ok(state.payload.data.evidence.some(x=>x.tool==='PROCUREMENT'&&x.status==='HOLD'));
+ assert.deepEqual(actions.sort(),['INVENTORY.OBSERVE_STOCK','PROCUREMENT.OBSERVE_SHORTAGE','PRODUCTION.OBSERVE_WIP']);
+ assert.equal(state.payload.data.verification.status,'NOT_MODEL_VERIFIED');
+});
+
+test('v2 rejects false quantified model claims and returns independently qualified fallback',async()=>{
+ const h=createAdaptiveIntelligenceHandler({getReader:()=>({execute:async job=>({
+  actionType:job.actionType,sourceAuthority:'getConfiguredDemandShortages',
+  data:{records:[{id:'shortage-1',shortage_quantity:2}]}
+ })}),claim:async()=>({allowed:true}),
+ plan:async()=>({tools:['PROCUREMENT'],focus:'shortage review'}),
+ synthesize:async()=>({finding:'The supplier invoice has been approved for 2 crore rupees.',
+  recommendation:'Consider expediting materials without new commitments.',citations:[1]})});
+ const {state,res}=collect();await h(req(),res);
+ assert.equal(state.status,200);
+ assert.equal(state.payload.data.reasoningMode,'DETERMINISTIC_EVIDENCE');
+ assert.notEqual(state.payload.data.verification.status,'BOUNDED_CONSISTENCY_PASS');
+ assert.doesNotMatch(state.payload.data.answer,/2 crore rupees/i);
+ assert.equal(state.payload.data.actionAuthorized,false);
+});

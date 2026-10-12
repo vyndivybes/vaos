@@ -32,7 +32,8 @@ Event Subscriptions are commissioned. It is distinct from the outbound
    Basic Information > App Credentials and store it only as Worker secret
    `SLACK_SIGNING_SECRET` (never Slack/chat/GitHub messages).
 2. Enable Slack Event Subscriptions and use the request URL above; Slack's
-   signed `url_verification` challenge must pass.
+   signed `url_verification` challenge must pass while live event control
+   remains disabled.
 3. Subscribe bot events `message.im` and `app_mention`. Grant the required
    event-history bot scopes plus existing `chat:write`; reinstall the app if
    Slack requests it. Use only least-privilege scopes, never admin or write-ERP scopes.
@@ -46,9 +47,10 @@ Event Subscriptions are commissioned. It is distinct from the outbound
 Founder DMs can return governed read-only observations; channel mentions only
 return a safe direction to DM to avoid exposing business content publicly.
 The Worker acknowledges Slack asynchronously and holds uncertain deliveries.
-R2 event-ID readback suppresses sequential retries; this is **not an atomic
-exactly-once guarantee** under concurrent delivery. Live qualification must
-cover concurrency/race safeguards before high-volume production enablement.
+R2 conditional `If-None-Match: *` admission suppresses parallel
+re-delivery of the same event ID. However, an accepted event with an uncertain
+Slack delivery stays HOLD and is not blindly retried. Live qualification must
+verify this atomic admission behavior and Slack response evidence.
 
 Disable immediately with `VAOS_SLACK_EVENTS_CONTROL=disabled`.
 The existing hourly `VAOS_SLACK_AGENT_CONTROL` mechanism is unchanged.

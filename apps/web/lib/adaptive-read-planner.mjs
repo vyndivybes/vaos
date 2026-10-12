@@ -4,7 +4,7 @@
 const ORDER=['finance','commercial','procurement','inventory','production','engineering','people'];
 const RULES={
  finance:/\b(cash|funds?|liquidity|runway|cost|expense|budget|payable|financial|cash.flow)\b/i,
- commercial:/\b(sales|orders?|customers?|pipeline|demand|delivery|deliveries|revenue)\b/i,
+ commercial:/\b(sales|orders?|customers?|pipeline|demand|revenue)\b/i,
  procurement:/\b(suppliers?|vendors?|shortage|procure|materials?|lead.times?|sourcing)\b/i,
  inventory:/\b(inventory|stock|warehouse|reservation|on.hand)\b/i,
  production:/\b(prototype|manufactur|build|production|capacity|job.cards?|shop.floor|assemble|yield)\b/i,

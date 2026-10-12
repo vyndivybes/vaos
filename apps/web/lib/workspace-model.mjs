@@ -19,11 +19,8 @@ const MODULES = Object.freeze([
   { id: 'admin', label: 'Admin', group: 'System', glyph: 'AD', description: 'Identity, integrations and platform configuration.' },
 ]);
 
-const RISKS = Object.freeze([
-  { id: 'RSK-018', title: 'Verification evidence lag', score: 72, band: 'high', trend: 'up' },
-  { id: 'RSK-013', title: 'Supplier schedule exposure', score: 56, band: 'medium', trend: 'up' },
-  { id: 'RSK-009', title: 'Identity / access drift', score: 22, band: 'low', trend: 'flat' },
-]);
+// The risk register must be populated from persisted domain evidence, never demo scores.
+const RISKS = Object.freeze([]);
 
 const DOMAIN_WORKSPACE_CONFIG = Object.freeze({
   'qa-capa': {
@@ -781,7 +778,7 @@ export function buildWorkspaceModel(runtimeSnapshot) {
 
   return {
     environment: 'Development',
-    release: 'VAOS 0.3 / governed execution',
+    release: 'VAOS / governed execution',
     runtimeMode: runtimeSnapshot.mode,
     modules: MODULES.map((item) => ({ ...item })),
     agents,
@@ -793,8 +790,8 @@ export function buildWorkspaceModel(runtimeSnapshot) {
     workforce,
     operationalViews,
     pulse: {
-      governance: 'Nominal',
-      evidenceCoverage: 86,
+      governance: 'Policy-gated',
+      evidenceCoverage: null,
       openApprovals: approvals.length,
       agentFleet: fleet,
       executionQueue: runtimeSnapshot.metrics?.executionPending ?? 0,

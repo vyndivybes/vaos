@@ -1,3 +1,5 @@
+import {readSlackIncidentStatus} from './slack-incident-observer.mjs';
+import {readVaosGitHubCi} from './github-slack-ci.mjs';
 import {createSessionToken,SESSION_COOKIE} from '../../apps/web/lib/auth.mjs';
 import {invokeCloudflareHandler} from '../../apps/web/lib/cloudflare-adapter.mjs';
 import voiceCommercial from '../../apps/web/api/voice-commercial.mjs';
@@ -20,6 +22,8 @@ function cleanText(value){
 export function classifyFounderSlackQuestion(text){
   const q=text.toLowerCase();
   if(/^(hi|hello|hey|good morning|good evening|good afternoon)[!. ]*$/.test(q))return 'GREETING';
+  if(/\b(incidents?|outages?|on-call|incident.io)\b/.test(q))return 'INCIDENTS';
+  if(/\b(github|ci status|build checks|workflow runs|actions status|pull request checks)\b/.test(q))return 'GITHUB_CI';
   if(/\b(integration|slack|windmill|activepieces|dify|stirling|zapier|langgraph|provider)\b/.test(q))return 'INTEGRATIONS';
   if(/\b(executive|daily brief|business brief|business overview|company status)\b/.test(q))return 'EXECUTIVE';
   if(/\b(finance|financial|ledger|bookkeeping|bank reconciliation|tax)\b/.test(q))return 'FINANCE';
@@ -61,6 +65,8 @@ export async function answerFounderSlackQuestion(text,env){
   const q=cleanText(text);if(!q)throw new Error('SLACK_QUESTION_INVALID');
   const route=classifyFounderSlackQuestion(q);
   if(route==='GREETING')return {route,answer:'VAOS is online. Ask me about sales status, engineering risks, project evidence, or integration status. Read-only governance remains active.',actionAuthorized:false};
+  if(route==='INCIDENTS'){const r=await readSlackIncidentStatus(env);return {route,answer:r.answer,actionAuthorized:false};}
+  if(route==='GITHUB_CI'){const r=await readVaosGitHubCi(env);return {route,answer:r.answer,actionAuthorized:false};}
   if(route==='INTEGRATIONS')return {route,answer:integrationStatus(env),actionAuthorized:false};
   if(route==='EXECUTIVE'){
     const result=await readFounderExecutiveBrief(env);

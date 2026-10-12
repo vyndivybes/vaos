@@ -129,7 +129,7 @@ export function buildAdvisoryReport({question,sources=[],web=[]}={}){
  const asksWeb=/\b(compare|market|web|industry|benchmark|research online)\b/i.test(q);
  if(webSources.length)
   parts.push('WEB CHECK — '+webSources.map((x,i)=>'['+(i+1)+'] '+x.title.slice(0,95)).join('; ')+
-   '. Headline-level context only: independently verify underlying reports before comparing suppliers or prices.');
+   '. headline-level context only: independently verify underlying reports before comparing suppliers or prices.');
  else if(asksWeb)
   parts.push('WEB CHECK — No independently qualifying current public sources were retrieved. This is not a verified market comparison.');
  if(missing.length)parts.push('DATA GAPS / HOLD — '+missing.join(', ')+'. Unavailable sources do not imply zero risk.');

@@ -39,6 +39,7 @@ import founderConversation from './api/founder-conversation.mjs';
 import voiceCapabilities from './api/voice-capabilities.mjs';
 import voiceDiscover from './api/voice-discover.mjs';
 import voiceCommercial from './api/voice-commercial.mjs';
+import voiceInsight from './api/voice-insight.mjs';
 import groupPortfolio from './api/group-portfolio.mjs';
 import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
 import federatedKnowledge from './api/federated-knowledge.mjs';
@@ -96,6 +97,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/voice-capabilities': voiceCapabilities,
   '/api/voice-discover': voiceDiscover,
   '/api/voice-commercial': voiceCommercial,
+  '/api/voice-insight': voiceInsight,
   '/api/group-portfolio': groupPortfolio,
   '/api/voice-evidence-ai': voiceEvidenceAi,
   '/api/federated-knowledge': federatedKnowledge,

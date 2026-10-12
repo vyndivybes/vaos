@@ -4,6 +4,7 @@ import {makeCommercialReader} from './voice-commercial.mjs';
 import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {rankAdvisoryOptions} from '../lib/business-advice-ai.mjs';
+import {qualifyPublicHeadlines} from '../lib/public-research-evidence.mjs';
 import {buildPlanningCycle} from '../lib/business-planning-cycle.mjs';
 import {ADVISORY_LANGUAGES,isAdvisoryQuestion,chooseAdviceSources,externalTopic,
   observeAdviceDomain,buildAdvisoryReport,checkTranslation} from '../lib/business-advice.mjs';
@@ -26,8 +27,9 @@ export function parsePublicNewsFeed(xml){
   const title=clean(item.match(/<title>([\s\S]*?)<\/title>/i)?.[1]);
   const url=clean(item.match(/<link>([\s\S]*?)<\/link>/i)?.[1]).replace(/\?oc=\d{1,2}$/, '');
   const published=clean(item.match(/<pubDate>([\s\S]*?)<\/pubDate>/i)?.[1]);
+  const publisher=clean(item.match(/<source(?:\s+[^>]*)?>([\s\S]*?)<\/source>/i)?.[1]);
   if(title.length<8||title.length>230||!/^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(url))continue;
-  found.push({title,url,published:Number.isFinite(Date.parse(published))?new Date(published).toISOString():'unknown'});
+  found.push({title,url,publisher,published:Number.isFinite(Date.parse(published))?new Date(published).toISOString():'unknown'});
   if(found.length===3)break;
  }
  return found;
@@ -58,7 +60,7 @@ export async function translateAdvisory(ai,original,lang){
  return value;
 }
 export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
- fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,translate=translateAdvisory}={}){
+ fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,translate=translateAdvisory,now=()=>new Date()}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -88,7 +90,8 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
    }catch{return {domain:spec.domain,status:'HOLD'};}
   }));
   const external=await getExternalHeadlines(question,fetchImpl);
-  const report=buildAdvisoryReport({question,sources:observations,web:external});
+  const publicResearch=qualifyPublicHeadlines(external,{asOf:now().toISOString().slice(0,10)});
+  const report=buildAdvisoryReport({question,sources:observations,web:publicResearch.items});
   // Read-only, deterministic planning evidence. The current ERP bridge exposes
   // bounded recent records, NOT an independently complete monthly history.
   // Consequently six-month projections remain HOLD pending a signed source.
@@ -98,7 +101,7 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
     '. Next: '+planningCycle.steps[0].instruction;
   if(/\b(forecast|predict|projection|six.month|6.month|next.*month)\b/i.test(question))
    report.answer+='\n\nFORECAST QUALIFICATION — HOLD: no independently reconciled, complete, signed twelve-month order-unit history is currently exposed by the VAOS bridge. '+planningCycle.forecastReadiness.holds.join(', ')+'.';
-  const data={...report,planningCycle,language:lang,translationQualified:lang==='en',
+  const data={...report,planningCycle,publicResearch,language:lang,translationQualified:lang==='en',
    languageNote:lang==='en'?'English source-backed report': 'English source-backed report retained if translation verification fails',
    voiceLanguage:lang,observedAt:new Date().toISOString()};
   // Source-bounded agent selects between two existing low-risk plans.

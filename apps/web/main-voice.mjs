@@ -145,9 +145,13 @@ function init(){
    setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic);
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
-   if(controller!==abort||abort.signal.aborted)return;
-   answer.textContent='HOLD — evidence unavailable. No figures or conclusions inferred.';
-   setStatus(error?.message||'Read-only lookup unavailable.');
+   if(controller!==abort)return;
+   const expired=abort.signal.aborted;
+   const expiredText='I could not retrieve a verified business answer within 25 seconds. The source may be unavailable.';
+   lastAnswer=expired?expiredText:'I could not retrieve a verified business answer. No records were changed.';
+   answer.textContent=lastAnswer;
+   setStatus(expired?'Request timed out. Try again or check source connections.':String(error?.message||'Read-only lookup unavailable.'));
+   if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
  });
  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask.click();}});

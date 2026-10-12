@@ -157,3 +157,16 @@ test('upgrade prep: UI never displays injected provider error in diagnostic stat
  assert.doesNotMatch(msg,/private_key|10000|\-1ms/);
  assert.match(msg,/No business changes/i);
 });
+
+test('supervised V3 mode remains explicit about HOLD even when model produces bounded answer',async()=>{
+ const status=formatAdaptiveStatus({
+  v3Pilot:{pilotState:'READ_ONLY_EVALUATION_ACTIVE',v3AutonomyState:'HOLD'},
+  reasoningMode:'MODEL_CHECKED_ADVISORY',verification:{status:'BOUNDED_CONSISTENCY_PASS'},
+  sourceCoverage:{observed:2},diagnostics:{modelAvailability:'NONE',elapsedMs:1000}});
+ assert.match(status,/V3 supervised evaluation active/i);
+ assert.match(status,/autonomous upgrade on HOLD/i);
+ assert.match(status,/No business changes/);
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.ok(source.includes('&eval=v3-readonly'));
+});

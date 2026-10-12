@@ -17,13 +17,17 @@ const MAX_MESSAGES=3;
 
 function cleanText(value){
   if(typeof value!=='string')return null;
-  const text=value.replace(/<@[A-Z0-9]+>/g,'').replace(/\s+/g,' ').trim();
+  // Strip only the exact ChatGPT UI attribution footer from a verified
+  // founder Slack message; never treat extra chat content as instructions.
+  const withoutAttribution=value.replace(/\s*\*Sent using\*\s*<@U0C2DMN2TG8\|ChatGPT>\s*$/i,'');
+  const text=withoutAttribution.replace(/<@[A-Z0-9]+>/g,'').replace(/\s+/g,' ').trim();
   if(text.length<1||text.length>500||/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text))return null;
   return text;
 }
 export function classifyFounderSlackQuestion(text){
   const q=text.toLowerCase();
   if(/^(hi|hello|hey|good morning|good evening|good afternoon)[!. ]*$/.test(q))return 'GREETING';
+  if(/\b(free tier|free plan|no-cost|free integrations|free alternatives|zero-cost|free zapier)\b/.test(q))return 'FREE_TIER';
   if(/\b(zapier.*(qualification|test|evidence|verified|run)|zap qualification)\b/.test(q))return 'ZAPIER_EVIDENCE';
   if(/\b(google|calendar|drive|workspace brief|workspace status)\b/.test(q))return 'GOOGLE_WORKSPACE';
   if(/\b(incidents?|outages?|on-call|incident.io)\b/.test(q))return 'INCIDENTS';
@@ -54,6 +58,23 @@ function integrationStatus(env){
   return 'VAOS integration bindings: '+items.map(([n,on])=>n+' '+(on?'connected':'not connected')).join('; ')+
     '. These indicate configured bindings or flags, not independently verified health, automatic production routing or business-write authority.';
 }
+function freeTierStatus(env){
+  const slackDirect=typeof env?.SLACK_BOT_TOKEN==='string' &&
+    env.SLACK_BOT_TOKEN.startsWith('xoxb-') &&
+    env.VAOS_SLACK_EVENTS_CONTROL==='founder-readonly-v1';
+  const hourly=env?.VAOS_SLACK_AGENT_CONTROL==='founder-readonly-v1';
+  const durable=typeof env?.VAOS_ARTIFACTS?.get==='function';
+  return 'VAOS free-first integration status (read-only): '+
+    'native Slack DM '+(slackDirect?'enabled':'not activated')+
+    '; hourly founder observation '+(hourly?'enabled':'not activated')+
+    '; R2 audit '+(durable?'configured':'not provisioned')+'. '+
+    'Native Cloudflare-to-Slack messaging needs no Zapier plan. '+
+    'Zapier Free includes 100 tasks/month, two-step Zaps using eligible standard apps, '+
+    '15-minute polling, Tables up to 2,500 records, and Forms up to 10 project pages. '+
+    'These Zapier account features are available through Zapier but are not provisioned or managed by VAOS. '+
+    'Zapier Catch Hook is paid-only; it is not activated for autonomous production routing. '+
+    'No paid external APIs, payments, approvals or business writes are authorized.';
+}
 function sessionCookie(){
   return SESSION_COOKIE+'='+createSessionToken(FOUNDER_EMAIL,300);
 }
@@ -68,6 +89,7 @@ async function internalJson(handler,{method='GET',body}={},env){
 export async function answerFounderSlackQuestion(text,env){
   const q=cleanText(text);if(!q)throw new Error('SLACK_QUESTION_INVALID');
   const route=classifyFounderSlackQuestion(q);
+  if(route==='FREE_TIER')return {route,answer:freeTierStatus(env),actionAuthorized:false};
   if(route==='GREETING')return {route,answer:'VAOS is online. Ask me about sales status, engineering risks, project evidence, or integration status. Read-only governance remains active.',actionAuthorized:false};
   if(route==='ZAPIER_EVIDENCE'){const r=await readZapierQualificationEvidence(env);return {route,answer:r.answer,actionAuthorized:false};}
   if(route==='GOOGLE_WORKSPACE'){const r=await readGoogleWorkspaceBrief(env);return {route,answer:r.answer,actionAuthorized:false};}

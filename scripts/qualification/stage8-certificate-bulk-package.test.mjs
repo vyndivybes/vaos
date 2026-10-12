@@ -19,8 +19,9 @@ test('strict allowlist excludes authentication activation and all business write
  const v=createStage8BulkPayload(valid);
  assert.deepEqual(Object.keys(v.payload).sort(),[
  'VAOS_STAGE8_CUTOVER_APPROVAL','VAOS_STAGE8_QUALIFICATION_EVIDENCE',
- 'VAOS_STAGE8_QUALIFICATION_REVISION']);
- assert.equal(v.payload.VAOS_STAGE8_QUALIFICATION_REVISION,revision);
+ 'VAOS_STAGE8_CERTIFIED_REVISION']);
+ assert.equal(v.payload.VAOS_STAGE8_CERTIFIED_REVISION,revision);
+ assert.equal(Object.hasOwn(v.payload,'VAOS_STAGE8_QUALIFICATION_REVISION'),false);
 });
 test('invalid signer, stale approval and revision mismatch block package',()=>{
  assert.throws(()=>createStage8BulkPayload({...valid,cutoverKey:'dd'.repeat(32)}));

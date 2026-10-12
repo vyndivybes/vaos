@@ -20,6 +20,8 @@ const planning=/\b(plan|planning|forecast|predict|projection|scenario|what if|be
 const deny=/\b(approve|reject|pay|transfer|execute|dispatch|submit|delete|deploy|authorize|authorise|secret|api key|password|token)\b/i;
 export function isAdvisoryQuestion(q){return typeof q==='string'&&q.trim().length>=5&&q.length<=300&&planning.test(q)&&!deny.test(q);}
 export function chooseAdviceSources(question){
+ if(/\b(group|all divisions|whole company|business analysis|enterprise|company.wide)\b/i.test(question||''))
+  return ['finance','commercial','procurement','production'].map(domain=>({domain,actionType:VOICE_DOMAIN_ACTIONS[domain]}));
  const match=advisors.find(x=>x.re.test(question||''))||advisors[0];
  return match.priority.map(domain=>({domain,actionType:VOICE_DOMAIN_ACTIONS[domain]}));
 }

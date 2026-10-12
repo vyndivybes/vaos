@@ -64,3 +64,23 @@ test('RSS parser discards untrusted outbound domains and oversized or malformed 
  assert.equal(parsed[0].title,'Approved case');
  assert.deepEqual(parsePublicNewsFeed('x'.repeat(150000)),[]);
 });
+
+test('model-assisted planning ranks only bounded observations and never makes business decisions',async()=>{
+ const calls=[];
+ const handler=createBusinessAdvisorHandler({getReader:()=>sources(),claim:async()=>({allowed:true,remaining:2}),
+  fetchImpl:async()=>{throw Error('offline')},
+ });
+ const req0=mk('Recommend a better procurement plan and compare alternatives');req0.env.AI={
+  run:async(model,params)=>{
+   calls.push({model,prompt:params.prompt});
+   return {response:JSON.stringify({choice:1,reason:'Conservative stock and shortage reconciliation should precede procurement changes.'})};
+  }
+ };req0.env.VAOS_ARTIFACTS={};
+ const {x,res}=capture();await handler(req0,res);
+ assert.equal(x.code,200);
+ assert.equal(x.body.data.agenticRecommendation,'MODEL_ASSISTED_UNVERIFIED');
+ assert.match(x.body.data.answer,/option 1/i);
+ assert.equal(x.body.data.actionAuthorized,false);
+ assert.equal(calls.length,1);
+ assert.ok(!calls[0].prompt.includes('PRIVATE NAME'));
+});

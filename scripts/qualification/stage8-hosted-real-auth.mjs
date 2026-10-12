@@ -85,6 +85,16 @@ try{
  const recovered=await auth('checker',checker);
  assert.equal((await call('/api/session',{headers:{cookie:recovered}})).status,200,
   'recovered isolated authentication');
+ // Emergency recovery qualification is isolated to the ephemeral Worker.
+ config.vars.VAOS_STAGE8_EMERGENCY_DISABLE='yes';
+ await writeFile(configPath,JSON.stringify(config),{mode:0o600});
+ wrangler('deploy','--config',configPath);
+ assert.equal((await call('/api/session')).status,503);
+ delete config.vars.VAOS_STAGE8_EMERGENCY_DISABLE;
+ await writeFile(configPath,JSON.stringify(config),{mode:0o600});
+ wrangler('deploy','--config',configPath);
+ assert.equal((await call('/api/session')).status,401);
+ console.log('STAGE8_ISOLATED_EMERGENCY_DISABLE_RESTORE_PASS');
  console.log('STAGE8_HOSTED_ROLLBACK_SIGNER_ROTATION_PASS');
  console.log('STAGE8_HOSTED_ACTUAL_HANDLERS_REVOKE_REDEPLOY_PASS');
 }finally{

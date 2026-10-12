@@ -50,3 +50,14 @@ This evidence is materially stronger than VAOS's previous in-memory simulator: i
 **Acceptance classification:** VYNDI CANONICAL-DB-ISOLATED-P2P **PASS**. This is not a networked VYNDI OS sandbox, not a real signed VAOS service-binding invocation, and not authorization to write to production. Actual VYNDI procurement write adapter, independently signed end-to-end readback, release/compensation and a deliberately provisioned sandbox remain **HOLD**. No new paid Neon branch or live business writes were used. P7 production release remains **HOLD**.
 
 This evidence is retained alongside the VAOS isolated state-machine proof and must be requalified if VYNDI's canonical P2P procedures, signed bridge or procurement authority change.
+
+## 2026-10-13: Signed VAOS → VYNDI canonical HTTP sandbox — PASS (loopback only)
+
+VYNDI OS [PR #53](https://github.com/vyndivybes/vyndios/pull/53) merged as `0479d2c46b559f33ddcde071170380ecf57d3896`.
+The isolated cross-repo signed HTTP qualification [run #38307660058](https://github.com/vyndivybes/vyndios/actions/runs/38307660058) and VYNDI OS full Development CI [run #38307660129](https://github.com/vyndivybes/vyndios/actions/runs/38307660129) both passed on exact PR head `8e089c08a1ccecb547706d6e0ac0d0b9edbc827d`.
+
+The GitHub runner checks out the VAOS sender contract at pinned revision `f8fa8ec2bcfb64e876d503d7a3a5a4d7c4353e2c`. A fresh, CI-only ephemeral P-256 key signs a v2 procurement `write-execute` request, bound to method, route, timestamp, nonce, request-body digest and explicit test approval context. A test-only VYNDI HTTP receiver binds **127.0.0.1**, validates signature and context, and uses the **actual VYNDI canonical PostgreSQL procedures** on an ephemeral PGlite instance (complete migration schema).
+
+Readback established exactly **two** synthetic POs (M and L), **two** accepted GRNs, **two** three-way-matched supplier invoices, **one shared material inventory SKU**, **zero payments** and **zero production database connections**. Invalid signature, tampered body, stale request, nonce replay, duplicate idempotency with changed payload, same-maker checker and wrong purpose are rejected. The production VAOS procurement adapter is independently verified to reject execution; VYNDI production `/api/vaos/bridge` continues to refuse `write-execute`.
+
+**Release classification:** `STAGE9_SIGNED_LOOPBACK_ISOLATED_CANONICAL_P2P` **PASS**. This is NOT a publicly networked production-like sandbox, not production authentication, not a released material or commercial commitment, and does NOT authorize actual VYNDI PO/GRN/invoice posting or supplier payments. Live signed service binding, dedicated isolated database, real rollback drills, protected VYNDI main branch and founder release acceptance stay **HOLD**. No paid service was introduced. Previous Stage 9 read-only safety and production write denials remain mandatory.

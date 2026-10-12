@@ -30,7 +30,7 @@ test('exactly one constrained webhook attempt and evidence recorded',async()=>{
  const r=await runZapierOneShot(s.env,{send:s.send,id:()=> 'd9dbf393-414d-4774-ac9d-2a405497e6c8'});
  assert.equal(r.status,'HOLD');assert.equal(r.acknowledgmentVerified,true);
  assert.match(r.answer,/d9dbf393-414d-4774-ac9d-2a405497e6c8/);
- assert.match(r.answer,/independent Zap History/);
+ assert.match(r.answer,/Independent Zap History/);
  assert.equal(s.calls.length,1);
  const payload=JSON.parse(s.calls[0].opts.body);
  assert.equal(payload.eventType,'synthetic_qualification');assert.equal(payload.productionActivation,false);

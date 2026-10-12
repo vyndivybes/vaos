@@ -75,6 +75,17 @@ export function formatReadOnlyResult(kind,data){
  }
  throw Error('READ_ONLY_INTENT_REQUIRED');
 }
+/** Safely render decision sections as selectable cards rather than a wall of
+ * ledger text. All content uses textContent, never untrusted HTML.
+ */
+export function splitDecisionBrief(answer){
+ if(typeof answer!=='string'||answer.length>4000)return [];
+ return answer.split(/\n\n+/).slice(0,9).map(section=>{
+  const dash=section.indexOf(' — ');
+  return dash<0?{label:'BUSINESS REVIEW',detail:section.slice(0,1000)}:
+   {label:section.slice(0,dash).slice(0,40),detail:section.slice(dash+3).slice(0,1000)};
+ });
+}
 function init(){
  const root=document.querySelector('#vaos-main-voice');
  if(!root)return;
@@ -174,6 +185,22 @@ function init(){
    spokenAnswer=normalized.spokenAnswer||normalized.answer;
    answerLanguage=normalized.language||'en';
    answer.textContent=normalized.answer;
+   answer.className='';
+   if(intent.kind==='ADVISORY'&&answerLanguage==='en'&&typeof document.createElement==='function'){
+    const blocks=splitDecisionBrief(normalized.answer);
+    if(blocks.length>=3){
+     answer.replaceChildren();
+     answer.className='va-brief-grid';
+     for(const block of blocks){
+      const card=document.createElement('section');
+      const head=document.createElement('h3');
+      const body=document.createElement('p');
+      card.className='va-brief-card'+(/^(DECISION|DO FIRST|WHAT-IF|FORECAST)$/.test(block.label)?' va-brief-card--priority':'');
+      head.textContent=block.label;body.textContent=block.detail;
+      card.append(head,body);answer.append(card);
+     }
+    }
+   }
    for(const ref of normalized.sources||[]){
     if(!/^https:\/\/github\.com\/vyndivybes\/(?:vaos|vyndios)\/blob\/|^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/|^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(ref.url))continue;
     const a=document.createElement('a');a.href=ref.url;a.rel='noopener noreferrer';a.target='_blank';

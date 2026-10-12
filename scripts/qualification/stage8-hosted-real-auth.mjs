@@ -83,7 +83,16 @@ try{
  assert.equal((await call('/api/session',{headers:{cookie:makerCookie}})).status,200,'maker session remains');
  // Redeploy with IDENTICAL fixture, signing key and bucket; revocation must survive.
  wrangler('deploy','--config',configPath);
- assert.equal((await call('/api/session',{headers:{cookie:checkerCookie}})).status,401,'R2 persistent replay rejection');
+ let redeployStable=false;
+ for(let attempt=0;attempt<20;attempt++){
+  const checkerStatus=(await call('/api/session',{headers:{cookie:checkerCookie}})).status;
+  const makerStatus=(await call('/api/session',{headers:{cookie:makerCookie}})).status;
+  if(checkerStatus===401&&makerStatus===200){redeployStable=true;break;}
+  assert.ok([404,401].includes(checkerStatus),'unexpected checker redeploy response');
+  assert.ok([404,200].includes(makerStatus),'unexpected maker redeploy response');
+  await new Promise(ok=>setTimeout(ok,1500));
+ }
+ assert.ok(redeployStable,'identical redeploy must preserve R2 replay denial after bounded propagation');
  assert.equal((await call('/api/logout',{method:'POST',headers:{cookie:makerCookie}})).status,200);
  assert.equal((await call('/api/session',{headers:{cookie:makerCookie}})).status,401);
  // Cutover rehearsal in the isolated Worker: rotate the HMAC key,

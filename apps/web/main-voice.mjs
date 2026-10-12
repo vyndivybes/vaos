@@ -44,7 +44,9 @@ export function formatAdaptiveStatus(data){
  const elapsed=data?.diagnostics?.elapsedMs;
  const timing=Number.isInteger(elapsed)&&elapsed>=0&&elapsed<=60000
   ?' · '+(elapsed/1000).toFixed(1)+'s':'';
- return 'Adaptive '+label+' · '+observed+' sources observed'+why+timing+'. No business changes.';
+ const pilot=data?.v3Pilot?.pilotState==='READ_ONLY_EVALUATION_ACTIVE'&&data?.v3Pilot?.v3AutonomyState==='HOLD'
+  ?'V3 supervised evaluation active (autonomous upgrade on HOLD) · ':'';
+ return pilot+'Adaptive '+label+' · '+observed+' sources observed'+why+timing+'. No business changes.';
 }
 export function voiceCapabilityReady(x){
  return x?.enabled===true&&x?.manualReviewRequired===true
@@ -202,7 +204,7 @@ function init(){
   let speaking=false;
   try{
    const investigate=adaptive?.checked===true;
-   const route=investigate?'/api/adaptive-intelligence?q='+encodeURIComponent(intent.question)
+   const route=investigate?'/api/adaptive-intelligence?q='+encodeURIComponent(intent.question)+'&eval=v3-readonly'
     :intent.kind==='EVIDENCE'
     ?'/api/federated-knowledge?q='+encodeURIComponent(intent.question)
     :intent.domain==='engineering'

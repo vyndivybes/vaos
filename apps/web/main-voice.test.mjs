@@ -106,7 +106,7 @@ test('decision brief is short, card-safe and available as separate spoken execut
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const voice=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.ok(html.includes('/main-voice.mjs?v=20261013-adaptive-v2-upgradeprep'));
+ assert.ok(html.includes('/main-voice.mjs?v=20261013-v3-supervised-canary'));
  assert.ok(voice.includes('player.speak(spokenAnswer||lastAnswer)'));
  assert.doesNotMatch(voice,/innerHTML\\s*=/);
 });
@@ -116,7 +116,7 @@ test('adaptive intelligence is user-visible, read-only, and never trusts unverif
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const js=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.match(html,/id="vaos-voice-adaptive" type="checkbox" checked/);
- assert.match(html,/main-voice\.mjs\?v=20261013-adaptive-v2-upgradeprep/);
+ assert.match(html,/main-voice\.mjs\?v=20261013-v3-supervised-canary/);
  assert.match(js,/\/api\/adaptive-intelligence\?q=/);
  const sha='a'.repeat(40);
  const safe='https://github.com/vayu-shastr/adv-vibpe/blob/'+sha+'/docs/KP.md';
@@ -156,4 +156,17 @@ test('upgrade prep: UI never displays injected provider error in diagnostic stat
   sourceCoverage:{observed:10000},diagnostics:{elapsedMs:-1,modelAvailability:'token=private_key'}});
  assert.doesNotMatch(msg,/private_key|10000|\-1ms/);
  assert.match(msg,/No business changes/i);
+});
+
+test('supervised V3 mode remains explicit about HOLD even when model produces bounded answer',async()=>{
+ const status=formatAdaptiveStatus({
+  v3Pilot:{pilotState:'READ_ONLY_EVALUATION_ACTIVE',v3AutonomyState:'HOLD'},
+  reasoningMode:'MODEL_CHECKED_ADVISORY',verification:{status:'BOUNDED_CONSISTENCY_PASS'},
+  sourceCoverage:{observed:2},diagnostics:{modelAvailability:'NONE',elapsedMs:1000}});
+ assert.match(status,/V3 supervised evaluation active/i);
+ assert.match(status,/autonomous upgrade on HOLD/i);
+ assert.match(status,/No business changes/);
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.ok(source.includes('&eval=v3-readonly'));
 });

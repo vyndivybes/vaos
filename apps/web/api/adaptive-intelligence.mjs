@@ -8,6 +8,7 @@ import {VOICE_DOMAIN_ACTIONS,resolveVoiceIntent} from '../lib/voice-intelligence
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {selectEvidenceGapRead,independentlyCheckDraft} from '../lib/adaptive-investigation.mjs';
 import {summarizeAdaptiveDiagnostics} from '../lib/adaptive-upgrade-readiness.mjs';
+import {assessV3CandidateMode} from '../lib/adaptive-v3-activation.mjs';
 import {planAdaptiveReads,validateAdaptiveDraft,synthesizeAdaptiveBrief,
  fallbackAdaptivePlan,formatAdaptiveEvidence,permittedTechnicalSources,
  buildAdaptiveFallback} from '../lib/adaptive-intelligence.mjs';
@@ -65,7 +66,7 @@ export function createAdaptiveIntelligenceHandler({
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder-only intelligence'));
   if(req.env?.VAOS_VOICE_CONTROL!==CONTROL)
    return res.status(409).json(apiError('ADAPTIVE_DISABLED','Read-only founder intelligence not commissioned'));
-  let question='';try{question=new URL(req.url).searchParams.get('q')||'';}catch{}
+  let question='',evaluationRequest='';try{const u=new URL(req.url);question=u.searchParams.get('q')||'';evaluationRequest=u.searchParams.get('eval')||'';}catch{}
   if(question.length<5||question.length>300||/[\x00-\x1f\x7f]/.test(question)||
     resolveVoiceIntent(question).reason==='BLOCKED_OR_UNBOUNDED')
    return res.status(422).json(apiError('ADAPTIVE_QUESTION_REJECTED','Read-only non-secret question required'));
@@ -160,6 +161,7 @@ export function createAdaptiveIntelligenceHandler({
     requested:evidence.length},sources,planningMode:selected.mode,
    focus:selected.focus,selectedTools:selected.tools,followupRead,executionCount:observed.length,
    investigation,verification,reasoningMode,citationCount,modelCalls,diagnostics,
+   v3Pilot:assessV3CandidateMode({request:evaluationRequest,founderAuthenticated:true,existingV2Authorized:true}),
    actionAuthorized:false,automationExecuted:false,
    readOnly:true,advisoryOnly:true}});
  };

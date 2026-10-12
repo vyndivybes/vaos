@@ -294,3 +294,36 @@ test('upgrade preflight: rejected model conclusions are explicitly diagnosed wit
  assert.equal(state.payload.data.diagnostics.reasoningMode,'DETERMINISTIC_EVIDENCE');
  assert.doesNotMatch(JSON.stringify(state.payload.data),/2 crore in this period|Pay suppliers immediately/i);
 });
+
+test('founder read-only V3 supervised pilot uses existing V2 evidence path and never activates unrestricted autonomy',async()=>{
+ const calls=[];
+ const h=createAdaptiveIntelligenceHandler({
+  claim:async()=>({allowed:false}),
+  getReader:()=>({execute:async job=>{
+   calls.push(job.actionType);
+   return {actionType:job.actionType,
+    sourceAuthority:'getConfiguredDemandShortages',
+    data:{records:[{id:'short1',shortage_quantity:2}]}};
+  }})
+ });
+ const request=req('What supplier shortages affect procurement?');
+ request.url+='&eval=v3-readonly';
+ const {state,res}=collect();await h(request,res);
+ assert.equal(state.status,200);
+ const d=state.payload.data;
+ assert.equal(d.v3Pilot.pilotState,'READ_ONLY_EVALUATION_ACTIVE');
+ assert.equal(d.v3Pilot.v3AutonomyState,'HOLD');
+ assert.equal(d.v3Pilot.businessWritesAuthorized,false);
+ assert.equal(d.v3Pilot.paidInferenceAuthorized,false);
+ assert.equal(d.actionAuthorized,false);
+ assert.equal(d.readOnly,true);
+ assert.deepEqual(calls,['PROCUREMENT.OBSERVE_SHORTAGE']);
+ assert.ok(d.v3Pilot.unmetAcceptanceGates.includes('LIVE_ACCEPTANCE_REQUIRED'));
+});
+test('V3 pilot cannot be invoked with no founder session',async()=>{
+ const h=createAdaptiveIntelligenceHandler({getReader:()=>{throw Error('NEVER_READ')}});
+ const request={...req('Check production readiness?'),headers:{}};
+ request.url+='&eval=v3-readonly';
+ const {state,res}=collect();await h(request,res);
+ assert.equal(state.status,401);
+});

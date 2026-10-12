@@ -1,4 +1,4 @@
-# One-time VAOS source-observability diagnostic deployment (12 Oct 2026)
+# One-time VAOS Google Workspace readiness + Zapier evidence deployment (12 Oct 2026)
 name: vaos-slack-controlled-deploy
 on:
   push:
@@ -31,6 +31,6 @@ jobs:
       - name: Install pinned repository dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify secured Slack ingress and Worker compatibility
-        run: node --test apps/web/api/slack-events.test.mjs apps/web/cloudflare-worker.test.mjs platform/execution/slack-founder-agent.test.mjs platform/execution/github-slack-ci.test.mjs platform/execution/slack-incident-observer.test.mjs
+        run: node --test apps/web/api/slack-events.test.mjs apps/web/cloudflare-worker.test.mjs platform/execution/slack-founder-agent.test.mjs platform/execution/github-slack-ci.test.mjs platform/execution/slack-incident-observer.test.mjs apps/web/api/google-workspace.test.mjs platform/execution/google-founder-daily-brief.test.mjs platform/execution/zapier-evidence.test.mjs
       - name: Deploy code with existing variables and secrets preserved
         run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc

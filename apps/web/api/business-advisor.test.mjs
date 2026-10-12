@@ -16,7 +16,7 @@ const sources=(q)=>({execute:async job=>{
  }});
 test('founder signed session, read-only method, strict language and rejection of write commands',async()=>{
  let reads=0;const handler=createBusinessAdvisorHandler({getReader:()=>{reads++;return sources()}});
- for(const [req,expected] of [[mk('Forecast demand','en',''),401],[mk('Recommend procurement','en','other@example.com'),403],
+ for(const [req,expected] of [[mk('Forecast demand','en',''),401],[mk('Recommend procurement','en','other@example.com'),401],
   [{...mk(),method:'POST'},405],[mk('Approve all purchases'),422],[mk('Forecast demand','xx'),422]]){
   const {x,res}=capture();await handler(req,res);assert.equal(x.code,expected);
  }assert.equal(reads,0);

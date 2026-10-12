@@ -1,4 +1,5 @@
 import { resolveCommand } from './command-router.mjs?v=20261008-q2-workforce';
+import {showGroupDashboard} from './group-dashboard.mjs?v=20261012-group';
 
 const shell = document.querySelector('#control-shell');
 const loading = document.querySelector('#workspace-loading');
@@ -65,7 +66,7 @@ function renderPulse() {
   const cards = [
     ['Agents active', `${pulse.agentFleet.active}/${pulse.agentFleet.total}`, `${pulse.agentFleet.needsApproval} awaiting approval`, 'AI'],
     ['Governance', pulse.governance, `${pulse.executionQueue ?? 0} effect(s) queued for execution`, 'GV'],
-    ['Evidence coverage', `${pulse.evidenceCoverage}%`, 'Verification objects linked', 'EV'],
+    ['Evidence coverage', pulse.evidenceCoverage == null ? 'Unverified' : `${pulse.evidenceCoverage}%`, pulse.evidenceCoverage == null ? 'Coverage audit has not been qualified' : 'Verification objects linked', 'EV'],
     ['Decision latency', pulse.decisionLatency, `${pulse.openApprovals} open approvals`, 'AP'],
   ];
   document.querySelector('#pulse-grid').innerHTML = cards.map(([label, value, note, glyph]) => `
@@ -119,12 +120,29 @@ function renderEvents() {
 }
 
 function renderRisks() {
-  document.querySelector('#risk-list').innerHTML = model.risks.map((risk) => `
-    <article class="risk-row"><div class="risk-row__heading"><div><strong>${esc(risk.title)}</strong><small>${esc(risk.id)}</small></div><span class="risk-score risk-score--${esc(risk.band)}">${esc(risk.score)}</span></div><div class="risk-meter"><i style="width:${Number(risk.score)}%"></i></div><small>${esc(risk.band.toUpperCase())} · trend ${esc(risk.trend)}</small></article>`).join('');
+  document.querySelector('#risk-list').innerHTML = model.risks.length ? model.risks.map((risk) => `
+    <article class="risk-row"><div class="risk-row__heading"><div><strong>${esc(risk.title)}</strong><small>${esc(risk.id)}</small></div><span class="risk-score risk-score--${esc(risk.band)}">${esc(risk.score)}</span></div><div class="risk-meter"><i style="width:${Number(risk.score)}%"></i></div><small>${esc(risk.band.toUpperCase())} · trend ${esc(risk.trend)}</small></article>`).join('') : '<p class="empty-state">No independently verified risk scores are available in this summary. Open the governed Risk workspace for persisted records.</p>';
 }
 
+function renderHomeAgentOverview(){
+  const container=document.querySelector('#overview-agent-chart');
+  if(!container)return;
+  const agentCount=Array.isArray(model?.agents)?model.agents.length:0;
+  const statuses=[
+    ['Active',model.agents.filter(agent=>agent.status==='active').length],
+    ['Observing',model.agents.filter(agent=>agent.status==='observe').length],
+    ['Approval needed',model.agents.filter(agent=>agent.status==='approval').length],
+  ];
+  if(!agentCount){container.innerHTML='<p class="empty-state">No agent runtime observation is available.</p>';return;}
+  container.innerHTML=statuses.map(([label,count])=>{
+    const percent=Math.max(0,Math.min(100,count/agentCount*100));
+    return '<div class="va-agent-line"><span>'+esc(label)+'</span>'+
+      '<div class="va-agent-track" aria-label="'+esc(label)+' '+count+' of '+agentCount+'"><div class="va-agent-fill" style="width:'+percent+'%"></div></div>'+
+      '<strong>'+count+'</strong></div>';
+  }).join('');
+}
 function renderAll() {
-  renderPulse(); renderAgents(); renderApprovals(); renderEvents(); renderRisks(); renderNavigation();
+  renderPulse();renderAgents();renderApprovals();renderEvents();renderRisks();renderNavigation();renderHomeAgentOverview();
 }
 
 function foundationCards(module) {
@@ -552,12 +570,18 @@ function renderModule(module) {
   const foundation = document.querySelector('#module-foundation-grid');
   const approvalPanel = document.querySelector('#module-approval-panel');
   const operationalSection = document.querySelector('#operational-workspace');
+  const groupSection=document.querySelector('#group-portfolio');
 
   graphSection.hidden = true;
   domainSection.hidden = true;
   foundation.hidden = true;
   approvalPanel.hidden = true;
   operationalSection.hidden = true;
+  if(groupSection)groupSection.hidden=true;
+  if(['portfolio','crm','hr','finance','supply-chain','manufacturing'].includes(module.id)){
+    if(groupSection){groupSection.hidden=false;showGroupDashboard(groupSection,{focus:module.id});}
+    return;
+  }
 
   if (module.id === 'digital-thread') {
     renderEnterpriseTraceGraph();

@@ -1,4 +1,10 @@
 const NAVIGATION = Object.freeze([
+  {view:'portfolio',aliases:['group','group overview','group portfolio','full group consolidation','portfolio','dashboard','business dashboard']},
+  {view:'crm',aliases:['crm','sales crm','crm and sales','customer relations']},
+  {view:'hr',aliases:['hr','human resources','people office','workforce']},
+  {view:'finance',aliases:['finance','finance dashboard','accounting']},
+  {view:'supply-chain',aliases:['supply chain','procurement dashboard','supply chain dashboard']},
+  {view:'manufacturing',aliases:['manufacturing','production dashboard','manufacturing dashboard']},
   { view: 'command', aliases: ['command', 'command centre', 'command center', 'home'] },
   { view: 'agents', aliases: ['agent', 'agents', 'agent control', 'agent fleet'] },
   { view: 'vibpe', aliases: ['vibpe', 'engineering intelligence'] },

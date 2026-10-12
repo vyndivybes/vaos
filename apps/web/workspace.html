@@ -10,6 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/workspace.css" />
+  <link rel="stylesheet" href="/workspace-saas.css" />
 </head>
 <body class="workspace-body landscape-workspace">
   <div class="control-shell metallic-gold-rim" id="control-shell" hidden>
@@ -26,7 +27,7 @@
       </div>
       <div class="header-system">
         <span class="system-chip"><i></i><span id="environment-label">Development</span></span>
-        <span class="system-version">Governed execution · v0.3</span>
+        <span class="system-version">Group intelligence · Governed agents</span>
       </div>
       <div class="topbar-actions">
         <div class="identity-chip">
@@ -49,7 +50,7 @@
       </section>
 
       <div class="sidebar-section-title">
-        <span>Operating workspaces</span>
+        <span>Apps & workspaces</span>
         <small>governed</small>
       </div>
 
@@ -66,10 +67,10 @@
 
     <main class="control-main">
       <section class="workspace-hero">
-        <div class="workspace-breadcrumb">VAOS <span>›</span> VYNDI <span>›</span> <strong id="module-group">Operate</strong></div>
+        <div class="workspace-breadcrumb">Workspace <span>›</span> VAOS <span>›</span> <strong id="module-group">Operate</strong></div>
         <div class="workspace-hero__row">
           <div>
-            <p class="workspace-overline">VAOS Agentic AI Autonomous Ecosystem</p>
+            <p class="workspace-overline">THE VĀYÚ BUSINESS COMMAND CENTRE</p>
             <h1 id="module-title">Command Centre</h1>
             <p id="module-description">Enterprise pulse, agents, events and decisions.</p>
           </div>
@@ -81,7 +82,7 @@
         <span class="workspace-search__icon" aria-hidden="true">⌕</span>
         <label class="workspace-search__copy" for="command-bar-input">
           <input id="command-bar-input" type="text" autocomplete="off"
-            placeholder="Command VAOS — e.g. open engineering, open CAPA CAPA-025, escalate risk RSK-014" />
+            placeholder="Search modules or ask VAOS to open a workspace…" />
           <small>Navigate instantly or submit a governed action through policy, approval, execution and evidence.</small>
         </label>
         <button class="workspace-search__action" id="command-button" type="submit">Run ↗</button>
@@ -89,8 +90,38 @@
       <p class="command-status" id="command-status" aria-live="polite"></p>
 
       <section id="command-view" class="workspace-view">
-        <div class="section-strapline">CONTROL PLANE → AUTHORITY → APPROVAL → EXECUTION → EVIDENCE</div>
+        <div class="va-home-welcome">
+          <div>
+            <p class="va-eyebrow">YOUR DAILY OPERATING PICTURE</p>
+            <h2>One workspace. Every business decision.</h2>
+            <p>See your operational pulse, explore the group, and move directly into the right governed app.</p>
+          </div>
+          <button type="button" class="va-button va-button--primary" data-view="portfolio">Explore group portfolio ↗</button>
+        </div>
+        <div class="va-launch-grid" aria-label="Business application shortcuts">
+          <button type="button" data-view="portfolio"><span class="va-launch-icon va-launch-icon--violet">◈</span><strong>Group overview</strong><small>Six divisions</small></button>
+          <button type="button" data-view="crm"><span class="va-launch-icon va-launch-icon--rose">◎</span><strong>CRM &amp; Sales</strong><small>Customer pipeline</small></button>
+          <button type="button" data-view="hr"><span class="va-launch-icon va-launch-icon--green">♧</span><strong>Human resources</strong><small>Workforce</small></button>
+          <button type="button" data-view="finance"><span class="va-launch-icon va-launch-icon--blue">₹</span><strong>Finance</strong><small>Cash &amp; budgets</small></button>
+          <button type="button" data-view="supply-chain"><span class="va-launch-icon va-launch-icon--amber">▦</span><strong>Supply chain</strong><small>Procurement</small></button>
+          <button type="button" data-view="manufacturing"><span class="va-launch-icon va-launch-icon--teal">⌁</span><strong>Production</strong><small>Manufacturing</small></button>
+        </div>
+        <div class="section-strapline">LIVE CONTROL PLANE / GOVERNED ACTIVITY</div>
         <div class="pulse-grid" id="pulse-grid"></div>
+        <div class="va-home-insights">
+          <section class="va-panel va-home-chart" aria-label="Agent fleet status chart">
+            <div class="va-panel__heading"><div><p class="va-eyebrow">OPERATING CAPACITY</p><h3>Digital workforce overview</h3></div><button class="va-small-link" data-view="agents">View agents ↗</button></div>
+            <div id="overview-agent-chart" class="va-agent-chart" role="img" aria-label="Agent fleet grouped by persisted runtime status"></div>
+            <p class="va-chart-footnote">Derived from the current VAOS control-plane snapshot, not estimated workforce capacity.</p>
+          </section>
+          <section class="va-panel va-home-group" aria-label="Business group summary">
+            <p class="va-eyebrow">GROUP COMMAND</p>
+            <h3>Vāyú Shastr <span>× 6</span></h3>
+            <p>Carbon bicycles, aluminium, software, Vybes, merchandise and corporate — organized for one founder view.</p>
+            <div class="va-home-group__status"><span>Consolidated financials</span><strong>HOLD · awaiting attribution</strong></div>
+            <button class="va-button va-button--outline" data-view="portfolio">View divisions &amp; source health ↗</button>
+          </section>
+        </div>
 
         <div class="workspace-grid workspace-grid--primary">
           <section class="control-panel control-panel--agents metallic-gold-rim">
@@ -136,8 +167,9 @@
             <h2 id="module-hero-title"></h2>
             <p id="module-hero-description"></p>
           </div>
-          <span class="module-phase">Governed foundation</span>
+          <span class="module-phase">Governed source data</span>
         </div>
+        <section id="group-portfolio" class="va-group-dashboard" hidden aria-live="polite"></section>
         <section class="enterprise-trace-graph metallic-gold-rim" id="enterprise-trace-graph" hidden>
           <div class="trace-graph-header">
             <div>
@@ -354,6 +386,6 @@
     </div>
   </dialog>
 
-  <script type="module" src="/workspace.mjs?v=20261008-q2-workforce"></script>
+  <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
 </body>
 </html>

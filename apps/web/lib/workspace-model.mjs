@@ -1,5 +1,11 @@
 const MODULES = Object.freeze([
   { id: 'command', label: 'Command Centre', group: 'Operate', glyph: 'CC', description: 'Enterprise pulse, agents, events and decisions.' },
+  { id: 'portfolio', label: 'Group Overview', group: 'Business', glyph: 'GO', description: 'Six-division performance, source health, planning and executive decisions.' },
+  { id: 'crm', label: 'CRM & Sales', group: 'Business', glyph: 'CR', description: 'Customer pipeline and CRM intelligence from the governing VYNDI source.' },
+  { id: 'hr', label: 'Human Resources', group: 'Business', glyph: 'HR', description: 'Workforce readiness and controlled People Office oversight.' },
+  { id: 'finance', label: 'Finance', group: 'Business', glyph: 'FN', description: 'Financial authority status and outstanding consolidation qualification.' },
+  { id: 'supply-chain', label: 'Supply Chain', group: 'Business', glyph: 'SC', description: 'Procurement, inventory, shortages and governed material flow.' },
+  { id: 'manufacturing', label: 'Manufacturing', group: 'Business', glyph: 'MF', description: 'Manufacturing WIP and release governance across bicycle divisions.' },
   { id: 'agents', label: 'Agent Control', group: 'Operate', glyph: 'AI', description: 'Agent fleet, authority and execution state.' },
   { id: 'vibpe', label: 'VIBPE', group: 'Engineering', glyph: 'VI', description: 'Engineering intelligence and co-pilot workspace.' },
   { id: 'engineering', label: 'Engineering', group: 'Engineering', glyph: 'EN', description: 'Requirements, configuration, analysis and release.' },
@@ -13,11 +19,8 @@ const MODULES = Object.freeze([
   { id: 'admin', label: 'Admin', group: 'System', glyph: 'AD', description: 'Identity, integrations and platform configuration.' },
 ]);
 
-const RISKS = Object.freeze([
-  { id: 'RSK-018', title: 'Verification evidence lag', score: 72, band: 'high', trend: 'up' },
-  { id: 'RSK-013', title: 'Supplier schedule exposure', score: 56, band: 'medium', trend: 'up' },
-  { id: 'RSK-009', title: 'Identity / access drift', score: 22, band: 'low', trend: 'flat' },
-]);
+// The risk register must be populated from persisted domain evidence, never demo scores.
+const RISKS = Object.freeze([]);
 
 const DOMAIN_WORKSPACE_CONFIG = Object.freeze({
   'qa-capa': {
@@ -775,7 +778,7 @@ export function buildWorkspaceModel(runtimeSnapshot) {
 
   return {
     environment: 'Development',
-    release: 'VAOS 0.3 / governed execution',
+    release: 'VAOS / governed execution',
     runtimeMode: runtimeSnapshot.mode,
     modules: MODULES.map((item) => ({ ...item })),
     agents,
@@ -787,8 +790,8 @@ export function buildWorkspaceModel(runtimeSnapshot) {
     workforce,
     operationalViews,
     pulse: {
-      governance: 'Nominal',
-      evidenceCoverage: 86,
+      governance: 'Policy-gated',
+      evidenceCoverage: null,
       openApprovals: approvals.length,
       agentFleet: fleet,
       executionQueue: runtimeSnapshot.metrics?.executionPending ?? 0,

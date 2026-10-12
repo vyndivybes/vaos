@@ -112,7 +112,7 @@ test('workspace entrypoints use the current cache-busted module version', async 
     readFile(new URL('./workspace.mjs', import.meta.url), 'utf8'),
   ]);
 
-  assert.match(html, /\/workspace\.mjs\?v=20261008-q2-workforce/);
+  assert.match(html, /\/workspace\.mjs\?v=20261012-erp-group/);
   assert.match(workspace, /\.\/command-router\.mjs\?v=20261008-q2-workforce/);
 });
 
@@ -147,7 +147,7 @@ test('asset ignore publishes browser-only voice dependencies without exposing se
   if(rule===path||rule===path.split('/')[0]+'/')return true;
   return ignored;
  },false);
- for(const p of ['lib/voice-pilot.mjs','lib/voice-pilot-controller.mjs'])assert.equal(isIgnored(p),false,p);
+ for(const p of ['lib/voice-pilot.mjs','lib/voice-pilot-controller.mjs','lib/group-portfolio.mjs'])assert.equal(isIgnored(p),false,p);
  for(const p of ['lib/auth.mjs','lib/auth-hardening.test.mjs','lib/durable-control-provider.mjs'])assert.equal(isIgnored(p),true,p);
 });
 

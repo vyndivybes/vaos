@@ -5,6 +5,7 @@ lib/*
 !lib/voice-one-shot.mjs
 !lib/voice-multiturn.mjs
 !lib/federated-voice-report.mjs
+!lib/group-portfolio.mjs
 README.md
 package.json
 vercel.json

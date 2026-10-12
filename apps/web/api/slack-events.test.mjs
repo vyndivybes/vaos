@@ -141,3 +141,55 @@ test('concurrent delivery of same signed event admits only one message',async()=
  await Promise.all(s.ctx.pending);
  assert.equal(s.calls.length,1);
 });
+
+
+function makeUnsignedRequest(body, headers={}){
+  return new Request('https://vaos.vayushastr.workers.dev/api/slack/events',{
+    method:'POST',
+    headers:{'content-type':'application/json',...headers},
+    body:JSON.stringify(body)
+  });
+}
+test('Slack can verify unsigned initial URL challenge without activating inbound events',async()=>{
+ const s=setup();s.env.VAOS_SLACK_EVENTS_CONTROL='disabled';
+ const response=await invoke(makeUnsignedRequest({
+   token:'SlackInitialVerificationToken',
+   challenge:'Slack-HTTP-url-verification-2026',
+   type:'url_verification'
+ }),s);
+ assert.equal(response.status,200);
+ assert.deepEqual(await response.json(),{challenge:'Slack-HTTP-url-verification-2026'});
+ assert.equal(s.ctx.pending.length,0);
+ assert.equal(s.calls.length,0);
+});
+test('unsigned event callbacks and malformed challenges never bypass Slack signature validation',async()=>{
+ const s=setup();
+ const unauthEvent=await invoke(makeUnsignedRequest(payload(dm)),s);
+ assert.equal(unauthEvent.status,401);
+ const noToken=await invoke(makeUnsignedRequest({type:'url_verification',challenge:'challenge-only'}),s);
+ assert.equal(noToken.status,401);
+ const invalidChallenge=await invoke(makeUnsignedRequest({
+   type:'url_verification',token:'token',challenge:'bad\\nchallenge'
+ }),s);
+ assert.equal(invalidChallenge.status,401);
+ const extraEventField=await invoke(makeUnsignedRequest({
+   type:'url_verification',token:'token',challenge:'challenge-ok',event:dm
+ }),s);
+ assert.equal(extraEventField.status,401);
+ const signedButWrong=await invoke(makeRequest({type:'url_verification',token:'token',challenge:'hello'},{key:'bad-key'}),s);
+ assert.equal(signedButWrong.status,401);
+ assert.equal(s.ctx.pending.length,0);
+ assert.equal(s.calls.length,0);
+});
+test('unsigned URL challenges with partial Slack signature headers cannot bypass verification',async()=>{
+ const s=setup();
+ for(const header of [
+  {'x-slack-signature':'v0=12345'},
+  {'x-slack-request-timestamp':String(now/1000)},
+ ]) {
+  const result=await invoke(makeUnsignedRequest({
+    type:'url_verification',token:'token',challenge:'test-challenge'
+  },header),s);
+  assert.equal(result.status,401);
+ }
+});

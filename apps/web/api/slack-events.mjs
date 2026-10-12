@@ -18,13 +18,35 @@ function constantTimeMatch(a,b){
   return diff===0;
 }
 async function verifiedBody(request,secret,now){
-  const ts=request.headers.get('x-slack-request-timestamp')||'';
-  const sig=request.headers.get('x-slack-signature')||'';
-  if(!/^\d{10,11}$/.test(ts)||!/^v0=[a-f0-9]{64}$/.test(sig))return null;
-  if(Math.abs(Math.floor(now()/1000)-Number(ts))>MAX_AGE_SECONDS)return null;
+  // Slack URL verification can arrive without HMAC headers, depending on
+  // the app/provisioning path. It is never permission to process events.
+  const ts=request.headers.get('x-slack-request-timestamp');
+  const sig=request.headers.get('x-slack-signature');
+  const hasSignatureHeaders=ts!==null||sig!==null;
   if(Number(request.headers.get('content-length')||0)>MAX_BODY)return null;
   const raw=await request.text();
-  if(raw.length>MAX_BODY)return null;
+  if(new TextEncoder().encode(raw).byteLength>MAX_BODY)return null;
+
+  if(!hasSignatureHeaders){
+    // The ONLY unsigned allowance: documented initial verification handshake.
+    // Never admit an event_callback, message, app_mention or any side effects.
+    if(!/^application\/json(?:;|$)/i.test(request.headers.get('content-type')||'')||raw.length>1024)
+      return null;
+    try{
+      const payload=JSON.parse(raw);
+      if(!payload||typeof payload!=='object'||Array.isArray(payload))return null;
+      if(Object.keys(payload).sort().join(',')!=='challenge,token,type')return null;
+      if(payload.type!=='url_verification')return null;
+      if(typeof payload.token!=='string'||!/^[-_a-zA-Z0-9]{4,256}$/.test(payload.token))return null;
+      if(typeof payload.challenge!=='string'||!/^[-_.a-zA-Z0-9]{1,256}$/.test(payload.challenge))return null;
+      return payload;
+    }catch{return null}
+  }
+
+  // Every signed request, and every real event, must pass standard Slack HMAC.
+  // Malformed or partial signature headers never fall through to the challenge.
+  if(!/^\d{10,11}$/.test(ts||'')||!/^v0=[a-f0-9]{64}$/.test(sig||''))return null;
+  if(Math.abs(Math.floor(now()/1000)-Number(ts))>MAX_AGE_SECONDS)return null;
   const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),
     {name:'HMAC',hash:'SHA-256'},false,['sign']);
   const hash=await crypto.subtle.sign('HMAC',key,new TextEncoder().encode('v0:'+ts+':'+raw));

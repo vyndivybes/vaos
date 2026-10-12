@@ -52,6 +52,12 @@ test('explicit microphone click and recognized question dispatch one bounded rea
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.filter(x=>String(x).startsWith('/api/voice-insight?')).length,2);
   assert.match(els['vaos-voice-answer'].textContent,/source is presently unavailable/i);
+  assert.ok(instances.length>=3,'hands-free microphone should rearm after a completed question');
+  instances.at(-1).onresult({results:[{isFinal:true,0:{transcript:'What is our production status?'}}]});
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(requests.filter(x=>String(x).startsWith('/api/voice-insight?')).length,3,
+    'direct, supported question in hands-free mode should use the existing Ask VAOS answer path');
+  assert.match(els['vaos-voice-answer'].textContent,/source is presently unavailable/i);
  }finally{Object.assign(globalThis,original);}
 });
 
@@ -66,6 +72,14 @@ test('current voice handoff module and wake listener use distinct cache-busted p
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.match(html,/main-voice\.mjs\?v=20261012-mic-handoff/);
- assert.match(script,/hey-vaos\.mjs\?v=20261012-mic-handoff/);
+ assert.match(html,/main-voice\.mjs\?v=20261012-handsfree-unified/);
+ assert.match(script,/hey-vaos\.mjs\?v=20261012-handsfree-unified/);
+});
+
+test('main voice offering distinguishes the two controls in accessible copy',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const markup=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
+ assert.match(markup,/Enable hands-free voice/);
+ assert.match(markup,/title="Ask once, then stop listening"/);
+ assert.match(markup,/“Hey VAOS” is optional/);
 });

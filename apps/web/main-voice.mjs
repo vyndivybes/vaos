@@ -1,6 +1,6 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
-import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-mic-handoff';
+import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
@@ -17,6 +17,15 @@ export function classifyDashboardQuestion(value){
  const route=resolveVoiceIntent(q);
  if(route.reason==='BLOCKED_OR_UNBOUNDED')return {kind:'DENY',question:q};
  return {kind:route.domain==='documentation'?'EVIDENCE':'INSIGHT',question:q,domain:route.domain};
+}
+/** Explicit hands-free opt-in supports read-only business questions directly.
+ * Other speech (including background conversations) never submits a request.
+ */
+export function isDirectBusinessQuestion(value){
+ const text=typeof value==='string'?value.trim():'';
+ if(!/^(?:what|how|which|where|when|who|show|list|tell me|give me|do we|are there|is there|summarize|report)\b/i.test(text))return false;
+ const intent=classifyDashboardQuestion(text);
+ return intent.kind!=='DENY';
 }
 export function voiceCapabilityReady(x){
  return x?.enabled===true&&x?.manualReviewRequired===true
@@ -163,12 +172,13 @@ function init(){
   RecognitionClass:SpeechRecognition,
   isVisible:()=>document.visibilityState==='visible',
   validateQuestion:q=>classifyDashboardQuestion(q).kind!=='DENY',
-  onHeard:event=>{if(event==='IGNORED')setStatus('Recognized speech, but not Hey VAOS. Say Hey VAOS first, or tap the microphone button.');},
+  acceptDirectQuestion:isDirectBusinessQuestion,
+  onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey VAOS.');},
   onDraft:q=>{input.value=q;state();},
   onConfirm:q=>{input.value=q;ask.click();},
   onStatus:message=>{if(wakeStatus)wakeStatus.textContent=message;},
   onChange:info=>{
-   if(wakeToggle){wakeToggle.setAttribute('aria-pressed',String(info.enabled));wakeToggle.textContent=info.enabled?'■ Disable “Hey VAOS”':'◉ Enable “Hey VAOS”';}
+   if(wakeToggle){wakeToggle.setAttribute('aria-pressed',String(info.enabled));wakeToggle.textContent=info.enabled?'■ Stop hands-free':'◉ Enable hands-free voice';}
    if(wakeIndicator){
     wakeIndicator.dataset.mode=info.active?'listening':info.enabled?'paused':'off';
     const stateLabel=info.active?'Microphone listening':info.enabled?'Microphone paused':'Microphone off';
@@ -179,7 +189,7 @@ function init(){
  });
  wakeToggle?.addEventListener('click',()=>{
   if(!voiceEnabled)return;
-  if(wake.isEnabled())wake.disable('Hey VAOS disabled. This tab no longer listens.');
+  if(wake.isEnabled())wake.disable('Hands-free voice disabled. This tab no longer listens.');
   else wake.enable();
   state();
  });

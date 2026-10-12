@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {classifyDashboardQuestion,sanitizeVoiceTranscript,voiceCapabilityReady,formatReadOnlyResult} from './main-voice.mjs';
+import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult} from './main-voice.mjs';
 test('voice bot is read-only and blocks operational write or approval commands',()=>{
  for(const s of ['approve PO 123','delete all records','transfer salary','pay supplier','dispatch an agent','post invoice','execute mission','create an order','update a customer'])
   assert.equal(classifyDashboardQuestion(s).kind,'DENY',s);
@@ -47,4 +47,11 @@ test('main workspace voice region and ops navigation surfaces exist and use comm
   assert.match(source,/operations-refresh\.css/);
   assert.match(source,/href="\/workspace"/);
  }
+});
+
+test('hands-free responds honestly to explicit unsupported questions rather than silently discarding them',()=>{
+ assert.equal(isDirectBusinessQuestion('What is the status of VAOS?'),true);
+ assert.equal(isDirectBusinessQuestion('How is the weather?'),true);
+ assert.equal(isDirectBusinessQuestion('Please approve supplier payment'),false);
+ assert.equal(isDirectBusinessQuestion('I spoke about production earlier'),false);
 });

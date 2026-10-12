@@ -28,3 +28,13 @@ Synthetic Vāyū Shastr prototype procurement for one M and one L variant of the
 - Independent VYNDI canonical readback, result/evidence hash and replay protection.
 - Verified compensation / kill switch / unknown-outcome procedure.
 - Explicit stage-by-stage signoff; green unit tests alone are not production authorization.
+
+## October 12 isolated lifecycle acceptance extension
+
+`platform/qualification/stage9-p2p-isolated-sandbox.mjs` is a **CI/test-only**, in-memory model. It rejects injected network/database transports and uses no production records. Its narrow pilot is one M + one L configuration of one VYNDI Altitude model with wholly synthetic pricing and supplier IDs. This does not override the VYNDI OS pilot planning or release the unfrozen carbon material/BOM.
+
+Acceptance scenarios verify draft PO, separated checker, GRN, independent QA, 3-way quantity/price matching, deterministic evidence hash, idempotent replay, idempotency conflict, stale revision, mismatched GRN/invoice, QA rejection, unknown-outcome HOLD, emergency disable, and zero `VYNDI` bridge transport calls. The supplier invoice is **`INVOICE_MATCHED_NOT_POSTED`**, never posted to an accounting ledger and never payable.
+
+**Updated classification:** synthetic P2/P3/P4/P5 mechanics may receive engineering CI PASS. P1 production readback, actual P3 VYNDI sandbox posting, canonical receiving/invoice services, external recovery and P7 production release all remain **HOLD**. The VYNDI bridge continues to reject `PROCUREMENT.CREATE_PO` execution, supplier invoice posting and payment effects. A green GitHub check may not change these authority gates.
+
+An actual Stage 9 qualification needs a separate VYNDI sandbox environment, sandbox canonical receipt/invoice APIs with signed context, independent readback and rollback, and founder approval before *any* isolated write. No new separate size ledgers are authorized.

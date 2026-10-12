@@ -19,7 +19,7 @@ const advisors=[
 ];
 const planning=/\b(plan|planning|forecast|predict|projection|scenario|what if|better way|optimis|optimiz|improv|recommend|advis|strategy|strategic|compare|benchmark|industry|market trend|business analysis|web research|research online)/i;
 const deny=/\b(approve|reject|pay|transfer|execute|dispatch|submit|delete|deploy|authorize|authorise|secret|api key|password|token)\b/i;
-export function isAdvisoryQuestion(q){return typeof q==='string'&&q.trim().length>=5&&q.length<=300&&planning.test(q)&&!deny.test(q);}
+export function isAdvisoryQuestion(q){return typeof q==='string'&&q.trim().length>=5&&q.length<=300&&!deny.test(q)&& (planning.test(q)||planAdaptiveReads(q).domains.length>=2);}
 export function chooseAdviceSources(question){
  const adaptive=planAdaptiveReads(question);
  // Compound questions query multiple relevant signed business sources, even if

@@ -1,6 +1,7 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
 import {isAdvisoryQuestion} from './lib/business-advice.mjs';
+import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
@@ -17,7 +18,7 @@ export function classifyDashboardQuestion(value){
  if(!q)return {kind:'DENY',question:q};
  const route=resolveVoiceIntent(q);
  if(route.reason==='BLOCKED_OR_UNBOUNDED')return {kind:'DENY',question:q};
- if(isAdvisoryQuestion(q))return {kind:'ADVISORY',question:q,domain:'advisory'};
+ if(isAdvisoryQuestion(q)&&planAdaptiveReads(q).state!=='DENIED')return {kind:'ADVISORY',question:q,domain:'advisory'};
  return {kind:route.domain==='documentation'?'EVIDENCE':'INSIGHT',question:q,domain:route.domain};
 }
 /** Explicit hands-free opt-in supports read-only business questions directly.

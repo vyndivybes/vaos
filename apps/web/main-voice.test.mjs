@@ -131,3 +131,10 @@ test('adaptive intelligence is user-visible, read-only, and never trusts unverif
  assert.throws(()=>formatReadOnlyResult('ADAPTIVE',{sourceSystem:'VAOS_ADAPTIVE',readOnly:true,
   advisoryOnly:true,actionAuthorized:true,status:'OBSERVED',answer:'fake result fake result fake result'}));
 });
+
+test('unfamiliar cross-domain diagnosis is dispatched to adaptive advisory rather than single-domain keyword handling',()=>{
+ const q='Why are our prototype delivery dates slipping because of suppliers, build readiness and cash flow?';
+ assert.equal(classifyDashboardQuestion(q).kind,'ADVISORY');
+ assert.equal(classifyDashboardQuestion('What is our payroll readiness?').kind,'INSIGHT');
+ assert.equal(classifyDashboardQuestion('Approve and pay a supplier now').kind,'DENY');
+});

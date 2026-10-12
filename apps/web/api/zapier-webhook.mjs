@@ -28,10 +28,10 @@ function validatedHook(raw){
     return u.toString();
   }catch{return null;}
 }
-function auditDocument({id,status,providerStatus=null}){
+function auditDocument({id,status,providerStatus=null,transportFailureCode=null}){
   return {
     schemaVersion:'vaos.zapier.synthetic-evidence.v1',
-    providerId:PROVIDER_ID,eventId:id,status,providerStatus,
+    providerId:PROVIDER_ID,eventId:id,status,providerStatus,transportFailureCode,
     callbackVerified:false,independentReadbackVerified:false,
     productionActivation:false,recordedAt:new Date().toISOString(),
   };
@@ -92,6 +92,7 @@ export function createZapierWebhookHandler({
     };
     let providerStatus=null;
     let status='OUTCOME_UNKNOWN';
+    let transportFailureCode=null;
     try{
       const response=await send(hook,{
         method:'POST',
@@ -100,18 +101,20 @@ export function createZapierWebhookHandler({
           'X-VAOS-Event-ID':eventId,
         },
         body:JSON.stringify(payload),
-        redirect:'error',
+        redirect:'manual',
         signal:AbortSignal.timeout(TIMEOUT_MS),
       });
       providerStatus=response.status;
       status=response.ok?'ACKNOWLEDGED_UNVERIFIED':'PROVIDER_REJECTED';
-    }catch{
+    }catch(error){
       status='OUTCOME_UNKNOWN';
+      transportFailureCode=error?.name==='AbortError'||error?.name==='TimeoutError'?'TIMEOUT':
+        error?.name==='TypeError'?'NETWORK':'OTHER';
     }
     let auditRecorded=false;
     try{
       await artifacts.put(key,JSON.stringify(auditDocument({
-        id:eventId,status,providerStatus,
+        id:eventId,status,providerStatus,transportFailureCode,
       })),{httpMetadata:{contentType:'application/json'}});
       auditRecorded=true;
     }catch{
@@ -119,7 +122,7 @@ export function createZapierWebhookHandler({
     }
     const accepted=status==='ACKNOWLEDGED_UNVERIFIED';
     return reply(accepted&&auditRecorded?200:503,{
-      providerId:PROVIDER_ID,status:'HOLD',eventId,providerStatus,
+      providerId:PROVIDER_ID,status:'HOLD',eventId,providerStatus,transportFailureCode,
       acknowledgmentVerified:accepted,independentReadbackVerified:false,
       auditRecorded,
       reason:!auditRecorded?'AUDIT_FINALIZATION_FAILED':

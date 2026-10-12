@@ -2,7 +2,7 @@
 // A separate signed Slack Events admission is the sole caller. No business data,
 // approvals, provider replays, or production provider activation are allowed.
 import {createZapierWebhookHandler} from '../../apps/web/api/zapier-webhook.mjs';
-const MARKER='qualification/zapier/slack-one-shot-20261012-round2.json';
+const MARKER='qualification/zapier/slack-one-shot-20261012-round3.json';
 const ORIGIN='https://vaos.vayushastr.workers.dev';
 const hold=(answer,ack=false)=>({
  status:'HOLD',acknowledgmentVerified:ack,independentReadbackVerified:false,
@@ -49,6 +49,7 @@ export async function runZapierOneShot(env,{send=fetch,id=()=>crypto.randomUUID(
  }),{httpMetadata:{contentType:'application/json'}})}catch{}
  const ident=typeof result?.eventId==='string'&&/^[a-f0-9-]{36}$/.test(result.eventId)
    ?' Event ID: '+result.eventId+'.':' No reliable event ID was returned.';
- return hold('VAOS Zapier synthetic test: '+(accepted?'Catch Hook HTTP acknowledged':'delivery HOLD')+'.'+ident+
+ const diagnostic=!accepted&&['NETWORK','TIMEOUT','OTHER'].includes(result?.transportFailureCode)?' Transport: '+result.transportFailureCode+'.':'';
+ return hold('VAOS Zapier synthetic test: '+(accepted?'Catch Hook HTTP acknowledged':'delivery HOLD')+'.'+ident+diagnostic+
   ' Independent Zap History and matching Slack delivery are still REQUIRED before production qualification. No automated retry or business action was authorized.',accepted);
 }

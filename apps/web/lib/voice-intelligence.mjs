@@ -3,7 +3,10 @@
  * Only bounded counts and states, no personal information or currency guesses.
  */
 import {GROUP_DIVISIONS} from './group-portfolio.mjs';
-const banned=/\b(approve|reject|execute|delete|remove|pay|payment transfer|transfer (?:funds|money|salary)|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|write|secret|token|password|credentials|api key|private key)\b/i;
+const sensitive=/\\b(secret|token|password|credentials|api key|private key)\\b/i;
+const criticalWrites=/\\b(approve|reject|execute|delete|transfer|dispatch|submit|authorize|authorise|activate|deactivate|override|merge|deploy|issue|write|post invoice|pay supplier)\\b/i;
+const imperative=/^(?:please[ ,]+)?(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\\b|\\b(?:can you|could you|please|i authorize you to|i want you to)[ ,]+(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\\b/i;
+const banned={test:q=>sensitive.test(q)||criticalWrites.test(q)||imperative.test(q)};
 const checks=[
  {domain:'group',re:/\b(group|all divisions|across divisions|whole company|consolidat|v[aā]y[uū] shastr)\b/i},
  {domain:'missions',re:/\b(mission|agent mission|task handoff|digital employee mission)\b/i},

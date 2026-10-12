@@ -12,7 +12,7 @@ export function sanitizeVoiceTranscript(value){
 }
 export function classifyDashboardQuestion(value){
  const q=sanitizeVoiceTranscript(value);
- if(!q||MODIFICATION.test(q))return {kind:'DENY',question:q};
+ if(!q)return {kind:'DENY',question:q};
  const route=resolveVoiceIntent(q);
  if(route.reason==='BLOCKED_OR_UNBOUNDED')return {kind:'DENY',question:q};
  return {kind:route.domain==='documentation'?'EVIDENCE':'INSIGHT',question:q,domain:route.domain};

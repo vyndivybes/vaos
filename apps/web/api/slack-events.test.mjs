@@ -193,3 +193,30 @@ test('unsigned URL challenges with partial Slack signature headers cannot bypass
   assert.equal(result.status,401);
  }
 });
+
+test('signed founder DM sends one qualified synthetic Zapier webhook; unauthorized DM cannot',async()=>{
+ const s=setup(),outbound=[];
+ s.env.VAOS_ZAPIER_ONESHOT_CONTROL='approved-synthetic-v1';
+ s.env.ZAPIER_CATCH_HOOK_URL='https://hooks.zapier.com/hooks/catch/123456/secureAbC/';
+ s.fetchImpl=async(url,opts)=>{
+  outbound.push({url,opts});
+  if(url.startsWith('https://hooks.zapier.com/'))return new Response('accepted',{status:200});
+  const body=JSON.parse(opts.body);
+  return new Response(JSON.stringify({ok:true,channel:body.channel,ts:'1791763200.000045'}),{status:200});
+ };
+ const command={...dm,text:'VAOS Zapier synthetic verification once'};
+ const unauthorized=await invoke(makeRequest(payload({...command,user:'UOTHER'},'EvVAOS099')),s);
+ assert.equal(unauthorized.status,200);assert.equal(outbound.length,0);
+ const channelAttempt=await invoke(makeRequest(payload({...command,type:'app_mention',channel,channel_type:'channel'},'EvVAOS100')),s);
+ await Promise.all(s.ctx.pending);s.ctx.pending=[];
+ assert.equal(channelAttempt.status,200);
+ assert.equal(outbound.filter(x=>x.url.startsWith('https://hooks.zapier.com/')).length,0);
+ const r=await invoke(makeRequest(payload(command,'EvVAOS101')),s);
+ assert.equal(r.status,200);await Promise.all(s.ctx.pending);
+ assert.equal(outbound.filter(x=>x.url.startsWith('https://hooks.zapier.com/')).length,1);
+ const slack=outbound.filter(x=>x.url==='https://slack.com/api/chat.postMessage').at(-1);
+ assert.match(JSON.parse(slack.opts.body).text,/Independent Zap History/);
+ s.ctx.pending=[];
+ await invoke(makeRequest(payload(command,'EvVAOS102')),s);await Promise.all(s.ctx.pending);
+ assert.equal(outbound.filter(x=>x.url.startsWith('https://hooks.zapier.com/')).length,1);
+});

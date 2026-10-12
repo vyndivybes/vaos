@@ -75,3 +75,40 @@ test('mic permission denied, repeated errors and disabling discard pending quest
  assert.equal(x.isEnabled(),false);
  assert.match(messages.join(' '),/denied|permission|blocked/i);
 });
+
+test('hands-free opt-in accepts a direct read-only business question without a difficult wake phrase',()=>{
+ const allow=q=>/^(what|how|which|show|tell me|give me|list|do we|are there)\b/i.test(q) && validate(q);
+ const result=advanceWakeTurn({mode:'WAKE',pending:null},'What are our material shortages?',validate,{acceptDirectQuestion:allow});
+ assert.equal(result.event,'SUBMIT');
+ assert.equal(result.question,'What are our material shortages?');
+ assert.equal(result.state.mode,'WAKE');
+ assert.equal(advanceWakeTurn({mode:'WAKE',pending:null},'What are our material shortages?',validate).event,'IGNORED');
+});
+test('hands-free mode ignores ambient chatter and blocks dangerous instructions',()=>{
+ const allow=q=>/^(what|how|which|show|tell me|give me|list|do we|are there)\b/i.test(q)&&validate(q);
+ for(const sentence of ['We need to discuss the inventory tomorrow','I am talking about stock right now','Approve the supplier payment','Send invoices to everyone']){
+  const result=advanceWakeTurn({mode:'WAKE',pending:null},sentence,validate,{acceptDirectQuestion:allow});
+  assert.notEqual(result.event,'SUBMIT',sentence);
+ }
+});
+test('recognition in opted-in hands-free mode sends exactly one direct business question and pauses microphone before request',()=>{
+ const listeners=[],events=[];
+ class Speech{
+  constructor(){listeners.push(this);}
+  start(){events.push('listening');}
+  abort(){events.push('aborted');}
+ }
+ let visible=true;const x=createWakeListener({RecognitionClass:Speech,isVisible:()=>visible,
+  validateQuestion:validate,acceptDirectQuestion:q=>/^(what|how|which|show)\b/i.test(q)&&validate(q),
+  onDraft:q=>events.push('draft:'+q),
+  onConfirm:q=>events.push('request:'+q),onStatus:s=>events.push('status:'+s),
+  schedule:()=>1,clear:()=>{}});
+ assert.equal(x.enable(),true);
+ listeners[0].onresult({results:[{isFinal:true,0:{transcript:'What is our production status?'}}]});
+ assert.deepEqual(events.filter(e=>e.startsWith('request:')),['request:What is our production status?']);
+ assert.equal(x.state().paused,true);
+ assert.ok(events.indexOf('aborted')<events.indexOf('request:What is our production status?'));
+ x.resume();
+ assert.equal(x.state().paused,false);
+ x.disable();
+});

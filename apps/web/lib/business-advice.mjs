@@ -2,6 +2,7 @@
  * counts into company-wide balances or six-month production forecasts.
  */
 import {VOICE_DOMAIN_ACTIONS,interpretVoiceRecords} from './voice-intelligence.mjs';
+import {planAdaptiveReads} from './adaptive-read-planner.mjs';
 export const ADVISORY_LANGUAGES=Object.freeze({
  en:{name:'English',speech:'en-IN',ai:null},
  ta:{name:'தமிழ்',speech:'ta-IN',ai:'tam_Taml'},
@@ -20,6 +21,13 @@ const planning=/\b(plan|planning|forecast|predict|projection|scenario|what if|be
 const deny=/\b(approve|reject|pay|transfer|execute|dispatch|submit|delete|deploy|authorize|authorise|secret|api key|password|token)\b/i;
 export function isAdvisoryQuestion(q){return typeof q==='string'&&q.trim().length>=5&&q.length<=300&&planning.test(q)&&!deny.test(q);}
 export function chooseAdviceSources(question){
+ const adaptive=planAdaptiveReads(question);
+ // Compound questions query multiple relevant signed business sources, even if
+ // phrased without the old rigid group/finance/procurement priority keywords.
+ if(adaptive.state==='PLANNED'&&adaptive.domains.length>=2){
+  return adaptive.domains.filter(domain=>domain!=='engineering'&&VOICE_DOMAIN_ACTIONS[domain])
+   .map(domain=>({domain,actionType:VOICE_DOMAIN_ACTIONS[domain]}));
+ }
  if(/\b(group|all divisions|whole company|business analysis|enterprise|company.wide)\b/i.test(question||''))
   return ['finance','commercial','procurement','production'].map(domain=>({domain,actionType:VOICE_DOMAIN_ACTIONS[domain]}));
  const match=/\b(manufactur|production|job cards?|capacity|assembly|shop floor)\b/i.test(question||'')

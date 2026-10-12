@@ -20,9 +20,15 @@ const config={name:worker,main:resolve('scripts/qualification/stage8-hosted-auth
  compatibility_date:'2026-09-28',compatibility_flags:['nodejs_compat'],workers_dev:true,
  vars,r2_buckets:[{binding:'VAOS_ARTIFACTS',bucket_name:'vaos-stage8-qualification-r2'}]};
 function wrangler(...args){
+ for(let attempt=0;attempt<3;attempt++){
  const r=spawnSync(process.execPath,['node_modules/wrangler/bin/wrangler.js',...args],
  {stdio:'pipe',encoding:'utf8',timeout:120000,env:{...process.env,WRANGLER_SEND_METRICS:'false'}});
- if(r.status!==0)throw new Error('WRANGLER_FAILED '+args[0]+' '+(r.stderr||'').slice(-550));
+ if(r.status===0)return;
+ const transient=/504 Gateway Timeout|502 Bad Gateway|503 Service Unavailable/.test(r.stderr||'');
+ if(transient&&attempt<2){console.log('STAGE8_TRANSIENT_CLOUDFLARE_RETRY',attempt+1);continue;}
+ throw new Error('WRANGLER_FAILED '+args[0]+' '+(r.stderr||'').slice(-550));
+ }
+
 }
 async function call(path,options={}){
  return fetch(base+path,{redirect:'manual',...options});

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {runZapierOneShot} from './zapier-slack-one-shot.mjs';
-const KEY='qualification/zapier/slack-one-shot-20261012-round2.json';
+const KEY='qualification/zapier/slack-one-shot-20261012-round3.json';
 function setup(){
  const map=new Map(),calls=[];
  const env={
@@ -56,9 +56,9 @@ test('provider rejection still leaves HOLD with non-retryable admission',async()
  assert.equal(s.map.has(KEY),true);
 });
 
-test('fresh round 2 admits one new event without modifying round 1 archival evidence',async()=>{
+test('fresh round 3 admits one event without modifying previous archival evidence',async()=>{
  const s=setup();
- const oldKey='qualification/zapier/slack-one-shot-20261012.json';
+ const oldKey='qualification/zapier/slack-one-shot-20261012-round2.json';
  const oldPayload=JSON.stringify({state:'HOLD',eventId:'d9646403-15e3-4ed2-885b-cb0e0eeb4a4a'});
  s.map.set(oldKey,oldPayload);
  const r=await runZapierOneShot(s.env,{send:s.send,id:()=> 'e7e3a5ce-7ee7-4794-89ba-18d0b7b9f4e6'});
@@ -68,4 +68,11 @@ test('fresh round 2 admits one new event without modifying round 1 archival evid
  assert.equal(s.map.has(KEY),true);
  const next=await runZapierOneShot(s.env,{send:s.send});
  assert.equal(next.status,'HOLD');assert.equal(s.calls.length,1);
+});
+
+test('transport diagnostics surface safe class without leaking webhook',async()=>{
+ const s=setup();
+ const r=await runZapierOneShot(s.env,{send:async()=>{throw new TypeError('private '+s.env.ZAPIER_CATCH_HOOK_URL)}});
+ assert.equal(r.status,'HOLD');assert.match(r.answer,/NETWORK/);
+ assert.equal(JSON.stringify(r).includes('hooks.zapier.com'),false);
 });

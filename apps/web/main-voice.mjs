@@ -72,33 +72,29 @@ function init(){
   stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
   speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
  const cancel=()=>{
-  speechRun++;
   const active=recognition;recognition=null;
   if(active)try{active.abort()}catch{}
   if(controller){controller.abort();controller=null}
-  window.speechSynthesis?.cancel();
+  player.cancel();
   busy=false;state();
  };
  const speakAnswer=()=>{
-  if(!voiceEnabled||!lastAnswer||typeof window.SpeechSynthesisUtterance!=='function')return false;
+  if(!voiceEnabled||!lastAnswer)return false;
   wake?.pause();
-  const run=++speechRun;
-  window.speechSynthesis?.cancel();
-  const chunks=lastAnswer.match(/.{1,180}(?:\s|$)/g)?.slice(0,20)||[lastAnswer.slice(0,180)];
-  let index=0;
-  const play=()=>{
-   if(run!==speechRun)return;
-   if(index>=chunks.length||!window.speechSynthesis){if(!busy)wake?.resume();state();return;}
-   const utterance=new window.SpeechSynthesisUtterance(chunks[index++]);
-   utterance.lang='en-IN';utterance.rate=.96;utterance.onend=play;
-   utterance.onerror=()=>{if(run!==speechRun)return;setStatus('Speech playback unavailable. The verified answer is still displayed.');if(!busy)wake?.resume();state();};
-   window.speechSynthesis.speak(utterance);
-  };play();state();return true;
+  const started=player.speak(lastAnswer);
+  if(!started)wake?.resume();
+  state();return started;
  };
+ testSpeaker?.addEventListener('click',()=>{
+  wake?.pause();
+  const started=player.speak('VAOS speaker test. If you can hear this voice, your browser audio output is working.');
+  if(!started)wake?.resume();
+  state();
+ });
  mic.addEventListener('click',()=>{
   if(!voiceEnabled||!SpeechRecognition||recognition||busy)return;
   wake?.pause();
-  window.speechSynthesis?.cancel();
+  player.cancel();
   const active=new SpeechRecognition();recognition=active;
   active.lang='en-IN';active.interimResults=false;active.continuous=false;active.maxAlternatives=1;
   active.onresult=event=>{

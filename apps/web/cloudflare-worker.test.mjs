@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
-import { createCloudflareApp } from './cloudflare-worker.mjs';
+import cloudflareWorker, { createCloudflareApp } from './cloudflare-worker.mjs';
 
 function assetFetcher(request) {
   const path = new URL(request.url).pathname;
@@ -149,4 +149,13 @@ test('asset ignore publishes browser-only voice dependencies without exposing se
  },false);
  for(const p of ['lib/voice-pilot.mjs','lib/voice-pilot-controller.mjs'])assert.equal(isIgnored(p),false,p);
  for(const p of ['lib/auth.mjs','lib/auth-hardening.test.mjs','lib/durable-control-provider.mjs'])assert.equal(isIgnored(p),true,p);
+});
+
+
+test('Slack event ingress fails closed before the public asset router', async () => {
+  const response = await cloudflareWorker.fetch(new Request('https://vaos.example/api/slack/events', {
+    method: 'POST'
+  }), {}, {waitUntil(){}});
+  assert.equal(response.status, 503);
+  assert.equal((await response.json()).reason, 'SLACK_EVENTS_NOT_COMMISSIONED');
 });

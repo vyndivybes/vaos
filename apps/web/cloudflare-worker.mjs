@@ -42,6 +42,7 @@ import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 import {runSlackFounderAgent} from '../../platform/execution/slack-founder-agent.mjs';
+import {handleSlackEvent} from './api/slack-events.mjs';
 
 export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/login': login,
@@ -291,7 +292,10 @@ export default {
     else await task;
   },
 
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
+    if (new URL(request.url).pathname === '/api/slack/events') {
+      return handleSlackEvent(request, env, ctx);
+    }
     if (!env?.ASSETS || typeof env.ASSETS.fetch !== 'function') {
       return jsonError(503, 'ASSET_BINDING_UNAVAILABLE', 'Static asset binding is unavailable');
     }

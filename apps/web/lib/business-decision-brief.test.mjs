@@ -1,7 +1,7 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {buildAdvisoryReport,chooseAdviceSources,observeAdviceDomain} from './business-advice.mjs';
 const source=(domain,recordsObserved,extras={})=>({domain,status:'OBSERVED',
- observation:{recordsObserved,...extras,summary:'Bounded provider data. Do not copy this disclaimer into the decision brief.'}});
+ observation:{recordsObserved,...extras,summary:({finance:recordsObserved+' finance ledger/journal rows',commercial:recordsObserved+' sales orders; '+(extras.confirmedUnits||0)+' confirmed ordered units',procurement:recordsObserved+' shortage lines (material)',production:recordsObserved+' production job cards',inventory:recordsObserved+' inventory-balance records'}[domain]||recordsObserved+' source rows')}});
 test('group advice leads with actionable decision and four distinct concise domain signals, not repeated generic disclaimers',()=>{
  const report=buildAdvisoryReport({question:'Analyse group business performance and recommend a better way',
  sources:[source('finance',6),source('commercial',5,{confirmedUnits:4}),source('procurement',47),source('production',4)]});

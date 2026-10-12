@@ -31,7 +31,13 @@ function wrangler(...args){
 
 }
 async function call(path,options={}){
- return fetch(base+path,{redirect:'manual',...options});
+ let response;
+ for(let attempt=0;attempt<20;attempt++){
+  response=await fetch(base+path,{redirect:'manual',...options});
+  if(response.status!==404)return response;
+  await new Promise(ok=>setTimeout(ok,750));
+ }
+ return response;
 }
 async function auth(role,password){
  let lastStatus=0;

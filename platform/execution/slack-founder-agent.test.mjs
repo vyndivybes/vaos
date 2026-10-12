@@ -121,7 +121,7 @@ test('executive brief isolates unavailable domains and never fabricates metrics'
 
 test('ChatGPT Slack attribution footer does not change founder greeting intent',async()=>{
  const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
- const r=await answerFounderSlackQuestion('hello\\n*Sent using* <@U0C2DMN2TG8|ChatGPT>',{});
+ const r=await answerFounderSlackQuestion('hello'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>',{});
  assert.equal(r.route,'GREETING');
  assert.match(r.answer,/VAOS is online/i);
  assert.equal(r.actionAuthorized,false);
@@ -129,7 +129,7 @@ test('ChatGPT Slack attribution footer does not change founder greeting intent',
 test('no-cost integrations are listed truthfully without provider token disclosure',async()=>{
  const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
  const secret='xoxb-sensitive-test';
- const r=await answerFounderSlackQuestion('VAOS free tier status\\n*Sent using* <@U0C2DMN2TG8|ChatGPT>',{
+ const r=await answerFounderSlackQuestion('VAOS free tier status'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>',{
     SLACK_BOT_TOKEN:secret,VAOS_SLACK_EVENTS_CONTROL:'founder-readonly-v1',
     VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',
     ZAPIER_CATCH_HOOK_URL:'https://hooks.zapier.com/hooks/catch/sensitive/',

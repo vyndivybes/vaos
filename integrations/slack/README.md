@@ -19,3 +19,36 @@ Qualification:
 6. Verify rate budget, deduplication/persistent admission, and monitoring before automating event streams.
 
 The adapter is intentionally not tied into a scheduled Worker trigger until the above gates are green.
+
+
+## Signed inbound founder event ingress (separately gated)
+
+The Worker contains `POST https://vaos.vayushastr.workers.dev/api/slack/events`.
+This endpoint remains **HOLD** unless the Worker secrets/flags and Slack app
+Event Subscriptions are commissioned. It is distinct from the outbound
+`notification.send` provider and never authorizes business writes or approvals.
+
+1. In Slack API app **VAOS Operations**, retrieve the **Signing Secret** under
+   Basic Information > App Credentials and store it only as Worker secret
+   `SLACK_SIGNING_SECRET` (never Slack/chat/GitHub messages).
+2. Enable Slack Event Subscriptions and use the request URL above; Slack's
+   signed `url_verification` challenge must pass.
+3. Subscribe bot events `message.im` and `app_mention`. Grant the required
+   event-history bot scopes plus existing `chat:write`; reinstall the app if
+   Slack requests it. Use only least-privilege scopes, never admin or write-ERP scopes.
+4. After signed challenge, member allowlist, history scope, and readback are
+   independently qualified, set Worker plain-text variable
+   `VAOS_SLACK_EVENTS_CONTROL=founder-readonly-v1`.
+5. Test a founder DM and a founder app mention in `#vaos-ops`; independently
+   check thread replies, R2 `runtime/slack-events/` evidence, negative
+   signature/replay/unknown-user tests, and emergency disable.
+
+Founder DMs can return governed read-only observations; channel mentions only
+return a safe direction to DM to avoid exposing business content publicly.
+The Worker acknowledges Slack asynchronously and holds uncertain deliveries.
+R2 event-ID readback suppresses sequential retries; this is **not an atomic
+exactly-once guarantee** under concurrent delivery. Live qualification must
+cover concurrency/race safeguards before high-volume production enablement.
+
+Disable immediately with `VAOS_SLACK_EVENTS_CONTROL=disabled`.
+The existing hourly `VAOS_SLACK_AGENT_CONTROL` mechanism is unchanged.

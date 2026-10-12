@@ -18,7 +18,8 @@
   "vars": {
     "SUPABASE_URL": "https://jjzycduoujbmiegqfiud.supabase.co",
     "ACTIVEPIECES_SYNTHETIC_QUALIFY": "approved-20261009",
-    "STIRLING_SYNTHETIC_QUALIFY": "approved-20261010"
+    "STIRLING_SYNTHETIC_QUALIFY": "approved-20261010",
+    "VAOS_SLACK_AGENT_CONTROL": "founder-readonly-v1"
   },
   "assets": {
     "directory": "./apps/web",

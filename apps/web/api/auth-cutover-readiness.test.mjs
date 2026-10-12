@@ -108,7 +108,7 @@ test('Stage 8 does not qualify with missing evidence',()=>{
 });
 test('Stage 8 accepts a fully signed bounded evidence record, but no production authorization',()=>{
  const env={...good,VAOS_STAGE8_EVIDENCE_SIGNING_KEY:'bc'.repeat(32),
- VAOS_STAGE8_QUALIFICATION_REVISION:'sha-test-1',
+ VAOS_STAGE8_CERTIFIED_REVISION:'sha-test-1',
  VAOS_STAGE8_QUALIFICATION_EVIDENCE:makeQualification()};
  const result=call(makeReq({env}));
  assert.equal(result.status,200);
@@ -132,9 +132,20 @@ test('Stage 8 rejects tampered, expired, wrong-environment, wrong-revision and i
 test('Stage 8 cannot qualify when a preflight hold exists even with valid evidence',()=>{
  const env={...good,VAOS_DEV_CHECKER_PASSWORD_SHA256:undefined,
   VAOS_STAGE8_EVIDENCE_SIGNING_KEY:'bc'.repeat(32),
-  VAOS_STAGE8_QUALIFICATION_REVISION:'sha-test-1',
+  VAOS_STAGE8_CERTIFIED_REVISION:'sha-test-1',
   VAOS_STAGE8_QUALIFICATION_EVIDENCE:makeQualification()};
  const result=call(makeReq({env}));
  assert.equal(result.body.data.ready,false);
  assert.equal(result.body.data.authenticatedSignInQualified,false);
+});
+
+test('Stage 8 rejects legacy plaintext-only revision even when its signed evidence is valid',()=>{
+ const env={...good,VAOS_STAGE8_EVIDENCE_SIGNING_KEY:'bc'.repeat(32),
+  VAOS_STAGE8_QUALIFICATION_REVISION:'sha-test-1',
+  VAOS_STAGE8_QUALIFICATION_EVIDENCE:makeQualification()};
+ const result=call(makeReq({env}));
+ assert.equal(result.status,200);
+ assert.equal(result.body.data.authenticatedSignInQualified,false);
+ assert.equal(result.body.data.productionCutoverAuthorized,false);
+ assert.equal(result.body.data.actionAuthorized,false);
 });

@@ -9,7 +9,7 @@ function setup(){
  const env={
   VAOS_GOOGLE_CONTROL:'founder-oauth-readonly-v1',
   VAOS_AUTH_HARDENED_CONTROL:'dedicated-hmac-v1',
-  GOOGLE_OAUTH_CLIENT_ID:'test-client.apps.googleusercontent.com',
+  GOOGLE_OAUTH_CLIENT_ID:'test-client-12345.apps.googleusercontent.com',
   GOOGLE_OAUTH_CLIENT_SECRET:'test-oauth-secret',
   VAOS_GOOGLE_VAULT_KEY:'not-crypto-key',
   VAOS_ARTIFACTS:{

@@ -48,3 +48,30 @@ test('all required independently reviewed evidence can qualify coaching without 
  assert.equal(r.actionAuthorized,false);
  assert.equal(r.modelFineTuned,false);
 });
+
+test('when model quota is unavailable, mentor-guided deterministic advice is domain-specific and reversible',async()=>{
+ const {suggestCoachedNextCheck}=await import('./adaptive-coaching.mjs');
+ const actions=[
+  ['PROCUREMENT','shortage','job'],
+  ['FINANCE','ledger','cash'],
+  ['PRODUCTION','job','capacity'],
+  ['ENGINEERING','release','material'],
+  ['COMMERCIAL','order','capacity'],
+ ];
+ for(const [domain,expectedA,expectedB] of actions){
+  const guidance=suggestCoachedNextCheck([{tool:domain,status:'OBSERVED'}]);
+  assert.match(guidance,new RegExp(expectedA,'i'));
+  assert.match(guidance,new RegExp(expectedB,'i'));
+  assert.doesNotMatch(guidance,/approved|committed|released\./i);
+ }
+ assert.match(suggestCoachedNextCheck([{tool:'PROCUREMENT',status:'HOLD'}]),/available evidence/i);
+});
+test('real fallback gains useful next check without converting selected records into proof of performance',async()=>{
+ const {buildAdaptiveFallback}=await import('./adaptive-intelligence.mjs');
+ const result=buildAdaptiveFallback({question:'Why are materials delaying production?',
+  observations:[{tool:'PROCUREMENT',status:'OBSERVED',summary:'3 selected shortage lines'}]});
+ assert.match(result.answer,/COACHED NEXT STEP/);
+ assert.match(result.answer,/job card/i);
+ assert.match(result.answer,/does not independently prove causes/i);
+ assert.equal(result.actionAuthorized,false);
+});

@@ -149,3 +149,16 @@ test('Stage 8 rejects legacy plaintext-only revision even when its signed eviden
  assert.equal(result.body.data.productionCutoverAuthorized,false);
  assert.equal(result.body.data.actionAuthorized,false);
 });
+
+test('Stage 8 uses certified revision rather than an obsolete plaintext revision',()=>{
+ const env={...good,VAOS_STAGE8_EVIDENCE_SIGNING_KEY:'bc'.repeat(32),
+  VAOS_STAGE8_QUALIFICATION_REVISION:'c5cb7ecf03beeadf89e40311b4179f48452a29da',
+  VAOS_STAGE8_CERTIFIED_REVISION:'sha-test-1',
+  VAOS_STAGE8_QUALIFICATION_EVIDENCE:makeQualification()};
+ const result=call(makeReq({env}));
+ assert.equal(result.status,200);
+ assert.equal(result.body.data.authenticatedSignInQualified,true);
+ assert.equal(result.body.data.qualificationEvidenceStatus,'VERIFIED');
+ assert.equal(result.body.data.productionCutoverAuthorized,false);
+ assert.equal(result.body.data.actionAuthorized,false);
+});

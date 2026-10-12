@@ -5,7 +5,7 @@ const GITHUB='https://api.github.com/repos/vyndivybes/vaos/actions/runs?per_page
 const CHANNEL='C0C90LK78KA';
 const CURSOR='runtime/github-ci/cursor.json';
 const FAILURE_PREFIX='runtime/github-ci/failures/';
-const HOLD=Object.freeze({status:'HOLD',answer:'VAOS GitHub Actions: HOLD. The independent GitHub CI readback could not be qualified; no workflow status was inferred.',actionAuthorized:false});
+const HOLD=(reason='GITHUB_SOURCE_UNVERIFIED')=>Object.freeze({status:'HOLD',reason,answer:'VAOS GitHub Actions: HOLD ('+reason+'). The independent GitHub CI readback could not be qualified; no workflow status was inferred.',actionAuthorized:false});
 function eligibleRun(x){
   return Number.isSafeInteger(x?.id)&&x.id>0 &&
     typeof x.name==='string'&&x.name.length<=180 &&
@@ -16,19 +16,20 @@ async function fetchActions(env,fetchImpl){
   const token=env?.VAOS_FEDERATED_GITHUB_TOKEN;
   const headers={Accept:'application/vnd.github+json',
     'X-GitHub-Api-Version':'2022-11-28','User-Agent':'vaos-readonly-ci-observer'};
-  // This single explicitly pinned repository is public. A stale or
-  // wrongly scoped credential must not prevent public read-only CI checks.
   const run=async authorized=>fetchImpl(GITHUB,{method:'GET',headers:{
     ...headers,...(authorized?{Authorization:'Bearer '+token}:{})
   },redirect:'error',signal:AbortSignal.timeout(8000)});
-  let response;
-  if(typeof token==='string'&&token.length>=8){
-    response=await run(true);
-    if([401,403,404].includes(response.status))response=await run(false);
-  }else response=await run(false);
-  if(response.status!==200)throw Error('GITHUB_API_NOT_QUALIFIED');
-  const p=await response.json();
-  if(!Array.isArray(p?.workflow_runs))throw Error('GITHUB_RUNS_INVALID');
+  let result;
+  try{
+    if(typeof token==='string'&&token.length>=8){
+      try{result=await run(true)}catch{result=null}
+      if(!result||[401,403,404].includes(result.status))result=await run(false);
+    }else result=await run(false);
+  }catch{throw Error('GITHUB_NETWORK_FAILURE')}
+  if(result.status!==200)throw Error('GITHUB_API_HTTP_'+
+    ([401,403,404,429,500,502,503].includes(result.status)?result.status:'OTHER'));
+  let p;try{p=await result.json()}catch{throw Error('GITHUB_PAYLOAD_INVALID')}
+  if(!Array.isArray(p?.workflow_runs))throw Error('GITHUB_PAYLOAD_INVALID');
   return p.workflow_runs.filter(eligibleRun).slice(0,30);
 }
 export async function readVaosGitHubCi(env,{fetchImpl=fetch}={}){
@@ -42,7 +43,7 @@ export async function readVaosGitHubCi(env,{fetchImpl=fetch}={}){
       answer:'VAOS GitHub Actions read-only: last '+considered+
       ' accessible runs; successful '+success+'; failed/timed-out '+failed+
       '; pending/running '+running+'. This reports CI outcomes only, not production deployment health or release approval. GitHub Actions: https://github.com/vyndivybes/vaos/actions'});
-  }catch{return HOLD;}
+  }catch(error){const code=typeof error?.message==='string'&&/^GITHUB_[A-Z_0-9]+$/.test(error.message)?error.message:'GITHUB_SOURCE_UNVERIFIED';return HOLD(code);}
 }
 async function persist(store,key,body,options){
   return store.put(key,JSON.stringify(body),{

@@ -147,7 +147,7 @@ test('asset ignore publishes browser-only voice dependencies without exposing se
   if(rule===path||rule===path.split('/')[0]+'/')return true;
   return ignored;
  },false);
- for(const p of ['lib/voice-pilot.mjs','lib/voice-pilot-controller.mjs'])assert.equal(isIgnored(p),false,p);
+ for(const p of ['lib/voice-pilot.mjs','lib/voice-pilot-controller.mjs','lib/group-portfolio.mjs'])assert.equal(isIgnored(p),false,p);
  for(const p of ['lib/auth.mjs','lib/auth-hardening.test.mjs','lib/durable-control-provider.mjs'])assert.equal(isIgnored(p),true,p);
 });
 

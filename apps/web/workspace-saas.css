@@ -471,3 +471,39 @@
  .workspace-body .workspace-search__copy input {font-size:16px}
  .workspace-body .nav-item{min-height:45px}
 }
+
+/* Hey VAOS — opt-in wake-word controls with a strong visual microphone state */
+.workspace-body .va-wake-controls {
+ display:flex;gap:15px;flex-wrap:wrap;align-items:center;
+ padding:13px 15px;margin:15px 0 5px;background:#ebf6fc;
+ border:1px solid #cee2ed;border-radius:13px;
+}
+.workspace-body .va-wake-toggle {
+ padding:12px 18px;border-radius:12px;background:#245a79;color:#fff;
+ font-size:16px;font-weight:800;border:1px solid #245a79;min-height:46px;
+}
+.workspace-body .va-wake-toggle[aria-pressed="true"]{
+ background:#b14355;border-color:#b14355;color:#fff;
+ box-shadow:0 0 0 3px rgba(195,70,92,.17);
+}
+.workspace-body .va-wake-toggle:disabled{background:#aab9c5;border-color:#aab9c5;opacity:.77}
+.workspace-body .va-wake-readiness{flex:1;display:flex;flex-wrap:wrap;align-items:center;gap:9px 15px;min-width:220px}
+.workspace-body .va-wake-indicator{
+ color:#516b81;font-size:15px;font-weight:750;padding:6px 12px;
+ border-radius:100px;background:#dce7ef;
+}
+.workspace-body .va-wake-indicator::before{
+ content:"";display:inline-block;margin-right:9px;width:10px;height:10px;
+ border-radius:100%;background:#8da0af;
+}
+.workspace-body .va-wake-indicator[data-mode="listening"]{background:#d4f6e3;color:#196d55}
+.workspace-body .va-wake-indicator[data-mode="listening"]::before{background:#20b66e;box-shadow:0 0 0 4px #93e7b4}
+.workspace-body .va-wake-indicator[data-mode="paused"]{background:#fff0d8;color:#996d35}
+.workspace-body .va-wake-indicator[data-mode="paused"]::before{background:#e3aa55}
+.workspace-body .va-wake-instructions{color:#53768c;font-size:14px;line-height:1.6}
+.workspace-body .va-wake-status{font-size:15px;color:#345d77;line-height:1.6;margin:7px 0 12px;min-height:24px}
+@media(max-width:700px){
+ .workspace-body .va-wake-controls{display:grid;padding:13px;gap:10px}
+ .workspace-body .va-wake-toggle{width:100%}
+ .workspace-body .va-wake-readiness{min-width:0}
+}

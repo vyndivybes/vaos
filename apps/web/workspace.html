@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/workspace.css" />
-  <link rel="stylesheet" href="/workspace-saas.css" />
+  <link rel="stylesheet" href="/workspace-saas.css?v=20261012-legible" />
 </head>
 <body class="workspace-body landscape-workspace">
   <div class="control-shell metallic-gold-rim" id="control-shell" hidden>
@@ -58,9 +58,9 @@
 
       <div class="sidebar-footer">
         <span class="sidebar-footer__note">Policy controlled · evidence backed</span>
-        <a href="/mission-status.html" class="sidebar-mission-link">Mission status ↗</a>
-        <a href="/agent-supervision.html" class="sidebar-mission-link">Agent supervision ↗</a>
-        <a href="/founder-console.html" class="sidebar-mission-link">Founder commands ↗</a>
+        <a href="/mission-status.html" class="sidebar-mission-link">Mission tracking ↗</a>
+        <a href="/agent-supervision.html" class="sidebar-mission-link">Agent monitoring ↗</a>
+        <a href="/founder-console.html" class="sidebar-mission-link">Founder command lab ↗</a>
         <button class="sidebar-signout" id="logout-button" type="button"><span>↪</span> Sign out</button>
       </div>
     </aside>
@@ -98,6 +98,33 @@
           </div>
           <button type="button" class="va-button va-button--primary" data-view="portfolio">Explore group portfolio ↗</button>
         </div>
+        <section class="va-voice-widget" id="vaos-main-voice" aria-label="VAOS read-only voice assistant">
+          <div class="va-voice-widget__intro">
+            <span class="va-voice-avatar" aria-hidden="true">◉</span>
+            <div><p class="va-eyebrow">YOUR VOICE ASSISTANT</p><h2>Ask VAOS</h2>
+              <p>Speak or type a question about business records, engineering evidence or project status. Answers use verified, read-only sources.</p>
+            </div>
+            <span class="va-voice-badge">READ ONLY</span>
+          </div>
+          <label class="va-voice-label" for="vaos-voice-question">Your question</label>
+          <div class="va-voice-compose">
+            <input id="vaos-voice-question" type="text" maxlength="300" autocomplete="off"
+              placeholder="E.g. What is the current sales pipeline or engineering status?" />
+            <button type="button" id="vaos-voice-mic" class="va-voice-icon-button" aria-label="Start microphone" disabled>🎙</button>
+            <button type="button" id="vaos-voice-ask" class="va-button va-button--primary">Ask VAOS ↗</button>
+          </div>
+          <div class="va-voice-toolbar">
+            <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
+            <div><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
+              <button id="vaos-voice-stop" type="button" disabled>■ Stop</button></div>
+          </div>
+          <p class="va-voice-status" id="vaos-voice-status" role="status" aria-live="polite">Checking voice qualification…</p>
+          <div class="va-voice-response" aria-live="polite">
+            <strong>VAOS response</strong><p id="vaos-voice-answer">Ask a question to retrieve evidence. No actions will be executed.</p>
+            <div id="vaos-voice-sources" class="va-voice-sources"></div>
+          </div>
+          <p class="va-voice-privacy">Tap to speak; there is no always-on microphone. Browser recognition may involve the browser vendor. No business writes, approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
+        </section>
         <div class="va-launch-grid" aria-label="Business application shortcuts">
           <button type="button" data-view="portfolio"><span class="va-launch-icon va-launch-icon--violet">◈</span><strong>Group overview</strong><small>Six divisions</small></button>
           <button type="button" data-view="crm"><span class="va-launch-icon va-launch-icon--rose">◎</span><strong>CRM &amp; Sales</strong><small>Customer pipeline</small></button>
@@ -387,5 +414,6 @@
   </dialog>
 
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
+  <script type="module" src="/main-voice.mjs?v=20261012-voice-first"></script>
 </body>
 </html>

@@ -9,7 +9,7 @@ function reply(status,payload){
 export default async function slackAgentStatus(req){
   if(req.method!=='GET')return reply(405,{error:{code:'METHOD_NOT_ALLOWED'}});
   const result=await probeSlackFounderAgent({env:req.env});
-  return reply(result.status==='PASS'?200:503,{
+  return reply(200,{
     providerId:'slack',capability:'founder.read-reason-reply',
     ...result,productionActivation:result.status==='PASS',
   });

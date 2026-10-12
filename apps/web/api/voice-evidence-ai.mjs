@@ -39,7 +39,7 @@ export function validateGroundedProse(out,sources){
  return {answer:'Unverified model-generated advisory (check cited evidence): '+text+' This is not an engineering approval or independently verified conclusion.',citationIndices:[1,2,3].filter(i=>i<=sources.length)};
 }
 export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,
- run=async(ai,prompt)=>ai.run(FOUNDER_AI_MODEL,{prompt,max_tokens:400,temperature:0,stream:false})}={}){
+ run=async(ai,prompt)=>ai.run(FOUNDER_AI_MODEL,{prompt,max_tokens:512,temperature:0,stream:false,response_format:{type:'json_object'}})}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   if(req.method!=='POST')return res.status(405).json(apiError('METHOD_NOT_ALLOWED','POST required'));
@@ -90,6 +90,7 @@ export function createVoiceEvidenceAiHandler({fetchImpl=globalThis.fetch,claim=c
    'QUESTION='+JSON.stringify(question)+'\nSOURCES='+JSON.stringify(sources.slice(0,8));
   try{
    const modelOutput=await run(req.env.AI,prompt);
+   if(modelOutput?.tool_calls?.length)throw Error('AI_TOOL_CALL_DENIED');
    let result;
    try{result=validateGroundedDraft(modelOutput,sources)}catch(error){
      if(error?.message!=='AI_OUTPUT_INVALID')throw error;

@@ -1,0 +1,21 @@
+name: stage8-cutover-issuer-tests
+on:
+  pull_request:
+    paths:
+      - 'scripts/qualification/stage8-cutover-signer.mjs'
+      - 'scripts/qualification/stage8-cutover-signer.test.mjs'
+      - '.github/workflows/stage8-cutover-issuance.yml'
+      - '.github/workflows/stage8-cutover-issuer-tests.yml'
+permissions:
+  contents: read
+jobs:
+  issuer-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: node --test scripts/qualification/stage8-cutover-signer.test.mjs
+      - run: node --check scripts/qualification/stage8-cutover-signer.mjs

@@ -255,3 +255,28 @@ test('Slack founder one-shot tolerates extra proprietary attribution beyond the 
  assert.equal(r.status,200);await Promise.all(s.ctx.pending);
  assert.equal(out.filter(x=>x.startsWith('https://hooks.zapier.com/')).length,1);
 });
+
+// Encrypted-secret migration: the new binding is authoritative as soon as it exists.
+test('encrypted signing binding wins over a different legacy plaintext binding',async()=>{
+ const v=setup();v.env.VAOS_SLACK_SIGNING_SECRET_SECURE='rotated-signing-secret-value';
+ const accepted=await invoke(makeRequest(payload(dm,'EvVAOS991'),{key:'rotated-signing-secret-value'}),v);
+ assert.equal(accepted.status,200);
+ const denied=await invoke(makeRequest(payload(dm,'EvVAOS992'),{key:secret}),v);
+ assert.equal(denied.status,401);
+ await Promise.all(v.ctx.pending);
+ assert.equal(v.calls.length,1);
+});
+test('encrypted signing binding alone admits verified founder event after legacy removal',async()=>{
+ const v=setup();delete v.env.SLACK_SIGNING_SECRET;
+ v.env.VAOS_SLACK_SIGNING_SECRET_SECURE='rotated-signing-secret-value';
+ const r=await invoke(makeRequest(payload(dm,'EvVAOS993'),{key:'rotated-signing-secret-value'}),v);
+ assert.equal(r.status,200);
+ await Promise.all(v.ctx.pending);
+ assert.equal(v.calls.length,1);
+});
+test('invalid encrypted binding must not silently downgrade to legacy plaintext',async()=>{
+ const v=setup();v.env.VAOS_SLACK_SIGNING_SECRET_SECURE='short';
+ const r=await invoke(makeRequest(payload(dm,'EvVAOS994'),{key:secret}),v);
+ assert.equal(r.status,503);
+ assert.equal(v.ctx.pending.length,0);
+});

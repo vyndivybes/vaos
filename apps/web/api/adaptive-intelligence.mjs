@@ -7,6 +7,7 @@ import {observeAdviceDomain} from '../lib/business-advice.mjs';
 import {VOICE_DOMAIN_ACTIONS,resolveVoiceIntent} from '../lib/voice-intelligence.mjs';
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {selectEvidenceGapRead,independentlyCheckDraft} from '../lib/adaptive-investigation.mjs';
+import {summarizeAdaptiveDiagnostics} from '../lib/adaptive-upgrade-readiness.mjs';
 import {planAdaptiveReads,validateAdaptiveDraft,synthesizeAdaptiveBrief,
  fallbackAdaptivePlan,formatAdaptiveEvidence,permittedTechnicalSources,
  buildAdaptiveFallback} from '../lib/adaptive-intelligence.mjs';
@@ -53,7 +54,7 @@ async function readOne(tool,{req,getReader,getEngineering,fetchImpl}){
 export function createAdaptiveIntelligenceHandler({
  getReader=makeCommercialReader,getEngineering=governedEngineering,
  fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,
- plan=planAdaptiveReads,synthesize=synthesizeAdaptiveBrief,
+ plan=planAdaptiveReads,synthesize=synthesizeAdaptiveBrief,now=()=>Date.now(),
 }={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
@@ -69,11 +70,13 @@ export function createAdaptiveIntelligenceHandler({
     resolveVoiceIntent(question).reason==='BLOCKED_OR_UNBOUNDED')
    return res.status(422).json(apiError('ADAPTIVE_QUESTION_REJECTED','Read-only non-secret question required'));
 
+  const startedAt=now();
   // Planning is dynamic only when bounded local Workers AI inference is available;
   // exhaustion of the existing free-tier budget must not trigger a paid provider.
   let selected=fallbackAdaptivePlan(question);
   const ai=req.env?.AI,quotaBucket=req.env?.VAOS_ARTIFACTS;
   let modelCalls=0;
+  let fallbackReason=typeof ai?.run==='function'&&quotaBucket?'NONE':'AI_BINDING_UNAVAILABLE';
   if(typeof ai?.run==='function'&&quotaBucket){
    try{
     if((await claim(quotaBucket))?.allowed===true){
@@ -83,8 +86,8 @@ export function createAdaptiveIntelligenceHandler({
      const {validateAdaptivePlan}=await import('../lib/adaptive-intelligence.mjs');
      const checked=validateAdaptivePlan({tools:selected.tools,focus:selected.focus});
      selected={...checked,mode:'MODEL_PLANNED'};
-    }
-   }catch{selected=fallbackAdaptivePlan(question);}
+    }else fallbackReason='BUDGET_EXHAUSTED';
+   }catch{selected=fallbackAdaptivePlan(question);fallbackReason='MODEL_ERROR';}
   }
   const primary=await Promise.all(selected.tools.map(tool=>readOne(tool,{
    req,getReader,getEngineering,fetchImpl
@@ -120,14 +123,23 @@ export function createAdaptiveIntelligenceHandler({
         evidence.filter(x=>x.status==='HOLD').map(x=>x.tool).join(', ')+'.':''),
       spokenAnswer:(draft.finding+' '+draft.recommendation).slice(0,400)};
      reasoningMode='MODEL_CHECKED_ADVISORY';
-    }
-   }catch{
+     fallbackReason='NONE';
+    }else fallbackReason='BUDGET_EXHAUSTED';
+   }catch(error){
+    fallbackReason=verification.status==='REJECTED'||String(error?.message||'').includes('DRAFT_')
+     ?'DRAFT_REJECTED':'MODEL_ERROR';
     // Preserve the hold reason but never disclose model text or inject an
     // unverified explanation into the spoken founder response.
     if(verification.status==='NOT_MODEL_VERIFIED')
      verification={...verification,status:'CANDIDATE_REJECTED',reasons:['DRAFT_VALIDATION_OR_PROVIDER_UNAVAILABLE']};
    }
   }
+  if(selected.tools.length===0&&fallbackReason==='NONE')fallbackReason='UNSUPPORTED_QUESTION';
+  else if(evidence.every(x=>x.status!=='OBSERVED')&&fallbackReason==='NONE')fallbackReason='NO_EVIDENCE';
+  const diagnostics=summarizeAdaptiveDiagnostics({elapsedMs:now()-startedAt,
+   planningMode:selected.mode,reasoningMode,modelCalls,fallbackReason,
+   observed:evidence.filter(x=>x.status==='OBSERVED').length,requested:evidence.length,
+   verificationStatus:verification.status});
   const investigation=[
    {phase:'PLAN',mode:selected.mode,tools:[...selected.tools]},
    {phase:'READ_PRIMARY',sources:primary.map(x=>({tool:x.tool,status:x.status}))},
@@ -147,7 +159,8 @@ export function createAdaptiveIntelligenceHandler({
    sourceCoverage:{observed:evidence.filter(x=>x.status==='OBSERVED').length,
     requested:evidence.length},sources,planningMode:selected.mode,
    focus:selected.focus,selectedTools:selected.tools,followupRead,executionCount:observed.length,
-   investigation,verification,reasoningMode,citationCount,modelCalls,actionAuthorized:false,automationExecuted:false,
+   investigation,verification,reasoningMode,citationCount,modelCalls,diagnostics,
+   actionAuthorized:false,automationExecuted:false,
    readOnly:true,advisoryOnly:true}});
  };
 }

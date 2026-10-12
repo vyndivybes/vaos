@@ -12,7 +12,7 @@ export function validateGroundedDraft(out,sources){
  let data;
  if(candidate&&typeof candidate==='object'&&!Array.isArray(candidate))data=candidate;
  else if(typeof candidate==='string'&&candidate.trim().length>=15&&candidate.length<=3000){
-  const raw=candidate.trim().replace(/^\`\`\`(?:json)?\\s*/i,'').replace(/\\s*\`\`\`$/,'').trim();
+  const raw=candidate.trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();
   try{data=JSON.parse(raw)}catch{throw Error('AI_OUTPUT_INVALID')}
  }else throw Error('AI_OUTPUT_INVALID');
  if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!=='analysis,citations,recommendation'

@@ -190,3 +190,54 @@ test('v2 rejects false quantified model claims and returns independently qualifi
  assert.doesNotMatch(state.payload.data.answer,/2 crore rupees/i);
  assert.equal(state.payload.data.actionAuthorized,false);
 });
+
+test('qualification: previously unseen manufacturing word form retains production and procurement coverage under quota fallback',async()=>{
+ const {fallbackAdaptivePlan}=await import('./adaptive-intelligence.mjs');
+ const plan=fallbackAdaptivePlan('Why is manufacturing slipping because of a supplier shortage?');
+ assert.ok(plan.tools.includes('PROCUREMENT'),'procurement evidence must be consulted');
+ assert.ok(plan.tools.includes('PRODUCTION'),'manufacturing evidence must be consulted');
+ assert.ok(plan.tools.length<=3);
+});
+test('qualification: financial financing question does not silently omit finance',async()=>{
+ const {fallbackAdaptivePlan}=await import('./adaptive-intelligence.mjs');
+ const plan=fallbackAdaptivePlan('Can we finance production of two carbon frames?');
+ assert.ok(plan.tools.includes('FINANCE'),'finance is different from financial or financing');
+ assert.ok(plan.tools.includes('PRODUCTION'));
+});
+test('qualification: staffing and production planning selects people evidence',async()=>{
+ const {fallbackAdaptivePlan}=await import('./adaptive-intelligence.mjs');
+ const plan=fallbackAdaptivePlan('What staffing and production risks affect first frame batch?');
+ assert.ok(plan.tools.includes('PEOPLE'));
+ assert.ok(plan.tools.includes('PRODUCTION'));
+});
+test('qualification: verifier refuses to relabel ledger entries as material shortages',async()=>{
+ const {independentlyCheckDraft}=await import('./adaptive-investigation.mjs');
+ const evidence=[{tool:'FINANCE',status:'OBSERVED',summary:'47 general-ledger entries observed'}];
+ const draft={finding:'There are 47 material shortage lines in production.',
+  recommendation:'Review purchasing commitments based on those figures.',citations:[1]};
+ const audit=independentlyCheckDraft(draft,evidence);
+ assert.equal(audit.status,'REJECTED');
+ assert.ok(audit.reasons.includes('METRIC_DOMAIN_MISMATCH'));
+});
+test('qualification: verifier refuses to relabel finance counts as confirmed customer orders',async()=>{
+ const {independentlyCheckDraft}=await import('./adaptive-investigation.mjs');
+ const evidence=[{tool:'FINANCE',status:'OBSERVED',summary:'5 finance ledger entries observed'}];
+ const draft={finding:'Five confirmed sales orders are present in the pipeline.',
+  recommendation:'Compare these orders to assembly readiness.',citations:[1]};
+ const audit=independentlyCheckDraft(draft,evidence);
+ assert.equal(audit.status,'REJECTED');
+ assert.ok(audit.reasons.includes('METRIC_DOMAIN_MISMATCH'));
+});
+test('qualification: procurement counts remain allowed only with an appropriate cited authority',async()=>{
+ const {independentlyCheckDraft}=await import('./adaptive-investigation.mjs');
+ const evidence=[{tool:'PROCUREMENT',status:'OBSERVED',summary:'3 material shortage lines in selected source records'}];
+ const draft={finding:'The source contains 3 material shortage lines.',
+  recommendation:'Reconcile job-level allocations before decisions.',citations:[1]};
+ const audit=independentlyCheckDraft(draft,evidence);
+ assert.equal(audit.status,'BOUNDED_CONSISTENCY_PASS');
+ assert.equal(audit.businessActionAuthorized,false);
+});
+test('qualification: fallback for unrelated public knowledge is unsupported and cannot invent a result',async()=>{
+ const {fallbackAdaptivePlan}=await import('./adaptive-intelligence.mjs');
+ assert.deepEqual(fallbackAdaptivePlan('What is the weather forecast in Oslo?').tools,[]);
+});

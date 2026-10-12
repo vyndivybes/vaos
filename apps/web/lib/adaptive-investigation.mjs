@@ -13,6 +13,20 @@ const NUMBER=/(?<![A-Za-z])\d+(?:[.,]\d+)*(?:%)?/g;
 const MONEY=/(?:\b(?:revenue|profit|turnover|earnings|cash balance|cashflow|cash flow|financial gain|budget|expenditure|margin|loss)\b[^.!?]{0,65}\b\d+(?:[.,]\d+)*\s*(?:crore|lakhs?|rupees?|inr|%|million|billion)?\b)|(?:[₹$€£]\s*\d+)/i;
 const CERTAINTY=/\b(?:guaranteed|proven|confirmed safe|no risk exists|will definitely|fully certified|independently proven|already approved)\b/i;
 
+const QUANTITY='(?:\\d[\\d,.]*|one|two|three|four|five|six|seven|eight|nine|ten|forty[- ]seven)';
+const counted=(metric)=>new RegExp('\\b'+QUANTITY+'(?:\\s+[A-Za-z-]+){0,5}\\s+'+metric+'\\b','i');
+// Cross-domain substitution is not numeric grounding: finance row counts
+// cannot become stock, shortages, or customer-order counts simply because
+// the integer happens to be the same. This is intentionally conservative.
+const COUNTED_METRICS=[
+ {re:counted('(?:material\\s+)?shortage(?:s|\\s+lines?)?'),domain:'PROCUREMENT',source:/shortage/i},
+ {re:counted('(?:confirmed\\s+)?(?:sales|customer)\\s+orders?'),domain:'COMMERCIAL',source:/orders?/i},
+ {re:counted('(?:general[-\\s]ledger\\s+)?(?:entries|entry|journals?)'),domain:'FINANCE',source:/ledger|journal/i},
+ {re:counted('(?:production\\s+)?job\\s+cards?'),domain:'PRODUCTION',source:/job card/i},
+ {re:counted('(?:inventory|stock)\\s+(?:items|units|records)'),domain:'INVENTORY',source:/stock|inventory/i},
+];
+
+
 export function selectEvidenceGapRead({tools=[],observations=[]}={}){
  if(!Array.isArray(tools)||tools.length===0||tools.length>=3||
   tools.some(t=>!READS.has(t))||new Set(tools).size!==tools.length||
@@ -45,6 +59,9 @@ export function independentlyCheckDraft(draft,observations){
   if(numbers(prose).some(x=>!available.has(x)))reasons.push('NUMERIC_CITATION_MISMATCH');
   if(MONEY.test(prose))reasons.push('FINANCIAL_METRIC_UNQUALIFIED');
   if(CERTAINTY.test(prose))reasons.push('UNQUALIFIED_CERTAINTY');
+  if(COUNTED_METRICS.some(metric=>metric.re.test(draft.finding)&&
+      !cited.some(row=>row.tool===metric.domain&&metric.source.test(row.summary))))
+    reasons.push('METRIC_DOMAIN_MISMATCH');
  }
  return {
   status:reasons.length?'REJECTED':'BOUNDED_CONSISTENCY_PASS',

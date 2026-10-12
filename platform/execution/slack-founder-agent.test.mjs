@@ -117,3 +117,36 @@ test('executive brief isolates unavailable domains and never fabricates metrics'
  assert.match(out.answer,/FINANCE.*HOLD/);
  assert.doesNotMatch(out.answer,/PRIVATE_PROVIDER_ERROR|revenue|profit|\b0 units\b/i);
 });
+
+
+test('ChatGPT Slack attribution footer does not change founder greeting intent',async()=>{
+ const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
+ const r=await answerFounderSlackQuestion('hello'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>',{});
+ assert.equal(r.route,'GREETING');
+ assert.match(r.answer,/VAOS is online/i);
+ assert.equal(r.actionAuthorized,false);
+});
+test('no-cost integrations are listed truthfully without provider token disclosure',async()=>{
+ const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
+ const secret='xoxb-sensitive-test';
+ const r=await answerFounderSlackQuestion('VAOS free tier status'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>',{
+    SLACK_BOT_TOKEN:secret,VAOS_SLACK_EVENTS_CONTROL:'founder-readonly-v1',
+    VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',
+    ZAPIER_CATCH_HOOK_URL:'https://hooks.zapier.com/hooks/catch/sensitive/',
+    VAOS_ARTIFACTS:{get:async()=>{}}
+ });
+ assert.equal(r.route,'FREE_TIER');
+ assert.match(r.answer,/Slack.*enabled/i);
+ assert.match(r.answer,/Zapier.*paid/i);
+ assert.match(r.answer,/100 tasks/i);
+ assert.doesNotMatch(r.answer,/xoxb-sensitive-test|sensitive\/|hooks\.zapier\.com/);
+ assert.equal(r.actionAuthorized,false);
+});
+test('free-tier question does not authorize paid Zapier or write actions',async()=>{
+ const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
+ const r=await answerFounderSlackQuestion('Which free integrations can VAOS use?',{});
+ assert.equal(r.route,'FREE_TIER');
+ assert.match(r.answer,/read-only/i);
+ assert.match(r.answer,/not activated|not provisioned/i);
+ assert.equal(r.actionAuthorized,false);
+});

@@ -49,3 +49,8 @@ test('vernacular languages are strictly enumerated and translations must not cor
  assert.equal(checkTranslation('4 confirmed units and 2 jobs','5 पुष्टि की गई और 2 कार्य'),false);
  assert.equal(checkTranslation('4 confirmed units','4 approved and paid units'),false);
 });
+
+test('group-wide analysis examines finance, sales, procurement and production rather than only shortages',()=>{
+ assert.deepEqual(chooseAdviceSources('Show group business analysis and how we can improve it').map(x=>x.domain),
+  ['finance','commercial','procurement','production']);
+});

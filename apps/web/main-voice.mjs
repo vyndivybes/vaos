@@ -23,7 +23,7 @@ export function classifyDashboardQuestion(value){
  */
 export function isDirectBusinessQuestion(value){
  const text=typeof value==='string'?value.trim():'';
- if(!/^(?:what|how|which|where|when|who|show|list|tell me|give me|do we|are there|is there|summarize|report)\\b/i.test(text))return false;
+ if(!/^(?:what|how|which|where|when|who|show|list|tell me|give me|do we|are there|is there|summarize|report)\b/i.test(text))return false;
  const intent=classifyDashboardQuestion(text);
  return intent.kind!=='DENY'&&intent.domain!=='unsupported';
 }

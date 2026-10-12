@@ -70,7 +70,10 @@ async function slackApi(env,method,payload,fetchImpl){
   const url='https://slack.com/api/'+method+(post?'':'?'+new URLSearchParams(payload).toString());
   const r=await fetchImpl(url,{method:post?'POST':'GET',headers:{Authorization:'Bearer '+env.SLACK_BOT_TOKEN,...(post?{'Content-Type':'application/json'}:{})},body:post?JSON.stringify(payload):undefined,redirect:'error',signal:AbortSignal.timeout(8000)});
   if(!r.ok)throw new Error('SLACK_HTTP_FAILED');
-  const data=await r.json();if(data?.ok!==true)throw new Error('SLACK_API_FAILED');
+  const data=await r.json();if(data?.ok!==true){
+    const safe={missing_scope:'SLACK_SCOPE_MISSING',not_in_channel:'SLACK_NOT_IN_CHANNEL',channel_not_found:'SLACK_CHANNEL_NOT_FOUND',invalid_auth:'SLACK_AUTH_INVALID',account_inactive:'SLACK_AUTH_INACTIVE'};
+    throw new Error(safe[data?.error]||'SLACK_API_FAILED');
+  }
   return data;
 }
 async function getCursor(env){

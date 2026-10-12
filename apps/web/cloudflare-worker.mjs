@@ -261,13 +261,17 @@ export default {
     const slackAgent = Promise.resolve().then(async()=>{
       if(env.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return;
       const result=await runSlackFounderAgent({env});
-      console.log('VAOS_SLACK_FOUNDER_AGENT',JSON.stringify({
-        status:result.status,processed:result.processed||0,route:result.route||null,
-        actionAuthorized:false,
-      }));
-    }).catch(error=>{
-      console.warn('VAOS_SLACK_FOUNDER_AGENT_HOLD',
-        typeof error?.message==='string'&&/^SLACK_[A-Z_]+$/.test(error.message)?error.message:'SLACK_AGENT_UNAVAILABLE');
+      const status={status:result.status,processed:result.processed||0,route:result.route||null,
+        reason:null,actionAuthorized:false,checkedAt:new Date().toISOString()};
+      try{await env.VAOS_ARTIFACTS?.put('runtime/slack-agent/status.json',JSON.stringify(status),
+        {httpMetadata:{contentType:'application/json'}});}catch{}
+      console.log('VAOS_SLACK_FOUNDER_AGENT',JSON.stringify(status));
+    }).catch(async error=>{
+      const reason=typeof error?.message==='string'&&/^SLACK_[A-Z_]+$/.test(error.message)?error.message:'SLACK_AGENT_UNAVAILABLE';
+      try{await env.VAOS_ARTIFACTS?.put('runtime/slack-agent/status.json',JSON.stringify({
+        status:'HOLD',processed:0,route:null,reason,actionAuthorized:false,checkedAt:new Date().toISOString()
+      }),{httpMetadata:{contentType:'application/json'}});}catch{}
+      console.warn('VAOS_SLACK_FOUNDER_AGENT_HOLD',reason);
     });
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.

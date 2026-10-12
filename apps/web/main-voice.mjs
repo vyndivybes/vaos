@@ -1,4 +1,5 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
+import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
 import {createWakeListener} from './lib/hey-vaos.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
@@ -11,8 +12,10 @@ export function sanitizeVoiceTranscript(value){
 }
 export function classifyDashboardQuestion(value){
  const q=sanitizeVoiceTranscript(value);
- if(!q||MODIFICATION.test(q))return {kind:'DENY',question:q};
- return {kind:SALES.test(q)?'COMMERCIAL':'EVIDENCE',question:q};
+ if(!q)return {kind:'DENY',question:q};
+ const route=resolveVoiceIntent(q);
+ if(route.reason==='BLOCKED_OR_UNBOUNDED')return {kind:'DENY',question:q};
+ return {kind:route.domain==='documentation'?'EVIDENCE':'INSIGHT',question:q,domain:route.domain};
 }
 export function voiceCapabilityReady(x){
  return x?.enabled===true&&x?.manualReviewRequired===true
@@ -25,6 +28,15 @@ export function formatReadOnlyResult(kind,data){
     ||data?.sourceSystem!=='VYNDI_OS'||typeof data?.answer!=='string'
     ||data.answer.length>4000)throw Error('COMMERCIAL_EVIDENCE_INVALID');
   return {status:'OBSERVED',answer:data.answer.slice(0,2100),sources:[]};
+ }
+ if(kind==='INSIGHT'){
+  if(data?.readOnly!==true||data.actionAuthorized!==false
+   ||!['VAOS_INTELLIGENCE','VYNDI_OS'].includes(data.sourceSystem)
+   ||!['OBSERVED','HOLD'].includes(data.status)
+   ||typeof data.answer!=='string'||data.answer.length<8||data.answer.length>5000
+   ||data.status==='OBSERVED'&&data.sourceSystem!=='VYNDI_OS')
+   throw Error('VOICE_INSIGHT_UNVERIFIED');
+  return {status:data.status,answer:data.answer.slice(0,2900),sources:[]};
  }
  if(kind==='EVIDENCE'){
   if(typeof data?.answer!=='string'||!Array.isArray(data.sources)
@@ -107,14 +119,15 @@ function init(){
   const abort=new AbortController();controller=abort;
   let speaking=false;
   try{
-   const route=intent.kind==='COMMERCIAL'?'/api/voice-commercial'
-    :'/api/federated-knowledge?q='+encodeURIComponent(intent.question);
+   const route=intent.kind==='EVIDENCE'
+    ?'/api/federated-knowledge?q='+encodeURIComponent(intent.question)
+    :'/api/voice-insight?q='+encodeURIComponent(intent.question);
    const response=await fetch(route,{method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal});
-   if(!response.ok)throw Error(response.status===401?'Session expired. Please sign in again.':'This source is not commissioned or cannot be verified.');
+   if(!response.ok)throw Error(response.status===401?'Session expired. Please sign in again.':response.status===422?'This request is not an allowed read-only question.':'This source is not commissioned or cannot be verified.');
    const data=(await response.json())?.data;
    const normalized=intent.kind==='EVIDENCE'
      ?formatReadOnlyResult('EVIDENCE',formatFederatedVoiceEvidence(data,intent.question))
-     :formatReadOnlyResult('COMMERCIAL',data);
+     :formatReadOnlyResult('INSIGHT',data);
    if(controller!==abort||abort.signal.aborted)return;
    lastAnswer=normalized.answer;
    answer.textContent=normalized.answer;
@@ -124,7 +137,7 @@ function init(){
     a.textContent=ref.repository+' · '+ref.path+' : '+ref.line;sources.append(a);
    }
    setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.');
-   if(normalized.status==='OBSERVED'&&speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
+   if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
    if(controller!==abort||abort.signal.aborted)return;
    answer.textContent='HOLD — evidence unavailable. No figures or conclusions inferred.';

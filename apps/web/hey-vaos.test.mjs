@@ -9,29 +9,22 @@ test('only an anchored Hey VAOS / VAOS wake phrase triggers listening intent',()
  assert.equal(parseWakePhrase('what does Hey VAOS mean').wake,false);
  assert.equal(parseWakePhrase('hey vendor what is happening').wake,false);
 });
-test('wake capture requires explicit spoken confirmation; recognition alone never reads sources',()=>{
- const ready={mode:'WAKE',pending:null};
- const wake=advanceWakeTurn(ready,'Hey VAOS',validate);
+test('intentional Hey VAOS wake and read-only question produces a request without a silent confirmation dead-end',()=>{
+ const state={mode:'WAKE',pending:null};
+ const wake=advanceWakeTurn(state,'Hey VAOS',validate);
  assert.equal(wake.event,'PROMPT');
  assert.equal(wake.state.mode,'QUESTION');
  const asked=advanceWakeTurn(wake.state,'What is our sales pipeline?',validate);
- assert.equal(asked.event,'REVIEW');
- assert.equal(asked.state.mode,'CONFIRM');
- assert.equal(asked.state.pending,'What is our sales pipeline?');
- const ignored=advanceWakeTurn(asked.state,'yes please',validate);
- assert.equal(ignored.event,'AWAIT_CONFIRM');
- const confirmed=advanceWakeTurn(asked.state,'confirm',validate);
- assert.equal(confirmed.event,'SUBMIT');
- assert.equal(confirmed.question,'What is our sales pipeline?');
- assert.equal(confirmed.state.pending,null);
+ assert.equal(asked.event,'SUBMIT');
+ assert.equal(asked.question,'What is our sales pipeline?');
+ assert.equal(asked.state.mode,'WAKE');
 });
-test('one-utterance Hey VAOS question also requires confirmation; cancel clears it',()=>{
+test('a single explicit Hey VAOS question can trigger exactly one read-only request',()=>{
  const first=advanceWakeTurn({mode:'WAKE',pending:null},'Hey VAOS, show engineering evidence',validate);
- assert.equal(first.event,'REVIEW');
- assert.equal(first.state.mode,'CONFIRM');
- const cancelled=advanceWakeTurn(first.state,'cancel',validate);
- assert.equal(cancelled.state.mode,'WAKE');
- assert.equal(cancelled.state.pending,null);
+ assert.equal(first.event,'SUBMIT');
+ assert.equal(first.question,'show engineering evidence');
+ assert.equal(advanceWakeTurn(first.state,'confirm',validate).event,'IGNORED');
+ assert.equal(advanceWakeTurn({mode:'QUESTION',pending:null},'cancel',validate).event,'CANCELLED');
 });
 test('dangerous and too long utterances never reach confirmation',()=>{
  const input=['Hey VAOS approve supplier payment','Hey VAOS transfer salary','Hey VAOS execute mission','Hey VAOS '+('x'.repeat(400))];
@@ -55,7 +48,7 @@ test('voice-armed control requires explicit opt-in and always stops on visibilit
  assert.equal(active.length,1);
  active[0].onresult?.({results:[{isFinal:true,0:{transcript:'Hey VAOS, show the project status'}}]});
  assert.equal(events.some(x=>String(x).startsWith('draft:')),true);
- assert.equal(events.some(x=>String(x).startsWith('submit:')),false);
+ assert.equal(events.filter(x=>String(x).startsWith('submit:')).length,1);
  active[0].onend?.();
  assert.equal(active.length,2);
  active[1].onresult?.({results:[{isFinal:true,0:{transcript:'confirm'}}]});

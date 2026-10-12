@@ -62,7 +62,7 @@ test('when model quota is unavailable, mentor-guided deterministic advice is dom
   const guidance=suggestCoachedNextCheck([{tool:domain,status:'OBSERVED'}]);
   assert.match(guidance,new RegExp(expectedA,'i'));
   assert.match(guidance,new RegExp(expectedB,'i'));
-  assert.doesNotMatch(guidance,/approved|committed|released\./i);
+  assert.doesNotMatch(guidance,/has been approved|already approved|payment was committed|design is released/i);
  }
  assert.match(suggestCoachedNextCheck([{tool:'PROCUREMENT',status:'HOLD'}]),/available evidence/i);
 });

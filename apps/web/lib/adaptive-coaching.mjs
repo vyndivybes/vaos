@@ -48,3 +48,23 @@ export function buildCoachingAssessment(input={}){
   paidProviderEnabled:false
  });
 }
+
+
+/** No inference quota needed. Reads only tool labels/status and suggests a
+ * reversible evidence check. Never claims a supplier, payment or release is
+ * complete. A suggestion is not an authorized action.
+ */
+const NEXT_CHECK=Object.freeze({
+ PROCUREMENT:'Link observed shortage lines to approved BOM, reserved stock and affected job cards; verify which jobs are actually blocked.',
+ FINANCE:'Reconcile selected ledger records to independently verified bank cash, committed spend and approval dates; do not infer revenue or runway.',
+ PRODUCTION:'Compare observed job cards with released engineering work instructions, material availability and measured production capacity.',
+ ENGINEERING:'Review the controlled VEDM release baseline, prototype material qualification, FEA and VIBPE method limitations before design decisions.',
+ COMMERCIAL:'Compare observed orders with independently confirmed demand and qualified production capacity before delivery commitments.',
+ INVENTORY:'Cross-check inventory stock against reservations, purchase receipts and active job allocations.',
+ PEOPLE:'Compare observed personnel counts with approved roles, competency records and capacity assignments.',
+});
+export function suggestCoachedNextCheck(rows=[]){
+ const available=Array.isArray(rows)?rows.find(r=>r?.status==='OBSERVED'&&Object.hasOwn(NEXT_CHECK,r.tool)):null;
+ return available?NEXT_CHECK[available.tool]:
+  'The requested source is unavailable. Establish available evidence before making any business or engineering conclusion.';
+}

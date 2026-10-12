@@ -507,3 +507,14 @@
  .workspace-body .va-wake-toggle{width:100%}
  .workspace-body .va-wake-readiness{min-width:0}
 }
+
+/* Founder business advisory language and decision-report controls */
+.workspace-body .va-advisor-options{display:flex;align-items:center;flex-wrap:wrap;gap:10px 14px;
+ margin:13px 0;padding:14px 16px;border:1px solid #cfe5ea;border-radius:12px;
+ background:linear-gradient(110deg,#f5fcfd,#f4f8fc)}
+.workspace-body .va-advisor-options p{font-size:16px;line-height:1.55;flex-basis:100%;margin:0;color:#204b61}
+.workspace-body .va-advisor-options label{font-size:15px;font-weight:750;color:#24475b}
+.workspace-body .va-advisor-options select{font-size:16px;min-height:44px;
+ padding:9px 14px;min-width:176px;border:1px solid #a9cdd7;border-radius:10px;background:#fff;color:#1f364b}
+.workspace-body .va-advisor-options small{font-size:14px;line-height:1.45;color:#536d80;flex:1}
+@media(max-width:700px){.workspace-body .va-advisor-options{display:grid}.workspace-body .va-advisor-options select{width:100%}}

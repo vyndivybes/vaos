@@ -98,10 +98,14 @@ function init(){
   const active=new SpeechRecognition();recognition=active;
   active.lang='en-IN';active.interimResults=false;active.continuous=false;active.maxAlternatives=1;
   active.onresult=event=>{
-   if(recognition!==active||!event.results?.[0]?.isFinal)return;
-   const t=sanitizeVoiceTranscript(event.results[0][0]?.transcript);
-   if(t){input.value=t;setStatus('Heard your question. Review it and select Ask VAOS to make a read-only request.');}
-   else setStatus('Speech was not recognized as a supported question. Nothing was submitted.');
+   if(recognition!==active)return;
+   const t=sanitizeVoiceTranscript(extractFinalTranscript(event));
+   if(!t){setStatus('No complete spoken question was recognized. Nothing was submitted.');return;}
+   input.value=t;
+   setStatus('Recognized your question. Requesting one read-only VAOS answer…');
+   recognition=null;
+   try{active.stop?.();}catch{}
+   ask.click();
   };
   active.onerror=()=>{if(recognition===active)setStatus('Microphone unavailable. Type a question instead.');};
   active.onend=()=>{if(recognition===active){recognition=null;wake?.resume();state();}};

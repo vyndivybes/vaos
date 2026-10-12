@@ -106,6 +106,17 @@
             </div>
             <span class="va-voice-badge">READ ONLY</span>
           </div>
+          <div class="va-advisor-options">
+            <p>Ask VAOS for business analysis, alternative plans, what-if scenarios or web comparisons. Recommendations are advisory and external headlines are not verified facts.</p>
+            <label for="vaos-voice-language">Advisor reply language</label>
+            <select id="vaos-voice-language" aria-label="Advisor report language">
+              <option value="en" selected>English</option>
+              <option value="ta">தமிழ் — Tamil</option>
+              <option value="ml">മലയാളം — Malayalam</option>
+              <option value="hi">हिन्दी — Hindi</option>
+            </select>
+            <small>Ask in English. When supported, the advisory report is translated and spoken in your chosen language. Translation is subject to a small free-tier daily limit.</small>
+          </div>
           <label class="va-voice-label" for="vaos-voice-question">Your question</label>
           <div class="va-voice-compose">
             <input id="vaos-voice-question" type="text" maxlength="300" autocomplete="off"
@@ -422,6 +433,6 @@
   </dialog>
 
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
-  <script type="module" src="/main-voice.mjs?v=20261012-vedm-vibpe"></script>
+  <script type="module" src="/main-voice.mjs?v=20261012-advisory-vernacular"></script>
 </body>
 </html>

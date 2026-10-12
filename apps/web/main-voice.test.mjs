@@ -95,7 +95,7 @@ test('decision brief is short, card-safe and available as separate spoken execut
  const normalized=formatReadOnlyResult('ADVISORY',{sourceSystem:'BUSINESS_ADVISORY',
   status:'OBSERVED',readOnly:true,actionAuthorized:false,advisoryOnly:true,
   language:'en',translationQualified:true,
-  answer:'Business review (read-only)\\n\\nDECISION — Reconcile shortages.\\n\\nKEY EVIDENCE — 47 shortage lines.\\n\\nDO FIRST — Rank affected job cards.',
+  answer:'Business review (read-only)\n\nDECISION — Reconcile shortages.\n\nKEY EVIDENCE — 47 shortage lines.\n\nDO FIRST — Rank affected job cards.',
   spokenAnswer:'First clear the most critical shortage lines before spending.',
   webSources:[]});
  assert.equal(normalized.spokenAnswer,'First clear the most critical shortage lines before spending.');

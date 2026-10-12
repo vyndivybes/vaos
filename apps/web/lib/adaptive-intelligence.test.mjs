@@ -327,3 +327,29 @@ test('V3 pilot cannot be invoked with no founder session',async()=>{
  const {state,res}=collect();await h(request,res);
  assert.equal(state.status,401);
 });
+
+
+test('coach guidance is present in actual model planning and synthesis without expanding tool budget',async()=>{
+ const {synthesizeAdaptiveBrief}=await import('./adaptive-intelligence.mjs');
+ const prompts=[];
+ const ai={run:async(_,options)=>{
+  prompts.push(options);
+  return {response:prompts.length===1
+   ?JSON.stringify({tools:['PROCUREMENT'],focus:'Review selected shortages'})
+   :JSON.stringify({finding:'Selected source observations indicate material availability concerns.',
+      recommendation:'Reconcile shortages against active job allocations before committing resources.',
+      citations:[1]})};
+ }};
+ await planAdaptiveReads({ai,question:'How is supplier readiness affecting production?'});
+ const observed=[{tool:'PROCUREMENT',status:'OBSERVED',
+   summary:'3 material shortage lines in recent selected records'}];
+ await synthesizeAdaptiveBrief({ai,question:'How is supplier readiness affecting production?',observations:observed});
+ assert.equal(prompts.length,2);
+ assert.match(prompts[0].prompt,/Plan a read-only investigation/);
+ assert.match(prompts[1].prompt,/Separate OBSERVED selected-source evidence/);
+ assert.match(prompts[1].prompt,/smallest reversible next step/);
+ assert.equal(prompts[0].max_tokens,170);
+ assert.equal(prompts[1].max_tokens,300);
+ assert.deepEqual(prompts.map(p=>p.temperature),[0,0]);
+ assert.ok(prompts.every(p=>!p.prompt.includes('private@domain.test')));
+});

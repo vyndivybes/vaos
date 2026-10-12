@@ -12,9 +12,9 @@ const env=(states=new Map())=>({
 });
 const run=(id,status,conclusion,name='web-smoke')=>({id,status,conclusion,name,html_url:'https://github.com/vyndivybes/vaos/actions/runs/'+id,created_at:'2026-10-12T02:00:00Z'});
 const response=(runs)=>new Response(JSON.stringify({workflow_runs:runs}),{status:200,headers:{'content-type':'application/json'}});
-test('GitHub CI readback is fail-closed when token missing',async()=>{
+test('GitHub CI readback holds when even public API cannot be read',async()=>{
  const e=env();delete e.VAOS_FEDERATED_GITHUB_TOKEN;
- const r=await readVaosGitHubCi(e,{fetchImpl:async()=>{throw Error('unexpected fetch')}});
+ const r=await readVaosGitHubCi(e,{fetchImpl:async()=>{throw Error('network unavailable')}});
  assert.equal(r.status,'HOLD');assert.equal(r.actionAuthorized,false);
 });
 test('GitHub CI uses bounded authenticated read-only API request',async()=>{
@@ -80,4 +80,20 @@ test('source failures cannot cause Slack posts or expose provider errors',async(
  const s=new Map(),e=env(s),posted=[];
  const r=await runHourlyCiAlerts(e,{fetchImpl:async()=>new Response('x',{status:401}),postImpl:async(...a)=>posted.push(a)});
  assert.equal(r.status,'HOLD');assert.equal(posted.length,0);
+});
+
+test('public repository read falls back to no authorization after stale token rejection',async()=>{
+ const e=env();const seen=[];
+ const result=await readVaosGitHubCi(e,{fetchImpl:async(url,options)=>{
+  seen.push({url,auth:options.headers.Authorization||null});
+  if(seen.length===1)return new Response('',{status:401});
+  return response([run(881,'completed','success')]);
+ }});
+ assert.equal(result.status,'PASS');assert.equal(seen.length,2);
+ assert.ok(seen[0].auth?.startsWith('Bearer '));assert.equal(seen[1].auth,null);
+});
+test('public read works without a token for this allowlisted public repository only',async()=>{
+ const e=env();delete e.VAOS_FEDERATED_GITHUB_TOKEN;
+ const result=await readVaosGitHubCi(e,{fetchImpl:async()=>response([run(88,'completed','success')])});
+ assert.equal(result.status,'PASS');
 });

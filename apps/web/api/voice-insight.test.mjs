@@ -60,3 +60,21 @@ test('bridge wrong authority, malformed rows and missing service cause HOLD with
  assert.equal(state.code,200);assert.equal(state.body.data.status,'HOLD');
  assert.doesNotMatch(JSON.stringify(state.body),/wrong|stock shortage is zero/i);
 });
+
+test('signed read failure returns a stable non-sensitive diagnostic code',async()=>{
+ const h=createVoiceInsightHandler({getReader:()=>({execute:async()=>{
+  const e=new Error('signer unavailable');e.code='VYNDI_BRIDGE_SIGNER_REQUIRED';throw e;
+ }})});
+ const {state,res}=response();await h(req('Show inventory stock'),res);
+ assert.equal(state.code,200);
+ assert.equal(state.body.data.status,'HOLD');
+ assert.equal(state.body.data.diagnosticCode,'VOICE_SIGNER_NOT_READY');
+});
+test('unknown source row shape reports a qualification failure',async()=>{
+ const h=createVoiceInsightHandler({getReader:()=>({execute:async job=>({
+  actionType:job.actionType,sourceAuthority:'getAuthoritativeInventory',data:{unrecognized:true}
+ })})});
+ const {state,res}=response();await h(req('What inventory items are there?'),res);
+ assert.equal(state.code,200);
+ assert.equal(state.body.data.diagnosticCode,'VOICE_SOURCE_SCHEMA');
+});

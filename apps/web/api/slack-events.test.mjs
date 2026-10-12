@@ -231,7 +231,7 @@ test('one-shot command recognizes Slack ChatGPT message attribution without perm
   const b=JSON.parse(opts.body);
   return new Response(JSON.stringify({ok:true,channel:b.channel,ts:'1791763200.000077'}),{status:200});
  };
- const attributed={...dm,text:'VAOS Zapier synthetic verification once\\n*Sent using* <@U0C2DMN2TG8|ChatGPT>'};
+ const attributed={...dm,text:'VAOS Zapier synthetic verification once'+String.fromCharCode(10)+'*Sent using* <@U0C2DMN2TG8|ChatGPT>'};
  const r=await invoke(makeRequest(payload(attributed,'EvVAOS201')),s);
  assert.equal(r.status,200);await Promise.all(s.ctx.pending);
  assert.equal(urls.filter(x=>x.startsWith('https://hooks.zapier.com/')).length,1);

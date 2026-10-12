@@ -159,3 +159,46 @@ test('Slack event ingress fails closed before the public asset router', async ()
   assert.equal(response.status, 503);
   assert.equal((await response.json()).reason, 'SLACK_EVENTS_NOT_COMMISSIONED');
 });
+
+test('production browser bundles all static main-voice dependencies or mic AND speaker fail together',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const {resolve,dirname,relative}=await import('node:path');
+ const base=new URL('.',import.meta.url);
+ const root=resolve(new URL('.',import.meta.url).pathname);
+ const rules=(await readFile(new URL('./.assetsignore',import.meta.url),'utf8'))
+  .split(/\r?\n/).map(x=>x.trim()).filter(Boolean);
+ const ignored=path=>{
+  if(!path.startsWith('lib/'))return false;
+  return rules.includes('lib/*')&&!rules.includes('!'+path);
+ };
+ const visited=new Set();
+ const queue=['main-voice.mjs'];
+ while(queue.length){
+  const path=queue.shift();if(visited.has(path))continue;
+  visited.add(path);
+  assert.equal(ignored(path),false,'Browser import excluded by .assetsignore: '+path);
+  const text=await readFile(new URL('./'+path,base),'utf8');
+  const imports=[...text.matchAll(/(?:^|\n)\s*import\s+(?:[^;]*?\sfrom\s*)?['"]([^'"]+)['"]/g)];
+  for(const item of imports){
+   const spec=item[1].split('?')[0];
+   if(!spec.startsWith('.'))continue;
+   const target=resolve(root,dirname(path),spec);
+   const rel=relative(root,target).replaceAll('\\','/');
+   assert.ok(!rel.startsWith('..'),'Browser JS cannot load outside asset root');
+   queue.push(rel);
+  }
+ }
+ assert.ok(visited.has('lib/microphone-diagnostics.mjs'));
+ assert.ok(visited.has('lib/adaptive-read-planner.mjs'));
+});
+
+test('workspace stylesheet is noncacheable just like HTML and browser JS',async()=>{
+ const app=createCloudflareApp({apiHandlers:{},assetFetcher:req=>{
+  const path=new URL(req.url).pathname;
+  return new Response('asset:'+path,{status:200,headers:{
+   'Content-Type':'text/css','Cache-Control':'public, max-age=31536000, immutable'}});
+ }});
+ const response=await app.fetch(new Request('https://vaos.example/workspace-saas.css'));
+ assert.equal(response.status,200);
+ assert.equal(response.headers.get('Cache-Control'),'no-store, max-age=0');
+});

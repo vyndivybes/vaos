@@ -22,7 +22,9 @@ export function isAdvisoryQuestion(q){return typeof q==='string'&&q.trim().lengt
 export function chooseAdviceSources(question){
  if(/\b(group|all divisions|whole company|business analysis|enterprise|company.wide)\b/i.test(question||''))
   return ['finance','commercial','procurement','production'].map(domain=>({domain,actionType:VOICE_DOMAIN_ACTIONS[domain]}));
- const match=advisors.find(x=>x.re.test(question||''))||advisors[0];
+ const match=/\b(manufactur|production|job cards?|capacity|assembly|shop floor)\b/i.test(question||'')
+  ?advisors.find(x=>x.domain==='production')
+  :advisors.find(x=>x.re.test(question||''))||advisors[0];
  return match.priority.map(domain=>({domain,actionType:VOICE_DOMAIN_ACTIONS[domain]}));
 }
 export function externalTopic(question){
@@ -53,7 +55,7 @@ export function observeAdviceDomain(domain,data){
   summary=rows+' sales orders ('+confirmed+' confirmed); '+
    (confirmedUnits===null?'confirmed unit total unverified':confirmedUnits+' confirmed ordered units');
   details={confirmedOrders:confirmed};
- }else if(domain==='procurement')summary=rows+' material shortage lines';
+ }else if(domain==='procurement')summary=rows+' shortage lines (material)';
  else if(domain==='production')summary=rows+' production job cards';
  else if(domain==='inventory')summary=rows+' inventory-balance records';
  else if(domain==='finance'){

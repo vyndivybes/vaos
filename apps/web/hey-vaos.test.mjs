@@ -55,7 +55,9 @@ test('voice-armed control requires explicit opt-in and always stops on visibilit
  assert.equal(events.some(x=>String(x).startsWith('draft:')),true);
  assert.equal(events.filter(x=>String(x).startsWith('submit:')).length,1);
  active[0].onend?.();
- assert.equal(active.length,2);
+ assert.equal(active.length,1,'wake should remain paused while the answer is retrieved');
+ listener.resume();
+ assert.equal(active.length,2,'listener rearms after the reply is finished');
  active[1].onresult?.({results:[{isFinal:true,0:{transcript:'confirm'}}]});
  assert.equal(events.filter(x=>String(x).startsWith('submit:')).length,1);
  visible=false;listener.onVisibilityChange();

@@ -13,7 +13,7 @@ Open decisive gates remain native FEA and MATERIAL-01.`;
 const docNames=['CURRENT_CONFIGURATION_STATUS.md','00_CONTROL/CURRENT_CONFIGURATION_STATUS_Rev-0.8_20260920-FK75-DEVELOPMENT.md','VIBPE_Copilot/KNOWLEDGE_PACK_REGISTER.md'];
 const documents={
  [docNames[0]]:current,
- [docNames[1]]:'# Controlling development issue\nRev 5.4 FK75 remains NOT RELEASED; human signoff required.',
+ [docNames[1]]:'# Controlling development issue\nEngineering configuration authority: Rev 5.4 FK75 remains NOT RELEASED; human signoff required.',
  [docNames[2]]:'# KP-13 Engineering Change\n# KP-14 Risk\n# KP-15 Integration',
  'docs/VIBPE-COPILOT-2-ARCHITECTURE.md':'# VIBPE Co-Pilot 2\nAdvisory only, human approval required.',
 };

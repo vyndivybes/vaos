@@ -6,6 +6,8 @@ import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {rankAdvisoryOptions} from '../lib/business-advice-ai.mjs';
 import {qualifyPublicHeadlines} from '../lib/public-research-evidence.mjs';
 import {buildPlanningCycle} from '../lib/business-planning-cycle.mjs';
+import {shouldIncludeEngineering,buildOperatingDecisionSupport} from '../lib/operating-decision-support.mjs';
+import {createEngineeringKnowledgeHandler} from './engineering-knowledge.mjs';
 import {ADVISORY_LANGUAGES,isAdvisoryQuestion,chooseAdviceSources,externalTopic,
   observeAdviceDomain,buildAdvisoryReport,checkTranslation} from '../lib/business-advice.mjs';
 
@@ -59,8 +61,20 @@ export async function translateAdvisory(ai,original,lang){
  if(!checkTranslation(original,value))throw Error('TRANSLATION_NOT_QUALIFIED');
  return value;
 }
+// Reuse the already governed VEDM/VIBPE + VYNDI engineering handler, without
+// widening founder privileges, accessing arbitrary repositories or writing.
+async function readControlledEngineering({req,fetchImpl,getReader}){
+ let code=200,payload=null;
+ const inner={setHeader(){return inner},status(value){code=value;return inner},
+  json(value){payload=value;return inner}};
+ await createEngineeringKnowledgeHandler({fetchImpl,getReader})({
+  method:'GET',url:new URL('/api/engineering-knowledge?q='+encodeURIComponent('What are the current engineering release and material validation risks'),req.url).toString(),
+  headers:req.headers,env:req.env},inner);
+ return code===200&&payload?.data?payload.data:{status:'HOLD',sources:[]};
+}
 export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
- fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,translate=translateAdvisory,now=()=>new Date()}={}){
+ fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,translate=translateAdvisory,
+ getEngineering=readControlledEngineering,now=()=>new Date()}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -75,7 +89,7 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
    ||!Object.hasOwn(ADVISORY_LANGUAGES,lang))return res.status(422).json(apiError('ADVISORY_QUERY_INVALID','A bounded read-only business question and supported reply language are required'));
   let reader=null;try{reader=getReader(req.env);}catch{}
   const specs=chooseAdviceSources(question);
-  const observations=await Promise.all(specs.map(async spec=>{
+  const observationsPromise=Promise.all(specs.map(async spec=>{
    const contract=getVyndiBridgeRoute(spec.actionType);
    if(!reader||!contract||contract.effectClass!=='read'||contract.executionEnabled!==true)
     return {domain:spec.domain,status:'HOLD'};
@@ -89,7 +103,15 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
     return {domain:spec.domain,status:'OBSERVED',observation};
    }catch{return {domain:spec.domain,status:'HOLD'};}
   }));
-  const external=await getExternalHeadlines(question,fetchImpl);
+  // Engineering and public research run concurrently with bounded ERP reads.
+  // An unavailable evidence source never prevents a conditional advisory report.
+  const [observations,external,engineering]=await Promise.all([
+   observationsPromise,
+   getExternalHeadlines(question,fetchImpl),
+   shouldIncludeEngineering(question)
+    ?Promise.resolve().then(()=>getEngineering({req,fetchImpl,getReader})).catch(()=>({status:'HOLD',sources:[]}))
+    :Promise.resolve(null),
+  ]);
   const publicResearch=qualifyPublicHeadlines(external,{asOf:now().toISOString().slice(0,10)});
   const report=buildAdvisoryReport({question,sources:observations,web:publicResearch.items});
   // A news aggregator is a discovery source, not independent price/market
@@ -109,12 +131,18 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
   // bounded recent records, NOT an independently complete monthly history.
   // Consequently six-month projections remain HOLD pending a signed source.
   const planningCycle=buildPlanningCycle({question,observations});
+  const decisionSupport=buildOperatingDecisionSupport({question,observations,engineering});
+  report.answer+='\n\n'+decisionSupport.answer;
+  report.spokenAnswer=decisionSupport.spokenAnswer;
   const planGates=planningCycle.holds.length?planningCycle.holds.join(', '):'No missing sampled-domain sources; underlying reconciliation is still a human gate';
   report.answer+='\n\nPLAN GATES — '+planningCycle.state+'. '+planGates+
     '. Next: '+planningCycle.steps[0].instruction;
   if(/\b(forecast|predict|projection|six.month|6.month|next.*month)\b/i.test(question))
    report.answer+='\n\nFORECAST QUALIFICATION — HOLD: no independently reconciled, complete, signed twelve-month order-unit history is currently exposed by the VAOS bridge. '+planningCycle.forecastReadiness.holds.join(', ')+'.';
-  const data={...report,planningCycle,publicResearch,language:lang,translationQualified:lang==='en',
+  const data={...report,planningCycle,decisionSupport,
+   engineeringStatus:decisionSupport.engineeringState,
+   technicalSources:decisionSupport.technicalSources,
+   publicResearch,language:lang,translationQualified:lang==='en',
    languageNote:lang==='en'?'English source-backed report': 'English source-backed report retained if translation verification fails',
    voiceLanguage:lang,observedAt:new Date().toISOString()};
   // Source-bounded agent selects between two existing low-risk plans.
@@ -139,12 +167,16 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
    try{
     const quota=await claim(req.env.VAOS_ARTIFACTS);
     if(quota?.allowed===true){
-     const translated=await translate(req.env.AI,data.answer,lang);
-     if(checkTranslation(data.answer,translated)){
-      data.answer=translated;
+     // Translate a bounded executive summary, not an oversized technical
+     // appendix. Preserve the original source-backed English evidence intact.
+     const translationSource='Business review (read-only). '+decisionSupport.spokenAnswer+
+      ' The six-month scenarios are conditional, not a certified numerical forecast.';
+     const translated=await translate(req.env.AI,translationSource,lang);
+     if(checkTranslation(translationSource,translated)){
+      data.answer='VERNACULAR EXECUTIVE SUMMARY — '+translated+'\n\nENGLISH FULL EVIDENCE & SCENARIOS — '+data.answer;
       data.spokenAnswer=translated.trim().replace(/\s+/g,' ').slice(0,310);
       data.translationQualified=true;
-      data.languageNote='Verified numerical consistency; qualitative translation is advisory';
+      data.languageNote='Numeral-consistent advisory summary translated; detailed source-backed report remains in English';
      }
     }
    }catch{data.translationQualified=false;}

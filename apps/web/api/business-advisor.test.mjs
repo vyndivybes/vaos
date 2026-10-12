@@ -143,3 +143,37 @@ test('old unverified web stories are rejected before reaching founder answer',as
  assert.equal(x.body.data.publicResearch.status,'PUBLIC_EVIDENCE_UNAVAILABLE');
  assert.doesNotMatch(x.body.data.answer,/Old bicycle market report/);
 });
+
+test('founder performance question composes authorized ERP samples with bounded VEDM/VIBPE evidence and conditional six-month outlook',async()=>{
+ const sha='a'.repeat(40);
+ const base='https://github.com/vayu-shastr/veloxis-engineering-design-manual/blob/'+sha+'/CURRENT_CONFIGURATION_STATUS.md';
+ let checked=0;
+ const h=createBusinessAdvisorHandler({getReader:()=>({execute:async job=>{
+   const authority={'COMMERCIAL.OBSERVE_PIPELINE':'listSalesOrders',
+    'PROCUREMENT.OBSERVE_SHORTAGE':'getConfiguredDemandShortages',
+    'PRODUCTION.OBSERVE_WIP':'getProductionJobCards','FINANCE.OBSERVE_LEDGER':'getFinanceLedger'}[job.actionType];
+   const data=job.actionType==='COMMERCIAL.OBSERVE_PIPELINE'
+    ?{records:[{id:'safe',status:'confirmed',units:2,customer_name:'PRIVATE NAME'}]}
+    :job.actionType==='FINANCE.OBSERVE_LEDGER'?{ledger:[],journals:[]}
+    :{records:[{id:'a',shortage_quantity:2}]};
+   return {actionType:job.actionType,sourceAuthority:authority,data};
+  }}),
+  getEngineering:async ({req})=>{checked++;assert.equal(req.method,'GET');return {
+   status:'OBSERVED',authorityScope:'VEDM_CURRENT_CONFIGURATION',
+   kpModules:['KP-13'],sources:[{repository:'vayu-shastr/veloxis-engineering-design-manual',
+   path:'CURRENT_CONFIGURATION_STATUS.md',url:base}]};},
+  fetchImpl:async()=>{throw Error('offline')}});
+ const {x,res}=capture();
+ await h(mk('performance identify main risk recommend a better operating plan and provide a 6 month forecast'),res);
+ assert.equal(x.code,200);
+ assert.equal(checked,1);
+ assert.match(x.body.data.answer,/RISK RANKING/);
+ assert.match(x.body.data.answer,/SIX-MONTH OPERATING OUTLOOK/);
+ assert.equal(x.body.data.decisionSupport.scenarios.length,3);
+ assert.equal(x.body.data.decisionSupport.forecastCertification,'HOLD');
+ assert.equal(x.body.data.actionAuthorized,false);
+ assert.equal(x.body.data.technicalSources[0].url,base);
+ assert.ok(!JSON.stringify(x.body.data).includes('PRIVATE NAME'));
+ assert.ok(x.body.data.answer.length<7500);
+ assert.ok(x.body.data.spokenAnswer.length<450);
+});

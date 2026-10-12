@@ -44,12 +44,16 @@ export function formatReadOnlyResult(kind,data){
  if(kind==='ADVISORY'){
   if(data?.readOnly!==true||data?.actionAuthorized!==false||data?.advisoryOnly!==true
    ||data?.sourceSystem!=='BUSINESS_ADVISORY'||!['OBSERVED','HOLD'].includes(data.status)
-   ||typeof data.answer!=='string'||data.answer.length<25||data.answer.length>5000)
+   ||typeof data.answer!=='string'||data.answer.length<25||data.answer.length>7500)
    throw Error('BUSINESS_ADVISORY_INVALID');
   const refs=Array.isArray(data.webSources)?data.webSources.filter(x=>x&&typeof x.title==='string'
    &&/^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(x.url)).slice(0,3)
    .map(x=>({url:x.url,repository:'Unverified web headline',path:x.title.slice(0,150)})):[];
-  return {status:data.status,answer:data.answer.slice(0,3400),sources:refs,
+  const technical=Array.isArray(data.technicalSources)?data.technicalSources.filter(x=>
+    x&&typeof x.url==='string'&&typeof x.repository==='string'&&typeof x.path==='string'
+    &&/^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/[0-9a-f]{40}\/[A-Za-z0-9_./-]+$/.test(x.url)
+    &&x.url.includes('/'+x.repository+'/blob/')&&x.url.endsWith('/'+x.path)).slice(0,5):[];
+   return {status:data.status,answer:data.answer.slice(0,7100),sources:[...refs,...technical],
    language:data.translationQualified?data.language:'en',
    spokenAnswer:typeof data.spokenAnswer==='string'&&data.spokenAnswer.length>=20
      &&data.spokenAnswer.length<=450?data.spokenAnswer:data.answer.slice(0,320)};
@@ -79,11 +83,11 @@ export function formatReadOnlyResult(kind,data){
  * ledger text. All content uses textContent, never untrusted HTML.
  */
 export function splitDecisionBrief(answer){
- if(typeof answer!=='string'||answer.length>4000)return [];
- return answer.split(/\n\n+/).slice(0,9).map(section=>{
+ if(typeof answer!=='string'||answer.length>7500)return [];
+ return answer.split(/\n\n+/).slice(0,15).map(section=>{
   const dash=section.indexOf(' — ');
-  return dash<0?{label:'BUSINESS REVIEW',detail:section.slice(0,1000)}:
-   {label:section.slice(0,dash).slice(0,40),detail:section.slice(dash+3).slice(0,1000)};
+  return dash<0?{label:'BUSINESS REVIEW',detail:section.slice(0,2300)}:
+   {label:section.slice(0,dash).slice(0,40),detail:section.slice(dash+3).slice(0,2300)};
  });
 }
 function init(){
@@ -195,7 +199,7 @@ function init(){
       const card=document.createElement('section');
       const head=document.createElement('h3');
       const body=document.createElement('p');
-      card.className='va-brief-card'+(/^(DECISION|DO FIRST|WHAT-IF|FORECAST)$/.test(block.label)?' va-brief-card--priority':'');
+      card.className='va-brief-card'+(/^(DECISION|DO FIRST|WHAT-IF|FORECAST|RISK RANKING|30\/60\/90-DAY PLAN|SIX-MONTH OPERATING OUTLOOK)$/.test(block.label)?' va-brief-card--priority':'');
       head.textContent=block.label;body.textContent=block.detail;
       card.append(head,body);answer.append(card);
      }

@@ -6,6 +6,17 @@ const WAKE=/^(?:hey[ ,.!?]+)?(?:vaos|v[ .-]?a[ .-]?o[ .-]?s|vay[ .-]?os|vay[ .-]
 const COMMAND_CONFIRM=/^(?:confirm|yes confirm|confirm question)[.! ]*$/i;
 const COMMAND_CANCEL=/^(?:cancel|stop|never mind|no cancel)[.! ]*$/i;
 const initial=()=>({mode:'WAKE',pending:null});
+export function extractFinalTranscript(event){
+ const results=event?.results;
+ if(!results||!Number.isInteger(results.length)||results.length<1)return null;
+ for(let i=results.length-1;i>=0;i--){
+  const item=results[i];if(item?.isFinal!==true)continue;
+  const transcript=item[0]?.transcript;
+  if(typeof transcript==='string'&&transcript.trim())return transcript.trim();
+ }
+ return null;
+}
+
 export function parseWakePhrase(value){
  const text=typeof value==='string'?value.trim():'';
  const match=text.match(WAKE);
@@ -29,7 +40,7 @@ export function advanceWakeTurn(input,utterance,validateQuestion=()=>true){
 }
 export function createWakeListener({
  RecognitionClass,isVisible=()=>true,validateQuestion=()=>true,
- onStatus=()=>{},onDraft=()=>{},onConfirm=()=>{},onChange=()=>{},
+ onStatus=()=>{},onDraft=()=>{},onConfirm=()=>{},onChange=()=>{},onHeard=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
  clock=()=>Date.now(),
 }={}){
@@ -54,20 +65,21 @@ export function createWakeListener({
   if(!enabled||paused||current||!isVisible())return;
   const now=clock();
   starts=starts.filter(t=>now-t<60000);
-  if(starts.length>=24){disable('Hey VAOS paused after repeated microphone restarts. Enable it again to retry.');return;}
+  if(starts.length>=70){disable('Hey VAOS paused after repeated microphone restarts. Enable it again to retry.');return;}
   starts.push(now);
   let next;try{next=new RecognitionClass();}catch{disable('Microphone recognition is unavailable in this browser.');return;}
   current=next;
   next.lang='en-IN';next.continuous=false;next.interimResults=false;next.maxAlternatives=1;
   const g=generation;
   next.onresult=event=>{
-   if(current!==next||!enabled||paused||generation!==g||!isVisible()||event?.results?.[0]?.isFinal!==true)return;
-   const transcript=event.results[0][0]?.transcript;
+   if(current!==next||!enabled||paused||generation!==g||!isVisible())return;
+   const transcript=extractFinalTranscript(event);
+   if(!transcript)return;
    const result=advanceWakeTurn(turn,transcript,validateQuestion);
+   onHeard(result.event);
    turn=result.state;
    if(result.event==='IGNORED'){
-    if(/^hey[ ,.!?-]/i.test(String(transcript||'')))
-      tell('Wake phrase not recognized. Try “Hey V A O S”, or use the text box.');
+    tell('Speech was recognized, but the wake phrase was not detected. Say “Hey VAOS” first, or tap the microphone for one question.');
     return;
    }
    if(result.event==='PROMPT'){tell('Hey VAOS activated. Say your read-only question.');}

@@ -92,6 +92,19 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
   const external=await getExternalHeadlines(question,fetchImpl);
   const publicResearch=qualifyPublicHeadlines(external,{asOf:now().toISOString().slice(0,10)});
   const report=buildAdvisoryReport({question,sources:observations,web:publicResearch.items});
+  // A news aggregator is a discovery source, not independent price/market
+  // verification. Expose source freshness and diversity as distinct evidence.
+  if(headlinesNeeded.test(question)){
+   const label=publicResearch.status==='MULTI_PUBLISHER_HEADLINES'
+    ?publicResearch.items.length+' recent public headlines from '+publicResearch.publishers.length+' named publishers (not article-verified)'
+    :publicResearch.status==='SINGLE_PUBLISHER_HEADLINES'
+      ?'Recent headlines from one publisher; no independent corroboration'
+      :publicResearch.status==='SINGLE_HEADLINE_UNVERIFIED'
+        ?'Only one recent public headline passed checks; no independent corroboration'
+        :'No recent, dated public headlines passed provenance checks';
+   report.answer+='\n\nRESEARCH QUALITY — '+label+'. Not a verified market benchmark, supplier price comparison or basis for purchases.';
+  }
+
   // Read-only, deterministic planning evidence. The current ERP bridge exposes
   // bounded recent records, NOT an independently complete monthly history.
   // Consequently six-month projections remain HOLD pending a signed source.

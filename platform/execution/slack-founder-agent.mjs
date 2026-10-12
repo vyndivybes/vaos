@@ -19,7 +19,12 @@ function cleanText(value){
   if(typeof value!=='string')return null;
   // Strip only the exact ChatGPT UI attribution footer from a verified
   // founder Slack message; never treat extra chat content as instructions.
-  const withoutAttribution=value.replace(/\s*\*Sent using\*\s*<@U0C2DMN2TG8\|ChatGPT>\s*$/i,'');
+  const uiFooter=/\*?Sent using\*?\s*<@U0C2DMN2TG8(?:\|ChatGPT)?>/i.exec(value);
+  // Slack relay can encode the separator as a literal \\n rather than a
+  // newline. Remove only the trusted ChatGPT attribution suffix, not content.
+  const withoutAttribution=uiFooter?
+    value.slice(0,uiFooter.index).replace(/(?:\\n|\\r|\s)+$/g,'').trim():
+    value;
   const text=withoutAttribution.replace(/<@[A-Z0-9]+>/g,'').replace(/\s+/g,' ').trim();
   if(text.length<1||text.length>500||/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text))return null;
   return text;

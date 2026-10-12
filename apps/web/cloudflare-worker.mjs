@@ -41,6 +41,7 @@ import voiceDiscover from './api/voice-discover.mjs';
 import voiceCommercial from './api/voice-commercial.mjs';
 import voiceInsight from './api/voice-insight.mjs';
 import businessAdvisor from './api/business-advisor.mjs';
+import adaptiveIntelligence from './api/adaptive-intelligence.mjs';
 import engineeringKnowledge from './api/engineering-knowledge.mjs';
 import groupPortfolio from './api/group-portfolio.mjs';
 import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
@@ -101,6 +102,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/voice-commercial': voiceCommercial,
   '/api/voice-insight': voiceInsight,
   '/api/business-advisor': businessAdvisor,
+  '/api/adaptive-intelligence': adaptiveIntelligence,
   '/api/engineering-knowledge': engineeringKnowledge,
   '/api/group-portfolio': groupPortfolio,
   '/api/voice-evidence-ai': voiceEvidenceAi,

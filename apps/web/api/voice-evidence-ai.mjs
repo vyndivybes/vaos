@@ -15,6 +15,10 @@ export function validateGroundedDraft(out,sources){
   const raw=candidate.trim().replace(/^\`\`\`(?:json)?\s*/i,'').replace(/\s*\`\`\`$/,'').trim();
   try{data=JSON.parse(raw)}catch{throw Error('AI_OUTPUT_INVALID')}
  }else throw Error('AI_OUTPUT_INVALID');
+ if(data&&typeof data==='object'&&!Array.isArray(data)&&typeof data.citations==='string'
+   &&/^\[\s*\d+(?:\s*,\s*\d+){0,3}\s*\]$/.test(data.citations)){
+  try{data={...data,citations:JSON.parse(data.citations)}}catch{}
+ }
  if(!data||typeof data!=='object'||Array.isArray(data)||Object.keys(data).sort().join(',')!=='analysis,citations,recommendation'
   ||typeof data.analysis!=='string'||data.analysis.length<10||data.analysis.length>460
   ||typeof data.recommendation!=='string'||data.recommendation.length<10||data.recommendation.length>460

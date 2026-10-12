@@ -1,0 +1,42 @@
+name: slack-signing-commissioning-gate
+on:
+  pull_request:
+    paths:
+      - 'scripts/qualification/slack-signing-commissioning.mjs'
+      - 'scripts/qualification/slack-signing-commissioning.test.mjs'
+      - '.github/workflows/slack-signing-commissioning-gate.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/qualification/slack-signing-commissioning.mjs'
+      - 'scripts/qualification/slack-signing-commissioning.test.mjs'
+      - '.github/workflows/slack-signing-commissioning-gate.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  contract-gates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Secure signing contract (metadata only)
+        run: node --test scripts/qualification/slack-signing-commissioning.test.mjs
+  production-metadata-gate:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    environment: stage8-isolated-qualification
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Read Cloudflare binding TYPES only (never secret values)
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          node scripts/qualification/slack-signing-commissioning.mjs --live-metadata-only

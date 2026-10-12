@@ -1,4 +1,4 @@
-# One-time Zapier transport evidence and third-round webhook verification (12 Oct 2026)
+# One-time post-publish Zapier Catch Hook end-to-end canary deployment (12 Oct 2026)
 name: vaos-slack-controlled-deploy
 on:
   push:

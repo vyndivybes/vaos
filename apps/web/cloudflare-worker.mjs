@@ -1,3 +1,5 @@
+import {runFounderWorkspaceDigest} from '../../platform/execution/google-founder-daily-brief.mjs';
+import googleWorkspace from './api/google-workspace.mjs';
 import {runHourlyIncidentAlerts} from '../../platform/execution/slack-incident-observer.mjs';
 import {runHourlyCiAlerts} from '../../platform/execution/github-slack-ci.mjs';
 import { dispatchInfisicalWatchdog, infisicalDispatchFailureCode } from '../../platform/execution/cloudflare-infisical-dispatch.mjs';
@@ -81,6 +83,10 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/slack-qualification': slackQualification,
   '/api/slack-agent-status': slackAgentStatus,
   '/api/zapier-webhook': zapierWebhook,
+  '/api/google-workspace/status': googleWorkspace,
+  '/api/google-workspace/start': googleWorkspace,
+  '/api/google-workspace/callback': googleWorkspace,
+  '/api/google-workspace/brief': googleWorkspace,
   '/api/langgraph': langgraph,
   '/api/founder-inbox': founderInbox,
   '/api/founder-agent-report': founderAgentReport,
@@ -273,6 +279,11 @@ export default {
       const result=await runHourlyIncidentAlerts(env);
       console.log('VAOS_INCIDENT_HOURLY',JSON.stringify(result));
     }).catch(()=>console.warn('VAOS_INCIDENT_HOURLY_HOLD'));
+    const googleDigest=Promise.resolve().then(async()=>{
+      if(env.VAOS_GOOGLE_BRIEF_CONTROL!=='founder-daily-readonly-v1')return;
+      const result=await runFounderWorkspaceDigest(env);
+      console.log('VAOS_GOOGLE_DAILY_BRIEF',JSON.stringify(result));
+    }).catch(()=>console.warn('VAOS_GOOGLE_DAILY_BRIEF_HOLD'));
     const slackAgent = Promise.resolve().then(async()=>{
       if(env.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return;
       const result=await runSlackFounderAgent({env});
@@ -296,7 +307,7 @@ export default {
     });
     // Keep the optional, fail-closed observer within waitUntil without changing
     // any existing mission/watchdog/synthetic/Stirling result semantics.
-    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert]).then(results=>{
+    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert,googleDigest]).then(results=>{
       if(results[0].status==='rejected')throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 

@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult,splitDecisionBrief} from './main-voice.mjs';
+import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult,splitDecisionBrief,formatAdaptiveStatus} from './main-voice.mjs';
 test('voice bot is read-only and blocks operational write or approval commands',()=>{
  for(const s of ['approve PO 123','delete all records','transfer salary','pay supplier','dispatch an agent','post invoice','execute mission','create an order','update a customer'])
   assert.equal(classifyDashboardQuestion(s).kind,'DENY',s);
@@ -137,4 +137,23 @@ test('unfamiliar cross-domain diagnosis is dispatched to adaptive advisory rathe
  assert.equal(classifyDashboardQuestion(q).kind,'ADVISORY');
  assert.equal(classifyDashboardQuestion('What is our payroll readiness?').kind,'INSIGHT');
  assert.equal(classifyDashboardQuestion('Approve and pay a supplier now').kind,'DENY');
+});
+
+test('upgrade prep: UI accurately labels model-check pass and daily budget fallback',()=>{
+ const checked=formatAdaptiveStatus({reasoningMode:'MODEL_CHECKED_ADVISORY',
+  verification:{status:'BOUNDED_CONSISTENCY_PASS'},sourceCoverage:{observed:2},
+  diagnostics:{elapsedMs:2434,modelAvailability:'NONE'}});
+ assert.match(checked,/model draft checked/i);
+ assert.match(checked,/2 sources/);
+ assert.match(checked,/2.4s/);
+ const fallback=formatAdaptiveStatus({reasoningMode:'DETERMINISTIC_EVIDENCE',
+  sourceCoverage:{observed:1},diagnostics:{modelAvailability:'BUDGET_EXHAUSTED'}});
+ assert.match(fallback,/quota reached/i);
+ assert.doesNotMatch(fallback,/model draft checked/i);
+});
+test('upgrade prep: UI never displays injected provider error in diagnostic status',()=>{
+ const msg=formatAdaptiveStatus({reasoningMode:'MODEL_VERIFIED',
+  sourceCoverage:{observed:10000},diagnostics:{elapsedMs:-1,modelAvailability:'token=private_key'}});
+ assert.doesNotMatch(msg,/private_key|10000|\-1ms/);
+ assert.match(msg,/No business changes/i);
 });

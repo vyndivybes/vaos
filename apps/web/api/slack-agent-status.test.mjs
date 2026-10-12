@@ -25,3 +25,9 @@ test('public status endpoint returns no message content or credentials',async()=
   assert.equal(text.includes('secret-looking'),false);assert.equal(text.includes('xoxb-'),false);
  }finally{globalThis.fetch=original}
 });
+
+test('status endpoint reports HOLD as HTTP 200 without leaking provider data',async()=>{
+ const req={method:'GET',env:{VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',SLACK_BOT_TOKEN:'xoxb-test'}};
+ const original=globalThis.fetch;globalThis.fetch=fetcher({ok:false,error:'missing_scope'});
+ try{const response=await slackAgentStatus(req);const body=await response.json();assert.equal(response.status,200);assert.equal(body.status,'HOLD');assert.equal(body.reason,'SLACK_SCOPE_MISSING');}finally{globalThis.fetch=original}
+});

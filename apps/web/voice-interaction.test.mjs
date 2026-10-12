@@ -46,6 +46,12 @@ test('explicit microphone click and recognized question dispatch one bounded rea
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.filter(x=>String(x).startsWith('/api/voice-insight?')).length,1);
   assert.match(els['vaos-voice-answer'].textContent,/source is presently unavailable/i);
+  els['vaos-wake-toggle'].click();
+  assert.equal(instances.length,2);
+  instances[1].onresult({results:[{isFinal:true,0:{transcript:'Hey VAOS, what is our material shortage status?'}}]});
+  await new Promise(resolve=>setTimeout(resolve,0));
+  assert.equal(requests.filter(x=>String(x).startsWith('/api/voice-insight?')).length,2);
+  assert.match(els['vaos-voice-answer'].textContent,/source is presently unavailable/i);
  }finally{Object.assign(globalThis,original);}
 });
 

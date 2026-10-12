@@ -72,7 +72,7 @@ test('current voice handoff module and wake listener use distinct cache-busted p
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.match(html,/main-voice\.mjs\?v=20261013-v3-supervised-canary/);
+ assert.match(html,/main-voice\.mjs\?v=20261013-mic-diagnostic-v1/);
  assert.match(script,/hey-vaos\.mjs\?v=20261012-handsfree-unified/);
 });
 
@@ -82,4 +82,18 @@ test('main voice offering distinguishes the two controls in accessible copy',asy
  assert.match(markup,/Enable hands-free voice/);
  assert.match(markup,/title="Ask once, then stop listening"/);
  assert.match(markup,/“Hey VAOS” is optional/);
+});
+
+test('disabled microphone shows an actionable diagnosis without requesting mic access during page load',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
+ assert.match(html,/id="vaos-voice-mic-check"/);
+ assert.match(html,/id="vaos-voice-mic-diagnostic"/);
+ assert.match(source,/await refreshVoiceCapability\(\)/);
+ assert.match(source,/probeMicrophonePermission/);
+ assert.match(source,/micCheck\?\.addEventListener\('click'/);
+ assert.match(source,/micDiagnostic\.textContent=micState\.message/);
+ assert.match(source,/mic\.disabled=!micState\.mayListen/);
+ assert.doesNotMatch(source,/getUserMedia\(\{audio:true/);
 });

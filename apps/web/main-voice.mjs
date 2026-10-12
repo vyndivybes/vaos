@@ -4,6 +4,7 @@ import {isAdvisoryQuestion} from './lib/business-advice.mjs';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
+import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone-diagnostics.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
@@ -129,9 +130,9 @@ function init(){
  const mic=$('vaos-voice-mic'),stop=$('vaos-voice-stop'),ask=$('vaos-voice-ask'),
   speech=$('vaos-voice-speak'),input=$('vaos-voice-question'),answer=$('vaos-voice-answer'),
   note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
-  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test'),replyLanguage=$('vaos-voice-language'),adaptive=$('vaos-voice-adaptive');
+  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test'),replyLanguage=$('vaos-voice-language'),adaptive=$('vaos-voice-adaptive'),micCheck=$('vaos-voice-mic-check'),micDiagnostic=$('vaos-voice-mic-diagnostic');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
- let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en';
+ let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown';
  const setStatus=message=>{note.textContent=message;};
  const player=createVoiceReadback({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
@@ -141,9 +142,15 @@ function init(){
   onError:code=>setStatus('Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
   onFinished:mode=>{if(mode==='FINISHED')setStatus('Spoken answer completed.');wake?.resume();state();}
  });
- const state=()=>{mic.disabled=!voiceEnabled||!SpeechRecognition||!!recognition||busy||!!wake?.state().active;
+ const readiness=()=>getMicrophoneReadiness({capability,
+  recognitionAvailable:typeof SpeechRecognition==='function',
+  secureContext:window.isSecureContext!==false,permission:micPermission});
+ const state=()=>{
+  const micState=readiness();
+  if(micDiagnostic)micDiagnostic.textContent=micState.message;
+  mic.disabled=!micState.mayListen||!!recognition||busy||!!wake?.state().active;
   ask.disabled=busy;
-  if(wakeToggle)wakeToggle.disabled=!voiceEnabled||!SpeechRecognition;
+  if(wakeToggle)wakeToggle.disabled=!micState.mayListen;
   stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
   speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
  const cancel=()=>{
@@ -182,10 +189,17 @@ function init(){
    try{active.stop?.();}catch{}
    ask.click();
   };
-  active.onerror=()=>{if(recognition===active)setStatus('Microphone unavailable. Type a question instead.');};
+  active.onerror=error=>{
+   if(recognition!==active)return;
+   micPermission=error?.error==='not-allowed'||error?.error==='service-not-allowed'?'denied':'unavailable';
+   setStatus(error?.error==='not-allowed'||error?.error==='service-not-allowed'
+    ?'Browser denied microphone speech recognition. Open Chrome Site settings → Microphone → Allow and retry.'
+    :'Speech recognition failed. Select Check microphone for diagnostics.');
+   state();
+  };
   active.onend=()=>{if(recognition===active){recognition=null;wake?.resume();state();}};
   try{active.start();setStatus('Listening once. Browser speech recognition may use a vendor service.');}
-  catch{recognition=null;setStatus('Microphone blocked or unsupported. Type a question instead.');}
+  catch{recognition=null;micPermission='unavailable';setStatus('Microphone could not start. Select Check microphone for diagnostics, or type the question.');}
   state();
  });
  stop.addEventListener('click',()=>{
@@ -288,15 +302,42 @@ function init(){
   state();
  });
  document.addEventListener('visibilitychange',()=>{wake.onVisibilityChange();if(document.visibilityState!=='visible'){cancel();state();}});
- state();
- fetch('/api/voice-capabilities',{credentials:'same-origin',cache:'no-store'}).then(x=>x.ok?x.json():null).then(x=>{
-  voiceEnabled=voiceCapabilityReady(x?.data);
+ const refreshVoiceCapability=async()=>{
+  let mode='unavailable';
+  try{
+   const response=await fetch('/api/voice-capabilities',{credentials:'same-origin',cache:'no-store'});
+   if(response.status===401)mode='unauthenticated';
+   else if(response.ok){
+    const payload=await response.json();
+    mode=voiceCapabilityReady(payload?.data)?'enabled':'disabled';
+   }
+  }catch{}
+  capability=mode;voiceEnabled=mode==='enabled';
   if(!voiceEnabled)wake?.disable('Voice wake capability is not yet qualified for this account.');
-  if(!voiceEnabled)setStatus('Voice microphone is not qualified for this session. Text-based, read-only queries remain available.');
-  else if(!SpeechRecognition)setStatus('Microphone recognition is unavailable in this browser. Type your question or use another supported browser.');
-  else setStatus('Ready. Tap the microphone, or type a read-only question.');
-  state();
- }).catch(()=>{setStatus('Voice qualification cannot be verified. Type a read-only question.');state();});
+  state();return mode;
+ };
+ // Initial capability discovery does not open or record the microphone.
+ state();
+ void refreshVoiceCapability().then(()=>{
+  setStatus(readiness().message);
+ });
+ // Only this explicit user gesture requests microphone permission. The probe
+ // stops every captured track immediately; no microphone audio is persisted.
+ micCheck?.addEventListener('click',async()=>{
+  if(micCheck.disabled)return;
+  micCheck.disabled=true;
+  setStatus('Checking VAOS voice qualification and browser microphone permission…');
+  try{
+   await refreshVoiceCapability();
+   const current=readiness();
+   if(current.canProbe){
+    micPermission=await probeMicrophonePermission({
+     mediaDevices:typeof navigator!=='undefined'?navigator.mediaDevices:null});
+    if(micPermission==='unsupported')micPermission='unavailable';
+   }
+   setStatus(readiness().message);
+  }finally{micCheck.disabled=false;state();}
+ });
  window.addEventListener('pagehide',()=>{wake?.disable('Session ended; microphone off.');cancel();},{once:true});
 }
 if(typeof document!=='undefined')init();

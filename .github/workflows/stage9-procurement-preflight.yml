@@ -3,6 +3,14 @@ on:
   pull_request:
     paths:
       - "platform/qualification/stage9-procurement-preflight.test.mjs"
+      - "platform/qualification/stage9-p2p-isolated-sandbox.mjs"
+      - "platform/qualification/stage9-p2p-isolated-sandbox.test.mjs"
+      - "docs/STAGE9-PROCUREMENT-QUALIFICATION.md"
+      - ".github/workflows/stage9-procurement-preflight.yml"
+  push:
+    branches: [main]
+    paths:
+      - "platform/qualification/stage9-*"
       - "docs/STAGE9-PROCUREMENT-QUALIFICATION.md"
       - ".github/workflows/stage9-procurement-preflight.yml"
   workflow_dispatch:
@@ -18,5 +26,7 @@ jobs:
           node-version: "22"
       - name: Stage 9 preflight
         run: node --test platform/qualification/stage9-procurement-preflight.test.mjs
+      - name: Stage 9 isolated end-to-end P2P acceptance (no live business writes)
+        run: node --test platform/qualification/stage9-p2p-isolated-sandbox.test.mjs
       - name: Existing bridge regressions
         run: node --test platform/execution/vyndi-write-bridge.test.mjs platform/execution/vyndi-read-bridge-client.test.mjs

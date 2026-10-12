@@ -115,9 +115,16 @@ try{
   await new Promise(ok=>setTimeout(ok,1500));
  }
  assert.ok(rotated,'old token must be rejected after bounded propagation');
- const recovered=await auth('checker',checker);
- assert.equal((await call('/api/session',{headers:{cookie:recovered}})).status,200,
-  'recovered isolated authentication');
+ let recovered;
+ let recoveryStable=false;
+ for(let attempt=0;attempt<20;attempt++){
+  recovered=await auth('checker',checker);
+  const status=(await call('/api/session',{headers:{cookie:recovered}})).status;
+  if(status===200){recoveryStable=true;break;}
+  assert.equal(status,401,'unexpected recovered-session response');
+  await new Promise(ok=>setTimeout(ok,750));
+ }
+ assert.ok(recoveryStable,'recovered isolated authentication after bounded propagation');
  // Emergency recovery qualification is isolated to the ephemeral Worker.
  config.vars.VAOS_STAGE8_EMERGENCY_DISABLE='yes';
  await writeFile(configPath,JSON.stringify(config),{mode:0o600});

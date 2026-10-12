@@ -55,14 +55,21 @@ function init(){
  const mic=$('vaos-voice-mic'),stop=$('vaos-voice-stop'),ask=$('vaos-voice-ask'),
   speech=$('vaos-voice-speak'),input=$('vaos-voice-question'),answer=$('vaos-voice-answer'),
   note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
-  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status');
+  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false,speechRun=0,wake=null;
  const setStatus=message=>{note.textContent=message;};
+ const player=createVoiceReadback({
+  synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
+  onState:mode=>{if(mode==='QUEUED')setStatus('Voice queued; checking audio output.');
+    if(mode==='SPEAKING')setStatus('VAOS is speaking.');},
+  onError:code=>setStatus('Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
+  onFinished:mode=>{if(mode==='FINISHED')setStatus('Spoken answer completed.');wake?.resume();state();}
+ });
  const state=()=>{mic.disabled=!voiceEnabled||!SpeechRecognition||!!recognition||busy||!!wake?.state().active;
   ask.disabled=busy;
   if(wakeToggle)wakeToggle.disabled=!voiceEnabled||!SpeechRecognition;
-  stop.disabled=!recognition&&!controller&&!window.speechSynthesis?.speaking&&!wake?.isEnabled();
+  stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
   speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
  const cancel=()=>{
   speechRun++;

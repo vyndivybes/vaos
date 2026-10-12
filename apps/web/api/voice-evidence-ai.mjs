@@ -33,8 +33,8 @@ export function validateGroundedProse(out,sources){
  if(out?.choices?.[0]?.message?.tool_calls?.length||out?.choices?.[0]?.finish_reason==='tool_calls')throw Error('AI_TOOL_CALL_DENIED');
  const candidate=out?.response??out?.result?.response??out?.choices?.[0]?.text??out?.choices?.[0]?.message?.content;
  if(typeof candidate!=='string')throw Error('AI_OUTPUT_INVALID');
- const text=candidate.replace(/<[^>]*>/g,' ').replace(/[\\x00-\\x1f]/g,' ').replace(/\\s+/g,' ').trim();
- if(text.length<25||text.length>1200||/^\\s*[\\[{]/.test(text)||/\\b(approved|certified|verified revenue|authorized release)\\b/i.test(text))throw Error('AI_OUTPUT_INVALID');
+ const text=candidate.replace(/<[^>]*>/g,' ').replace(/[\x00-\x1f]/g,' ').replace(/\s+/g,' ').trim();
+ if(text.length<25||text.length>1200||/^\s*[\[{]/.test(text)||/\b(approved|certified|verified revenue|authorized release)\b/i.test(text))throw Error('AI_OUTPUT_INVALID');
  if(!Array.isArray(sources)||sources.length===0)throw Error('EVIDENCE_UNAVAILABLE');
  return {answer:'Unverified model-generated advisory (check cited evidence): '+text+' This is not an engineering approval or independently verified conclusion.',citationIndices:[1,2,3].filter(i=>i<=sources.length)};
 }

@@ -536,3 +536,10 @@
 @media(max-width:1080px){.workspace-body .va-brief-grid{grid-template-columns:1fr}}
 @media(max-width:650px){.workspace-body .va-brief-card{padding:12px 13px}
  .workspace-body .va-brief-card p{font-size:16px!important}}
+
+.workspace-body .va-adaptive-toggle{display:flex;align-items:flex-start;gap:12px;padding:13px 16px;margin:8px 0 16px;border-radius:12px;border:1px solid #b9dccc;background:linear-gradient(110deg,#f0fdf8,#eaf6f9);cursor:pointer;color:#244b52}
+.workspace-body .va-adaptive-toggle input{margin:4px 0 0;flex:0 0 18px;width:18px;height:18px;accent-color:#218476}
+.workspace-body .va-adaptive-toggle span{display:grid;gap:5px;min-width:0}
+.workspace-body .va-adaptive-toggle strong{font-size:16px;line-height:1.3;color:#144d4d}
+.workspace-body .va-adaptive-toggle small{font-size:14px;line-height:1.5;color:#3d6671}
+@media(max-width:700px){.workspace-body .va-adaptive-toggle{padding:12px}.workspace-body .va-adaptive-toggle strong{font-size:16px}}

@@ -31,6 +31,6 @@ jobs:
       - name: Install pinned repository dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify secured Slack ingress and Worker compatibility
-        run: node --test apps/web/api/slack-events.test.mjs apps/web/cloudflare-worker.test.mjs platform/execution/slack-founder-agent.test.mjs platform/execution/github-slack-ci.test.mjs
+        run: node --test apps/web/api/slack-events.test.mjs apps/web/cloudflare-worker.test.mjs platform/execution/slack-founder-agent.test.mjs platform/execution/github-slack-ci.test.mjs platform/execution/slack-incident-observer.test.mjs
       - name: Deploy code with existing variables and secrets preserved
         run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc

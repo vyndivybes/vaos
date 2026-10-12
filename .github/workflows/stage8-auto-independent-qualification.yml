@@ -1,0 +1,50 @@
+name: stage8-auto-independent-qualification
+on:
+  workflow_run:
+    workflows: [stage8-hosted-actual-auth]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Successful hosted qualification run ID'
+        required: true
+        type: string
+permissions:
+  contents: read
+  actions: read
+jobs:
+  independently-certify:
+    if: ${{ github.event_name == 'workflow_dispatch' || (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.head_branch == 'main') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    environment: stage8-isolated-qualification
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate signed Stage 8 authentication evidence
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGE8_SOURCE_RUN_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.source_run_id || github.event.workflow_run.id }}
+          VAOS_STAGE8_EVIDENCE_SIGNING_KEY: ${{ secrets.VAOS_STAGE8_EVIDENCE_SIGNING_KEY }}
+        run: node scripts/qualification/stage8-independent-signer.mjs
+      - name: Validate isolated rollback and sign time-limited founder-approved cutover
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          STAGE8_SOURCE_RUN_ID: ${{ github.event_name == 'workflow_dispatch' && inputs.source_run_id || github.event.workflow_run.id }}
+          STAGE8_FOUNDER_AUTHORIZED: approved
+          VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY: ${{ secrets.VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY }}
+        run: node scripts/qualification/stage8-cutover-signer.mjs
+      - name: Preserve independently verified certificates
+        uses: actions/upload-artifact@v4
+        with:
+          name: stage8-qualified-cutover-certificates
+          path: |
+            stage8-signed-qualification.json
+            stage8-signed-cutover.json
+          retention-days: 1
+          if-no-files-found: error

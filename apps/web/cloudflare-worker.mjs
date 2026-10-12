@@ -40,6 +40,7 @@ import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
+import {runSlackFounderAgent} from '../../platform/execution/slack-founder-agent.mjs';
 
 export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/login': login,
@@ -257,6 +258,17 @@ export default {
         ?error.code:'STIRLING_LIVE_UNAVAILABLE';
       console.warn('VAOS_STIRLING_CLOUD_QUALIFICATION_HOLD',code);
     });
+    const slackAgent = Promise.resolve().then(async()=>{
+      if(env.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return;
+      const result=await runSlackFounderAgent({env});
+      console.log('VAOS_SLACK_FOUNDER_AGENT',JSON.stringify({
+        status:result.status,processed:result.processed||0,route:result.route||null,
+        actionAuthorized:false,
+      }));
+    }).catch(error=>{
+      console.warn('VAOS_SLACK_FOUNDER_AGENT_HOLD',
+        typeof error?.message==='string'&&/^SLACK_[A-Z_]+$/.test(error.message)?error.message:'SLACK_AGENT_UNAVAILABLE');
+    });
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.
     // Preserve the independently qualified four-provider scheduling contract.
@@ -265,7 +277,7 @@ export default {
     });
     // Keep the optional, fail-closed observer within waitUntil without changing
     // any existing mission/watchdog/synthetic/Stirling result semantics.
-    const task = Promise.allSettled([scheduledCore,productionObservation]).then(results=>{
+    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent]).then(results=>{
       if(results[0].status==='rejected')throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 

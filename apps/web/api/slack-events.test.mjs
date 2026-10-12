@@ -14,7 +14,10 @@ function setup(){
     SLACK_SIGNING_SECRET:secret,SLACK_BOT_TOKEN:'xoxb-test',
     VAOS_ARTIFACTS:{
       async get(k){return map.get(k)||null;},
-      async put(k,v){map.set(k,{body:v});return null;}
+      async put(k,v,options){
+        if(options?.onlyIf?.get('If-None-Match')==='*'&&map.has(k))return null;
+        map.set(k,{body:v});return {etag:'mock-etag'};
+      }
     }
   };
   const ctx={pending:[],waitUntil(p){this.pending.push(p);}};
@@ -117,4 +120,24 @@ test('public mentions never reveal private business source content',async()=>{
  assert.equal(s.calls.length,1);
  assert.equal(s.calls[0].body.text.includes('CONFIDENTIAL'),false);
  assert.match(s.calls[0].body.text,/direct message/);
+});
+
+test('signed URL verification works before live event control is enabled',async()=>{
+ const s=setup();s.env.VAOS_SLACK_EVENTS_CONTROL='disabled';
+ const challenge=await invoke(makeRequest({type:'url_verification',challenge:'url-ready'}),s);
+ assert.equal(challenge.status,200);
+ assert.deepEqual(await challenge.json(),{challenge:'url-ready'});
+ const event=await invoke(makeRequest(payload(dm)),s);
+ assert.equal(event.status,503);
+ assert.equal(s.ctx.pending.length,0);
+});
+
+test('concurrent delivery of same signed event admits only one message',async()=>{
+ const s=setup();
+ const [a,b]=await Promise.all([
+   invoke(makeRequest(payload(dm)),s),invoke(makeRequest(payload(dm)),s)
+ ]);
+ assert.equal(a.status,200);assert.equal(b.status,200);
+ await Promise.all(s.ctx.pending);
+ assert.equal(s.calls.length,1);
 });

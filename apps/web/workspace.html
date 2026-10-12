@@ -113,6 +113,14 @@
             <button type="button" id="vaos-voice-mic" class="va-voice-icon-button" aria-label="Start microphone" disabled>🎙</button>
             <button type="button" id="vaos-voice-ask" class="va-button va-button--primary">Ask VAOS ↗</button>
           </div>
+          <div class="va-wake-controls">
+            <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>◉ Enable “Hey VAOS”</button>
+            <div class="va-wake-readiness">
+              <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Wake-word microphone is off">Microphone off</span>
+              <span class="va-wake-instructions">Enable once, say “Hey VAOS”, ask a question, then say “Confirm” or “Cancel”. Only the active tab listens.</span>
+            </div>
+          </div>
+          <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Wake-word listening is off.</p>
           <div class="va-voice-toolbar">
             <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
             <div><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
@@ -123,7 +131,7 @@
             <strong>VAOS response</strong><p id="vaos-voice-answer">Ask a question to retrieve evidence. No actions will be executed.</p>
             <div id="vaos-voice-sources" class="va-voice-sources"></div>
           </div>
-          <p class="va-voice-privacy">Tap to speak; there is no always-on microphone. Browser recognition may involve the browser vendor. No business writes, approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
+          <p class="va-voice-privacy">Microphone is OFF by default. “Hey VAOS” listens only after you enable it, while this VAOS tab remains visible; the Stop button disables it. Browser speech recognition may use a vendor service. Ask VAOS only submits read-only requests after a separate spoken “Confirm”. No business writes, approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
         </section>
         <div class="va-launch-grid" aria-label="Business application shortcuts">
           <button type="button" data-view="portfolio"><span class="va-launch-icon va-launch-icon--violet">◈</span><strong>Group overview</strong><small>Six divisions</small></button>

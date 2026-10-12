@@ -54,3 +54,4 @@ test('group-wide analysis examines finance, sales, procurement and production ra
  assert.deepEqual(chooseAdviceSources('Show group business analysis and how we can improve it').map(x=>x.domain),
   ['finance','commercial','procurement','production']);
 });
+\ntest('read-only operational diagnostics accept cross-domain question without plan keyword',()=>{\n assert.equal(isAdvisoryQuestion('Why are our prototype delivery dates slipping because of suppliers, build readiness and cash flow?'),true);\n assert.equal(isAdvisoryQuestion('Approve our supplier purchase'),false);\n});\n

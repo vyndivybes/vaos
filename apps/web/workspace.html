@@ -10,7 +10,7 @@
   <link rel="manifest" href="/manifest.webmanifest" />
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/workspace.css" />
-  <link rel="stylesheet" href="/workspace-saas.css?v=20261013-decision-brief" />
+  <link rel="stylesheet" href="/workspace-saas.css?v=20261013-adaptive-v1" />
 </head>
 <body class="workspace-body landscape-workspace">
   <div class="control-shell metallic-gold-rim" id="control-shell" hidden>
@@ -106,6 +106,10 @@
             </div>
             <span class="va-voice-badge">READ ONLY</span>
           </div>
+          <label class="va-adaptive-toggle" for="vaos-voice-adaptive">
+            <input id="vaos-voice-adaptive" type="checkbox" checked />
+            <span><strong>Adaptive investigation v1 (read-only)</strong><small>VAOS selects up to three authorized read-only data sources per question, checks evidence and recommends next steps. Free-tier model calls are capped; unfamiliar external facts may remain unavailable.</small></span>
+          </label>
           <div class="va-advisor-options">
             <p>Ask VAOS for business analysis, alternative plans, what-if scenarios or web comparisons. Recommendations are advisory and external headlines are not verified facts.</p>
             <label for="vaos-voice-language">Advisor reply language</label>
@@ -433,6 +437,6 @@
   </dialog>
 
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
-  <script type="module" src="/main-voice.mjs?v=20261013-decision-brief"></script>
+  <script type="module" src="/main-voice.mjs?v=20261013-adaptive-v1"></script>
 </body>
 </html>

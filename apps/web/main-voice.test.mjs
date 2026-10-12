@@ -106,7 +106,28 @@ test('decision brief is short, card-safe and available as separate spoken execut
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const voice=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.ok(html.includes('/main-voice.mjs?v=20261013-decision-brief'));
+ assert.ok(html.includes('/main-voice.mjs?v=20261013-adaptive-v1'));
  assert.ok(voice.includes('player.speak(spokenAnswer||lastAnswer)'));
  assert.doesNotMatch(voice,/innerHTML\\s*=/);
+});
+
+test('adaptive intelligence is user-visible, read-only, and never trusts unverified technical links',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
+ const js=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.match(html,/id="vaos-voice-adaptive" type="checkbox" checked/);
+ assert.match(html,/main-voice\.mjs\?v=20261013-adaptive-v1/);
+ assert.match(js,/\/api\/adaptive-intelligence\?q=/);
+ const sha='a'.repeat(40);
+ const safe='https://github.com/vayu-shastr/adv-vibpe/blob/'+sha+'/docs/KP.md';
+ const normalized=formatReadOnlyResult('ADAPTIVE',{sourceSystem:'VAOS_ADAPTIVE',
+  readOnly:true,advisoryOnly:true,actionAuthorized:false,status:'OBSERVED',
+  answer:'ANALYSIS — Evidence is incomplete.\n\nRECOMMENDATION — Reconcile suppliers before committing materials.',
+  spokenAnswer:'Evidence incomplete; reconcile supplier records before commitments.',
+  sources:[{repository:'vayu-shastr/adv-vibpe',path:'docs/KP.md',url:safe},
+   {repository:'evil/site',path:'private',url:'https://evil.invalid/attack'}]});
+ assert.equal(normalized.sources.length,1);assert.equal(normalized.sources[0].url,safe);
+ assert.equal(normalized.language,'en');
+ assert.throws(()=>formatReadOnlyResult('ADAPTIVE',{sourceSystem:'VAOS_ADAPTIVE',readOnly:true,
+  advisoryOnly:true,actionAuthorized:true,status:'OBSERVED',answer:'fake result fake result fake result'}));
 });

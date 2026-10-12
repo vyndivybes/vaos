@@ -33,7 +33,7 @@ test('simulated forecasts are explicitly hypothetical, no sensitive sales data i
 test('external comparison fetch sends only pre-selected public topic; headlines have links but no assumed truth',async()=>{
  const outgoing=[];
  const rss='<?xml version="1.0"?><rss><channel><item><title>Cycle industry investment watch</title><link>https://news.google.com/rss/articles/abc123</link><pubDate>Mon, 12 Oct 2026 09:00:00 GMT</pubDate></item></channel></rss>';
- const handler=createBusinessAdvisorHandler({getReader:()=>sources(),fetchImpl:async url=>{
+ const handler=createBusinessAdvisorHandler({getReader:()=>sources(),now:()=>new Date('2026-10-13T10:00:00Z'),fetchImpl:async url=>{
   outgoing.push(url);return {ok:true,headers:{get:()=> 'application/rss+xml'},text:async()=>rss};}});
  const {x,res}=capture();await handler(mk('Compare our confidential sourcing rates with the market', 'en'),res);
  assert.equal(x.code,200);assert.equal(outgoing.length,1);
@@ -115,4 +115,31 @@ test('missing signed sources never trigger model-directed business writes',async
  assert.equal(x.body.data.planningCycle.state,'EVIDENCE_INCOMPLETE');
  assert.equal(x.body.data.planningCycle.actionAuthorized,false);
  assert.match(x.body.data.answer,/DATA GAPS/);
+});
+
+test('public research provenance reports multi-publisher, fresh, still unverified headline context',async()=>{
+ const xml='<?xml version="1.0"?><rss><channel>'+
+  '<item><title>Indian bicycle supply chain update</title><link>https://news.google.com/rss/articles/abcd100</link><pubDate>Mon, 12 Oct 2026 09:00:00 GMT</pubDate><source url="https://source-a.example">Trade Bulletin</source></item>'+
+  '<item><title>Manufacturing lead-time trends</title><link>https://news.google.com/rss/articles/abcd101</link><pubDate>Sun, 11 Oct 2026 09:00:00 GMT</pubDate><source url="https://source-b.example">Industry Report</source></item>'+
+  '</channel></rss>';
+ const handler=createBusinessAdvisorHandler({getReader:()=>sources(),
+  now:()=>new Date('2026-10-13T10:00:00Z'),
+  fetchImpl:async()=>({ok:true,headers:{get:()=> 'application/rss+xml'},text:async()=>xml})});
+ const {res,x}=capture();await handler(mk('Compare suppliers with current industry news'),res);
+ assert.equal(x.code,200);
+ assert.equal(x.body.data.publicResearch.status,'MULTI_PUBLISHER_HEADLINES');
+ assert.equal(x.body.data.publicResearch.items.length,2);
+ assert.equal(x.body.data.publicResearch.verifiedMarketBenchmark,false);
+ assert.match(x.body.data.answer,/RESEARCH QUALITY/);
+ assert.ok(x.body.data.publicResearch.items.every(x=>x.url.startsWith('https://news.google.com/')));
+});
+test('old unverified web stories are rejected before reaching founder answer',async()=>{
+ const rss='<?xml version="1.0"?><rss><item><title>Old bicycle market report</title><link>https://news.google.com/rss/articles/old123</link><pubDate>Mon, 11 Sep 2023 09:00:00 GMT</pubDate></item></rss>';
+ const handler=createBusinessAdvisorHandler({getReader:()=>sources(),
+  now:()=>new Date('2026-10-13T10:00:00Z'),
+  fetchImpl:async()=>({ok:true,headers:{get:()=> 'application/xml'},text:async()=>rss})});
+ const {res,x}=capture();await handler(mk('Compare suppliers with current market news'),res);
+ assert.equal(x.body.data.publicResearch.items.length,0);
+ assert.equal(x.body.data.publicResearch.status,'PUBLIC_EVIDENCE_UNAVAILABLE');
+ assert.doesNotMatch(x.body.data.answer,/Old bicycle market report/);
 });

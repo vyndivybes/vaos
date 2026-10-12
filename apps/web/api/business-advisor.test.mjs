@@ -35,7 +35,7 @@ test('external comparison fetch sends only pre-selected public topic; headlines 
  const rss='<?xml version="1.0"?><rss><channel><item><title>Cycle industry investment watch</title><link>https://news.google.com/rss/articles/abc123</link><pubDate>Mon, 12 Oct 2026 09:00:00 GMT</pubDate></item></channel></rss>';
  const handler=createBusinessAdvisorHandler({getReader:()=>sources(),fetchImpl:async url=>{
   outgoing.push(url);return {ok:true,headers:{get:()=> 'application/rss+xml'},text:async()=>rss};}});
- const {x,res}=capture();await handler(mk('Compare our secret sourcing rates with the market', 'en'),res);
+ const {x,res}=capture();await handler(mk('Compare our confidential sourcing rates with the market', 'en'),res);
  assert.equal(x.code,200);assert.equal(outgoing.length,1);
  assert.ok(outgoing[0].startsWith('https://news.google.com/rss/search?'));
  assert.ok(!outgoing[0].includes('secret'));

@@ -11,7 +11,7 @@ async function fetchRecent(env,fetchImpl){
  if(typeof token!=='string'||!token.startsWith('xoxb-'))throw Error('SLACK_TOKEN_UNAVAILABLE');
  const url='https://slack.com/api/conversations.history?channel='+INCIDENT_CHANNEL+'&limit=30';
  const r=await fetchImpl(url,{method:'GET',headers:{Authorization:'Bearer '+token},redirect:'error',signal:AbortSignal.timeout(8000)});
- if(r.status!==200)throw Error('SLACK_HISTORY_FAILED');
+ if(r.status!==200)throw Error('INCIDENT_SLACK_HTTP_'+([400,401,403,404,429,500,502,503].includes(r.status)?r.status:'OTHER'));
  const p=await r.json();
  if(p?.ok!==true){
    const errors={missing_scope:'INCIDENT_SLACK_SCOPE_MISSING',
@@ -31,7 +31,7 @@ export async function readSlackIncidentStatus(env,{fetchImpl=fetch}={}){
   return {status:'PASS',announcements:messages.length,actionAuthorized:false,
    answer:'VAOS incident.io Slack feed: '+messages.length+
      ' recent allowlisted announcements visible in #incidents. This is a message-read verification, not proof of current open incidents or incident.io API access.'};
- }catch(error){const code=typeof error?.message==='string'&&/^INCIDENT_[A-Z_]+$/.test(error.message)?error.message:'INCIDENT_SOURCE_UNVERIFIED';return unverified(code);}
+ }catch(error){const code=typeof error?.message==='string'&&/^INCIDENT_[A-Z_0-9]+$/.test(error.message)?error.message:'INCIDENT_NETWORK_FAILURE';return unverified(code);}
 }
 async function put(store,key,entry,more={}){
  return store.put(key,JSON.stringify(entry),{...more,httpMetadata:{contentType:'application/json'}});

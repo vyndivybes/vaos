@@ -38,3 +38,15 @@ Acceptance scenarios verify draft PO, separated checker, GRN, independent QA, 3-
 **Updated classification:** synthetic P2/P3/P4/P5 mechanics may receive engineering CI PASS. P1 production readback, actual P3 VYNDI sandbox posting, canonical receiving/invoice services, external recovery and P7 production release all remain **HOLD**. The VYNDI bridge continues to reject `PROCUREMENT.CREATE_PO` execution, supplier invoice posting and payment effects. A green GitHub check may not change these authority gates.
 
 An actual Stage 9 qualification needs a separate VYNDI sandbox environment, sandbox canonical receipt/invoice APIs with signed context, independent readback and rollback, and founder approval before *any* isolated write. No new separate size ledgers are authorized.
+
+## 2026-10-12: actual VYNDI canonical PostgreSQL function qualification — PASS (ephemeral database only)
+
+VYNDI OS [PR #51](https://github.com/vyndivybes/vyndios/pull/51) is **merged** at
+`b1c87f5a94f4a2968e070917d92a3df28cde36f2`.
+The isolated VYNDI [Stage 9 SQL integration CI](https://github.com/vyndivybes/vyndios/actions/runs/38290494070) and full [Development CI](https://github.com/vyndivybes/vyndios/actions/runs/38290494190) passed on the tested PR head.
+
+This evidence is materially stronger than VAOS's previous in-memory simulator: it loads the **actual VYNDI migrations** into an ephemeral PGlite PostgreSQL engine and invokes VYNDI's canonical supplier, PO creation, maker/checker approval, issued PO, accepted GRN, supplier-invoice match and inventory-ledger queries. Synthetic M and L prototype demand uses a common controlled material SKU and one inventory ledger; configuration.frameSize is traceable in the source notes, but must not be mistaken for a released canonical model/variant key. The test also rejects same-maker approval, stale PO revision, mismatched invoice, and invoice self-approval, and verifies **zero supplier payments**.
+
+**Acceptance classification:** VYNDI CANONICAL-DB-ISOLATED-P2P **PASS**. This is not a networked VYNDI OS sandbox, not a real signed VAOS service-binding invocation, and not authorization to write to production. Actual VYNDI procurement write adapter, independently signed end-to-end readback, release/compensation and a deliberately provisioned sandbox remain **HOLD**. No new paid Neon branch or live business writes were used. P7 production release remains **HOLD**.
+
+This evidence is retained alongside the VAOS isolated state-machine proof and must be requalified if VYNDI's canonical P2P procedures, signed bridge or procurement authority change.

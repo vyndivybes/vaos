@@ -5,10 +5,10 @@ const ORDER=['finance','commercial','procurement','inventory','production','engi
 const RULES={
  finance:/\b(cash|funds?|liquidity|runway|cost|expense|budget|payable|financial|cash.flow)\b/i,
  commercial:/\b(sales|orders?|customers?|pipeline|demand|revenue)\b/i,
- procurement:/\b(suppliers?|vendors?|shortage|procure|materials?|lead.times?|sourcing)\b/i,
+ procurement:/\b(suppliers?|vendors?|shortages?|procure|materials?|lead.times?|sourcing)\b/i,
  inventory:/\b(inventory|stock|warehouse|reservation|on.hand)\b/i,
  production:/\b(prototype|manufactur|build|production|capacity|job.cards?|shop.floor|assemble|yield)\b/i,
- engineering:/\b(geometry|engineering|design|release|prototype|qualification|composite|structural|fea|readiness)\b/i,
+ engineering:/\b(geometry|engineer\w*|design|release|prototype|qualification|composite|structural|fea|readiness)\b/i,
  people:/\b(headcount|staff|workforce|skills|hiring|personnel)\b/i
 };
 const MUTATION=/\b(approve|authorize|authorise|purchase|pay|transfer|delete|deploy|merge|write|submit|dispatch|execute|post|create|modify|update|send)\b/i;

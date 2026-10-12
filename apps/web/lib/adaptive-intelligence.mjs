@@ -44,11 +44,11 @@ export function fallbackAdaptivePlan(question){
  const matches=[
   ['COMMERCIAL',/\b(sales|orders?|customer|demand|crm|quote|pipeline)\b/],
   ['FINANCE',/\b(financ\w*|cash|fund\w*|bank|profit\w*|cost\w*|runway|expense\w*|budget\w*|ledger)\b/],
-  ['PROCUREMENT',/\b(supplier|supply|shortage|procure|vendor|prepreg|material|delivery|sourcing)\b/],
+  ['PROCUREMENT',/\b(suppliers?|supply|shortages?|procure\w*|vendors?|prepreg|materials?|delivery|sourcing)\b/],
   ['INVENTORY',/\b(stock|inventory|warehouse|reserve|stockout)\b/],
   ['PRODUCTION',/\b(production|build\w*|job cards?|prototype\w*|factory|capacity|manufactur\w*|assembly)\b/],
   ['PEOPLE',/\b(staff\w*|personnel|employee\w*|headcount|skills|workforce)\b/],
-  ['ENGINEERING',/\b(vedm|vibpe|engineer|design|release|composite|geometry|fea|frame|resin|validation|qualification)\b/],
+  ['ENGINEERING',/\b(vedm|vibpe|engineer\w*|design|release|composite|geometry|fea|frame|resin|validation|qualification)\b/],
  ];
  let tools=matches.filter(([,regex])=>regex.test(q)).map(([tool])=>tool).slice(0,3);
  // Never lose a broad founder risk inquiry merely because free-tier model calls

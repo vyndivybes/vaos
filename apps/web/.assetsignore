@@ -6,6 +6,7 @@ lib/*
 !lib/voice-multiturn.mjs
 !lib/federated-voice-report.mjs
 !lib/group-portfolio.mjs
+!lib/hey-vaos.mjs
 README.md
 package.json
 vercel.json

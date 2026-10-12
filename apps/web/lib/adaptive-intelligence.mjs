@@ -43,17 +43,17 @@ export function fallbackAdaptivePlan(question){
  const q=String(question||'').toLowerCase();
  const matches=[
   ['COMMERCIAL',/\b(sales|orders?|customer|demand|crm|quote|pipeline)\b/],
-  ['FINANCE',/\b(financ|cash|fund|bank|profit|cost|runway|expense|budget|ledger)\b/],
+  ['FINANCE',/\b(financ\w*|cash|fund\w*|bank|profit\w*|cost\w*|runway|expense\w*|budget\w*|ledger)\b/],
   ['PROCUREMENT',/\b(supplier|supply|shortage|procure|vendor|prepreg|material|delivery|sourcing)\b/],
   ['INVENTORY',/\b(stock|inventory|warehouse|reserve|stockout)\b/],
-  ['PRODUCTION',/\b(production|build|job cards?|prototype|factory|capacity|manufactur|assembly)\b/],
-  ['PEOPLE',/\b(staff|personnel|employee|headcount|skills|workforce)\b/],
+  ['PRODUCTION',/\b(production|build\w*|job cards?|prototype\w*|factory|capacity|manufactur\w*|assembly)\b/],
+  ['PEOPLE',/\b(staff\w*|personnel|employee\w*|headcount|skills|workforce)\b/],
   ['ENGINEERING',/\b(vedm|vibpe|engineer|design|release|composite|geometry|fea|frame|resin|validation|qualification)\b/],
  ];
  let tools=matches.filter(([,regex])=>regex.test(q)).map(([tool])=>tool).slice(0,3);
  // Never lose a broad founder risk inquiry merely because free-tier model calls
  // are exhausted. This fallback retrieves evidence, not a prewritten answer.
- if(!tools.length&&/\b(performance|risks?|operat\w*|strateg\w*|forecast|improv\w*|better plan|business health|company-wide)\b/.test(q))
+ if(!tools.length&&/\b(performance|risks?|operat\w*|strateg\w*|improv\w*|better plan|business health|company-wide)\b/.test(q)&&!/\b(weather|sports?|football|soccer|match|climate|astronomy|earthquake|election|celebrity)\b/.test(q))
   tools=['FINANCE','PROCUREMENT','PRODUCTION'];
  return {tools,focus:'Source-limited inquiry',mode:'RULE_FALLBACK'};
 }

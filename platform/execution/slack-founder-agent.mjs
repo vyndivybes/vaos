@@ -2,6 +2,7 @@ import {createSessionToken,SESSION_COOKIE} from '../../apps/web/lib/auth.mjs';
 import {invokeCloudflareHandler} from '../../apps/web/lib/cloudflare-adapter.mjs';
 import voiceCommercial from '../../apps/web/api/voice-commercial.mjs';
 import voiceEvidenceAi from '../../apps/web/api/voice-evidence-ai.mjs';
+import {readFounderBusinessDomain,readFounderExecutiveBrief} from './founder-business-brief.mjs';
 
 const CHANNEL='C0C90LK78KA';
 const FOUNDER_SLACK_USER='U0C0XHRUFGE';
@@ -19,8 +20,17 @@ function cleanText(value){
 export function classifyFounderSlackQuestion(text){
   const q=text.toLowerCase();
   if(/^(hi|hello|hey|good morning|good evening|good afternoon)[!. ]*$/.test(q))return 'GREETING';
-  if(/\b(sales|revenue|orders?|customers?|pipeline|quotation|invoice|receivable)\b/.test(q))return 'COMMERCIAL';
   if(/\b(integration|slack|windmill|activepieces|dify|stirling|zapier|langgraph|provider)\b/.test(q))return 'INTEGRATIONS';
+  if(/\b(executive|daily brief|business brief|business overview|company status)\b/.test(q))return 'EXECUTIVE';
+  if(/\b(finance|financial|ledger|bookkeeping|bank reconciliation|tax)\b/.test(q))return 'FINANCE';
+  if(/\b(procurement|purchase|purchasing|supplier|shortages?)\b/.test(q))return 'PROCUREMENT';
+  if(/\b(inventory|stock|warehouse)\b/.test(q))return 'INVENTORY';
+  if(/\b(production|manufacturing|work in progress|wip)\b/.test(q))return 'PRODUCTION';
+  if(/\b(project|schedule|milestone|timeline)\b/.test(q))return 'PROJECT';
+  if(/\b(maintenance|asset|repair)\b/.test(q))return 'MAINTENANCE';
+  if(/\b(people|workforce|staff|employee|payroll)\b/.test(q))return 'PEOPLE';
+  if(/\b(configuration|engineering change|eco status)\b/.test(q))return 'CONFIGURATION';
+  if(/\b(sales|revenue|orders?|customers?|pipeline|quotation|invoice|receivable)\b/.test(q))return 'COMMERCIAL';
   return 'ENGINEERING';
 }
 function integrationStatus(env){
@@ -34,7 +44,7 @@ function integrationStatus(env){
     ['LangGraph',env.VAOS_LANGGRAPH_CONTROL==='read-only-v1'],
   ];
   return 'VAOS integration bindings: '+items.map(([n,on])=>n+' '+(on?'connected':'not connected')).join('; ')+
-    '. Connected does not imply write authorization; governed execution controls remain in force.';
+    '. These indicate configured bindings or flags, not independently verified health, automatic production routing or business-write authority.';
 }
 function sessionCookie(){
   return SESSION_COOKIE+'='+createSessionToken(FOUNDER_EMAIL,300);
@@ -52,6 +62,18 @@ export async function answerFounderSlackQuestion(text,env){
   const route=classifyFounderSlackQuestion(q);
   if(route==='GREETING')return {route,answer:'VAOS is online. Ask me about sales status, engineering risks, project evidence, or integration status. Read-only governance remains active.',actionAuthorized:false};
   if(route==='INTEGRATIONS')return {route,answer:integrationStatus(env),actionAuthorized:false};
+  if(route==='EXECUTIVE'){
+    const result=await readFounderExecutiveBrief(env);
+    return {route,answer:result.answer,actionAuthorized:false};
+  }
+  if(['PROJECT','PROCUREMENT','INVENTORY','PRODUCTION','FINANCE','PEOPLE','MAINTENANCE','CONFIGURATION'].includes(route)){
+    try{
+      const result=await readFounderBusinessDomain(route,env);
+      return {route,answer:result.answer,actionAuthorized:false};
+    }catch{
+      return {route,answer:'VAOS '+route+' read-only observation: HOLD. The signed source read could not be independently validated. No records or sensitive information were disclosed and no action was authorized.',actionAuthorized:false};
+    }
+  }
   if(route==='COMMERCIAL'){
     const r=await internalJson(voiceCommercial,{},env);
     if(r.status!==200||typeof r.payload?.data?.answer!=='string')return {route,answer:'I could not verify the VYNDI OS commercial read at this time. I will not infer sales figures.',actionAuthorized:false};

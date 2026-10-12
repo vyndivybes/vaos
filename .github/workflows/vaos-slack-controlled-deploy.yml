@@ -1,4 +1,4 @@
-# One-time Wave 1 live-read qualification repair deployment (12 Oct 2026)
+# One-time VAOS source-observability diagnostic deployment (12 Oct 2026)
 name: vaos-slack-controlled-deploy
 on:
   push:

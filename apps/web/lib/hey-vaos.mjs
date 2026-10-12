@@ -16,11 +16,6 @@ export function advanceWakeTurn(input,utterance,validateQuestion=()=>true){
  const state=input?.mode?input:initial();
  const text=typeof utterance==='string'?utterance.trim():'';
  if(COMMAND_CANCEL.test(text))return {event:'CANCELLED',state:initial()};
- if(state.mode==='CONFIRM'){
-  if(COMMAND_CONFIRM.test(text)&&state.pending)
-   return {event:'SUBMIT',state:initial(),question:state.pending};
-  return {event:'AWAIT_CONFIRM',state};
- }
  const wake=parseWakePhrase(text);
  if(state.mode==='WAKE'&&!wake.wake)return {event:'IGNORED',state};
  const question=state.mode==='QUESTION'
@@ -28,7 +23,9 @@ export function advanceWakeTurn(input,utterance,validateQuestion=()=>true){
  if(!question)return {event:'PROMPT',state:{mode:'QUESTION',pending:null}};
  if(question.length<5||question.length>300||!validateQuestion(question))
   return {event:'REJECTED',state:initial()};
- return {event:'REVIEW',question,state:{mode:'CONFIRM',pending:question}};
+ // A deliberate wake phrase is consent for ONE read-only lookup after opt-in.
+ // Write commands are separately rejected by validateQuestion and the API.
+ return {event:'SUBMIT',question,state:initial()};
 }
 export function createWakeListener({
  RecognitionClass,isVisible=()=>true,validateQuestion=()=>true,
@@ -52,7 +49,7 @@ export function createWakeListener({
   if(!enabled||paused||generation!==g)return;
   turn=initial();tell('Confirmation timed out. Say Hey VAOS for another question.');
  }
- function armExpiry(){if(timer!==null)clear(timer);const g=generation;timer=schedule(()=>{timer=null;expire(g);},turn.mode==='QUESTION'?16000:18000);}
+ function armExpiry(){if(timer!==null)clear(timer);const g=generation;timer=schedule(()=>{timer=null;expire(g);},16000);}
  function listen(){
   if(!enabled||paused||current||!isVisible())return;
   const now=clock();
@@ -69,13 +66,12 @@ export function createWakeListener({
    const result=advanceWakeTurn(turn,transcript,validateQuestion);
    turn=result.state;
    if(result.event==='IGNORED')return;
-   if(result.event==='REVIEW'){transientFailures=0;onDraft(result.question);tell('Heard: '+result.question+'. Review it and say CONFIRM to ask VAOS, or CANCEL.');}
-   else if(result.event==='PROMPT'){tell('Hey VAOS activated. Say your read-only question.');}
+   if(result.event==='PROMPT'){tell('Hey VAOS activated. Say your read-only question.');}
    else if(result.event==='REJECTED'){tell('That request is not an allowed read-only question. Say Hey VAOS to try again.');}
    else if(result.event==='CANCELLED'){tell('Question cancelled. Listening for Hey VAOS.');}
-   else if(result.event==='AWAIT_CONFIRM'){tell('Say CONFIRM to make one read-only query, or CANCEL.');}
    else if(result.event==='SUBMIT'){
-    tell('Voice confirmation received. Reading source evidence; no action authorized.');
+    transientFailures=0;onDraft(result.question);
+    tell('Hey VAOS heard your read-only question. Retrieving verified source evidence.');
     onConfirm(result.question);
    }
    if(turn.mode!=='WAKE')armExpiry();
@@ -99,7 +95,7 @@ export function createWakeListener({
    if(!enabled||paused||!isVisible())return;
    restart=schedule(()=>{restart=null;listen();},550);
   };
-  try{next.start();tell(turn.mode==='WAKE'?'Hey VAOS listening in this active tab. Say “Hey VAOS” to begin.':'Listening for '+(turn.mode==='QUESTION'?'your question':'CONFIRM or CANCEL')+'.');}
+  try{next.start();tell(turn.mode==='WAKE'?'Hey VAOS listening in this active tab. Say “Hey VAOS” to begin.':'Listening for '+('your question')+'.');}
   catch{current=null;transientFailures++;if(transientFailures>=3)disable('Microphone cannot be restarted. Hey VAOS is off.');
    else restart=schedule(()=>{restart=null;listen();},1000);}
  }

@@ -69,7 +69,7 @@ test('sends one bounded synthetic payload and records independent verification a
   assert.equal(sent.length,1);
   assert.equal(sent[0].url,URL);
   assert.equal(sent[0].opts.method,'POST');
-  assert.equal(sent[0].opts.redirect,'error');
+  assert.equal(sent[0].opts.redirect,'manual');
   assert.equal(JSON.parse(sent[0].opts.body).schemaVersion,'vaos.zapier.synthetic.v1');
   assert.equal(JSON.parse(sent[0].opts.body).eventId,'synthetic-event-001');
   assert.equal(writes.length,2);
@@ -87,4 +87,24 @@ test('remote rejection and ambiguous error hold without automatic retry', async 
     assert.equal(body.productionActivation,false);
     assert.equal(writes.length,2);
   }
+});
+
+test('Zapier HTTP redirect is not accepted and must not be followed',async()=>{
+ const calls=[],writes=[];
+ const r=await handler({send:async(url,init)=>{calls.push({url,init});return new Response(null,{status:302,headers:{location:'https://example.invalid/steal'}})}})(makeRequest({env:activeEnv(writes)}));
+ const body=await r.json();
+ assert.equal(r.status,503);
+ assert.equal(body.acknowledgmentVerified,false);
+ assert.equal(body.providerStatus,302);
+ assert.equal(writes[1].value.status,'PROVIDER_REJECTED');
+ assert.equal(calls[0].init.redirect,'manual');
+});
+test('network exception is classified safely without exposing provider URL or stack',async()=>{
+ const writes=[];
+ const h=handler({send:async()=>{throw new TypeError('secret-url '+URL)}});
+ const r=await h(makeRequest({env:activeEnv(writes)}));
+ const body=await r.json();
+ assert.equal(body.status,'HOLD');assert.equal(body.transportFailureCode,'NETWORK');
+ assert.equal(writes[1].value.transportFailureCode,'NETWORK');
+ assert.doesNotMatch(JSON.stringify(body),/secret-url|123456\/AbC789/);
 });

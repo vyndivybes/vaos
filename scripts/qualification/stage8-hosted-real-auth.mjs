@@ -101,7 +101,14 @@ try{
  config.vars.VAOS_STAGE8_EMERGENCY_DISABLE='yes';
  await writeFile(configPath,JSON.stringify(config),{mode:0o600});
  wrangler('deploy','--config',configPath);
- assert.equal((await call('/api/session')).status,503);
+ let disabled=false;
+ for(let attempt=0;attempt<20;attempt++){
+  const status=(await call('/api/session')).status;
+  if(status===503){disabled=true;break;}
+  assert.equal(status,401,'unexpected emergency-disable propagation response');
+  await new Promise(ok=>setTimeout(ok,1500));
+ }
+ assert.ok(disabled,'emergency stop must activate after bounded propagation');
  delete config.vars.VAOS_STAGE8_EMERGENCY_DISABLE;
  await writeFile(configPath,JSON.stringify(config),{mode:0o600});
  wrangler('deploy','--config',configPath);

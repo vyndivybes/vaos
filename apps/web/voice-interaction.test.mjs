@@ -61,3 +61,11 @@ test('active Hey VAOS status is observable and final recognition has explicit di
  assert.match(source,/onHeard/);
  assert.match(source,/transcript/);
 });
+
+test('current voice handoff module and wake listener use distinct cache-busted production URLs',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
+ const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.match(html,/main-voice\.mjs\?v=20261012-mic-handoff/);
+ assert.match(script,/hey-vaos\.mjs\?v=20261012-mic-handoff/);
+});

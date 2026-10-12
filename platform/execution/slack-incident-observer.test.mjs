@@ -75,3 +75,12 @@ test('incident channel missing uses a safe status without publishing credentials
  const r=await readSlackIncidentStatus(e,{fetchImpl});
  assert.equal(r.status,'HOLD');assert.equal(r.reason,'INCIDENT_SLACK_MEMBERSHIP_MISSING');
 });
+
+test('incident HOLD differentiates missing network reachability and HTTP error safely',async()=>{
+ const e=env();
+ const offline=await readSlackIncidentStatus(e,{fetchImpl:async()=>{throw Error('secret network log')}});
+ assert.equal(offline.reason,'INCIDENT_NETWORK_FAILURE');
+ assert.equal(JSON.stringify(offline).includes('secret network log'),false);
+ const forbidden=await readSlackIncidentStatus(e,{fetchImpl:async()=>new Response('',{status:403})});
+ assert.equal(forbidden.reason,'INCIDENT_SLACK_HTTP_403');
+});

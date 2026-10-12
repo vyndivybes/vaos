@@ -2,10 +2,16 @@
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="theme-color" content="#101318"/><meta name="description" content="VAOS governed founder command drafting and agent monitoring"/>
 <link rel="manifest" href="/manifest.webmanifest"/><link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp"/>
-<link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/>
+<link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/><link rel="stylesheet" href="/operations-refresh.css"/>
 <title>VAOS · Founder Command</title></head><body class="founder-body">
 <header class="founder-header"><a href="/workspace" class="founder-back">← Workspace</a><div><small>VĀYŪ SHASTR</small><strong>Founder Command</strong></div><span class="founder-mode">Governed draft mode</span></header>
-<main class="founder-shell" id="founder-shell" hidden>
+<nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
+  <a href="/workspace">Dashboard &amp; voice</a>
+  <a href="/mission-status.html" >Mission tracking</a>
+  <a href="/agent-supervision.html" >Agent monitoring</a>
+  <a href="/founder-console.html" aria-current="page">Founder command lab</a>
+</nav><main class="founder-shell" id="founder-shell" hidden>
+ <section class="va-ops-explain"><h2>What is Founder Command for?</h2><p>This is the advanced instruction and governance workspace: draft requests, record them when permitted, inspect evidence, and run separately qualified voice pilots. Recording a draft is <strong>not</strong> dispatch. Day-to-day questions now belong in <a href="/workspace">Ask VAOS on the main dashboard</a>; approvals and transactions still use independent controls.</p></section>
  <section class="founder-heading"><p>VAOS · DIGITAL WORKFORCE</p><h1>Direct agent command</h1><span>Select an employee and prepare an instruction, report request, or override proposal. Messages may be saved to the founder inbox when commissioned; they are not yet dispatched to agents.</span></section>
  <div class="founder-layout"><aside class="founder-panel"><h2>Select digital employee</h2><label for="agent">Agent</label><select id="agent"></select><p class="founder-hint">A roster entry does not prove an agent is qualified or running.</p><button id="refresh" type="button" class="secondary">Refresh agent status</button><p id="agent-status" aria-live="polite">Status not yet checked</p></aside>
  <section class="founder-panel"><h2>Prepare direct instruction</h2><form id="command-form"><label for="command-kind">Request type</label><select id="command-kind"><option value="INSTRUCTION">Direct instruction</option><option value="REPORT_REQUEST">Request report</option><option value="OVERRIDE_PROPOSAL">Founder override proposal (not applied)</option></select><label for="instruction">Instruction</label><textarea id="instruction" maxlength="2000" rows="7" required minlength="5" placeholder="State the objective, scope, required evidence and deadline."></textarea><button type="submit">Prepare command draft</button></form><div id="draft-panel" class="founder-draft" hidden><h3>Prepared · NOT SENT</h3><pre id="draft-output"></pre><button id="copy-draft" type="button" class="secondary">Copy draft</button><button id="record-draft" type="button">Record in VAOS inbox (not routed)</button></div><p id="command-message" role="status" aria-live="polite"></p></section></div>

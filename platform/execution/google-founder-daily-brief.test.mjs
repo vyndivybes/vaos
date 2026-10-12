@@ -17,7 +17,7 @@ test('daily digest disabled by default',async()=>{
 });
 test('unverified Google data never posts to Slack',async()=>{
  const s=setup();
- const r=await runFounderWorkspaceDigest(s.env,{brief:async()=>({status:'HOLD'})});
+ const r=await runFounderWorkspaceDigest(s.env,{now:()=>Date.parse('2026-10-12T02:30:00Z'),brief:async()=>({status:'HOLD'})});
  assert.equal(r.status,'HOLD');assert.equal(s.map.size,0);
 });
 test('qualified digest sends to private founder DM once on scheduled local morning',async()=>{

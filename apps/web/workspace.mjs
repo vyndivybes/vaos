@@ -120,8 +120,8 @@ function renderEvents() {
 }
 
 function renderRisks() {
-  document.querySelector('#risk-list').innerHTML = model.risks.map((risk) => `
-    <article class="risk-row"><div class="risk-row__heading"><div><strong>${esc(risk.title)}</strong><small>${esc(risk.id)}</small></div><span class="risk-score risk-score--${esc(risk.band)}">${esc(risk.score)}</span></div><div class="risk-meter"><i style="width:${Number(risk.score)}%"></i></div><small>${esc(risk.band.toUpperCase())} · trend ${esc(risk.trend)}</small></article>`).join('');
+  document.querySelector('#risk-list').innerHTML = model.risks.length ? model.risks.map((risk) => `
+    <article class="risk-row"><div class="risk-row__heading"><div><strong>${esc(risk.title)}</strong><small>${esc(risk.id)}</small></div><span class="risk-score risk-score--${esc(risk.band)}">${esc(risk.score)}</span></div><div class="risk-meter"><i style="width:${Number(risk.score)}%"></i></div><small>${esc(risk.band.toUpperCase())} · trend ${esc(risk.trend)}</small></article>`).join('') : '<p class="empty-state">No independently verified risk scores are available in this summary. Open the governed Risk workspace for persisted records.</p>';
 }
 
 function renderHomeAgentOverview(){

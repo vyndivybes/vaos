@@ -7,3 +7,7 @@ Founder has enabled the controlled certificate-install environment gate. Request
 Requalify the current VAOS production candidate after stale-PR reconciliation. The hosted workflow must bind its evidence to the exact GitHub revision created by this controlled trigger update and must retain rollback, replay-denial, negative-authentication, and cleanup evidence. Production business writes remain outside this authorization.
 
 Certificate installation gate enabled after successful hosted and independent dry certification. Issue and install a fresh expiring certificate set for the current revision.
+
+## 2026-10-12 binding-collision recovery
+
+Re-run Stage 8 hosted authentication against the protected-main merge revision after replacing the conflicting bulk-secret key with `VAOS_STAGE8_CERTIFIED_REVISION`. Install only the three cryptographically verified, expiring certificate secrets after independent qualification. The stale plaintext `VAOS_STAGE8_QUALIFICATION_REVISION` must remain non-authoritative. Keep production authentication activation and all business writes disabled; a successful installer alone is not a production cutover or commissioning certificate.

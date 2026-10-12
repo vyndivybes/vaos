@@ -21,7 +21,7 @@ function make(now=Date.now()){
 test('verified matching signed certificates make a read-only install plan',()=>{
  const p=planStage8CertificateInstall(make());
  assert.deepEqual(p.requiredBindings,['VAOS_STAGE8_QUALIFICATION_EVIDENCE',
-  'VAOS_STAGE8_QUALIFICATION_REVISION','VAOS_STAGE8_CUTOVER_APPROVAL']);
+  'VAOS_STAGE8_CERTIFIED_REVISION','VAOS_STAGE8_CUTOVER_APPROVAL']);
  assert.equal(p.productionAuthToggleAllowed,false);
  assert.equal(p.businessWritesAllowed,false);
 });

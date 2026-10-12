@@ -6,7 +6,7 @@ export function createStage8BulkPayload({authEnvelope,cutoverEnvelope,authKey,cu
  const plan=planStage8CertificateInstall({authEnvelope,cutoverEnvelope,authKey,cutoverKey,revision,now});
  const payload={
   VAOS_STAGE8_QUALIFICATION_EVIDENCE:authEnvelope,
-  VAOS_STAGE8_QUALIFICATION_REVISION:plan.revision,
+  VAOS_STAGE8_CERTIFIED_REVISION:plan.revision,
   VAOS_STAGE8_CUTOVER_APPROVAL:cutoverEnvelope
  };
  if(Object.keys(payload).sort().join('|')!==[...plan.requiredBindings].sort().join('|'))

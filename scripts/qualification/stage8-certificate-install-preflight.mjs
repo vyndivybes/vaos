@@ -17,7 +17,7 @@ export function planStage8CertificateInstall({authEnvelope,cutoverEnvelope,authK
  if(ttl<120000)throw Error('STAGE8_CERTIFICATE_LIFETIME_TOO_SHORT');
  return Object.freeze({revision,expiresAt:Math.min(a.expiresAt,c.expiresAt),
   requiredBindings:Object.freeze(['VAOS_STAGE8_QUALIFICATION_EVIDENCE',
-   'VAOS_STAGE8_QUALIFICATION_REVISION','VAOS_STAGE8_CUTOVER_APPROVAL']),
+   'VAOS_STAGE8_CERTIFIED_REVISION','VAOS_STAGE8_CUTOVER_APPROVAL']),
   productionAuthToggleAllowed:false,businessWritesAllowed:false});
 }
 if(import.meta.url===new URL('file://'+process.argv[1]).href){

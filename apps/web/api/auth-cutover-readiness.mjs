@@ -47,16 +47,17 @@ export function createAuthCutoverReadinessHandler({runtimeEnv=()=>process.env}={
     result={...result,state:'HOLD',ready:false,
       holds:Object.freeze([...new Set([...result.holds,'RUNTIME_BINDING_MISMATCH'])])};
    }
-   // Evidence cannot override preflight holds and never authorizes production effects.
+   // Only the independently installed encrypted revision can certify a cutover.
+   // Ignore the legacy plaintext VAOS_STAGE8_QUALIFICATION_REVISION binding.
    const evidence=assessStage8Evidence(rt?.VAOS_STAGE8_QUALIFICATION_EVIDENCE,{
     key:rt?.VAOS_STAGE8_EVIDENCE_SIGNING_KEY,
-    environment:'development',revision:rt?.VAOS_STAGE8_QUALIFICATION_REVISION
+    environment:'development',revision:rt?.VAOS_STAGE8_CERTIFIED_REVISION
    });
    // Independent signed founder authorization is distinct from hosted auth evidence.
    // This read-only endpoint NEVER flips a production runtime switch.
    const cutover=assessStage8Cutover(rt?.VAOS_STAGE8_CUTOVER_APPROVAL,{
      key:rt?.VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY,
-     revision:rt?.VAOS_STAGE8_QUALIFICATION_REVISION
+     revision:rt?.VAOS_STAGE8_CERTIFIED_REVISION
    });
    const authorized=result.ready&&evidence.qualified&&cutover.authorized;
    result={...result,authenticatedSignInQualified:result.ready&&evidence.qualified,

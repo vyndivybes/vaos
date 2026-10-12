@@ -48,3 +48,25 @@ jobs:
             stage8-signed-cutover.json
           retention-days: 1
           if-no-files-found: error
+
+      - name: Validate scoped certificate installation package
+        env:
+          VAOS_STAGE8_EVIDENCE_SIGNING_KEY: ${{ secrets.VAOS_STAGE8_EVIDENCE_SIGNING_KEY }}
+          VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY: ${{ secrets.VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY }}
+          STAGE8_BULK_SECRET_FILE: ${{ runner.temp }}/stage8-certificate-secrets.json
+        run: node scripts/qualification/stage8-certificate-bulk-package.mjs
+      - name: Install certificates only when production gate is explicitly enabled
+        if: ${{ vars.STAGE8_CERT_INSTALL_ENABLED == 'true' }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.STAGE8_CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          STAGE8_BULK_SECRET_FILE: ${{ runner.temp }}/stage8-certificate-secrets.json
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" && test -n "$CLOUDFLARE_ACCOUNT_ID"
+          test -s "$STAGE8_BULK_SECRET_FILE"
+          npx --yes wrangler@4 secret bulk "$STAGE8_BULK_SECRET_FILE" --name vaos
+      - name: Destroy local certificate installation package
+        if: always()
+        env:
+          STAGE8_BULK_SECRET_FILE: ${{ runner.temp }}/stage8-certificate-secrets.json
+        run: rm -f "$STAGE8_BULK_SECRET_FILE"

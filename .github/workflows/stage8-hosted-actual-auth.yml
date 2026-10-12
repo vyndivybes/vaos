@@ -7,6 +7,7 @@ on:
       - 'scripts/qualification/stage8-hosted-real-auth.mjs'
       - 'scripts/qualification/stage8-hosted-auth-fixture.mjs'
       - '.github/workflows/stage8-hosted-actual-auth.yml'
+      - 'governance/stage8-hosted-certification-trigger.md'
 permissions:
   contents: read
 jobs:

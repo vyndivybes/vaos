@@ -58,7 +58,7 @@ test('hands-free responds honestly to explicit unsupported questions rather than
 
 test('engineering voice uses VEDM + VIBPE instead of raw ERP counts',async()=>{
  const {readFile}=await import('node:fs/promises');
- const code=await readFile(new URL('../main-voice.mjs',import.meta.url),'utf8');
+ const code=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.match(code,/intent\.domain==='engineering'/);
  assert.match(code,/\/api\/engineering-knowledge\?q=/);
  const result=formatReadOnlyResult('INSIGHT',{

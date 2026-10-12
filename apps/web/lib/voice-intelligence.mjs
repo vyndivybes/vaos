@@ -3,9 +3,9 @@
  * Only bounded counts and states, no personal information or currency guesses.
  */
 import {GROUP_DIVISIONS} from './group-portfolio.mjs';
-const sensitive=/\\b(secret|token|password|credentials|api key|private key)\\b/i;
-const criticalWrites=/\\b(approve|reject|execute|delete|transfer|dispatch|submit|authorize|authorise|activate|deactivate|override|merge|deploy|issue|write|post invoice|pay supplier)\\b/i;
-const imperative=/^(?:please[ ,]+)?(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\\b|\\b(?:can you|could you|please|i authorize you to|i want you to)[ ,]+(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\\b/i;
+const sensitive=/\b(secret|token|password|credentials|api key|private key)\b/i;
+const criticalWrites=/\b(approve|reject|execute|delete|transfer|dispatch|submit|authorize|authorise|activate|deactivate|override|merge|deploy|issue|write|post invoice|pay supplier)\b/i;
+const imperative=/^(?:please[ ,]+)?(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b|\b(?:can you|could you|please|i authorize you to|i want you to)[ ,]+(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b/i;
 const banned={test:q=>sensitive.test(q)||criticalWrites.test(q)||imperative.test(q)};
 const checks=[
  {domain:'group',re:/\b(group|all divisions|across divisions|whole company|consolidat|v[aā]y[uū] shastr)\b/i},
@@ -15,7 +15,7 @@ const checks=[
  {domain:'procurement',re:/\b(procure\w*|purchase orders?|material shortages?|shortages?|suppliers?|replenishment|material requirements?|supply chain)\b/i},
  {domain:'inventory',re:/\b(inventory|stock|warehouse|sku|on.hand|stocktaking|stores?)\b/i},
  {domain:'production',re:/\b(production|manufactur\w*|job cards?|wip|work in progress|shop floor|frame build|assembly)\b/i},
- {domain:'people',re:/\b(hr\b|human resources|payroll|headcount|workforce|personnel|attendance|employees?|staff|leave balances?)\b/i},
+ {domain:'people',re:/\b(hr\b|human resources|payroll|headcount|workforce|personnel|people|attendance|employees?|staff|leave balances?)\b/i},
  {domain:'engineering',re:/\b(engineer\w*|configuration|change orders?|release gate|fea|quality design|design baselines?|geometry|composites?)\b/i},
  {domain:'maintenance',re:/\b(maintenance|equipment|machine|assets?|repair work order)\b/i},
  {domain:'project',re:/\b(project schedule|programme schedule|project milestone|project plan|programme tasks|project task)\b/i},
@@ -109,7 +109,7 @@ export function formatVoiceAnswer(intent,result){
  if(intent.domain==='crm')
   return {status:'HOLD',answer:'CRM customer and lead-conversion records are not currently exposed through the qualified VAOS signed read bridge. Sales orders are available separately, but must not be presented as CRM conversion.'};
  if(intent.domain==='group')
-  return {status:'HOLD',answer:'The Vāyú Shastr portfolio defines '+GROUP_DIVISIONS.length+' management divisions. However division attribution, elimination of internal transfers and a qualified group balance are still incomplete. Group revenue, cash, profit and forecasts cannot yet be certified. Open Group Overview for source connection health.'};
+  return {status:'HOLD',answer:'The Vāyú Shastr portfolio defines '+GROUP_DIVISIONS.length+' management divisions. However division attribution, elimination of internal transfers and a qualified group balance are not yet consolidated. Group revenue, cash, profit and forecasts cannot yet be certified. Open Group Overview for source connection health.'};
  if(intent.domain==='project')
   return {status:'HOLD',answer:'The project schedule requires an identified approved program ID. No project was specified; I cannot infer a programme-wide schedule from unrelated records. Open Projects or provide the exact program ID.'};
  if(intent.domain==='missions')

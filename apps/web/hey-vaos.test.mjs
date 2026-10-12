@@ -49,7 +49,7 @@ test('voice-armed control requires explicit opt-in and always stops on visibilit
  let visible=true;
  const listener=createWakeListener({RecognitionClass:FakeRecognition,isVisible:()=>visible,
   validateQuestion:validate,onStatus:s=>events.push(s),onDraft:s=>events.push('draft:'+s),onConfirm:q=>events.push('submit:'+q),
-  schedule:(fn)=>{events.push('scheduled');return fn;},clear:()=>{}});
+  schedule:(fn,delay)=>{events.push('scheduled');if(delay<1000)fn();return fn;},clear:()=>{}});
  assert.equal(active.length,0);
  assert.equal(listener.enable(),true);
  assert.equal(active.length,1);

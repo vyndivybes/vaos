@@ -108,10 +108,14 @@ export async function handleSlackEvent(request,env,ctx,{
   now=()=>Date.now(),fetchImpl=fetch,answerFn=answerFounderSlackQuestion
 }={}){
   if(request.method!=='POST')return response(405,{error:'METHOD_NOT_ALLOWED'});
-  if(typeof env?.SLACK_SIGNING_SECRET!=='string'||env.SLACK_SIGNING_SECRET.length<8)
+  // A configured encrypted binding is authoritative; never downgrade when malformed.
+  // Legacy plaintext is a temporary migration fallback only.
+  const signingSecret=env?.VAOS_SLACK_SIGNING_SECRET_SECURE!==undefined
+    ? env.VAOS_SLACK_SIGNING_SECRET_SECURE : env?.SLACK_SIGNING_SECRET;
+  if(typeof signingSecret!=='string'||signingSecret.length<8)
     return response(503,{status:'HOLD',reason:'SLACK_EVENTS_NOT_COMMISSIONED'});
   let body;
-  try{body=await verifiedBody(request,env.SLACK_SIGNING_SECRET,now)}
+  try{body=await verifiedBody(request,signingSecret,now)}
   catch{return response(401,{error:'SIGNATURE_INVALID'})}
   if(!body)return response(401,{error:'SIGNATURE_INVALID'});
   if(body.type==='url_verification'){

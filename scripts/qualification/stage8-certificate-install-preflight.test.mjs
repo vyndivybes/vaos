@@ -30,7 +30,7 @@ test('wrong keys, wrong revision, and insufficient lifetime fail closed',()=>{
  for(const bad of [{...v,authKey:'dd'.repeat(32)},
   {...v,cutoverKey:'ee'.repeat(32)},
   {...v,revision:'ff'.repeat(20)},
-  make(Date.now()-14*60000)]){
+  {...make(Date.now()-14*60000),now:Date.now()}]){
   assert.throws(()=>planStage8CertificateInstall(bad));
  }
 });

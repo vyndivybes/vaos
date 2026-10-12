@@ -16,7 +16,7 @@ function cleanText(value){
   if(text.length<1||text.length>500||/[\x00-\x08\x0b\x0c\x0e-\x1f]/.test(text))return null;
   return text;
 }
-function classify(text){
+export function classifyFounderSlackQuestion(text){
   const q=text.toLowerCase();
   if(/^(hi|hello|hey|good morning|good evening|good afternoon)[!. ]*$/.test(q))return 'GREETING';
   if(/\b(sales|revenue|orders?|customers?|pipeline|quotation|invoice|receivable)\b/.test(q))return 'COMMERCIAL';
@@ -49,7 +49,7 @@ async function internalJson(handler,{method='GET',body}={},env){
 }
 export async function answerFounderSlackQuestion(text,env){
   const q=cleanText(text);if(!q)throw new Error('SLACK_QUESTION_INVALID');
-  const route=classify(q);
+  const route=classifyFounderSlackQuestion(q);
   if(route==='GREETING')return {route,answer:'VAOS is online. Ask me about sales status, engineering risks, project evidence, or integration status. Read-only governance remains active.',actionAuthorized:false};
   if(route==='INTEGRATIONS')return {route,answer:integrationStatus(env),actionAuthorized:false};
   if(route==='COMMERCIAL'){
@@ -79,7 +79,7 @@ async function getCursor(env){
 async function setCursor(env,lastTs){
   await env.VAOS_ARTIFACTS.put(CURSOR,JSON.stringify({lastTs,updatedAt:new Date().toISOString()}),{httpMetadata:{contentType:'application/json'}});
 }
-export async function runSlackFounderAgent({env,fetchImpl=fetch,bootstrapLatest=true}={}){
+export async function runSlackFounderAgent({env,fetchImpl=fetch,bootstrapLatest=true,answerFn=answerFounderSlackQuestion}={}){
   if(env?.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return {status:'DISABLED',processed:0};
   if(!env?.VAOS_ARTIFACTS?.get||!env?.VAOS_ARTIFACTS?.put)throw new Error('SLACK_CURSOR_STORE_UNAVAILABLE');
   const last=await getCursor(env);
@@ -90,14 +90,14 @@ export async function runSlackFounderAgent({env,fetchImpl=fetch,bootstrapLatest=
   if(!last&&bootstrapLatest){
     const latest=all.at(-1);
     if(!latest)return {status:'READY',processed:0,initialized:true};
-    const result=await answerFounderSlackQuestion(latest.text,env);
+    const result=await answerFn(latest.text,env);
     await slackApi(env,'chat.postMessage',{channel:CHANNEL,thread_ts:latest.ts,text:result.answer,unfurl_links:false,unfurl_media:false},fetchImpl);
     await setCursor(env,latest.ts);
     return {status:'PASS',processed:1,initialized:true,route:result.route,actionAuthorized:false};
   }
   const queue=all.slice(0,MAX_MESSAGES);let processed=0;let cursor=last;
   for(const msg of queue){
-    const result=await answerFounderSlackQuestion(msg.text,env);
+    const result=await answerFn(msg.text,env);
     await slackApi(env,'chat.postMessage',{channel:CHANNEL,thread_ts:msg.ts,text:result.answer,unfurl_links:false,unfurl_media:false},fetchImpl);
     cursor=msg.ts;processed++;
   }

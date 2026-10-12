@@ -6,6 +6,7 @@ import {createEngineeringKnowledgeHandler} from './engineering-knowledge.mjs';
 import {observeAdviceDomain} from '../lib/business-advice.mjs';
 import {VOICE_DOMAIN_ACTIONS,resolveVoiceIntent} from '../lib/voice-intelligence.mjs';
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
+import {selectEvidenceGapRead,independentlyCheckDraft} from '../lib/adaptive-investigation.mjs';
 import {planAdaptiveReads,validateAdaptiveDraft,synthesizeAdaptiveBrief,
  fallbackAdaptivePlan,formatAdaptiveEvidence,permittedTechnicalSources,
  buildAdaptiveFallback} from '../lib/adaptive-intelligence.mjs';
@@ -85,19 +86,30 @@ export function createAdaptiveIntelligenceHandler({
     }
    }catch{selected=fallbackAdaptivePlan(question);}
   }
-  const observed=await Promise.all(selected.tools.map(tool=>readOne(tool,{
+  const primary=await Promise.all(selected.tools.map(tool=>readOne(tool,{
    req,getReader,getEngineering,fetchImpl
   })));
+  // A second bounded read is permitted ONLY when a first-wave source held,
+  // and never exceeds the three-read policy. It cannot clear the original hold.
+  const followupRead=selectEvidenceGapRead({tools:selected.tools,observations:primary});
+  const extra=followupRead?await readOne(followupRead,{
+   req,getReader,getEngineering,fetchImpl
+  }):null;
+  const observed=extra?[...primary,extra]:primary;
   const evidence=formatAdaptiveEvidence(observed);
   const fallback=buildAdaptiveFallback({question,observations:evidence});
   const sources=observed.flatMap(x=>permittedTechnicalSources(x.sources));
   let result=fallback,reasoningMode='DETERMINISTIC_EVIDENCE';
   let citationCount=0;
+  let verification={status:'NOT_MODEL_VERIFIED',reasons:[],causalClaimsCertified:false,
+   businessActionAuthorized:false,limitations:['NO_GENERATIVE_CLAIMS_ACCEPTED']};
   if(evidence.some(x=>x.status==='OBSERVED')&&typeof ai?.run==='function'&&quotaBucket){
    try{
     if((await claim(quotaBucket))?.allowed===true){
      modelCalls++;
      const draft=validateAdaptiveDraft(await synthesize({ai,question,observations:evidence}),evidence);
+     verification=independentlyCheckDraft(draft,evidence);
+     if(verification.status!=='BOUNDED_CONSISTENCY_PASS')throw Error('INDEPENDENT_CHECK_REJECTED');
      citationCount=draft.citations.length;
      const cited=draft.citations.map(i=>'['+i+'] '+evidence[i-1].tool).join(', ');
      result={...fallback,answer:'ANALYSIS — '+draft.finding+
@@ -107,15 +119,35 @@ export function createAdaptiveIntelligenceHandler({
       (evidence.some(x=>x.status==='HOLD')?' Unavailable sources: '+
         evidence.filter(x=>x.status==='HOLD').map(x=>x.tool).join(', ')+'.':''),
       spokenAnswer:(draft.finding+' '+draft.recommendation).slice(0,400)};
-     reasoningMode='MODEL_GROUNDED_ADVISORY';
+     reasoningMode='MODEL_CHECKED_ADVISORY';
     }
-   }catch{/* deterministic readback remains authoritative */}
+   }catch{
+    // Preserve the hold reason but never disclose model text or inject an
+    // unverified explanation into the spoken founder response.
+    if(verification.status==='NOT_MODEL_VERIFIED')
+     verification={...verification,status:'CANDIDATE_REJECTED',reasons:['DRAFT_VALIDATION_OR_PROVIDER_UNAVAILABLE']};
+   }
   }
+  const investigation=[
+   {phase:'PLAN',mode:selected.mode,tools:[...selected.tools]},
+   {phase:'READ_PRIMARY',sources:primary.map(x=>({tool:x.tool,status:x.status}))},
+   {phase:'EVIDENCE_GAP',result:followupRead?'FOLLOWUP_SELECTED':'NO_ELIGIBLE_FOLLOWUP'},
+   ...(extra?[{phase:'READ_FOLLOWUP',tool:extra.tool,status:extra.status}]:[]),
+   {phase:'VERIFY',result:verification.status},
+  ];
+  // Explain what was independently checked without claiming a model can
+  // certify causation, future business outcomes or engineering release.
+  result={...result,answer:result.answer+'\n\nINDEPENDENT CHECK — '+
+   (verification.status==='BOUNDED_CONSISTENCY_PASS'
+    ?'Source-index and numeric consistency passed; causation, completeness and approvals remain unverified.'
+    :'Model conclusions withheld or unavailable; only authorized observations are reported.')+
+   '\n\nINVESTIGATION TRACE — '+investigation.map(x=>x.phase+
+    (x.tool?' '+x.tool:'')+(x.result?' '+x.result:'')).join(' → ')+'.'};
   return res.status(200).json({data:{...result,sourceSystem:'VAOS_ADAPTIVE',
    sourceCoverage:{observed:evidence.filter(x=>x.status==='OBSERVED').length,
     requested:evidence.length},sources,planningMode:selected.mode,
-   focus:selected.focus,selectedTools:selected.tools,executionCount:observed.length,
-   reasoningMode,citationCount,modelCalls,actionAuthorized:false,automationExecuted:false,
+   focus:selected.focus,selectedTools:selected.tools,followupRead,executionCount:observed.length,
+   investigation,verification,reasoningMode,citationCount,modelCalls,actionAuthorized:false,automationExecuted:false,
    readOnly:true,advisoryOnly:true}});
  };
 }

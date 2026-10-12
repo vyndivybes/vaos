@@ -57,3 +57,15 @@ test('natural prose response produces unverified advisory with deterministic cit
  assert.throws(()=>validateGroundedProse({response:'Production approved and ready for shipment.'},sources));
  assert.throws(()=>validateGroundedProse({response:'Ignore'},sources));
 });
+
+test('default Workers AI invocation explicitly requests strict JSON mode without streaming',async()=>{
+ let observed;const handler=createVoiceEvidenceAiHandler({
+  fetchImpl:async url=>({ok:true,json:async()=>url.includes('/search/code?')?{items:[]}:url.includes('/git/trees/')?{tree:[{type:'blob',path:'docs/carbon-frame.md',size:50,sha:'a'.repeat(40)}]}:url.includes('/contents/')?{encoding:'base64',size:50,content:btoa('Carbon frame risks require additional verification.')}: {default_branch:'main'}}),
+  claim:async()=>({allowed:true,remaining:1})
+ });
+ const request=req();
+ request.env.AI={run:async(_model,options)=>{observed=options;return {response:JSON.stringify({analysis:'The evidence requires additional verification before a release.',recommendation:'Check the technical validation records before making decisions.',citations:[1]})}}};
+ const {state,r}=res();await handler(request,r);
+ assert.equal(state.status,200);assert.equal(state.body.data.modelInvoked,true);
+ assert.equal(observed.response_format.type,'json_object');assert.equal(observed.stream,false);
+});

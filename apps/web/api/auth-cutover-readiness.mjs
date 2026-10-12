@@ -2,6 +2,7 @@
 // Never returns secret values, digests, signatures, or session tokens.
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {assessStage8Evidence} from '../lib/stage8-qualification-evidence.mjs';
+import {assessStage8Cutover} from '../lib/stage8-cutover-approval.mjs';
 const LEGACY_MAKER_SHA256='11c5ab3591e9d8c06eeac2afa5d6639021b569e46ae1efbb74f8dc4b81bf08d1';
 const HEX256_512=/^[a-f0-9]{64}(?:[a-f0-9]{2}){0,32}$/i;
 const DIGEST=/^[a-f0-9]{64}$/i;
@@ -51,9 +52,18 @@ export function createAuthCutoverReadinessHandler({runtimeEnv=()=>process.env}={
     key:rt?.VAOS_STAGE8_EVIDENCE_SIGNING_KEY,
     environment:'development',revision:rt?.VAOS_STAGE8_QUALIFICATION_REVISION
    });
+   // Independent signed founder authorization is distinct from hosted auth evidence.
+   // This read-only endpoint NEVER flips a production runtime switch.
+   const cutover=assessStage8Cutover(rt?.VAOS_STAGE8_CUTOVER_APPROVAL,{
+     key:rt?.VAOS_STAGE8_CUTOVER_APPROVAL_SIGNING_KEY,
+     revision:rt?.VAOS_STAGE8_QUALIFICATION_REVISION
+   });
+   const authorized=result.ready&&evidence.qualified&&cutover.authorized;
    result={...result,authenticatedSignInQualified:result.ready&&evidence.qualified,
      qualificationEvidenceStatus:evidence.qualified?'VERIFIED':evidence.reason,
-     productionCutoverAuthorized:false,actionAuthorized:false};
+     productionCutoverAuthorized:authorized,
+     cutoverAuthorizationStatus:authorized?'VERIFIED':cutover.reason,
+     actionAuthorized:false};
    return res.status(200).json({data:result});
   }catch{
    return res.status(503).json({error:'readiness_unavailable'});

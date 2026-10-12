@@ -1,4 +1,5 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
+import {createWakeListener} from './lib/hey-vaos.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
@@ -40,14 +41,18 @@ function init(){
  const $=id=>root.querySelector('#'+id);
  const mic=$('vaos-voice-mic'),stop=$('vaos-voice-stop'),ask=$('vaos-voice-ask'),
   speech=$('vaos-voice-speak'),input=$('vaos-voice-question'),answer=$('vaos-voice-answer'),
-  note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle');
+  note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
+  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
- let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false;
+ let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false,speechRun=0,wake=null;
  const setStatus=message=>{note.textContent=message;};
- const state=()=>{mic.disabled=!voiceEnabled||!SpeechRecognition||!!recognition||busy;
-  ask.disabled=busy; stop.disabled=!recognition&&!controller&&!window.speechSynthesis?.speaking;
+ const state=()=>{mic.disabled=!voiceEnabled||!SpeechRecognition||!!recognition||busy||!!wake?.state().active;
+  ask.disabled=busy;
+  if(wakeToggle)wakeToggle.disabled=!voiceEnabled||!SpeechRecognition;
+  stop.disabled=!recognition&&!controller&&!window.speechSynthesis?.speaking&&!wake?.isEnabled();
   speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
  const cancel=()=>{
+  speechRun++;
   const active=recognition;recognition=null;
   if(active)try{active.abort()}catch{}
   if(controller){controller.abort();controller=null}
@@ -55,19 +60,24 @@ function init(){
   busy=false;state();
  };
  const speakAnswer=()=>{
-  if(!voiceEnabled||!lastAnswer||typeof window.SpeechSynthesisUtterance!=='function')return;
+  if(!voiceEnabled||!lastAnswer||typeof window.SpeechSynthesisUtterance!=='function')return false;
+  wake?.pause();
+  const run=++speechRun;
   window.speechSynthesis?.cancel();
   const chunks=lastAnswer.match(/.{1,180}(?:\s|$)/g)?.slice(0,20)||[lastAnswer.slice(0,180)];
   let index=0;
   const play=()=>{
-   if(index>=chunks.length||!window.speechSynthesis)return;
+   if(run!==speechRun)return;
+   if(index>=chunks.length||!window.speechSynthesis){if(!busy)wake?.resume();state();return;}
    const utterance=new window.SpeechSynthesisUtterance(chunks[index++]);
-   utterance.lang='en-IN';utterance.rate=.96;utterance.onend=play;utterance.onerror=()=>setStatus('Speech playback unavailable. The verified answer is still displayed.');
+   utterance.lang='en-IN';utterance.rate=.96;utterance.onend=play;
+   utterance.onerror=()=>{if(run!==speechRun)return;setStatus('Speech playback unavailable. The verified answer is still displayed.');if(!busy)wake?.resume();state();};
    window.speechSynthesis.speak(utterance);
-  };play();state();
+  };play();state();return true;
  };
  mic.addEventListener('click',()=>{
   if(!voiceEnabled||!SpeechRecognition||recognition||busy)return;
+  wake?.pause();
   window.speechSynthesis?.cancel();
   const active=new SpeechRecognition();recognition=active;
   active.lang='en-IN';active.interimResults=false;active.continuous=false;active.maxAlternatives=1;
@@ -78,19 +88,24 @@ function init(){
    else setStatus('Speech was not recognized as a supported question. Nothing was submitted.');
   };
   active.onerror=()=>{if(recognition===active)setStatus('Microphone unavailable. Type a question instead.');};
-  active.onend=()=>{if(recognition===active){recognition=null;state();}};
+  active.onend=()=>{if(recognition===active){recognition=null;wake?.resume();state();}};
   try{active.start();setStatus('Listening once. Browser speech recognition may use a vendor service.');}
   catch{recognition=null;setStatus('Microphone blocked or unsupported. Type a question instead.');}
   state();
  });
- stop.addEventListener('click',()=>{cancel();setStatus('Stopped. No business actions authorized.');});
+ stop.addEventListener('click',()=>{
+  wake?.disable('Hey VAOS switched off. Microphone stopped.');
+  cancel();setStatus('Stopped. No business actions authorized.');
+ });
  speech.addEventListener('click',speakAnswer);
  ask.addEventListener('click',async()=>{
   if(busy)return;
   const intent=classifyDashboardQuestion(input.value);
   if(intent.kind==='DENY'){setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
+  wake?.pause();
   cancel();busy=true;lastAnswer='';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
   const abort=new AbortController();controller=abort;
+  let speaking=false;
   try{
    const route=intent.kind==='COMMERCIAL'?'/api/voice-commercial'
     :'/api/federated-knowledge?q='+encodeURIComponent(intent.question);
@@ -109,22 +124,47 @@ function init(){
     a.textContent=ref.repository+' · '+ref.path+' : '+ref.line;sources.append(a);
    }
    setStatus(normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.');
-   if(normalized.status==='OBSERVED'&&speakToggle.checked&&voiceEnabled)speakAnswer();
+   if(normalized.status==='OBSERVED'&&speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
    if(controller!==abort||abort.signal.aborted)return;
    answer.textContent='HOLD — evidence unavailable. No figures or conclusions inferred.';
    setStatus(error?.message||'Read-only lookup unavailable.');
-  }finally{if(controller===abort)controller=null;busy=false;state();}
+  }finally{if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
  });
  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask.click();}});
+ wake=createWakeListener({
+  RecognitionClass:SpeechRecognition,
+  isVisible:()=>document.visibilityState==='visible',
+  validateQuestion:q=>classifyDashboardQuestion(q).kind!=='DENY',
+  onDraft:q=>{input.value=q;state();},
+  onConfirm:q=>{input.value=q;ask.click();},
+  onStatus:message=>{if(wakeStatus)wakeStatus.textContent=message;},
+  onChange:info=>{
+   if(wakeToggle){wakeToggle.setAttribute('aria-pressed',String(info.enabled));wakeToggle.textContent=info.enabled?'■ Disable “Hey VAOS”':'◉ Enable “Hey VAOS”';}
+   if(wakeIndicator){
+    wakeIndicator.dataset.mode=info.active?'listening':info.enabled?'paused':'off';
+    const stateLabel=info.active?'Microphone listening':info.enabled?'Microphone paused':'Microphone off';
+    wakeIndicator.textContent=stateLabel;wakeIndicator.setAttribute('aria-label',stateLabel);
+   }
+   state();
+  },
+ });
+ wakeToggle?.addEventListener('click',()=>{
+  if(!voiceEnabled)return;
+  if(wake.isEnabled())wake.disable('Hey VAOS disabled. This tab no longer listens.');
+  else wake.enable();
+  state();
+ });
+ document.addEventListener('visibilitychange',()=>{wake.onVisibilityChange();if(document.visibilityState!=='visible'){cancel();state();}});
  state();
  fetch('/api/voice-capabilities',{credentials:'same-origin',cache:'no-store'}).then(x=>x.ok?x.json():null).then(x=>{
   voiceEnabled=voiceCapabilityReady(x?.data);
+  if(!voiceEnabled)wake?.disable('Voice wake capability is not yet qualified for this account.');
   if(!voiceEnabled)setStatus('Voice microphone is not qualified for this session. Text-based, read-only queries remain available.');
   else if(!SpeechRecognition)setStatus('Microphone recognition is unavailable in this browser. Type your question or use another supported browser.');
   else setStatus('Ready. Tap the microphone, or type a read-only question.');
   state();
  }).catch(()=>{setStatus('Voice qualification cannot be verified. Type a read-only question.');state();});
- window.addEventListener('pagehide',cancel,{once:true});
+ window.addEventListener('pagehide',()=>{wake?.disable('Session ended; microphone off.');cancel();},{once:true});
 }
 if(typeof document!=='undefined')init();

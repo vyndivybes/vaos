@@ -32,6 +32,10 @@ test('main workspace voice region and ops navigation surfaces exist and use comm
  assert.match(html,/id="vaos-main-voice"/);
  assert.match(html,/id="vaos-voice-ask"/);
  assert.match(html,/id="vaos-voice-mic"/);
+ assert.match(html,/id="vaos-wake-toggle"/);
+ assert.match(html,/id="vaos-wake-indicator"/);
+ assert.match(html,/id="vaos-wake-status"/);
+ assert.match(html,/aria-pressed="false"/);
  assert.match(html,/main-voice\.mjs/);
  assert.match(css,/font-size:\s*(?:16px|1rem)/);
  for(const page of ['mission-status.html','agent-supervision.html','founder-console.html']){

@@ -97,3 +97,17 @@ test('public read works without a token for this allowlisted public repository o
  const result=await readVaosGitHubCi(e,{fetchImpl:async()=>response([run(88,'completed','success')])});
  assert.equal(result.status,'PASS');
 });
+
+test('GitHub HOLD distinguishes network failure without exposing errors',async()=>{
+ const r=await readVaosGitHubCi(env(),{fetchImpl:async()=>{throw Error('secret provider traceback')}});
+ assert.equal(r.status,'HOLD');assert.equal(r.reason,'GITHUB_NETWORK_FAILURE');
+ assert.equal(JSON.stringify(r).includes('secret provider traceback'),false);
+});
+test('GitHub public fallback also covers failed private-token network attempt',async()=>{
+ let calls=0;
+ const r=await readVaosGitHubCi(env(),{fetchImpl:async()=>{
+  calls++;if(calls===1)throw Error('token-specific error');
+  return response([run(999,'completed','success')]);
+ }});
+ assert.equal(calls,2);assert.equal(r.status,'PASS');
+});

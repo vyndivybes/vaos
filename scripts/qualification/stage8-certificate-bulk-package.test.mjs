@@ -18,8 +18,8 @@ const valid={authEnvelope,cutoverEnvelope,authKey,cutoverKey,revision,now};
 test('strict allowlist excludes authentication activation and all business writes',()=>{
  const v=createStage8BulkPayload(valid);
  assert.deepEqual(Object.keys(v.payload).sort(),[
- 'VAOS_STAGE8_CUTOVER_APPROVAL','VAOS_STAGE8_QUALIFICATION_EVIDENCE',
- 'VAOS_STAGE8_CERTIFIED_REVISION']);
+ 'VAOS_STAGE8_CERTIFIED_REVISION','VAOS_STAGE8_CUTOVER_APPROVAL',
+ 'VAOS_STAGE8_QUALIFICATION_EVIDENCE']);
  assert.equal(v.payload.VAOS_STAGE8_CERTIFIED_REVISION,revision);
  assert.equal(Object.hasOwn(v.payload,'VAOS_STAGE8_QUALIFICATION_REVISION'),false);
 });

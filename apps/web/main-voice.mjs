@@ -1,5 +1,6 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
+import {isAdvisoryQuestion} from './lib/business-advice.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
@@ -16,6 +17,7 @@ export function classifyDashboardQuestion(value){
  if(!q)return {kind:'DENY',question:q};
  const route=resolveVoiceIntent(q);
  if(route.reason==='BLOCKED_OR_UNBOUNDED')return {kind:'DENY',question:q};
+ if(isAdvisoryQuestion(q))return {kind:'ADVISORY',question:q,domain:'advisory'};
  return {kind:route.domain==='documentation'?'EVIDENCE':'INSIGHT',question:q,domain:route.domain};
 }
 /** Explicit hands-free opt-in supports read-only business questions directly.
@@ -38,6 +40,16 @@ export function formatReadOnlyResult(kind,data){
     ||data?.sourceSystem!=='VYNDI_OS'||typeof data?.answer!=='string'
     ||data.answer.length>4000)throw Error('COMMERCIAL_EVIDENCE_INVALID');
   return {status:'OBSERVED',answer:data.answer.slice(0,2100),sources:[]};
+ }
+ if(kind==='ADVISORY'){
+  if(data?.readOnly!==true||data?.actionAuthorized!==false||data?.advisoryOnly!==true
+   ||data?.sourceSystem!=='BUSINESS_ADVISORY'||!['OBSERVED','HOLD'].includes(data.status)
+   ||typeof data.answer!=='string'||data.answer.length<25||data.answer.length>5000)
+   throw Error('BUSINESS_ADVISORY_INVALID');
+  const refs=Array.isArray(data.webSources)?data.webSources.filter(x=>x&&typeof x.title==='string'
+   &&/^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(x.url)).slice(0,3)
+   .map(x=>({url:x.url,repository:'Unverified web headline',path:x.title.slice(0,150)})):[];
+  return {status:data.status,answer:data.answer.slice(0,3400),sources:refs,language:data.translationQualified?data.language:'en'};
  }
  if(kind==='INSIGHT'){
   if(data?.readOnly!==true||data.actionAuthorized!==false
@@ -67,12 +79,13 @@ function init(){
  const mic=$('vaos-voice-mic'),stop=$('vaos-voice-stop'),ask=$('vaos-voice-ask'),
   speech=$('vaos-voice-speak'),input=$('vaos-voice-question'),answer=$('vaos-voice-answer'),
   note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
-  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test');
+  wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test'),replyLanguage=$('vaos-voice-language');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
- let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false,speechRun=0,wake=null;
+ let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en';
  const setStatus=message=>{note.textContent=message;};
  const player=createVoiceReadback({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
+  language:()=>({ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'}[answerLanguage]||'en-US'),
   onState:mode=>{if(mode==='QUEUED')setStatus('Voice queued; checking audio output.');
     if(mode==='SPEAKING')setStatus('VAOS is speaking.');},
   onError:code=>setStatus('Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
@@ -135,7 +148,7 @@ function init(){
   const intent=classifyDashboardQuestion(input.value);
   if(intent.kind==='DENY'){setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
-  cancel();busy=true;lastAnswer='';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
+  cancel();busy=true;lastAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
   const abort=new AbortController();controller=abort;
   const timer=setTimeout(()=>abort.abort(),25000);
   let speaking=false;
@@ -144,18 +157,21 @@ function init(){
     ?'/api/federated-knowledge?q='+encodeURIComponent(intent.question)
     :intent.domain==='engineering'
       ?'/api/engineering-knowledge?q='+encodeURIComponent(intent.question)
-      :'/api/voice-insight?q='+encodeURIComponent(intent.question);
+      :intent.kind==='ADVISORY'
+        ?'/api/business-advisor?q='+encodeURIComponent(intent.question)+'&lang='+encodeURIComponent(replyLanguage?.value||'en')
+        :'/api/voice-insight?q='+encodeURIComponent(intent.question);
    const response=await fetch(route,{method:'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal});
    if(!response.ok)throw Error(response.status===401?'Session expired. Please sign in again.':response.status===422?'This request is not an allowed read-only question.':'This source is not commissioned or cannot be verified.');
    const data=(await response.json())?.data;
    const normalized=intent.kind==='EVIDENCE'
      ?formatReadOnlyResult('EVIDENCE',formatFederatedVoiceEvidence(data,intent.question))
-     :formatReadOnlyResult('INSIGHT',data);
+     :formatReadOnlyResult(intent.kind==='ADVISORY'?'ADVISORY':'INSIGHT',data);
    if(controller!==abort||abort.signal.aborted)return;
    lastAnswer=normalized.answer;
+   answerLanguage=normalized.language||'en';
    answer.textContent=normalized.answer;
    for(const ref of normalized.sources||[]){
-    if(!/^https:\/\/github\.com\/vyndivybes\/(?:vaos|vyndios)\/blob\/|^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\//.test(ref.url))continue;
+    if(!/^https:\/\/github\.com\/vyndivybes\/(?:vaos|vyndios)\/blob\/|^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/|^https:\/\/news\.google\.com\/rss\/articles\/[A-Za-z0-9_-]+$/.test(ref.url))continue;
     const a=document.createElement('a');a.href=ref.url;a.rel='noopener noreferrer';a.target='_blank';
     a.textContent=ref.repository+' · '+ref.path+(Number.isInteger(ref.line)?' : '+ref.line:'');sources.append(a);
    }

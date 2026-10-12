@@ -50,3 +50,12 @@ test('readback keeps bounded chunks, no irreversible audio queue and supports ca
  assert.equal(p.speak('One short answer.'),true);p.cancel();
  assert.equal(p.active(),false);assert.equal(cancelled,1);
 });
+
+test('Indic playback uses explicitly chosen browser language without breaking English',()=>{
+ const heard=[];class U{constructor(t){this.text=t;}}
+ const player=createVoiceReadback({synthesis:{speak:u=>heard.push(u),cancel(){}},UtteranceClass:U,
+  language:()=> 'ta-IN',schedule:()=>1,clear:()=>{}});
+ assert.equal(player.speak('தமிழில் பதில்.'),true);
+ assert.equal(heard[0].lang,'ta-IN');
+ player.cancel();
+});

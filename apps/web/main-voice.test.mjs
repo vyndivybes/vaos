@@ -70,3 +70,23 @@ test('engineering voice uses VEDM + VIBPE instead of raw ERP counts',async()=>{
  assert.equal(result.sources.length,1);
  assert.match(result.answer,/VIBPE Co-Pilot/);
 });
+
+test('founder requests business planning, scenario forecasting and comparisons through advisory route',async()=>{
+ assert.equal(classifyDashboardQuestion('How should I improve our procurement plan?').kind,'ADVISORY');
+ assert.equal(classifyDashboardQuestion('Forecast our customer demand next six months').kind,'ADVISORY');
+ assert.equal(classifyDashboardQuestion('Compare bicycle market trends on the web').kind,'ADVISORY');
+ assert.equal(classifyDashboardQuestion('Approve supplier payments after comparing').kind,'DENY');
+ const response=formatReadOnlyResult('ADVISORY',{sourceSystem:'BUSINESS_ADVISORY',status:'OBSERVED',
+  readOnly:true,actionAuthorized:false,advisoryOnly:true,language:'ta',translationQualified:true,
+  answer:'Business analysis in Tamil. One option is to check available stock first.',
+  webSources:[{title:'Bicycle sector coverage',url:'https://news.google.com/rss/articles/abc'}]});
+ assert.equal(response.language,'ta');
+ assert.equal(response.sources.length,1);
+ assert.throws(()=>formatReadOnlyResult('ADVISORY',{sourceSystem:'BUSINESS_ADVISORY',
+  status:'OBSERVED',readOnly:true,actionAuthorized:true,advisoryOnly:true,answer:'Fiction'}));
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
+ const code=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.match(html,/id="vaos-voice-language"/);
+ assert.match(code,/api\/business-advisor\?q=/);
+});

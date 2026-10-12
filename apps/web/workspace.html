@@ -128,6 +128,10 @@
             <button type="button" id="vaos-voice-mic" class="va-voice-icon-button" aria-label="Ask a question once using microphone" title="Ask once, then stop listening" disabled>🎙</button>
             <button type="button" id="vaos-voice-ask" class="va-button va-button--primary">Ask VAOS ↗</button>
           </div>
+          <div class="va-mic-diagnostic">
+            <button type="button" id="vaos-voice-mic-check" class="va-mic-diagnostic__button">Check microphone access</button>
+            <span id="vaos-voice-mic-diagnostic" role="status" aria-live="polite">Checking microphone readiness…</span>
+          </div>
           <div class="va-wake-controls">
             <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>◉ Enable hands-free voice</button>
             <div class="va-wake-readiness">
@@ -437,6 +441,6 @@
   </dialog>
 
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
-  <script type="module" src="/main-voice.mjs?v=20261013-v3-supervised-canary"></script>
+  <script type="module" src="/main-voice.mjs?v=20261013-mic-diagnostic-v1"></script>
 </body>
 </html>

@@ -25,6 +25,7 @@ import windmillRuntimeStatus from './api/windmill-runtime-status.mjs';
 import windmillScopedRun from './api/windmill-scoped-run.mjs';
 import windmillLiveDoQualification from './api/windmill-live-do-qualification.mjs';
 import slackQualification from './api/slack-qualification.mjs';
+import slackAgentStatus from './api/slack-agent-status.mjs';
 import zapierWebhook from './api/zapier-webhook.mjs';
 import langgraph from './api/langgraph.mjs';
 import founderInbox from './api/founder-inbox.mjs';
@@ -75,6 +76,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/windmill-scoped-run': windmillScopedRun,
   '/api/windmill-live-do-qualification': windmillLiveDoQualification,
   '/api/slack-qualification': slackQualification,
+  '/api/slack-agent-status': slackAgentStatus,
   '/api/zapier-webhook': zapierWebhook,
   '/api/langgraph': langgraph,
   '/api/founder-inbox': founderInbox,

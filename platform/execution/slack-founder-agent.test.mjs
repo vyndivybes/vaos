@@ -60,3 +60,60 @@ test('Slack provider fetch uses Workers-compatible manual redirect policy',async
  const result=await (await import('./slack-founder-agent.mjs')).probeSlackFounderAgent({env,fetchImpl:async(_url,opts)=>{redirect=opts.redirect;return new Response(JSON.stringify({ok:true,messages:[]}),{status:200,headers:{'content-type':'application/json'}});}});
  assert.equal(redirect,'manual');assert.equal(result.status,'PASS');
 });
+
+
+test('read-only commissioning classifies operational domains without authorizing writes',()=>{
+ const expected={
+   'what material shortages do we have?':'PROCUREMENT',
+   'show inventory stock status':'INVENTORY',
+   'show our production WIP':'PRODUCTION',
+   'finance ledger status':'FINANCE',
+   'project schedule milestones':'PROJECT',
+   'engineering configuration change status':'CONFIGURATION',
+   'maintenance asset status':'MAINTENANCE',
+   'workforce people status':'PEOPLE',
+   'executive daily business brief':'EXECUTIVE',
+   'show customer sales pipeline':'COMMERCIAL',
+ };
+ for(const [question,route] of Object.entries(expected))assert.equal(classifyFounderSlackQuestion(question),route,question);
+});
+test('operational source read is verified and never discloses source records into public Slack',async()=>{
+ const {readFounderBusinessDomain}=await import('./founder-business-brief.mjs');
+ const calls=[];
+ const secret='confidential-ledger-balance-9999';
+ const result=await readFounderBusinessDomain('FINANCE',{},{
+   createReader:()=>({execute:async input=>{calls.push(input);
+     return {actionType:input.actionType,sourceAuthority:'getAccountingWorkbench',data:{records:[{secret}]}};}})
+ });
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].actionType,'FINANCE.OBSERVE_LEDGER');
+ assert.equal(result.route,'FINANCE');
+ assert.equal(result.status,'PASS');
+ assert.equal(result.actionAuthorized,false);
+ assert.doesNotMatch(result.answer,/confidential-ledger-balance|9999|record count/i);
+ assert.match(result.answer,/read-only|read only/i);
+});
+test('source-authority mismatch holds and does not claim business qualification',async()=>{
+ const {readFounderBusinessDomain}=await import('./founder-business-brief.mjs');
+ await assert.rejects(()=>readFounderBusinessDomain('FINANCE',{},{
+   createReader:()=>({execute:async input=>({actionType:input.actionType,sourceAuthority:'wrong',data:{records:[]}})})
+ }),/BUSINESS_SOURCE_UNVERIFIED/);
+});
+test('executive brief isolates unavailable domains and never fabricates metrics',async()=>{
+ const {readFounderExecutiveBrief}=await import('./founder-business-brief.mjs');
+ const out=await readFounderExecutiveBrief({},{
+   createReader:()=>({execute:async input=>{
+     if(input.actionType==='FINANCE.OBSERVE_LEDGER')throw Error('PRIVATE_PROVIDER_ERROR_123');
+     return {actionType:input.actionType,sourceAuthority:{
+       'PROJECT.OBSERVE_SCHEDULE':'readGovernedProgramSchedule',
+       'PROCUREMENT.OBSERVE_SHORTAGE':'getConfiguredDemandShortages',
+       'PRODUCTION.OBSERVE_WIP':'getProductionJobCards',
+     }[input.actionType],data:{records:[]}};
+   }})
+ });
+ assert.equal(out.route,'EXECUTIVE');
+ assert.equal(out.status,'HOLD');
+ assert.equal(out.actionAuthorized,false);
+ assert.match(out.answer,/FINANCE.*HOLD/);
+ assert.doesNotMatch(out.answer,/PRIVATE_PROVIDER_ERROR|revenue|profit|\b0 units\b/i);
+});

@@ -3,6 +3,7 @@ import {apiError} from '../lib/api-contracts.mjs';
 import {makeCommercialReader} from './voice-commercial.mjs';
 import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
+import {rankAdvisoryOptions} from '../lib/business-advice-ai.mjs';
 import {ADVISORY_LANGUAGES,isAdvisoryQuestion,chooseAdviceSources,externalTopic,
   observeAdviceDomain,buildAdvisoryReport,checkTranslation} from '../lib/business-advice.mjs';
 
@@ -90,14 +91,30 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
   const data={...report,language:lang,translationQualified:lang==='en',
    languageNote:lang==='en'?'English source-backed report': 'English source-backed report retained if translation verification fails',
    voiceLanguage:lang,observedAt:new Date().toISOString()};
+  // Source-bounded agent selects between two existing low-risk plans.
+  // The model sees only domain/count/availability, never private ERP rows,
+  // the raw founder request, or unverified news headlines. Advisory only.
+  data.agenticRecommendation='DETERMINISTIC_ONLY';
+  if(report.status==='OBSERVED'&&req.env?.AI?.run&&req.env?.VAOS_ARTIFACTS){
+   try{
+    const quota=await claim(req.env.VAOS_ARTIFACTS);
+    if(quota?.allowed===true){
+     const ranking=await rankAdvisoryOptions({ai:req.env.AI,domain:specs[0].domain,observations});
+     data.answer+=' Model-assisted option ranking (unverified advisory): prefer option '+ranking.choice+
+      '. Reason: '+ranking.reason+' Human approval is still required.';
+     data.agenticRecommendation='MODEL_ASSISTED_UNVERIFIED';
+     data.modelInvoked=true;
+    }
+   }catch{data.agenticRecommendation='DETERMINISTIC_ONLY';}
+  }
   // The existing R2 budget limits inferencing; no paid API key or new service.
   // Translation cannot add claims or change any numeral in the base report.
   if(lang!=='en'&&typeof req.env?.AI?.run==='function'&&req.env?.VAOS_ARTIFACTS){
    try{
     const quota=await claim(req.env.VAOS_ARTIFACTS);
     if(quota?.allowed===true){
-     const translated=await translate(req.env.AI,report.answer,lang);
-     if(checkTranslation(report.answer,translated)){
+     const translated=await translate(req.env.AI,data.answer,lang);
+     if(checkTranslation(data.answer,translated)){
       data.answer=translated;data.translationQualified=true;
       data.languageNote='Verified numerical consistency; qualitative translation is advisory';
      }

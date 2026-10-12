@@ -129,7 +129,8 @@ function jsonError(status, code, message) {
 function uncachedWorkspaceAsset(path, response) {
   const isWorkspaceHtml = ['/workspace', '/workspace.html', '/mission-status', '/mission-status.html', '/founder-console.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
-  if (!isWorkspaceHtml && !isExecutableModule) return response;
+  const isWorkspaceStylesheet = path.endsWith('.css');
+  if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;
 
   const headers = new Headers(response.headers);
   headers.set('Cache-Control', 'no-store, max-age=0');

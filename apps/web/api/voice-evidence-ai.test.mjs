@@ -69,3 +69,13 @@ test('default Workers AI invocation explicitly requests strict JSON mode without
  assert.equal(state.status,200);assert.equal(state.body.data.modelInvoked,true);
  assert.equal(observed.response_format.type,'json_object');assert.equal(observed.stream,false);
 });
+
+test('Workers AI JSON mode citation array encoded as a string is safely normalized',()=>{
+ const source=[{excerpt:'Carbon frame validation remains pending.'}];
+ const output={response:JSON.stringify({analysis:'The carbon frame validation remains pending and needs review.',recommendation:'Wait for validation evidence before any release decision.',citations:'[1]'})};
+ const result=validateGroundedDraft(output,source);
+ assert.deepEqual(result.citationIndices,[1]);
+ assert.match(result.answer,/Unverified AI analysis/);
+ assert.throws(()=>validateGroundedDraft({response:JSON.stringify({analysis:'Pending validation evidence.',recommendation:'Review records before release.',citations:'[99]'})},source));
+ assert.throws(()=>validateGroundedDraft({response:JSON.stringify({analysis:'Pending validation evidence.',recommendation:'Review records before release.',citations:'1,2'})},source));
+});

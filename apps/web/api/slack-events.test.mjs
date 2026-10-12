@@ -235,7 +235,7 @@ test('one-shot command recognizes Slack ChatGPT message attribution without perm
  const r=await invoke(makeRequest(payload(attributed,'EvVAOS201')),s);
  assert.equal(r.status,200);await Promise.all(s.ctx.pending);
  assert.equal(urls.filter(x=>x.startsWith('https://hooks.zapier.com/')).length,1);
- const slack=s.map.get('qualification/zapier/slack-one-shot-20261012.json');
+ const slack=s.map.get('qualification/zapier/slack-one-shot-20261012-round2.json');
  assert.equal(Boolean(slack),true);
 });
 

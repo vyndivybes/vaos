@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {runZapierOneShot} from './zapier-slack-one-shot.mjs';
-const KEY='qualification/zapier/slack-one-shot-20261012.json';
+const KEY='qualification/zapier/slack-one-shot-20261012-round2.json';
 function setup(){
  const map=new Map(),calls=[];
  const env={
@@ -54,4 +54,18 @@ test('provider rejection still leaves HOLD with non-retryable admission',async()
  assert.equal(r.status,'HOLD');
  assert.equal(r.acknowledgmentVerified,false);
  assert.equal(s.map.has(KEY),true);
+});
+
+test('fresh round 2 admits one new event without modifying round 1 archival evidence',async()=>{
+ const s=setup();
+ const oldKey='qualification/zapier/slack-one-shot-20261012.json';
+ const oldPayload=JSON.stringify({state:'HOLD',eventId:'d9646403-15e3-4ed2-885b-cb0e0eeb4a4a'});
+ s.map.set(oldKey,oldPayload);
+ const r=await runZapierOneShot(s.env,{send:s.send,id:()=> 'e7e3a5ce-7ee7-4794-89ba-18d0b7b9f4e6'});
+ assert.equal(r.acknowledgmentVerified,true);
+ assert.equal(s.calls.length,1);
+ assert.equal(s.map.get(oldKey),oldPayload);
+ assert.equal(s.map.has(KEY),true);
+ const next=await runZapierOneShot(s.env,{send:s.send});
+ assert.equal(next.status,'HOLD');assert.equal(s.calls.length,1);
 });

@@ -2,7 +2,7 @@
 // A separate signed Slack Events admission is the sole caller. No business data,
 // approvals, provider replays, or production provider activation are allowed.
 import {createZapierWebhookHandler} from '../../apps/web/api/zapier-webhook.mjs';
-const MARKER='qualification/zapier/slack-one-shot-20261012.json';
+const MARKER='qualification/zapier/slack-one-shot-20261012-round2.json';
 const ORIGIN='https://vaos.vayushastr.workers.dev';
 const hold=(answer,ack=false)=>({
  status:'HOLD',acknowledgmentVerified:ack,independentReadbackVerified:false,

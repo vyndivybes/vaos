@@ -269,7 +269,7 @@ test('upgrade preflight: cited model draft is labeled as checked rather than as 
   getReader:()=>({execute:async job=>({actionType:job.actionType,
    sourceAuthority:'getConfiguredDemandShortages',data:{records:[{id:'s1',shortage_quantity:2}]}})}),
   plan:async()=>({tools:['PROCUREMENT'],focus:'Assess supplier shortage'}),
-  synthesize:async()=>({finding:'Two shortage lines require material readiness review.',
+  synthesize:async()=>({finding:'The observed shortage lines require material readiness review.',
    recommendation:'Check which production jobs require the missing inputs.',citations:[1]})
  });
  const {state,res}=collect();await h(req('What supplier shortages are affecting our materials?'),res);

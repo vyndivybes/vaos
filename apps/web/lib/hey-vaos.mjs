@@ -2,7 +2,7 @@
  * SpeechRecognition may send audio to the browser vendor. No activation
  * without founder voice qualification and explicit in-page user gesture.
  */
-const WAKE=/^(?:hey[ ,.!?]+)?(?:vaos|v[ .-]?a[ .-]?o[ .-]?s)(?=$|[ ,.!?:-])/i;
+const WAKE=/^(?:hey[ ,.!?]+)?(?:vaos|v[ .-]?a[ .-]?o[ .-]?s|vay[ .-]?os|vay[ .-]?us)(?=$|[ ,.!?:-])/i;
 const COMMAND_CONFIRM=/^(?:confirm|yes confirm|confirm question)[.! ]*$/i;
 const COMMAND_CANCEL=/^(?:cancel|stop|never mind|no cancel)[.! ]*$/i;
 const initial=()=>({mode:'WAKE',pending:null});
@@ -65,7 +65,11 @@ export function createWakeListener({
    const transcript=event.results[0][0]?.transcript;
    const result=advanceWakeTurn(turn,transcript,validateQuestion);
    turn=result.state;
-   if(result.event==='IGNORED')return;
+   if(result.event==='IGNORED'){
+    if(/^hey[ ,.!?-]/i.test(String(transcript||'')))
+      tell('Wake phrase not recognized. Try “Hey V A O S”, or use the text box.');
+    return;
+   }
    if(result.event==='PROMPT'){tell('Hey VAOS activated. Say your read-only question.');}
    else if(result.event==='REJECTED'){tell('That request is not an allowed read-only question. Say Hey VAOS to try again.');}
    else if(result.event==='CANCELLED'){tell('Question cancelled. Listening for Hey VAOS.');}

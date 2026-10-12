@@ -6,6 +6,11 @@ test('only an anchored Hey VAOS / VAOS wake phrase triggers listening intent',()
  assert.deepEqual(parseWakePhrase('Hey VAOS'),{wake:true,question:''});
  assert.deepEqual(parseWakePhrase('hey vaos, what is our sales status?'),{wake:true,question:'what is our sales status?'});
  assert.deepEqual(parseWakePhrase('VAOS what is the project status'),{wake:true,question:'what is the project status'});
+ assert.deepEqual(parseWakePhrase('Hey Vayos, tell me sales status'),{wake:true,question:'tell me sales status'});
+ assert.deepEqual(parseWakePhrase('Hey Vayus, how many job cards?'),{wake:true,question:'how many job cards?'});
+ assert.deepEqual(parseWakePhrase('Hey VA OS, show procurement status'),{wake:true,question:'show procurement status'});
+ assert.deepEqual(parseWakePhrase('Hey V A O S what is the project status'),{wake:true,question:'what is the project status'});
+ assert.deepEqual(parseWakePhrase('Hey Vay os, show engineering status'),{wake:true,question:'show engineering status'});
  assert.equal(parseWakePhrase('what does Hey VAOS mean').wake,false);
  assert.equal(parseWakePhrase('hey vendor what is happening').wake,false);
 });

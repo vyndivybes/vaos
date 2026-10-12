@@ -83,8 +83,7 @@ export async function handleSlackEvent(request,env,ctx,{
   now=()=>Date.now(),fetchImpl=fetch,answerFn=answerFounderSlackQuestion
 }={}){
   if(request.method!=='POST')return response(405,{error:'METHOD_NOT_ALLOWED'});
-  if(env?.VAOS_SLACK_EVENTS_CONTROL!=='founder-readonly-v1'||
-    typeof env.SLACK_SIGNING_SECRET!=='string'||env.SLACK_SIGNING_SECRET.length<8)
+  if(typeof env?.SLACK_SIGNING_SECRET!=='string'||env.SLACK_SIGNING_SECRET.length<8)
     return response(503,{status:'HOLD',reason:'SLACK_EVENTS_NOT_COMMISSIONED'});
   let body;
   try{body=await verifiedBody(request,env.SLACK_SIGNING_SECRET,now)}
@@ -95,6 +94,8 @@ export async function handleSlackEvent(request,env,ctx,{
       return response(400,{error:'CHALLENGE_INVALID'});
     return response(200,{challenge:body.challenge});
   }
+  if(env.VAOS_SLACK_EVENTS_CONTROL!=='founder-readonly-v1')
+    return response(503,{status:'HOLD',reason:'SLACK_EVENTS_NOT_COMMISSIONED'});
   const entry=admittedEvent(body);
   if(!entry)return response(200,{ok:true,ignored:true});
   if(typeof env.SLACK_BOT_TOKEN!=='string'||!env.SLACK_BOT_TOKEN.startsWith('xoxb-')||
@@ -103,13 +104,14 @@ export async function handleSlackEvent(request,env,ctx,{
     return response(503,{status:'HOLD',reason:'SLACK_RUNTIME_NOT_READY'});
   const key=EVIDENCE_PREFIX+entry.eventId+'.json';
   try{
-    const prior=await env.VAOS_ARTIFACTS.get(key);
-    if(prior)return response(200,{ok:true,duplicate:true});
-    // Durable audit admission precedes Slack acknowledgment. Only one outcome attempt.
-    await env.VAOS_ARTIFACTS.put(key,JSON.stringify({
+    // Cloudflare R2 conditional create uses If-None-Match:* to admit exactly one
+    // concurrent delivery of an event ID; null means a matching admission exists.
+    const admitted=await env.VAOS_ARTIFACTS.put(key,JSON.stringify({
       schemaVersion:'vaos.slack.inbound.v1',eventId:entry.eventId,kind:entry.kind,
       state:'ACCEPTED',actionAuthorized:false,acceptedAt:new Date(now()).toISOString()
-    }),{httpMetadata:{contentType:'application/json'}});
+    }),{onlyIf:new Headers({'If-None-Match':'*'}),
+      httpMetadata:{contentType:'application/json'}});
+    if(admitted===null)return response(200,{ok:true,duplicate:true});
   }catch{return response(503,{status:'HOLD',reason:'SLACK_EVIDENCE_UNAVAILABLE'})}
   ctx.waitUntil(Promise.resolve().then(()=>processEvent(entry,env,{now,fetchImpl,answerFn})));
   return response(200,{ok:true,accepted:true});

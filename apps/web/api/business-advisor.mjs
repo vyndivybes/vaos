@@ -4,6 +4,7 @@ import {makeCommercialReader} from './voice-commercial.mjs';
 import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {rankAdvisoryOptions} from '../lib/business-advice-ai.mjs';
+import {buildPlanningCycle} from '../lib/business-planning-cycle.mjs';
 import {ADVISORY_LANGUAGES,isAdvisoryQuestion,chooseAdviceSources,externalTopic,
   observeAdviceDomain,buildAdvisoryReport,checkTranslation} from '../lib/business-advice.mjs';
 
@@ -88,7 +89,16 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
   }));
   const external=await getExternalHeadlines(question,fetchImpl);
   const report=buildAdvisoryReport({question,sources:observations,web:external});
-  const data={...report,language:lang,translationQualified:lang==='en',
+  // Read-only, deterministic planning evidence. The current ERP bridge exposes
+  // bounded recent records, NOT an independently complete monthly history.
+  // Consequently six-month projections remain HOLD pending a signed source.
+  const planningCycle=buildPlanningCycle({question,observations});
+  const planGates=planningCycle.holds.length?planningCycle.holds.join(', '):'No missing sampled-domain sources; underlying reconciliation is still a human gate';
+  report.answer+='\n\nPLAN GATES — '+planningCycle.state+'. '+planGates+
+    '. Next: '+planningCycle.steps[0].instruction;
+  if(/\b(forecast|predict|projection|six.month|6.month|next.*month)\b/i.test(question))
+   report.answer+='\n\nFORECAST QUALIFICATION — HOLD: no independently reconciled, complete, signed twelve-month order-unit history is currently exposed by the VAOS bridge. '+planningCycle.forecastReadiness.holds.join(', ')+'.';
+  const data={...report,planningCycle,language:lang,translationQualified:lang==='en',
    languageNote:lang==='en'?'English source-backed report': 'English source-backed report retained if translation verification fails',
    voiceLanguage:lang,observedAt:new Date().toISOString()};
   // Source-bounded agent selects between two existing low-risk plans.

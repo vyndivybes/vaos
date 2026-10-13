@@ -97,3 +97,51 @@ test('JARVIS X review queue lists transparent limitations instead of manufacturi
  assert.ok(x.limitations.includes('SOURCE_FRESHNESS_UNVERIFIED'));
  assert.equal(x.optimization.capacityForecastCertified,false);
 });
+
+test('G2a relation IDs are stable, versioned and cannot imply a verified cause',()=>{
+ const a=buildEvidenceGraph(sample);
+ const b=buildEvidenceGraph([...sample].reverse());
+ assert.equal(a.relationSchemaVersion,'SOURCE_RELATIONS_V1');
+ assert.deepEqual(a.edges.map(x=>x.relationId).sort(),b.edges.map(x=>x.relationId).sort());
+ assert.ok(a.edges.every(x=>/^rel:v1:[A-Z_]+:[A-Z_]+$/.test(x.relationId)));
+ assert.ok(a.edges.every(x=>x.assurance==='UNVERIFIED_DEPENDENCY_HYPOTHESIS'));
+ assert.equal(a.sourceRecordsPersisted,false);
+});
+test('G2a distinguishes gateway-read receipt recency from source-data freshness',()=>{
+ const stamp='2026-10-13T01:00:00.000Z',clock=Date.parse('2026-10-13T01:02:00Z');
+ const result=createJarvisXPreview({observations:[
+  {...sample[0],gatewayReadAt:stamp},
+  {...sample[1],gatewayReadAt:stamp},
+  sample[2]
+ ],reviewSlots:2,now:clock});
+ assert.equal(result.evidenceGraph.nodes[0].gatewayReceipt.status,'RECENT_GATEWAY_READ');
+ assert.equal(result.evidenceGraph.nodes[0].gatewayReceipt.at,stamp);
+ assert.equal(result.evidenceGraph.nodes[0].sourceUpdatedAt,null);
+ assert.equal(result.evidenceGraph.temporalAuthority,'GATEWAY_READ_RECEIPTS_ONLY');
+ assert.equal(result.evidenceFreshness,'UNVERIFIED');
+ assert.equal(result.provenanceReadiness,'RECENT_GATEWAY_RECEIPTS_ONLY');
+ assert.equal(result.productionPlanningEligible,false);
+ assert.equal(result.sourceDataFreshnessCertified,false);
+ assert.doesNotMatch(JSON.stringify(result),/PRIVATE@example.com|47 shortage lines/);
+});
+test('G2a rejects forged, impossible or stale receipts without inferring real source freshness',()=>{
+ const now=Date.parse('2026-10-13T01:02:00Z');
+ for(const stamp of ['2099-01-01T00:00:00.000Z','yesterday',
+  '2026-10-13T00:01:00.000Z']){
+  const result=createJarvisXPreview({observations:[{...sample[0],gatewayReadAt:stamp}],now});
+  assert.notEqual(result.evidenceGraph.nodes[0].gatewayReceipt.status,'RECENT_GATEWAY_READ');
+  assert.equal(result.provenanceReadiness,'READ_RECEIPTS_PARTIAL_OR_STALE');
+  assert.equal(result.sourceDataFreshnessCertified,false);
+ }
+});
+test('G2a never displays a HOLD source as confirmed fresh or qualified for agent task dispatch',()=>{
+ const r=createJarvisXPreview({observations:[
+  {...sample[0],gatewayReadAt:'2026-10-13T01:00:00.000Z'},
+  {...sample[1],gatewayReadAt:'2026-10-13T01:00:00.000Z'},
+  {...sample[2],gatewayReadAt:'2026-10-13T01:00:00.000Z'}
+ ],now:Date.parse('2026-10-13T01:01:00Z')});
+ assert.equal(r.evidenceGraph.nodes[2].gatewayReceipt.status,'NO_OBSERVED_RECEIPT');
+ assert.equal(r.unresolvedDomains.includes('ENGINEERING'),true);
+ assert.equal(r.coordination.dispatchedAgents,0);
+ assert.equal(r.actionAuthorized,false);
+});

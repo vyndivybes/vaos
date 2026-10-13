@@ -25,6 +25,9 @@ function renderRoster(data){
   td.append(button);
   cell(tr,emp.lifecycle);cell(tr,display(emp.work.total));
   cell(tr,display(emp.verifiedClosures?.['90d']??null));cell(tr,emp.audit.status);
+  const op=data.operationalReadiness?.employees?.find(x=>x.id===emp.id);
+  cell(tr,op?.heartbeatStatus==='RECENT_HEARTBEAT_RECORD_ONLY'?'Recent record · runtime unverified':
+   op?.heartbeatStatus==='STALE_HEARTBEAT_RECORD'?'Stale heartbeat':op?'No valid heartbeat':'Not evidenced');
   table.append(tr);
  }
 }
@@ -69,7 +72,9 @@ function renderEmployee(){
   ' · Status: '+emp.lifecycle+' · Qualification: '+(emp.qualificationLevel===null?'not evidenced':'Q'+emp.qualificationLevel)+
   ' · Activity: '+emp.activitySignal),
  element('p','Current assignment: '+display(emp.currentAssignment)),
- element('p','Last independently evidenced activity: '+time(emp.lastVerifiedActivityAt)),
+ element('p','Recorded heartbeat timestamp (NOT independent runtime proof): '+time(emp.lastVerifiedActivityAt)),
+ element('p','Operational proof: '+(latest.operationalReadiness?.employees?.find(x=>x.id===emp.id)?.heartbeatStatus||'NOT_CONNECTED')+
+  '. PASS assessment and ACTIVE lifecycle do not establish verified execution.'),
  element('p','Qualification drills: '+display(emp.trainingWork?.total)+' total · '+display(emp.trainingWork?.completed)+' marked completed (not operational output)'));
  const bars=$('wa-status-bars');bars.replaceChildren();
  const max=Math.max(1,...workLabels.map(([key])=>emp.work[key]??0));
@@ -123,20 +128,34 @@ async function refresh(){
   const data=(await r.json())?.data;
   if(!data||data.schemaVersion!=='VAOS_FOUNDER_ANALYTICS_V1'||data.actionAuthorized!==false||
     !Array.isArray(data.employees)||data.employees.length!==16)throw Error('INVALID_SOURCE');
+  const op=data.operationalReadiness;
+  if(!op||op.schemaVersion!=='VAOS_WORKFORCE_OPERATIONAL_EVIDENCE_V1'||
+   op.actionAuthorized!==false||op.agentDispatchAuthorized!==false||op.operationalRuntimeCertified!==false||
+   !Array.isArray(op.employees)||op.employees.length!==16)
+   throw Error('WORKFORCE_OPERATIONAL_EVIDENCE_UNVERIFIED');
   latest=data;
-  $('wa-status').textContent='Read-only workforce evidence loaded; audit and forecast holds remain.';
+  $('wa-status').textContent='Read-only workforce evidence loaded; independent live operational certification remains HOLD.';
+  $('wa-ops-status').textContent=
+   'Operational runtime NOT certified. '+op.recentHeartbeatRecords24h+
+   '/16 have a recorded heartbeat within 24 hours. '+op.staleHeartbeatRecords24h+
+   ' are stale; '+op.missingOrInvalidHeartbeats+
+   ' are missing/invalid. PASS assessments are recorded evidence, not operational launch approval.';
   $('wa-observed').textContent='Observed '+time(data.observedAt)+' · source coverage '+data.dataCoverage;
   counts($('wa-totals'),[['Employees recorded',data.summary.registered+'/16'],
    ['Planned work',data.summary.planned],['In progress',data.summary.inProgress],
    ['Marked completed',data.summary.completed],['Blocked',data.summary.blocked],
-   ['Verified closures · 90d',data.summary.verifiedClosures90Days]]);
+   ['Verified closures · 90d',data.summary.verifiedClosures90Days],
+   ['Recent heartbeat records · 24h',op.recentHeartbeatRecords24h],
+   ['Qualification records marked PASS',op.assessmentsMarkedPass],
+   ['Recorded level Q3+',op.atLeastQ3Recorded],
+   ['Employees with reviewed departmental audits',op.independentlyAuditedEmployees]]);
   const s=$('wa-select');s.replaceChildren();
   for(const emp of data.employees){const opt=element('option',emp.name);opt.value=emp.id;s.append(opt);}
   if(!data.employees.some(e=>e.id===selection))selection=data.employees[0].id;
   s.value=selection;renderEmployee();
  }catch{
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
-  $('wa-observed').textContent='No validated snapshot';$('wa-totals').replaceChildren();
+  $('wa-observed').textContent='No validated snapshot';$('wa-ops-status').textContent='Operational evidence unavailable; liveness not certified.';$('wa-totals').replaceChildren();
   $('wa-roster').replaceChildren();$('wa-select').replaceChildren();
   for(const id of ['wa-profile','wa-work','wa-status-bars','wa-trend','wa-kpis','wa-forecast','wa-defects','wa-capa-status','wa-capa-cases','wa-audit','wa-qualification','wa-audit-pages','wa-progress','wa-progress-coverage','wa-reports','wa-report-status'])$(id).replaceChildren();
  }finally{$('wa-refresh').disabled=false;}

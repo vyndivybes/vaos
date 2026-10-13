@@ -6,7 +6,7 @@ import {createJarvisCoordinationHandler} from '../apps/web/api/jarvis-coordinati
 import {createSessionToken,SESSION_COOKIE} from '../apps/web/lib/auth.mjs';
 import {createCloudflareApp} from '../apps/web/cloudflare-worker.mjs';
 const now=Date.parse('2026-10-13T12:00:00Z');
-const fixture=()=>({workforce:{digitalEmployees:VAOS_WORKFORCE_AGENT_IDS.map(id=>({id,status:'ACTIVE',qualificationLevel:4,heartbeatAt:'2026-10-13T11:00:00Z',privateNotes:'DO_NOT_EXPORT',qualificationAssessment:{status:'PASS'}}))}});
+const fixture=()=>({workforce:{digitalEmployees:VAOS_WORKFORCE_AGENT_IDS.map(id=>({id,status:'ACTIVE',qualificationLevel:4,heartbeatAt:'2026-10-13T11:00:00Z',privateNotes:'DO_NOT_EXPORT',latestAssessment:{status:'PASS',targetLevel:4,profileId:'ROLE_Q4_V1',scope:'ROLE_SCOPE',assessedAt:'2026-10-13T10:00:00Z',assessedBy:'founder',evidenceRefs:['recorded-reference']}}))}});
 test('canonical owners and independent verifiers are proposals even with recorded PASS/Q4',()=>{
  const x=planJarvisCoordination(fixture(),{now});
  assert.deepEqual(x.reviews.map(r=>[r.domain,r.owner.id,r.verifier.id]),[
@@ -84,5 +84,40 @@ test('complete recorded PASS coverage still never qualifies operational competen
 test('assessment coverage evidence rejects unknown identity, malformed status and excess records',()=>{
  for(const rows of [[{employeeId:'invented',status:'PASS'}],[{employeeId:'qa',status:'pass'}],Array(257).fill({employeeId:'qa',status:'PASS'})]){
   assert.throws(()=>reconcileJarvisAssessmentRows(rows),/ASSESSMENT_COVERAGE_INPUT_INVALID/);
+ }
+});
+
+test('missing latest assessment is visible across canonical 16 IDs and never treated as full coverage',()=>{
+ const s=fixture();s.workforce.digitalEmployees.find(r=>r.id==='orchestrator').latestAssessment=null;
+ const x=planJarvisCoordination(s,{now});
+ assert.equal(x.assessmentCoverage.latestRecordedPassEmployees,15);
+ assert.deepEqual(x.assessmentCoverage.missingOrInvalidPassEmployeeIds,['orchestrator']);
+ assert.equal(x.assessmentCoverage.allSixteenRecorded,false);
+ assert.equal(x.assessmentCoverage.independentEvidenceVerified,false);
+ assert.equal(x.agentDispatchAuthorized,false);
+});
+test('ACTIVE/Q4 alone cannot produce a recorded qualification proposal without a source assessment',()=>{
+ const s=fixture();s.workforce.digitalEmployees.find(r=>r.id==='procurement').latestAssessment=null;
+ const x=planJarvisCoordination(s,{now});
+ assert.equal(x.reviews[0].status,'RECORDED_ASSESSMENT_HOLD');
+ assert.equal(x.reviews[0].owner.recordedFloorMet,true);
+ assert.equal(x.reviews[0].owner.recordedAssessmentFloorMet,false);
+ assert.equal(x.reviews[0].owner.independentCompetenceVerified,false);
+ assert.doesNotMatch(JSON.stringify(x),/recorded-reference|founder/);
+});
+test('future, self-claimed, low-level and malformed assessment records cannot bypass G4 evidence gate',()=>{
+ const replacements=[
+  {status:'FAIL'},
+  {targetLevel:2},
+  {targetLevel:5},
+  {targetLevel:'4'},
+  {assessedAt:'2026-10-14T12:00:00Z'},
+  {assessedAt:'not-a-timestamp'},
+ ];
+ for(const change of replacements){
+  const s=fixture();Object.assign(s.workforce.digitalEmployees.find(r=>r.id==='engineering-configuration').latestAssessment,change);
+  const x=planJarvisCoordination(s,{now});
+  assert.equal(x.reviews[3].status,'RECORDED_ASSESSMENT_HOLD');
+  assert.equal(x.agentDispatchAuthorized,false);
  }
 });

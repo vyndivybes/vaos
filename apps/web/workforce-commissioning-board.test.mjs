@@ -16,3 +16,10 @@ test('Founder workforce action lanes are searchable, source-based, and never exp
  assert.match(js,/\.textContent=/);
  assert.doesNotMatch(js,/fetch\(['"]\/api\/missions['"],\s*\{\s*method:\s*['"]POST/);
 });
+
+test('all chained lint targets run via node --check, never execute source files as shell commands',async()=>{
+ const pkg=JSON.parse(await readFile(new URL('../../package.json',import.meta.url),'utf8'));
+ const commands=pkg.scripts.lint.split('&&').map(x=>x.trim());
+ assert.ok(commands.length>1);
+ assert.ok(commands.every(x=>x.startsWith('node --check ')), 'lint chain contains a non-lint command');
+});

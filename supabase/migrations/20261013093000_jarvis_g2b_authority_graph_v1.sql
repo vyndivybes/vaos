@@ -56,6 +56,8 @@ begin
     'eligibleLinkCount',(select count(*)::int from eligible),
     'heldLegacyLinkCount',(select count(*)::int from vaos_private.digital_thread_links
       where execution_job_id is null or intent_id is null),
+    'unprojectedLinkCount',(select count(*)::int from vaos_private.digital_thread_links)-
+      (select count(*)::int from eligible),
     'links',coalesce((
       select jsonb_agg(jsonb_build_object(
         'id','link:g2b:'||encode(extensions.digest(l.id::text::bytea,'sha256'),'hex'),

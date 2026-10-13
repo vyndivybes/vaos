@@ -27,7 +27,8 @@
     "test:g3-sandbox": "node --test intelligence/g3-synthetic-sandbox.test.mjs intelligence/g3-source-readiness.test.mjs intelligence/g3-quantitative-contract.test.mjs intelligence/g3-cross-source-reconciliation.test.mjs intelligence/g3-provenance-preflight.test.mjs",
     "test:jarvis-evaluation": "node --test intelligence/jarvis-evaluation.test.mjs scripts/qualification/jarvis-paired-evaluation.test.mjs scripts/qualification/jarvis-requirements.test.mjs",
     "test:jarvis-coordination": "node --test intelligence/jarvis-coordination.test.mjs",
-    "test:jarvis-learning-review": "node --test apps/web/api/jarvis-learning-review.test.mjs"
+    "test:jarvis-learning-review": "node --test apps/web/api/jarvis-learning-review.test.mjs",
+    "qualify:workforce-software": "node scripts/qualification/workforce-prelaunch.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.9",

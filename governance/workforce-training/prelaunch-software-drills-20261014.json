@@ -1,0 +1,1267 @@
+{
+  "schemaVersion": "VAOS_PRELAUNCH_SOFTWARE_DRILLS_V1",
+  "observedAt": "2026-10-13T18:39:58.224Z",
+  "sourceCommit": "772de5ff18842b899d7dc2ba920dcd004e9af73e",
+  "catalogVersion": "2.0.0",
+  "environment": "LOCAL_ISOLATED_SYNTHETIC",
+  "networkUsed": false,
+  "productionWrites": false,
+  "qualificationGranted": false,
+  "scope": "Routing and handoff state-machine controls; not employee competence or deployed acceptance",
+  "employeeCount": 16,
+  "jobCount": 107,
+  "employees": [
+    {
+      "employeeId": "orchestrator",
+      "catalogJobs": 9,
+      "assignedAuditRoutes": 5,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "ORCHESTRATOR.INTAKE_MISSION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.DECOMPOSE_MISSION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.ROUTE_WORK",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.MONITOR_MISSION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.REPLAN_MISSION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.ESCALATE_BLOCKER",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.REQUEST_APPROVAL",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.CONSOLIDATE_RESULT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ORCHESTRATOR.CLOSE_MISSION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "release",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "project",
+      "catalogJobs": 10,
+      "assignedAuditRoutes": 4,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "PROJECT.CREATE_WORK_PACKAGE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.UPDATE_PROGRESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.TRACK_DEPENDENCY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.DETECT_DELAY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.FORECAST_COMPLETION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.MANAGE_ACTION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.ESCALATE_RISK",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.ESCALATE_BLOCKER",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.ASSESS_GATE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "release",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROJECT.GENERATE_STATUS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "vibpe",
+      "catalogJobs": 12,
+      "assignedAuditRoutes": 3,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "ENGINEERING.ASSESS_REQUIREMENT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.ANALYSE_GEOMETRY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.ASSESS_MATERIAL",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.RUN_FEA",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.REVIEW_FEA",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.COMPARE_DESIGNS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.ASSESS_CHANGE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.CHECK_CONFIGURATION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.CREATE_VERIFICATION_PLAN",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.REVIEW_TEST_RESULT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.RECOMMEND_BASELINE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.BASELINE_CHANGE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "qa",
+      "catalogJobs": 12,
+      "assignedAuditRoutes": 3,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "QA.VERIFY_RESULT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.OPEN_NONCONFORMANCE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.OPEN_CAPA",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.ANALYSE_ROOT_CAUSE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.DEFINE_CONTAINMENT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.REVIEW_CORRECTIVE_ACTION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.VERIFY_CORRECTIVE_ACTION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.AUDIT_PROCESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.AUDIT_EVIDENCE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.ASSESS_TEST",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "vibpe",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.CLOSE_CAPA",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "QA.REJECT_CLOSURE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "release",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "risk",
+      "catalogJobs": 10,
+      "assignedAuditRoutes": 3,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "RISK.IDENTIFY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.ASSESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.SCORE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.MODEL_SCENARIO",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "vibpe",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.RECOMMEND_MITIGATION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.MONITOR",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.REASSESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.ACCEPT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.ESCALATE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RISK.CLOSE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "security",
+      "catalogJobs": 11,
+      "assignedAuditRoutes": 4,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "SECURITY.OBSERVE_IDENTITY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.AUTHORIZE_IDENTITY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.ASSESS_ACCESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.DETECT_ANOMALY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.REVIEW_SECRET_USE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.REVIEW_PROVIDER",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.RESTRICT_ACCESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.REVOKE_ACCESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.ASSESS_CHANGE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.INVESTIGATE_EVENT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "SECURITY.CLOSE_INCIDENT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "knowledge",
+      "catalogJobs": 10,
+      "assignedAuditRoutes": 3,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "KNOWLEDGE.INGEST_SOURCE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "security",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.CLASSIFY_AUTHORITY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "DIGITAL_THREAD.CREATE_LINK",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.RESOLVE_CONFLICT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.MARK_SUPERSEDED",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.BUILD_CONTEXT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.BUILD_EVIDENCE_PACK",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.DETECT_GAP",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.DETECT_STALE_SOURCE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "KNOWLEDGE.RECONSTRUCT_DECISION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "release",
+      "catalogJobs": 10,
+      "assignedAuditRoutes": 3,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "RELEASE.ASSESS_GATE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.CHECK_EVIDENCE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.CHECK_OPEN_ITEMS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "project",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.CHECK_RISK",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.CHECK_QUALITY",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.CHECK_CONFIGURATION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "vibpe",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.PREPARE_RECOMMENDATION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.DEFINE_CONDITIONS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.REASSESS",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "knowledge",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "RELEASE.OBSERVE_GATE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "commercial",
+      "catalogJobs": 3,
+      "assignedAuditRoutes": 4,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "COMMERCIAL.OBSERVE_PIPELINE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "COMMERCIAL.COMMIT_ORDER",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "production",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "COMMERCIAL.CHANGE_COMMITMENT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "production",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "procurement",
+      "catalogJobs": 3,
+      "assignedAuditRoutes": 4,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "PROCUREMENT.OBSERVE_SHORTAGE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "inventory",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROCUREMENT.CREATE_PO",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "inventory",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PROCUREMENT.CHANGE_PO",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "inventory",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "inventory",
+      "catalogJobs": 3,
+      "assignedAuditRoutes": 4,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "INVENTORY.OBSERVE_STOCK",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "INVENTORY.RESERVE_MATERIAL",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "production",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "INVENTORY.ISSUE_MATERIAL",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "production",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "production",
+      "catalogJobs": 3,
+      "assignedAuditRoutes": 4,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "PRODUCTION.OBSERVE_WIP",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PRODUCTION.RELEASE_JOB",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PRODUCTION.ADVANCE_STAGE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "maintenance",
+      "catalogJobs": 3,
+      "assignedAuditRoutes": 2,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "MAINTENANCE.OBSERVE_ASSET",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "MAINTENANCE.OPEN_WORK_ORDER",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "MAINTENANCE.RETURN_TO_SERVICE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "finance",
+      "catalogJobs": 2,
+      "assignedAuditRoutes": 8,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "FINANCE.OBSERVE_LEDGER",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "FINANCE.PREPARE_PAYMENT",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "risk",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "people",
+      "catalogJobs": 3,
+      "assignedAuditRoutes": 3,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "PEOPLE.OBSERVE_WORKFORCE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "orchestrator",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PEOPLE.PREPARE_PAYROLL",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "finance",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "PEOPLE.CHANGE_EMPLOYEE_MASTER",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "security",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    },
+    {
+      "employeeId": "engineering-configuration",
+      "catalogJobs": 3,
+      "assignedAuditRoutes": 4,
+      "softwareControlDrills": "PASS",
+      "trainingQualification": "PENDING_ROLE_EXERCISES_AND_INDEPENDENT_REVIEW",
+      "productionDataRequiredForIsolatedTraining": false,
+      "qualificationGranted": false,
+      "jobs": [
+        {
+          "actionType": "ENGINEERING.OBSERVE_CONFIGURATION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "vibpe",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.CONFIGURATION_CHANGE",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "vibpe",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        },
+        {
+          "actionType": "ENGINEERING.RELEASE_CONFIGURATION",
+          "softwareDrill": "PASS",
+          "checks": 7,
+          "fixtureVerifier": "qa",
+          "independentEmployeeReviewObserved": false,
+          "roleExecution": "NOT_EXERCISED",
+          "triggerAcceptance": "NOT_EXERCISED"
+        }
+      ],
+      "remaining": [
+        "Representative role task with checked expected outcome",
+        "Authenticated isolated trigger-to-output execution",
+        "Persisted output readback and recovery",
+        "Independent role review",
+        "Device and permission acceptance"
+      ]
+    }
+  ],
+  "evidenceHash": "8ba25f5a8bfdc27514276c1ecadff0b916cc3fa8b41517b8664007d4e00610aa"
+}

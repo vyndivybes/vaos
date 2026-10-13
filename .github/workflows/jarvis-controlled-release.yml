@@ -1,0 +1,45 @@
+name: JARVIS Controlled Release
+on:
+  workflow_dispatch:
+    inputs:
+      expected_sha:
+        description: Reviewed exact main commit to release
+        required: true
+        type: string
+permissions:
+  contents: read
+concurrency:
+  group: vaos-controlled-worker-deploy
+  cancel-in-progress: false
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e20ce7032f6475caaf1197b09d3fe164
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      EXPECTED_SHA: ${{ inputs.expected_sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require exact reviewed main and existing credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+          test -n "$CLOUDFLARE_API_TOKEN"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Full regression before release
+        run: npm test
+      - name: Recheck main before deployment
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$EXPECTED_SHA"
+      - name: Deploy existing Worker with governance controls retained
+        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc

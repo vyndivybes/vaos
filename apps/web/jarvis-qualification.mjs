@@ -72,3 +72,29 @@ async function load(){
 }
 refresh?.addEventListener('click',load);
 if(root)load();
+let coordinationBusy=false;
+async function loadCoordination(){
+ const state=$('g4-coordination-status'),reviews=$('g4-coordination-reviews');
+ if(!state||!reviews||coordinationBusy)return;
+ coordinationBusy=true;reviews.replaceChildren();
+ state.textContent='Reading recorded workforce qualifications. No dispatch requested.';
+ try{
+  const response=await fetch('/api/jarvis-coordination',{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+  if(!response.ok)throw Error();
+  const {data}=await response.json();
+  if(data?.schemaVersion!=='VAOS_JARVIS_COORDINATION_PROPOSAL_V1'||data.agentDispatchAuthorized!==false||!Array.isArray(data.reviews))throw Error();
+  for(const row of data.reviews){
+   reviews.append(node('li',row.domain+': '+row.owner.id+' with '+row.verifier.id+' as proposed verifier. '+
+    (row.status==='REVIEW_PROPOSAL_ONLY'?'Recorded role floors met.':'Recorded qualification on hold.')+
+    ' Heartbeat evidence: owner '+row.owner.heartbeatEvidence+', verifier '+row.verifier.heartbeatEvidence+'.'+
+    ' Independent competence, source evidence, founder workflow approval and durable handoff remain required.'));
+  }
+  state.textContent='Recorded workforce evidence read at '+new Date(data.observedAt).toLocaleString()+'. Proposals only. No agents dispatched or qualifications awarded.';
+  state.dataset.state='hold';
+ }catch{
+  reviews.replaceChildren();state.dataset.state='unavailable';
+  state.textContent='Coordination evidence unavailable. Founder sign-in and a complete authoritative roster are required. No readiness inferred.';
+ }finally{coordinationBusy=false;}
+}
+refresh?.addEventListener('click',loadCoordination);
+if(root)loadCoordination();

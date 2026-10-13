@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="theme-color" content="#101318"/><meta name="description" content="VAOS governed founder command drafting and agent monitoring"/>
 <link rel="manifest" href="/manifest.webmanifest"/><link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp"/>
-<link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/><link rel="stylesheet" href="/operations-refresh.css"/>
+<link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/><link rel="stylesheet" href="/operations-refresh.css"/><link rel="stylesheet" href="/jarvis-qualification.css?v=20261013-g31e-v1"/>
 <title>VAOS · Founder Command</title></head><body class="founder-body">
 <header class="founder-header"><a href="/workspace" class="founder-back">← Workspace</a><div><small>VĀYŪ SHASTR</small><strong>Founder Command</strong></div><span class="founder-mode">Governed draft mode</span></header>
 <nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
@@ -10,9 +10,42 @@
   <a href="/mission-status.html" >Mission tracking</a>
   <a href="/agent-supervision.html" >Agent monitoring</a>
   <a href="/founder-console.html" aria-current="page">Founder command lab</a>
+  <a href="#g3-intelligence-panel">JARVIS X qualification</a>
 </nav><main class="founder-shell" id="founder-shell" hidden>
  <section class="va-ops-explain"><h2>What is Founder Command for?</h2><p>This is the advanced instruction and governance workspace: draft requests, record them when permitted, inspect evidence, and run separately qualified voice pilots. Recording a draft is <strong>not</strong> dispatch. Day-to-day questions now belong in <a href="/workspace">Ask VAOS on the main dashboard</a>; approvals and transactions still use independent controls.</p></section>
- <section class="founder-panel"><h2>Workforce Analytics &amp; Individual Audit Oversight</h2><p>View all 16 AI employees, their recorded work distribution, independently verified closures, adaptive role KPIs, departmental audit scope, progress evidence and forecast qualification holds.</p><p><a href="/workforce-analytics.html" class="founder-back">Open Workforce Analytics &amp; Individual Audit Dashboards →</a></p></section>\n <section class="founder-heading"><p>VAOS · DIGITAL WORKFORCE</p><h1>Direct agent command</h1><span>Select an employee and prepare an instruction, report request, or override proposal. Messages may be saved to the founder inbox when commissioned; they are not yet dispatched to agents.</span></section>
+ <section class="founder-panel"><h2>Workforce Analytics &amp; Individual Audit Oversight</h2><p>View all 16 AI employees, their recorded work distribution, independently verified closures, adaptive role KPIs, departmental audit scope, progress evidence and forecast qualification holds.</p><p><a href="/workforce-analytics.html" class="founder-back">Open Workforce Analytics &amp; Individual Audit Dashboards →</a></p></section>\n 
+ <section class="founder-panel g3-intelligence" id="g3-intelligence-panel" aria-labelledby="g3-title">
+  <header class="g3-intro">
+   <div><p class="founder-hint">JARVIS X · G3.1D / G3.1E</p>
+    <h2 id="g3-title">Intelligence &amp; Qualification</h2>
+    <p>Founder-only live source observations, quantitative validation, discrepancy review and evidence readiness.
+    A recently retrieved row is not a certified source revision, approved engineering configuration or reliable production forecast.</p>
+   </div>
+   <button type="button" id="g3-refresh">Refresh qualification evidence</button>
+  </header>
+  <p class="g3-state" id="g3-evidence-status" role="status" aria-live="polite" data-state="loading">Awaiting founder-authorized evidence check.</p>
+  <div id="g3-metrics" class="g3-metrics" aria-label="Current readiness indicators"></div>
+  <section aria-labelledby="g3-source-heading">
+   <h3 id="g3-source-heading">Source authority &amp; provenance</h3>
+   <p class="g3-subheading">Four signed gateway observations, with independently unverified source timestamps, units, revisions and completeness. Sample counts are not enterprise totals.</p>
+   <div class="g3-table-wrap"><table>
+     <caption class="g3-subheading">Each source remains uncertified for production optimization</caption>
+     <thead><tr><th>Department</th><th>Gateway</th><th>Receipt</th><th>Input status</th><th>Rows</th><th>Valid</th><th>Revision hints</th><th>Time hints</th><th>Pagination</th><th>Complete proof</th></tr></thead>
+     <tbody id="g3-domain-rows"></tbody>
+   </table></div>
+  </section>
+  <section aria-labelledby="g3-cross-heading"><h3 id="g3-cross-heading">Observed reconciliation &amp; discrepancies</h3>
+   <p class="g3-subheading">Read-only comparisons from bounded samples. Missing matches do not prove records are absent from the authoritative ledgers.</p>
+   <ul id="g3-cross-rows" class="g3-cross"></ul>
+  </section>
+  <section aria-labelledby="g3-action-heading"><h3 id="g3-action-heading">Corrective actions &amp; commissioning holds</h3>
+   <ol class="g3-priorities" id="g3-priorities"></ol>
+  </section>
+  <p class="g3-state"><strong>Release gate: HOLD.</strong> No production optimization, autonomous business mutations, engineering approval, independent G2b recovery or G3.1F forecast certification is granted by this display.</p>
+  <div class="g3-links"><a href="/workforce-analytics.html">16-employee audits ↗</a><a href="/mission-status.html">Mission evidence ↗</a><a href="/workspace">VAOS Command Centre ↗</a></div>
+ </section>
+
+ <section class="founder-heading"><p>VAOS · DIGITAL WORKFORCE</p><h1>Direct agent command</h1><span>Select an employee and prepare an instruction, report request, or override proposal. Messages may be saved to the founder inbox when commissioned; they are not yet dispatched to agents.</span></section>
  <div class="founder-layout"><aside class="founder-panel"><h2>Select digital employee</h2><label for="agent">Agent</label><select id="agent"></select><p class="founder-hint">A roster entry does not prove an agent is qualified or running.</p><button id="refresh" type="button" class="secondary">Refresh agent status</button><p id="agent-status" aria-live="polite">Status not yet checked</p></aside>
  <section class="founder-panel"><h2>Prepare direct instruction</h2><form id="command-form"><label for="command-kind">Request type</label><select id="command-kind"><option value="INSTRUCTION">Direct instruction</option><option value="REPORT_REQUEST">Request report</option><option value="OVERRIDE_PROPOSAL">Founder override proposal (not applied)</option></select><label for="instruction">Instruction</label><textarea id="instruction" maxlength="2000" rows="7" required minlength="5" placeholder="State the objective, scope, required evidence and deadline."></textarea><button type="submit">Prepare command draft</button></form><div id="draft-panel" class="founder-draft" hidden><h3>Prepared · NOT SENT</h3><pre id="draft-output"></pre><button id="copy-draft" type="button" class="secondary">Copy draft</button><button id="record-draft" type="button">Record in VAOS inbox (not routed)</button></div><p id="command-message" role="status" aria-live="polite"></p></section></div>
  <section class="founder-panel"><h2>Recorded messages for selected employee</h2><button type="button" id="refresh-history" class="secondary">Refresh recorded messages</button><div id="recorded-history" aria-live="polite">No records loaded. Recorded messages are not agent replies.</div></section><section class="founder-panel"><h2>Read-only report preview</h2>
@@ -100,4 +133,4 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <p id="voice-pilot-status" role="status" aria-live="polite">Voice qualification not checked.</p>
 <p id="voice-audio-diagnostics" class="founder-hint" role="status" aria-live="polite">Sound diagnostic not run. These controls never send instructions or access mission data.</p>
 </section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
-</main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/voice-pilot-browser.mjs"></script></body></html>
+</main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/jarvis-qualification.mjs?v=20261013-g31e-v1"></script><script type="module" src="/voice-pilot-browser.mjs"></script></body></html>

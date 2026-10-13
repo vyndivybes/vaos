@@ -1,5 +1,6 @@
 import { resolveCommand } from './command-router.mjs?v=20261008-q2-workforce';
 import {showGroupDashboard} from './group-dashboard.mjs?v=20261012-group';
+import {renderModuleDashboard} from './module-dashboard.mjs';
 
 const shell = document.querySelector('#control-shell');
 const loading = document.querySelector('#workspace-loading');
@@ -611,7 +612,14 @@ function setView(view, { push = true } = {}) {
   currentView = module.id;
   moduleTitle.textContent = module.label; moduleGroup.textContent = module.group; moduleDescription.textContent = module.description;
   commandView.hidden = module.id !== 'command'; moduleView.hidden = module.id === 'command';
-  if (module.id !== 'command') renderModule(module);
+  if (module.id !== 'command') {
+    renderModule(module);
+    const analytics=document.querySelector('#module-evidence-analytics');
+    if(analytics){
+      if(['portfolio','crm','hr','finance','supply-chain','manufacturing'].includes(module.id))analytics.hidden=true;
+      else renderModuleDashboard(analytics,module,model);
+    }
+  }
   renderNavigation();
   if (push) {
     const url = new URL(window.location.href);

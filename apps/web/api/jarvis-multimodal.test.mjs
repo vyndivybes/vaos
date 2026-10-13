@@ -20,7 +20,7 @@ test('same contract allows bounded documents and rejects file-type spoofing',()=
  assert.ok(validateDocumentUpload({name:'notes.exe',base64:pdf}));
 });
 test('founder-only preview gate protects conversion and vision',async()=>{
- const disabled=harness({control:undefined});assert.equal((await disabled.run('CONVERT_DOCUMENT',{name:'notes.pdf',base64:pdf,confirm:true})).status,409);assert.equal(disabled.invocations.length,0);
+ const disabled=harness({control:'off'});assert.equal((await disabled.run('CONVERT_DOCUMENT',{name:'notes.pdf',base64:pdf,confirm:true})).status,409);assert.equal(disabled.invocations.length,0);
  const stranger=harness({email:'kaaviyam1519@gmail.com'});assert.equal((await stranger.run('CONVERT_DOCUMENT',{name:'notes.pdf',base64:pdf,confirm:true})).status,403);
  const noSession=harness({email:''});assert.equal((await noSession.run('ANALYZE_IMAGE',{image,question:'Read this picture',confirm:true})).status,401);
  const origin=harness();assert.equal((await origin.run('ANALYZE_IMAGE',{image,question:'Explain this image',confirm:true},'https://evil.test')).status,403);
@@ -40,7 +40,7 @@ test('vision uses image in user content parts and validates consent',async()=>{
  assert.equal((await h.run('ANALYZE_IMAGE',{image,question:'Explain this drawing',confirm:false})).status,400);
 });
 test('status exposes truthful readiness but never offers unchecked data write power',async()=>{
- const disabled=harness({control:undefined});const r=await disabled.run();
+ const disabled=harness({control:'off'});const r=await disabled.run();
  assert.equal(r.status,200);assert.equal(r.body.data.enabled,false);assert.equal(r.body.data.writeAuthorized,false);
 });
 

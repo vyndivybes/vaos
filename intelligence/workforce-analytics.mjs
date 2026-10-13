@@ -66,6 +66,7 @@ export function buildWorkforceAnalytics(raw){
    lastVerifiedActivityAt:entry?.lastVerifiedActivityAt||null,
    currentAssignment:entry?.currentAssignment||null,
    sourceStatus:entry?'RECORDED':'NOT_OBSERVED',work:entry?.work||missingWork(),
+   trainingWork:entry?.trainingWork&&Number.isSafeInteger(entry.trainingWork.total)?entry.trainingWork:null,
    workItems:entry?.workItems||[],configuredKpis:jobKpis(id),audit,
    defects:{status:'SOURCE_NOT_LINKED',open:null,closed:null},
    verifiedClosures:entry?entry.closures:null,

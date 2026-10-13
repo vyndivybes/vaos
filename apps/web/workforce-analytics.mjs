@@ -110,7 +110,7 @@ function renderEvidencePriorities(data){
 function workboardRow(host,title,notes,agent=null,url=null){
  const row=element('article',undefined,'wa-action-row');row.dataset.search=[title,...notes].join(' ').toLowerCase();
  row.append(element('strong',title));for(const note of notes)row.append(element('p',note));
- if(typeof url==='string'&&/^\\/mission-status\\.html\\?missionId=[a-zA-Z0-9%._:-]+$/.test(url)){
+ if(typeof url==='string'&&url.startsWith('/mission-status.html?missionId=')&&url.length<150){
   const link=element('a','Review source mission ↗');link.href=url;row.append(link);
  }
  if(agent&&latest?.employees?.some(x=>x.id===agent)){

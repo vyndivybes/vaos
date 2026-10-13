@@ -96,13 +96,15 @@ function renderEmployeeCharts(emp){
  root.append(columns);
 }
 
+const evidenceLabels={INDEPENDENT_AUDIT:'Independent audit not verified',AUDIT_RECORD:'Audit record absent',FORECAST_EVIDENCE:'Forecast evidence missing',OPERATIONAL_REPORT:'Operational report not independently qualified',COMPETENCE_ASSESSMENT:'Competence assessment not qualified'};
+const evidenceLabel=code=>evidenceLabels[code]||String(code).replace(/_/g,' ');
 function renderEvidencePriorities(data){
  const host=$('wa-evidence-priorities');host.replaceChildren();
  const entries=Array.isArray(data?.evidencePriorities)?data.evidencePriorities:[];
  if(entries.length!==16){host.append(element('p','Evidence priority matrix is missing or incomplete. Employee qualification remains HOLD.'));return;}
  const gaps=new Map();
  for(const x of entries)for(const tag of x.missing||[])gaps.set(tag,(gaps.get(tag)||0)+1);
- counts(host,[['Employees requiring review',entries.filter(x=>x.status==='HOLD').length+'/16'],...([...gaps].sort((a,b)=>b[1]-a[1]).map(([name,n])=>[name.replace(/_/g,' '),n]))]);
+ counts(host,[['Employees requiring review',entries.filter(x=>x.status==='HOLD').length+'/16'],...([...gaps].sort((a,b)=>b[1]-a[1]).map(([name,n])=>[evidenceLabel(name),n]))]);
 }
 function renderEmployee(){
  if(!latest)return;
@@ -114,7 +116,7 @@ function renderEmployee(){
  if(!entry){gate.append(element('p','No independent evidence-priority record for this employee. Qualification HOLD.'));}
  else{
   gate.append(element('strong',entry.status==='HOLD'?'Evidence HOLD · independent review needed':'Records present · independent review still needed'));
-  const list=element('ul');for(const missing of entry.missing||[])list.append(element('li',missing.replace(/_/g,' ')));if(!list.children.length)list.append(element('li','No recorded gaps under this limited check; not a certification.'));gate.append(list);
+  const list=element('ul');for(const missing of entry.missing||[])list.append(element('li',evidenceLabel(missing)));if(!list.children.length)list.append(element('li','No recorded gaps under this limited check; not a certification.'));gate.append(list);
  }
  $('wa-profile').replaceChildren();
  $('wa-profile').append(element('strong',emp.name),element('p','Department: '+display(emp.department)+

@@ -78,3 +78,46 @@ test('G2b SQL projection contains no raw context/creator, is identity-gated, lea
  assert.doesNotMatch(sql,/jsonb_build_object\([^;]*'context',\s*l\.context/is);
  assert.doesNotMatch(sql,/jsonb_build_object\([^;]*'createdBy',\s*l\.created_by/is);
 });
+
+test('directed graph paths retain holds, reject contradictory node domains and never reverse links',async()=>{
+ const {queryGraphPaths}=await import('./jarvis-graph-paths.mjs');
+ const q={from:'PROJECT_RISK',to:'ENGINEERING_BASELINE'};
+ const result=queryGraphPaths(fixture,q);
+ assert.equal(result.paths.length,1);
+ assert.equal(result.enterpriseGraphComplete,false);
+ assert.equal(result.sourceRecordVersionsVerified,false);
+ assert.equal(result.heldLegacyLinkCount,2);
+ assert.equal(queryGraphPaths(fixture,{from:q.to,to:q.from}).status,'NO_PATH_OBSERVED');
+ for(const from of ['ALL','private@example.com',q.to])assert.throws(()=>queryGraphPaths(fixture,{from,to:q.to}));
+ const bad={...fixture,eligibleLinkCount:2,links:[...fixture.links,{...fixture.links[0],id:'link:g2b:'+('c'.repeat(64)),sourceDomain:'QA_CAPA'}]};
+ assert.throws(()=>queryGraphPaths(bad,q));
+});
+test('graph traversal stops at four hops, avoids cycles and reports path truncation',async()=>{
+ const {queryGraphPaths}=await import('./jarvis-graph-paths.mjs');
+ const node=n=>'node:g2b:'+n.toString(16).padStart(64,'0');
+ const edge=(n,a,b,sd,td)=>({...fixture.links[0],id:'link:g2b:'+n.toString(16).padStart(64,'0'),source:node(a),target:node(b),sourceDomain:sd,targetDomain:td});
+ const snap=links=>({...fixture,eligibleLinkCount:links.length,links});
+ const q={from:'QA_CAPA',to:'PROJECT_RISK'};
+ const links=[edge(1,1,2,'QA_CAPA','ENGINEERING_BASELINE'),edge(2,2,1,'ENGINEERING_BASELINE','QA_CAPA'),edge(3,2,3,'ENGINEERING_BASELINE','PROJECT_RISK')];
+ assert.equal(queryGraphPaths(snap(links),q).paths.length,1);
+ const many=Array.from({length:11},(_,i)=>edge(i+1,1,i+2,'QA_CAPA','PROJECT_RISK'));
+ const result=queryGraphPaths(snap(many),q);
+ assert.equal(result.paths.length,10);assert.equal(result.pathLimitReached,true);assert.equal(result.boundedSearchComplete,false);
+ const chain=Array.from({length:5},(_,i)=>edge(i+1,i+1,i+2,i===0?'QA_CAPA':'ENGINEERING_BASELINE',i===4?'PROJECT_RISK':'ENGINEERING_BASELINE'));
+ assert.equal(queryGraphPaths(snap(chain),q).paths.length,0);
+ const dense=[];let id=0;
+ for(let a=2;a<=11;a++)dense.push(edge(++id,1,a,'QA_CAPA','ENGINEERING_BASELINE'));
+ for(let a=2;a<=11;a++)for(let b=2;b<=11;b++)if(a!==b)dense.push(edge(++id,a,b,'ENGINEERING_BASELINE','ENGINEERING_BASELINE'));
+ const bounded=queryGraphPaths(snap(dense),q);
+ assert.equal(bounded.searchLimited,true);assert.equal(bounded.expansions,1000);
+});
+test('path handler rejects malformed queries before reading and preserves founder protection',async()=>{
+ const request=url=>({method:'GET',url,headers:{cookie:SESSION_COOKIE+'='+createSessionToken('shyamsundhar1982@gmail.com')},env:{VAOS_VOICE_CONTROL:'founder-readonly-browser-v1',SUPABASE_URL:'https://project.supabase.co',VAOS_DB_RPC_SECRET:'key'}});
+ let calls=0;const handler=createJarvisGraphHandler({read:async()=>{calls++;return validatePersistentGraph(fixture)}});
+ const run=async req=>{const state={};const res={setHeader(){},status(n){state.status=n;return res},json(v){state.payload=v;return res}};await handler(req,res);return state};
+ for(const query of ['mode=paths','mode=paths&from=ALL&to=QA_CAPA','mode=paths&from=QA_CAPA&to=PROJECT_RISK&approve=true','mode=paths&from=QA_CAPA&from=PROJECT_RISK&to=PROJECT_RISK'])assert.equal((await run(request('/api/jarvis-authority-graph?'+query))).status,400);
+ assert.equal(calls,0);
+ const url='/api/jarvis-authority-graph?mode=paths&from=PROJECT_RISK&to=ENGINEERING_BASELINE';
+ assert.equal((await run({...request(url),headers:{}})).status,401);
+ const result=await run(request(url));assert.equal(result.status,200);assert.equal(result.payload.data.paths.length,1);assert.equal(calls,1);
+});

@@ -44,6 +44,7 @@ import businessAdvisor from './api/business-advisor.mjs';
 import adaptiveIntelligence from './api/adaptive-intelligence.mjs';
 import jarvisAuthorityGraph from './api/jarvis-authority-graph.mjs';
 import jarvisSourceAudit from './api/jarvis-source-audit.mjs';
+import jarvisG3Readiness from './api/jarvis-g3-readiness.mjs';
 import engineeringKnowledge from './api/engineering-knowledge.mjs';
 import groupPortfolio from './api/group-portfolio.mjs';
 import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
@@ -107,6 +108,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/adaptive-intelligence': adaptiveIntelligence,
   '/api/jarvis-authority-graph': jarvisAuthorityGraph,
   '/api/jarvis-source-audit': jarvisSourceAudit,
+  '/api/jarvis-g3-readiness': jarvisG3Readiness,
   '/api/engineering-knowledge': engineeringKnowledge,
   '/api/group-portfolio': groupPortfolio,
   '/api/voice-evidence-ai': voiceEvidenceAi,

@@ -38,6 +38,21 @@ const NEXT=Object.freeze({
  PEOPLE:'Validate competency and staffing assignments against planned work.',
  ENGINEERING:'Check VEDM release authority, material qualification and VIBPE validation limitations.'
 });
+const RECEIPT_MAX_AGE_MS=5*60*1000;
+function gatewayReceipt(row,clock){
+ // The timestamp is generated only after a successful authorized gateway
+ // read. Never confuse it with record-created or source-updated times.
+ if(row.status!=='OBSERVED')return Object.freeze({at:null,ageSeconds:null,status:'NO_OBSERVED_RECEIPT'});
+ const stamp=row.gatewayReadAt;
+ const parsed=typeof stamp==='string'&&/^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$/.test(stamp)
+  ?Date.parse(stamp):NaN;
+ const possible=Number.isFinite(parsed)&&new Date(parsed).toISOString()===stamp;
+ const age=Number.isFinite(clock)&&possible?clock-parsed:NaN;
+ if(!Number.isFinite(age)||age<0)return Object.freeze({
+  at:null,ageSeconds:null,status:'INVALID_OR_UNVERIFIED_GATEWAY_RECEIPT'});
+ return Object.freeze({at:stamp,ageSeconds:Math.floor(age/1000),
+  status:age<=RECEIPT_MAX_AGE_MS?'RECENT_GATEWAY_READ':'STALE_GATEWAY_READ'});
+}
 function validObservations(rows){
  return Array.isArray(rows)&&rows.length<=3&&new Set(rows.map(x=>x?.tool)).size===rows.length&&
   rows.every(x=>x&&ALLOWED.has(x.tool)&&['OBSERVED','HOLD'].includes(x.status)&&
@@ -47,20 +62,26 @@ function validObservations(rows){
  * from governance schema, not evidence that one event caused another.
  * No source summaries, customer data, or record contents are copied.
  */
-export function buildEvidenceGraph(observations=[]){
+export function buildEvidenceGraph(observations=[],{now=Date.now()}={}){
  if(!validObservations(observations))throw Error('JARVIS_X_EVIDENCE_INVALID');
  const nodes=observations.map(x=>Object.freeze({
-  id:x.tool,status:x.status,authority:x.status==='OBSERVED'?AUTHORITIES[x.tool]:null
+  id:x.tool,status:x.status,authority:x.status==='OBSERVED'?AUTHORITIES[x.tool]:null,
+  gatewayReceipt:gatewayReceipt(x,now),sourceUpdatedAt:null,sourceAgeVerified:false
  }));
  const ids=new Set(nodes.map(n=>n.id));
  const edges=DEPENDENCIES.filter(([a,b])=>ids.has(a)&&ids.has(b)).map(([from,to])=>({
-  from,to,assurance:'UNVERIFIED_DEPENDENCY_HYPOTHESIS'
+  from,to,relationId:'rel:v1:'+from+':'+to,
+  assurance:'UNVERIFIED_DEPENDENCY_HYPOTHESIS'
  }));
  return Object.freeze({
   graphAuthority:'TRANSIENT_SOURCE_STATUS_ONLY',
+  relationSchemaVersion:'SOURCE_RELATIONS_V1',sourceRecordsPersisted:false,
   nodes,edges,observedCount:nodes.filter(n=>n.status==='OBSERVED').length,
   holdCount:nodes.filter(n=>n.status==='HOLD').length,
-  temporalAuthority:'NO_TRUSTED_SOURCE_TIMESTAMPS',
+  temporalAuthority:nodes.some(x=>x.gatewayReceipt.at!==null)
+   ?'GATEWAY_READ_RECEIPTS_ONLY':'NO_TRUSTED_SOURCE_TIMESTAMPS',
+  gatewayReadCoverage:nodes.filter(x=>x.gatewayReceipt.status==='RECENT_GATEWAY_READ').length,
+  sourceDataFreshnessCertified:false,
   causalRelationshipsVerified:false,persistentGraphCreated:false
  });
 }
@@ -115,8 +136,8 @@ export function planGovernedAgentReviews(graph){
   qualificationRequired:true
  });
 }
-export function createJarvisXPreview({observations=[],reviewSlots=2}={}){
- const evidenceGraph=buildEvidenceGraph(observations);
+export function createJarvisXPreview({observations=[],reviewSlots=2,now=Date.now()}={}){
+ const evidenceGraph=buildEvidenceGraph(observations,{now});
  const coordination=planGovernedAgentReviews(evidenceGraph);
  const reviewActions=evidenceGraph.nodes.filter(x=>x.status==='OBSERVED').map(x=>({
   id:'REVIEW_'+x.id,owner:x.id,evidenceStatus:x.status,
@@ -125,6 +146,10 @@ export function createJarvisXPreview({observations=[],reviewSlots=2}={}){
  const optimization=optimizeReviewQueue(reviewActions,{reviewSlots});
  const status=evidenceGraph.observedCount>0?'REVIEW_PREVIEW':'HOLD';
  const chosen=optimization.selected.map(x=>x.owner);
+ const observedNodes=evidenceGraph.nodes.filter(x=>x.status==='OBSERVED');
+ const provenanceReadiness=observedNodes.length===0?'READ_RECEIPTS_MISSING'
+  :observedNodes.every(x=>x.gatewayReceipt.status==='RECENT_GATEWAY_READ')
+   ?'RECENT_GATEWAY_RECEIPTS_ONLY':'READ_RECEIPTS_PARTIAL_OR_STALE';
  const unresolvedDomains=evidenceGraph.nodes.filter(x=>x.status==='HOLD').map(x=>x.id);
  const limitations=Object.freeze(['NO_REAL_COST_OR_CAPACITY_OPTIMIZATION',
   'NO_CAUSAL_PROOF','SOURCE_FRESHNESS_UNVERIFIED','NO_AGENT_QUALIFICATION_PROOF']);
@@ -134,10 +159,13 @@ export function createJarvisXPreview({observations=[],reviewSlots=2}={}){
    evidenceGraph.holdCount+' on HOLD. Hypothetical review budget: '+reviewSlots+
    ' abstract review slots, NOT staff hours or production capacity; source freshness not verified. Review first: '+
    (chosen.length?chosen.join(', '):'none')+
-   '. Dependencies are unverified schema hypotheses, not causes. No agent dispatched or business action taken.';
+   '. Dependencies are unverified schema hypotheses, not causes. Gateway receipt: '+
+   (provenanceReadiness==='RECENT_GATEWAY_RECEIPTS_ONLY'?'recent only; source age unknown':'unverified or stale')+
+   '. No agent dispatched or business action taken.';
  return Object.freeze({
   status,evidenceGraph,optimization,coordination,brief,
   evidenceFreshness:'UNVERIFIED',unresolvedDomains,limitations,
+  provenanceReadiness,sourceDataFreshnessCertified:false,
   autonomousOperationsEnabled:false,productionPlanningEligible:false,
   mode:'READ_ONLY_ADVISORY_PREVIEW',
   qualifiedForProductionOptimization:false,

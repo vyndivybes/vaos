@@ -191,6 +191,9 @@ Deno.serve(async (req: Request) => {
   } else if (operation === 'snapshot') {
     rpcName = 'vaos_control_snapshot'
     args = { p_server_key: serverKey }
+  } else if (operation === 'jarvisSourceAudit') {
+    rpcName = 'vaos_jarvis_source_audit'
+    args = { p_server_key: serverKey }
   } else if (operation === 'jarvisAuthorityGraph') {
     // Existing leased, governed persistent graph links; read-only.
     // A dedicated SQL RPC verifies the server key and omits sensitive fields.

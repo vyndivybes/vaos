@@ -1,6 +1,7 @@
 api/
 lib/*
 !lib/mission-status-model.mjs
+!lib/g4-handoff-audit.mjs
 !lib/voice-pilot.mjs
 !lib/voice-pilot-controller.mjs
 !lib/voice-one-shot.mjs

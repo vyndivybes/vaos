@@ -1,4 +1,5 @@
 import { summarizeMissionSnapshot } from './lib/mission-status-model.mjs?v=20261008-v1';
+import {summarizeG4HandoffTrail} from './lib/g4-handoff-audit.mjs';
 
 const form = document.querySelector('#mission-lookup');
 const idInput = document.querySelector('#mission-id');
@@ -42,6 +43,39 @@ function render(status) {
   }
 }
 
+function renderG4Evidence(snapshot) {
+  const audit=summarizeG4HandoffTrail(snapshot);
+  const section=document.querySelector('#g4-handoff-audit');
+  section.hidden=false;
+  setText('#g4-handoff-category',
+    audit.trainingOnly
+      ? 'TRAINING-ONLY · Recorded handoff evidence cannot certify operational competence.'
+      : 'NON-TRAINING MISSION · Source provenance and independent acceptance remain unverified.');
+  setText('#g4-chain-count', audit.recordedCompleteChains+' / '+audit.totalHandoffs);
+  setText('#g4-dissent-count', audit.recordedDissentCount+' recorded');
+  setText('#g4-acceptance', 'HOLD');
+  setText('#g4-evidence-holds',audit.holds.join(' · ').replaceAll('_',' '));
+  const tbody=document.querySelector('#g4-handoff-list');
+  tbody.replaceChildren();
+  for (const entry of audit.handoffs) {
+    const row=document.createElement('tr');
+    rowCell(row,entry.id);
+    rowCell(row,entry.ownerId);
+    rowCell(row,entry.checkerId);
+    rowCell(row,entry.trailStatus==='RECORDED_CHAIN_COMPLETE_ONLY'
+      ? 'Recorded events complete; identity not independently authenticated'
+      : 'Incomplete or contradictory recorded chain');
+    rowCell(row,entry.dissentRecorded?'Recorded — review required':'Not recorded in event trail');
+    tbody.appendChild(row);
+  }
+  if(!audit.handoffs.length){
+    const row=document.createElement('tr');
+    rowCell(row,'No persisted handoffs for this mission');
+    rowCell(row,'—');rowCell(row,'—');rowCell(row,'No chain to assess');rowCell(row,'—');
+    tbody.appendChild(row);
+  }
+}
+
 async function fetchMission(missionId) {
   if (reading || !missionId) return;
   reading = true;
@@ -60,6 +94,16 @@ async function fetchMission(missionId) {
     const envelope = await response.json();
     const view = summarizeMissionSnapshot(envelope.data);
     render(view);
+    try { renderG4Evidence(envelope.data); }
+    catch {
+      document.querySelector('#g4-handoff-audit').hidden=false;
+      setText('#g4-handoff-category','Source event lineage could not be validated; G4 acceptance remains HOLD.');
+      setText('#g4-chain-count','UNVERIFIED');
+      setText('#g4-dissent-count','UNVERIFIED');
+      setText('#g4-acceptance','HOLD');
+      setText('#g4-evidence-holds','The authoritative event log is unavailable or internally inconsistent. No G4 completion can be inferred.');
+      document.querySelector('#g4-handoff-list').replaceChildren();
+    }
     message.textContent = view.readyForClosure
       ? 'Evidence-backed closure readiness confirmed. Final human authorisation remains required.'
       : 'Read-only snapshot loaded. Awaiting remaining work and independent reviews.';

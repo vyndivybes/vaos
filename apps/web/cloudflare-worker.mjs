@@ -32,6 +32,7 @@ import slackQualification from './api/slack-qualification.mjs';
 import slackAgentStatus from './api/slack-agent-status.mjs';
 import zapierWebhook from './api/zapier-webhook.mjs';
 import langgraph from './api/langgraph.mjs';
+import workforceAnalytics from './api/workforce-analytics.mjs';
 import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
 import founderChat from './api/founder-chat.mjs';
@@ -96,6 +97,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/google-workspace/callback': googleWorkspace,
   '/api/google-workspace/brief': googleWorkspace,
   '/api/langgraph': langgraph,
+  '/api/workforce-analytics': workforceAnalytics,
   '/api/founder-inbox': founderInbox,
   '/api/founder-agent-report': founderAgentReport,
   '/api/founder-chat': founderChat,

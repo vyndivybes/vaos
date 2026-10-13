@@ -23,8 +23,8 @@ function renderRoster(data){
   const td=cell(tr,'');const button=element('button',emp.name);button.type='button';
   button.addEventListener('click',()=>{selection=emp.id;$('wa-select').value=selection;renderEmployee();});
   td.append(button);
-  cell(tr,emp.lifecycle);cell(tr,emp.work.total);
-  cell(tr,emp.verifiedClosures?.['90d']??null);cell(tr,emp.audit.status);
+  cell(tr,emp.lifecycle);cell(tr,display(emp.work.total));
+  cell(tr,display(emp.verifiedClosures?.['90d']??null));cell(tr,emp.audit.status);
   table.append(tr);
  }
 }
@@ -44,13 +44,20 @@ function renderAudit(emp){
    ' · '+time(emp.qualificationAssessment.assessedAt)+
    ' · Assessor: '+display(emp.qualificationAssessment.assessedBy)+
    '. This is NOT a departmental audit pass.';
- $('wa-audit').textContent='Independent audit outcome: '+emp.audit.status+
-  '. No PASS, defect closure or qualification inferred from assigned routes.';
+ $('wa-audit').textContent='Independent audit ledger: '+emp.audit.status+
+  '. Recorded route reviews are separate from employee qualification or release certification.';
  const tbody=$('wa-audit-pages');tbody.replaceChildren();
  for(const page of emp.audit.pages){
   const row=element('tr');cell(row,page.route+(page.requiresLedger?' (ledger required)':''));
-  cell(row,page.status);tbody.append(row);
+  const outcome=cell(row,page.status+(page.overdue?' · NEXT AUDIT OVERDUE':''));
+  if(page.result){const r=page.result;
+   outcome.append(element('p','Executed '+time(r.executedAt)+' · Reviewed '+time(r.reviewedAt)+' by '+r.reviewer),
+    element('p','Findings '+r.openFindings+' · Corrective owner '+display(r.correctiveOwner)+' · Next due '+time(r.nextAuditDueAt)),
+    element('p','Evidence: '+r.evidenceRefs.join(', ')+' · Source '+r.canonicalSourceRef),element('p',r.rationale));
+  }
+  tbody.append(row);
  }
+ if(emp.audit.history?.length){const row=element('tr');cell(row,'Review history');cell(row,emp.audit.history.map(r=>r.id+' · '+r.outcome+' · '+time(r.reviewedAt)+(r.supersedesId?' · supersedes '+r.supersedesId:'')).join(' / '));tbody.append(row);}
 }
 function renderEmployee(){
  if(!latest)return;
@@ -77,8 +84,17 @@ function renderEmployee(){
  for(const kpi of emp.configuredKpis){
   $('wa-kpis').append(element('li',kpi.replaceAll('_',' ')+' — measured value not connected'));
  }
- $('wa-forecast').textContent=emp.forecast.status+' — '+emp.forecast.reason+
-  '. No projected completion date or confidence interval is claimed.';
+ const f=emp.forecast;
+ $('wa-forecast').textContent=f.status+' · '+f.reason+(f.projectedFinishAt
+  ?' · Expected '+time(f.projectedFinishAt)+' · Interval '+time(f.lowerAt)+' to '+time(f.upperAt)+' · Confidence '+Math.round(f.confidence*100)+'% · Sample '+f.sampleSize+' · Capacity '+f.capacityPerDay+'/day · Reviewer '+f.reviewer+' · Valid until '+time(f.expiresAt)
+  :'. No projected completion date or confidence interval is claimed.');
+ $('wa-progress-coverage').textContent=emp.progress.status+' · Approved baselines: '+display(emp.progress.baselineCount)+' · Overdue within this cohort: '+display(emp.progress.overdue)+'. Actual completion requires independent handoff proof; older history remains outside coverage.';
+ const progress=$('wa-progress');progress.replaceChildren();
+ const table=element('table');const caption=element('caption','Approved cohort at four weekly checkpoints');table.append(caption);
+ const head=element('tr');for(const label of ['As of','Planned','Actual'])head.append(element('th',label));table.append(head);
+ for(const i of [8,15,22,29]){const p=emp.progress.series[i];if(!p)continue;const row=element('tr');cell(row,new Date(p.at).toLocaleDateString());cell(row,p.planned);cell(row,p.actual);table.append(row);}
+ if(emp.progress.series.length){const scroll=element('div',undefined,'wa-scroll');scroll.append(table);progress.append(scroll);}
+ if(emp.progress.baselines?.length){const ul=element('ul');for(const b of emp.progress.baselines)ul.append(element('li',b.workPackageId+' · Start '+time(b.plannedStartAt)+' · Due '+time(b.plannedFinishAt)+' · Dependencies '+(b.dependsOn.join(', ')||'None recorded')+' · Approved by '+b.approvedBy));progress.append(ul);}
  $('wa-defects').textContent=emp.defects.status==='PARTIAL_CAPA_SOURCE'
   ?'Linked CAPA records by employee. This is NOT a complete defect register, severity assessment, or independent closure verification.'
   :'CAPA source unavailable. Defect severity, repair evidence, and retesting are unverified.';
@@ -91,6 +107,11 @@ function renderEmployee(){
   if(!entries.length)cc.textContent='No CAPA records in this connected register (other defect sources not assessed).';
   for(const item of emp.defects.capaCases)cases.append(element('li',item.id+' · '+item.status+' · '+time(item.openedAt)));
  }
+ cases.append(element('li','Retest ledger: '+emp.defects.retests.status));
+ for(const r of emp.defects.retests.events)cases.append(element('li',r.capaId+' · '+r.kind+' · '+time(r.occurredAt)+' · Owner '+r.owner+' · Reviewer '+r.reviewer+' · Evidence '+r.evidenceRefs.join(', ')+(r.retestEventId?' · Retest '+r.retestEventId:'')+' · '+r.note));
+ $('wa-report-status').textContent=emp.reports.status+' · Founder read-only projection. Report provenance does not imply external delivery.';
+ $('wa-reports').replaceChildren();
+ for(const r of emp.reports.reports)$('wa-reports').append(element('li',r.actionType+' · Work '+r.workPackageId+' · Handoff '+r.handoffId+' · Author '+r.author+' · Independently verified by '+r.reviewer+' at '+time(r.verifiedAt)+' · Report '+r.id+' · SHA-256 '+r.reportSha256));
  renderWork(emp);renderAudit(emp);renderRoster(latest);
 }
 async function refresh(){
@@ -117,6 +138,7 @@ async function refresh(){
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
   $('wa-observed').textContent='No validated snapshot';$('wa-totals').replaceChildren();
   $('wa-roster').replaceChildren();$('wa-select').replaceChildren();
+  for(const id of ['wa-profile','wa-work','wa-status-bars','wa-trend','wa-kpis','wa-forecast','wa-defects','wa-capa-status','wa-capa-cases','wa-audit','wa-qualification','wa-audit-pages','wa-progress','wa-progress-coverage','wa-reports','wa-report-status'])$(id).replaceChildren();
  }finally{$('wa-refresh').disabled=false;}
 }
 $('wa-refresh').addEventListener('click',refresh);

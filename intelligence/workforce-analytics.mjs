@@ -1,5 +1,6 @@
 import {VAOS_WORKFORCE_AGENT_IDS,VAOS_JOB_CATALOG} from '../platform/runtime/vaos-eight-operating-model.mjs';
 import {getDepartmentAuditScope} from '../platform/qualification/department-audit.mjs';
+import {departmentResults,plannedProgress,qualifiedForecast,capaRetests,governedReports} from './workforce-evidence.mjs';
 
 // Read-only workforce analytics. Never substitute mission state for evidence of audit, defect
 // closure or runtime liveness. No production actions and no use of synthetic history.
@@ -66,6 +67,9 @@ function capaEvidence(counts,cases,observedAt){
   if(!Object.hasOwn(mapped,c.status))throw Error('CAPA_STATUS_MISMATCH');
   return {id:c.id,status:c.status,sourceAction:c.sourceAction||null,openedAt:c.openedAt};
  });
+ for(const [status,count] of Object.entries(mapped)){
+  if(verified.filter(c=>c.status===status).length>count)throw Error('CAPA_COUNT_INCONSISTENT');
+ }
  return {status:'PARTIAL_CAPA_SOURCE',open:null,closed:null,capaByStatus:mapped,capaCases:verified};
 }
 function auditFor(id){
@@ -90,7 +94,13 @@ export function buildWorkforceAnalytics(raw){
  }
  const employees=VAOS_WORKFORCE_AGENT_IDS.map(id=>{
   const entry=observed.get(id);
-  const audit=auditFor(id);
+  const audit=departmentResults(id,entry?.departmentReviews,raw.observedAt)||auditFor(id);
+  const progress=plannedProgress(entry?.planBaselines,entry?.workItems||[],entry?.verifiedClosures,raw.observedAt);
+  const defects=capaEvidence(entry?.capaCounts,entry?.capaCases,raw.observedAt);
+  defects.retests=capaRetests(id,entry?.capaEvents,entry?.capaCases,raw.observedAt);
+  const projection=qualifiedForecast(id,entry?.forecastQualifications,raw.observedAt,progress,entry?.workItems||[]);
+  const qualified=projection?.status==='INDEPENDENTLY_QUALIFIED_PROJECTION'&&entry.workItems.length!==entry.work.total
+   ?{...forecast(),reason:'Complete operational workload snapshot required'}:projection;
   const base={id,name:entry?.name||id,role:entry?.role||id,department:entry?.department||null,
    lifecycle:entry?.lifecycle||'NOT_OBSERVED',
    qualificationLevel:Number.isInteger(entry?.qualificationLevel)?entry.qualificationLevel:null,
@@ -102,9 +112,9 @@ export function buildWorkforceAnalytics(raw){
    trainingWork:entry?.trainingWork&&Number.isSafeInteger(entry.trainingWork.total)?entry.trainingWork:null,
    workItems:entry?.workItems||[],configuredKpis:jobKpis(id),audit,
    qualificationAssessment:qualificationAssessment(entry?.qualificationAssessment,raw.observedAt),
-   defects:capaEvidence(entry?.capaCounts,entry?.capaCases,raw.observedAt),
+   defects,progress,reports:governedReports(id,entry?.employeeReports,raw.observedAt),
    verifiedClosures:entry?entry.closures:null,
-   forecast:forecast(),productionWriteAuthorized:false};
+   forecast:qualified||forecast(),productionWriteAuthorized:false};
   return Object.freeze(base);
  });
  const registered=observed.size;
@@ -113,6 +123,10 @@ export function buildWorkforceAnalytics(raw){
  for(const key of [...STATUSES,'total'])summary[key]=[...observed.values()].reduce((sum,e)=>sum+e.work[key],0);
  summary.verifiedClosures90Days=[...observed.values()].reduce((sum,e)=>sum+(e.closures?.['90d']||0),0);
  summary.verifiedHistoryComplete=[...observed.values()].every(e=>e.closures!==null);
+ summary.forecastQualified=employees.some(e=>e.forecast.status==='INDEPENDENTLY_QUALIFIED_PROJECTION');
+ summary.employeesWithQualifiedForecast=employees.filter(e=>e.forecast.status==='INDEPENDENTLY_QUALIFIED_PROJECTION').length;
+ summary.approvedBaselines=employees.reduce((s,e)=>s+(e.progress.baselineCount||0),0);
+ summary.independentAuditReviews=employees.reduce((s,e)=>s+(e.audit.history?.length||0),0);
  return Object.freeze({schemaVersion:'VAOS_FOUNDER_ANALYTICS_V1',observedAt:raw.observedAt,
   dataCoverage:registered+'/16',actionAuthorized:false,source:'GOVERNED_POSTGRES_WORK_PACKAGES',
   summary,employees});

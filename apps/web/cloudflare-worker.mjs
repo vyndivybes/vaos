@@ -36,6 +36,7 @@ import workforceAnalytics from './api/workforce-analytics.mjs';
 import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
 import founderChat from './api/founder-chat.mjs';
+import jarvisMultimodal from './api/jarvis-multimodal.mjs';
 import founderConversation from './api/founder-conversation.mjs';
 import voiceCapabilities from './api/voice-capabilities.mjs';
 import voiceDiscover from './api/voice-discover.mjs';
@@ -101,6 +102,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/founder-inbox': founderInbox,
   '/api/founder-agent-report': founderAgentReport,
   '/api/founder-chat': founderChat,
+  '/api/jarvis-multimodal': jarvisMultimodal,
   '/api/founder-conversation': founderConversation,
   '/api/voice-capabilities': voiceCapabilities,
   '/api/voice-discover': voiceDiscover,

@@ -6,6 +6,7 @@
 const isObject=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const arr=(o,k)=>isObject(o)&&Array.isArray(o[k])&&o[k].length<=50?o[k]:null;
 const key=v=>typeof v==='string'&&v.trim()?v.trim().toUpperCase():null;
+const isoHint=v=>typeof v==='string'&&/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(v)&&Number.isFinite(Date.parse(v));
 const fixedHolds=Object.freeze([
  'INDEPENDENT_SNAPSHOT_AND_SOURCE_REVISION_PROOF_REQUIRED',
  'PAGINATION_AND_COMPLETE_DATASET_PROOF_REQUIRED',
@@ -76,6 +77,8 @@ export function assessG3CrossSource(dataByDomain={}){
   else if(observedBoms.some(x=>x!==null)&&!observedBoms.includes(bom))
    shortageRowsWithObservedJobBomConflict++;
  }
+ const productionReleasedCardsMissingApprovalTimestamp=production.filter(row=>
+  isObject(row)&&row.status==='released'&&!isoHint(row.approved_at)).length;
  const releasedBaselinesWithoutBom=baselines.filter(row=>
   isObject(row)&&row.status==='released'&&!key(row.bom_revision)).length;
  const counts={
@@ -89,13 +92,15 @@ export function assessG3CrossSource(dataByDomain={}){
   shortageRowsWithoutObservedLinkedJobCard,
   shortageRowsWithObservedJobBomConflict,
   shortageRowsNotComparable,
-  releasedBaselinesWithoutBom
+  releasedBaselinesWithoutBom,
+  productionReleasedCardsMissingApprovalTimestamp
  };
  const holds=[];
  if(shortageRowsNotComparable)holds.push('CROSS_SOURCE_COMPARAND_FIELDS_MISSING');
  if(shortageRowsWithIncompatibleObservedInventoryUnit)holds.push('OBSERVED_SKU_UNIT_RELATION_UNRECONCILED');
  if(shortageRowsWithObservedJobBomConflict)holds.push('OBSERVED_JOB_BOM_REVISION_CONFLICT');
  if(releasedBaselinesWithoutBom)holds.push('RELEASED_ENGINEERING_BASELINES_WITHOUT_BOM');
+ if(productionReleasedCardsMissingApprovalTimestamp)holds.push('PRODUCTION_RELEASE_APPROVAL_TIMESTAMP_UNOBSERVED');
  // An absent stock record or linked job in a truncated sample is not proof of
  // no inventory or no job. Report the count but do not invent that conclusion.
  return result('CROSS_SOURCE_RECONCILIATION_HOLD',counts,holds);

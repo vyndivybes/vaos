@@ -67,7 +67,10 @@ Deno.serve(async (req: Request) => {
   let rpcName = ''
   let args: Record<string, unknown> = {}
 
-  if (operation === 'founderInboxAppend') {
+  if (operation === 'founderWorkforceOverview') {
+    rpcName = 'vaos_founder_workforce_overview'
+    args = { p_server_key: serverKey, p_actor_email: payload.actorEmail }
+  } else if (operation === 'founderInboxAppend') {
     rpcName = 'vaos_founder_inbox_append'
     args = {
       p_server_key: serverKey,

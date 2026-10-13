@@ -28,6 +28,7 @@ export function createSupabaseControlStore({
   }
 
   return Object.freeze({
+    founderWorkforceOverview(actorEmail) { return invoke('founderWorkforceOverview', { actorEmail }); },
     async snapshot() {
       const [snapshot, digitalThreadLinks] = await Promise.all([
         invoke('snapshot'),

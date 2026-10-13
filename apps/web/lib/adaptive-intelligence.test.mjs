@@ -463,3 +463,14 @@ test('JARVIS records no invented reviewer agreement when model budget is unavail
  assert.equal(r.status,'REVIEW_UNAVAILABLE');assert.equal(r.proposalCheckerDisagreement,false);
  assert.equal(r.independentAgentReviewsObserved,0);assert.equal(state.payload.data.modelCalls,0);
 });
+test('JARVIS does not record an inadmissible model output as a reviewed proposal',async()=>{
+ const h=createAdaptiveIntelligenceHandler({claim:async()=>({allowed:true}),
+  plan:async()=>({tools:['PROCUREMENT'],focus:'Assess material shortage',mode:'MODEL_PLANNED'}),
+  getReader:()=>({execute:async job=>({actionType:job.actionType,sourceAuthority:'getConfiguredDemandShortages',data:{records:[]}})}),
+  synthesize:async()=>null});
+ const request=req('What supplier shortages are affecting our materials?');request.url+='&eval=v3-readonly&mode=jarvis-x';
+ const {state,res}=collect();await h(request,res);
+ assert.equal(state.status,200);const r=state.payload.data.jarvisX.reviewReconciliation;
+ assert.equal(r.proposalObserved,false);assert.equal(r.proposalCheckerDisagreement,false);
+ assert.equal(r.reviews[0].status,'NO_ADMITTED_PROPOSAL');
+});

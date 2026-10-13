@@ -6,7 +6,7 @@ The current reviewers are a model proposer and a deterministic rule checker. The
 
 ## Admission and behavior
 
-The server records whether synthesis returned a candidate separately from whether that candidate passed validation. A provider failure without a candidate does not manufacture disagreement. A bounded consistency pass never certifies causation, source completeness, source versions, engineering release or production forecasting. Unknown/inconsistent metadata produces a review contract HOLD.
+The server records whether a draft passed admission before the deterministic review. An invalid output or provider failure does not become an admitted proposal or manufacture disagreement. A bounded consistency pass never certifies causation, source completeness, source versions, engineering release or production forecasting. Unknown/inconsistent metadata produces a review contract HOLD.
 
 Findings are allowlisted codes from the existing checker; ordering is deterministic. No reviewer ID, raw model text, private ledger identifier, question body or extra payload is added to the reconciliation record. A query parameter cannot supply a verdict. Votes cannot override a safety veto. The existing authenticated GET, three-source bound, model-call quota and read-only permissions remain authoritative.
 

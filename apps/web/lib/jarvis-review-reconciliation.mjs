@@ -25,6 +25,7 @@ export function reconcileJarvisReview({candidateObserved=false,verification={sta
   &&new Set(sourceHolds).size===sourceHolds.length
   &&(verification.status!=='BOUNDED_CONSISTENCY_PASS'||candidateObserved&&verification.reasons.length===0)
   &&(verification.status!=='NOT_MODEL_VERIFIED'||!candidateObserved&&verification.reasons.length===0)
+  &&(verification.status!=='REJECTED'||candidateObserved)
   &&(!['REJECTED','CANDIDATE_REJECTED'].includes(verification.status)||verification.reasons.length>0));
  const rejected=valid&&verification.status==='REJECTED';
  const withheld=valid&&['REJECTED','CANDIDATE_REJECTED'].includes(verification.status);

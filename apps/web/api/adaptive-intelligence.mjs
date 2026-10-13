@@ -117,8 +117,8 @@ export function createAdaptiveIntelligenceHandler({
     if((await claim(quotaBucket))?.allowed===true){
      modelCalls++;
      const candidate=await synthesize({ai,question,observations:evidence});
-     modelCandidateObserved=true;
      const draft=validateAdaptiveDraft(candidate,evidence);
+     modelCandidateObserved=true;
      verification=independentlyCheckDraft(draft,evidence);
      if(verification.status!=='BOUNDED_CONSISTENCY_PASS')throw Error('INDEPENDENT_CHECK_REJECTED');
      citationCount=draft.citations.length;

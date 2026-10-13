@@ -23,6 +23,7 @@ test('no candidate and provider failure do not manufacture a disagreement',()=>{
 test('inconsistent or injected review states fail closed without exporting the payload',()=>{
  for(const input of [
   {candidateObserved:false,verification:{status:'BOUNDED_CONSISTENCY_PASS',reasons:[]}},
+  {candidateObserved:false,verification:{status:'REJECTED',reasons:['FINANCIAL_METRIC_UNQUALIFIED']}},
   {candidateObserved:true,verification:{status:'REJECTED',reasons:[]}},
   {candidateObserved:'true'},
   {verification:null},

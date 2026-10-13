@@ -1,0 +1,46 @@
+# Scoped production release for G3.1E-3 and workforce evidence.
+# This workflow triggers ONLY when this file first merges into main.
+# Ordinary future code merges do not cause additional deployments.
+name: VAOS G3.1E-3 Controlled Release
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vaos-g3e3-controlled-release.yml'
+permissions:
+  contents: read
+concurrency:
+  group: vaos-controlled-worker-deploy
+  cancel-in-progress: false
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_ACCOUNT_ID: e20ce7032f6475caaf1197b09d3fe164
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - name: Checkout reviewed release
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Fail closed when production release credential is unavailable
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::RELEASE_HOLD: GitHub Actions Cloudflare deploy secret missing"; exit 1; }
+      - name: Install pinned runtime dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Verify new assurance contracts exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          grep -q "PRODUCTION_RELEASE_APPROVAL_TIMESTAMP_UNOBSERVED" intelligence/g3-cross-source-reconciliation.mjs
+          grep -q "VAOS_WORKFORCE_OPERATIONAL_EVIDENCE_V1" intelligence/workforce-operational-readiness.mjs
+          grep -q "operationalReadiness" intelligence/workforce-analytics.mjs
+      - name: Full regression and Cloudflare safety verification
+        run: npm test
+      - name: Deploy to existing vaos Worker without new namespaces
+        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc

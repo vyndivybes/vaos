@@ -62,6 +62,7 @@
         <a href="/agent-supervision.html" class="sidebar-mission-link">Agent monitoring ↗</a>
         <a href="/founder-console.html" class="sidebar-mission-link">Founder command lab ↗</a>
         <a href="/founder-console.html#g3-intelligence-panel" class="sidebar-mission-link">JARVIS X qualification ↗</a>
+        <a href="/workforce-analytics.html" class="sidebar-mission-link">16-employee analytics ↗</a>
         <button class="sidebar-signout" id="logout-button" type="button"><span>↪</span> Sign out</button>
       </div>
     </aside>
@@ -153,6 +154,38 @@
           </div>
           <p class="va-voice-privacy">Microphone is OFF by default. Hands-free listens only after you explicitly enable it, while this VAOS tab remains visible. The single microphone button listens for one question only. Read-only business questions may be asked directly in hands-free mode; “Hey VAOS” is optional. Stop disables listening. Browser speech recognition may use a vendor service; business actions remain blocked. No business writes, approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
         </section>
+
+        <section class="va-founder-operations va-panel" id="va-founder-operations" aria-labelledby="va-founder-operations-title">
+          <div class="va-founder-operations__head">
+            <div>
+              <p class="va-eyebrow">FOUNDER OPERATIONS · VISIBLE DELIVERY</p>
+              <h2 id="va-founder-operations-title">Digital workforce command and evidence</h2>
+              <p>Inspect all 16 digital employees in the dedicated founder view. Control-plane agent cards below are a separate runtime snapshot; a registered employee is not automatically a running, qualified agent.</p>
+            </div>
+          </div>
+          <nav class="va-founder-operations__links" aria-label="Workforce and founder tools">
+            <a href="/workforce-analytics.html"><strong>16-employee analytics ↗</strong><span>Individual work, reviewed audits, CAPA, plans and forecast holds</span></a>
+            <a href="/mission-status.html"><strong>Mission tracking ↗</strong><span>Look up mission progress and independent handoff evidence</span></a>
+            <a href="/agent-supervision.html"><strong>Agent monitoring ↗</strong><span>Inspect lifecycle, qualification, approvals and supervised handoffs</span></a>
+            <a href="/founder-console.html"><strong>Founder command lab ↗</strong><span>Prepare and inspect governed commands; drafts are not dispatches</span></a>
+          </nav>
+          <div class="va-founder-operations__delivery">
+            <h3>Implementation and acceptance map</h3>
+            <div class="va-founder-operations__table-scroll">
+              <table aria-label="Implemented features versus acceptance">
+                <thead><tr><th>Capability</th><th>Implementation</th><th>Acceptance</th></tr></thead>
+                <tbody>
+                  <tr><td>16-employee performance, audits and CAPA</td><td><a href="https://github.com/vyndivybes/vaos/pull/296" rel="noopener noreferrer" target="_blank">Dashboard and protected evidence ledgers</a></td><td>Evidence qualification pending</td></tr>
+                  <tr><td>Mission tracking and monitoring</td><td><a href="https://github.com/vyndivybes/vaos/pull/298" rel="noopener noreferrer" target="_blank">Browser dependency repaired</a></td><td>Live acceptance pending</td></tr>
+                  <tr><td>G3.1 engineering and source cross-checks</td><td><a href="https://github.com/vyndivybes/vaos/pull/300" rel="noopener noreferrer" target="_blank">Read-only source crosswalk</a></td><td>Backend diagnostics only; engineering release HOLD</td></tr>
+                  <tr><td>Founder reports and employee messaging</td><td><a href="/founder-console.html">Recorded draft and report preview</a></td><td>Outbound dispatch not commissioned</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="va-founder-operations__notice">Source-linked implementation map, reviewed 13 October 2026; not a real-time certification screen. Operational status and permitted actions must be checked against authoritative records in each linked view. Missing evidence never means PASS.</p>
+          </div>
+        </section>
+
         <div class="va-launch-grid" aria-label="Business application shortcuts">
           <button type="button" data-view="portfolio"><span class="va-launch-icon va-launch-icon--violet">◈</span><strong>Group overview</strong><small>Six divisions</small></button>
           <button type="button" data-view="crm"><span class="va-launch-icon va-launch-icon--rose">◎</span><strong>CRM &amp; Sales</strong><small>Customer pipeline</small></button>
@@ -181,7 +214,7 @@
         <div class="workspace-grid workspace-grid--primary">
           <section class="control-panel control-panel--agents metallic-gold-rim">
             <div class="panel-heading">
-              <div><span class="panel-kicker">AGENT FLEET</span><h2>Agent Control Centre</h2></div>
+              <div><span class="panel-kicker">AGENT FLEET · CONTROL-PLANE SNAPSHOT</span><h2>Agent Control Centre</h2><p id="visible-agent-count" class="va-control-plane-count">Loading registered agents…</p></div>
               <button class="panel-action" data-view="agents">Open fleet →</button>
             </div>
             <div class="agent-grid" id="agent-grid"></div>

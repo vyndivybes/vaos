@@ -203,3 +203,20 @@ test('workspace stylesheet is noncacheable just like HTML and browser JS',async(
  assert.equal(response.status,200);
  assert.equal(response.headers.get('Cache-Control'),'no-store, max-age=0');
 });
+
+test('founder workspace makes workforce outputs discoverable without presenting holds as passes',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
+ const script=await readFile(new URL('./workspace.mjs',import.meta.url),'utf8');
+ for(const path of ['/mission-status.html','/agent-supervision.html','/founder-console.html','/workforce-analytics.html']){
+  assert.ok(html.includes('href="'+path+'"'),'main workspace must expose '+path);
+ }
+ assert.match(html,/id="va-founder-operations"/);
+ assert.match(html,/Live acceptance pending/);
+ assert.match(html,/Evidence qualification pending/);
+ assert.match(html,/Backend diagnostics only/);
+ assert.match(html,/id="visible-agent-count"/);
+ assert.match(script,/model\.agents\.map\(\(agent\)/);
+ assert.doesNotMatch(script,/model\.agents\.slice\(/);
+ assert.match(script,/visible-agent-count/);
+});

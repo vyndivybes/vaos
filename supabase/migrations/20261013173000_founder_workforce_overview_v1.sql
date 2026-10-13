@@ -35,6 +35,16 @@ begin
           'total',count(*)
         )
         from vaos_private.work_packages w where w.owner_agent_id=e.id
+          and w.mission_id not like 'VAOS-QUAL-%'
+      ),
+      'trainingWork',(
+        select jsonb_build_object(
+          'total',count(*),
+          'completed',count(*) filter (where w.status='COMPLETED'),
+          'inProgress',count(*) filter (where w.status='IN_PROGRESS'),
+          'blocked',count(*) filter (where w.status='BLOCKED')
+        ) from vaos_private.work_packages w
+        where w.owner_agent_id=e.id and w.mission_id like 'VAOS-QUAL-%'
       ),
       'workItems',coalesce((
         select jsonb_agg(to_jsonb(recent) order by recent."updatedAt" desc, recent.id)
@@ -55,6 +65,7 @@ begin
           select h.work_package_id,max(h.verified_at) as verified_at
           from vaos_private.agent_handoffs h
           where h.to_agent_id=e.id and h.status='COMPLETED'
+            and h.mission_id not like 'VAOS-QUAL-%'
             and h.verified_at is not null
             and h.verified_at <= now()
             and h.verified_at >= now()-interval '90 days'
@@ -70,7 +81,7 @@ begin
             )
           group by h.work_package_id
           order by max(h.verified_at) desc
-          limit 200
+          limit 201 -- excess history fails schema bounds; never truncate silently
         ) proof
       ),'[]'::jsonb)
     ) order by e.id),'[]'::jsonb)

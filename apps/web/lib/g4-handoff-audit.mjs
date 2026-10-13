@@ -7,7 +7,24 @@ const value=(obj,snake,camel)=>obj?.[snake]??obj?.[camel];
 const asText=v=>typeof v==='string'?v.trim():'';
 const stamp=v=>typeof v==='string'&&/^[0-9]{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(v)
  &&Number.isFinite(Date.parse(v))?Date.parse(v):null;
-const dissentOutcomes=new Set(['INFORMATION_REQUIRED','REQUEST_INFO','RETURN','REJECT','ESCALATE','ESCALATED','DISPUTE','REOPEN']);
+// Mirror the canonical handoff transition contract for a read-only audit of
+// persisted events; never dispatch or re-run state transitions in the browser.
+const allowedTransitions=Object.freeze({
+ PENDING:{ACCEPT:'ACCEPTED',REQUEST_INFORMATION:'INFORMATION_REQUIRED',REJECT_INVALID:'REJECTED'},
+ ACCEPTED:{SUBMIT:'SUBMITTED',REQUEST_INFORMATION:'INFORMATION_REQUIRED',RETURN_FOR_CORRECTION:'RETURNED',ESCALATE:'ESCALATED'},
+ SUBMITTED:{VERIFY:'COMPLETED',REJECT_VERIFICATION:'RETURNED'},
+ INFORMATION_REQUIRED:{RESUBMIT:'PENDING'},
+ RETURNED:{RESUBMIT:'PENDING'},
+ ESCALATED:{RESOLVE_ESCALATION:'ACCEPTED'},
+ COMPLETED:{},REJECTED:{}
+});
+const ownerOutcomes=new Set(['ACCEPT','SUBMIT','REQUEST_INFORMATION','REJECT_INVALID','RETURN_FOR_CORRECTION','ESCALATE']);
+const reviewerOutcomes=new Set(['VERIFY','REJECT_VERIFICATION']);
+const dissentOutcomes=new Set([
+ 'REQUEST_INFORMATION','REJECT_INVALID','RETURN_FOR_CORRECTION','ESCALATE','REJECT_VERIFICATION',
+ // Historical/other-source dissent still remains visible but does not pass canonical replay:
+ 'INFORMATION_REQUIRED','REQUEST_INFO','RETURN','REJECT','ESCALATED','DISPUTE','REOPEN'
+]);
 const safeArray=a=>Array.isArray(a)&&a.length<=512;
 const invalid=()=>{throw Error('G4_TRAIL_SOURCE_UNQUALIFIED')};
 
@@ -44,35 +61,34 @@ export function summarizeG4HandoffTrail(snapshot) {
   const pairedRefs=Array.isArray(refs)&&refs.some(r=>typeof r==='string'&&!r.startsWith('REVIEWED:')
    &&refs.includes('REVIEWED:'+r));
   const trace=grouped.get(id)||[];
-  let coherent=trace.length>=4,priorTime=null,priorStatus=null;
-  const stage=['CREATED','ACCEPT','SUBMIT','VERIFY'];
-  const normalized=[];
+  let coherent=trace.length>=4,priorTime=null,priorStatus=null,priorOutcome=null;
   for(let i=0;i<trace.length;i++){
    const e=trace[i];
    const outcome=asText(e?.outcome),from=asText(value(e,'from_status','fromStatus'));
    const to=asText(value(e,'to_status','toStatus'));
    const actor=asText(value(e,'by_agent_id','byAgentId'));
    const when=stamp(value(e,'created_at','createdAt'));
-   if(!outcome||!to||!actor||when===null||priorTime!==null&&when<priorTime
-    ||i===0&&(outcome!=='CREATED'||from!==''||to!=='PENDING'||actor!==fromAgent)
-    ||i>0&&from!==priorStatus)coherent=false;
-   priorTime=when;priorStatus=to;
-   normalized.push({outcome,to,actor});
-  }
-  let cursor=-1;
-  for(let i=0;i<normalized.length;i++){
-   if(normalized[i].outcome===stage[cursor+1]){
-    cursor++;
-    if((cursor===1||cursor===2)&&normalized[i].actor!==owner)coherent=false;
-    if(cursor===3&&normalized[i].actor!==checker)coherent=false;
-   }else if(!dissentOutcomes.has(normalized[i].outcome))coherent=false;
+   if(!outcome||!to||!actor||when===null||priorTime!==null&&when<priorTime)coherent=false;
+   if(i===0){
+    if(outcome!=='CREATED'||from!==''||to!=='PENDING'||actor!==fromAgent)coherent=false;
+   }else{
+    if(from!==priorStatus||allowedTransitions[from]?.[outcome]!==to)coherent=false;
+    if(ownerOutcomes.has(outcome)&&actor!==owner)coherent=false;
+    if(reviewerOutcomes.has(outcome)&&(actor===owner||
+      outcome==='VERIFY'&&actor!==checker))coherent=false;
+    if(outcome==='RESUBMIT'){
+     const expected=priorOutcome==='REJECT_VERIFICATION'?owner:fromAgent;
+     if(actor!==expected)coherent=false;
+    }
+    if(outcome==='RESOLVE_ESCALATION'&&actor!==fromAgent&&actor!=='orchestrator')coherent=false;
+   }
+   priorTime=when;priorStatus=to;priorOutcome=outcome;
   }
   const verifiedAt=stamp(value(h,'verified_at','verifiedAt'));
-  // Verifier may be the requester; the only immutable restriction from the
-  // existing handoff contract is that recipient cannot verify its own work.
-  const recordedComplete=Boolean(coherent&&cursor===3&&normalized.at(-1)?.outcome==='VERIFY'
-   &&normalized.at(-1)?.to==='COMPLETED'&&asText(h.status)==='COMPLETED'
-   &&checker!==''&&checker!==owner&&missionMatches&&ownerMatches&&pairedRefs
+  // The logged agent ID is not an authenticated or independently signed receipt.
+  const recordedComplete=Boolean(coherent&&priorOutcome==='VERIFY'&&priorStatus==='COMPLETED'
+   &&asText(h.status)==='COMPLETED'&&checker!==''&&checker!==owner
+   &&missionMatches&&ownerMatches&&pairedRefs
    &&verifiedAt!==null&&priorTime!==null&&verifiedAt>=priorTime);
   const dissentRecorded=trace.some(e=>dissentOutcomes.has(asText(e?.outcome)));
   return Object.freeze({

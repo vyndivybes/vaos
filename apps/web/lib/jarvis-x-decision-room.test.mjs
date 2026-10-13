@@ -75,3 +75,25 @@ test('coherent observed evidence yields read-only review optimization, not produ
  assert.match(out.brief,/hypothetical|simulation/i);
  assert.doesNotMatch(JSON.stringify(out),/PRIVATE@example\.com/);
 });
+
+test('JARVIS X does not quietly treat untimestamped source counts as fresh or independently verified',()=>{
+ const x=createJarvisXPreview({observations:sample});
+ assert.equal(x.evidenceFreshness,'UNVERIFIED');
+ assert.equal(x.evidenceGraph.temporalAuthority,'NO_TRUSTED_SOURCE_TIMESTAMPS');
+ assert.equal(x.productionPlanningEligible,false);
+ assert.match(x.brief,/freshness not verified/i);
+});
+test('JARVIS X preserves source HOLDs as explicit blockers and does not rank those roles as independently qualified',()=>{
+ const x=createJarvisXPreview({observations:sample});
+ assert.deepEqual(x.unresolvedDomains,['ENGINEERING']);
+ assert.equal(x.coordination.reviews.find(q=>q.domain==='ENGINEERING').assignment,'NOT_DISPATCHED');
+ assert.equal(x.optimization.selected.some(q=>q.owner==='ENGINEERING'),false);
+ assert.equal(x.autonomousOperationsEnabled,false);
+});
+test('JARVIS X review queue lists transparent limitations instead of manufacturing schedule confidence',()=>{
+ const x=createJarvisXPreview({observations:sample,reviewSlots:2});
+ assert.ok(x.limitations.includes('NO_REAL_COST_OR_CAPACITY_OPTIMIZATION'));
+ assert.ok(x.limitations.includes('NO_CAUSAL_PROOF'));
+ assert.ok(x.limitations.includes('SOURCE_FRESHNESS_UNVERIFIED'));
+ assert.equal(x.optimization.capacityForecastCertified,false);
+});

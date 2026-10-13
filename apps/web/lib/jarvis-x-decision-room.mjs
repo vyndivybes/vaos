@@ -60,6 +60,7 @@ export function buildEvidenceGraph(observations=[]){
   graphAuthority:'TRANSIENT_SOURCE_STATUS_ONLY',
   nodes,edges,observedCount:nodes.filter(n=>n.status==='OBSERVED').length,
   holdCount:nodes.filter(n=>n.status==='HOLD').length,
+  temporalAuthority:'NO_TRUSTED_SOURCE_TIMESTAMPS',
   causalRelationshipsVerified:false,persistentGraphCreated:false
  });
 }
@@ -124,15 +125,20 @@ export function createJarvisXPreview({observations=[],reviewSlots=2}={}){
  const optimization=optimizeReviewQueue(reviewActions,{reviewSlots});
  const status=evidenceGraph.observedCount>0?'REVIEW_PREVIEW':'HOLD';
  const chosen=optimization.selected.map(x=>x.owner);
+ const unresolvedDomains=evidenceGraph.nodes.filter(x=>x.status==='HOLD').map(x=>x.id);
+ const limitations=Object.freeze(['NO_REAL_COST_OR_CAPACITY_OPTIMIZATION',
+  'NO_CAUSAL_PROOF','SOURCE_FRESHNESS_UNVERIFIED','NO_AGENT_QUALIFICATION_PROOF']);
  const brief=status==='HOLD'
   ?'JARVIS X HOLD — No authorized source was observed. Verify source availability before proposing decisions. No agent was dispatched.'
   :'JARVIS X SIMULATION — '+evidenceGraph.observedCount+' source domains observed; '+
    evidenceGraph.holdCount+' on HOLD. Hypothetical review budget: '+reviewSlots+
-   ' abstract review slots, NOT staff hours or production capacity. Review first: '+
+   ' abstract review slots, NOT staff hours or production capacity; source freshness not verified. Review first: '+
    (chosen.length?chosen.join(', '):'none')+
    '. Dependencies are unverified schema hypotheses, not causes. No agent dispatched or business action taken.';
  return Object.freeze({
   status,evidenceGraph,optimization,coordination,brief,
+  evidenceFreshness:'UNVERIFIED',unresolvedDomains,limitations,
+  autonomousOperationsEnabled:false,productionPlanningEligible:false,
   mode:'READ_ONLY_ADVISORY_PREVIEW',
   qualifiedForProductionOptimization:false,
   simulationOnly:true,extraModelCalls:0,extraNetworkCalls:0,

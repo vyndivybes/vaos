@@ -3,6 +3,7 @@ import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
 import {makeCommercialReader} from './voice-commercial.mjs';
 import {G3_REQUIRED_READS,assessG3SourceReadiness} from '../../../intelligence/g3-source-readiness.mjs';
+import {auditG3NumericSource,summarizeG3NumericAudits} from '../../../intelligence/g3-quantitative-contract.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
 const CONTROL='founder-readonly-browser-v1';
 /** Founder-triggered bounded source-provenance check. No raw rows, optimizer
@@ -35,16 +36,20 @@ export function createG3ReadinessHandler({getReader=makeCommercialReader,now=()=
        !result.data||typeof result.data!=='object')
      throw Error('G3_SOURCE_AUTHORITY_MISMATCH');
     const stamp=new Date(now()).toISOString();
-    return {domain:route.domain,actionType:route.actionType,
-     sourceAuthority:route.authority,status:'OBSERVED',gatewayReadAt:stamp};
+    // Inspect only canonical field contracts; do not keep or project raw rows.
+    const numeric=auditG3NumericSource(route.domain,result.data);
+    return {observation:{domain:route.domain,actionType:route.actionType,
+     sourceAuthority:route.authority,status:'OBSERVED',gatewayReadAt:stamp},numeric};
    }catch{
-    return {domain:route.domain,actionType:route.actionType,
-     sourceAuthority:null,status:'HOLD',gatewayReadAt:null};
+    return {observation:{domain:route.domain,actionType:route.actionType,
+     sourceAuthority:null,status:'HOLD',gatewayReadAt:null},
+     numeric:auditG3NumericSource(route.domain,null)};
    }
   }));
   try{
-   const report=assessG3SourceReadiness(results,{now:now()});
-   return res.status(200).json({data:report});
+   const report=assessG3SourceReadiness(results.map(x=>x.observation),{now:now()});
+   const quantitativeDiagnostics=summarizeG3NumericAudits(results.map(x=>x.numeric));
+   return res.status(200).json({data:{...report,quantitativeDiagnostics}});
   }catch{
    return res.status(503).json(apiError('G3_QUALIFICATION_HOLD','Source input qualification unavailable'));
   }

@@ -3,6 +3,7 @@ import {apiError} from '../lib/api-contracts.mjs';
 import {createSupabaseControlStore} from '../../../platform/persistence/supabase-store.mjs';
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {buildWorkforceAnalytics} from '../../../intelligence/workforce-analytics.mjs';
+import {evaluateEmployeeEvidencePriorities} from '../../../intelligence/workforce-evidence-priorities.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const defaultStore=env=>createSupabaseControlStore(resolveDurableControlConfig(env));
@@ -23,7 +24,8 @@ export function createWorkforceAnalyticsHandler({getStore=defaultStore}={}){
   }catch{return res.status(422).json(apiError('VALIDATION_ERROR','Unexpected query parameters'));}
   try{
    const data=buildWorkforceAnalytics(await getStore(req.env).founderWorkforceOverview(session.email));
-   return res.status(200).json({data});
+   const evidencePriorities=evaluateEmployeeEvidencePriorities({employees:data.employees,actionAuthorized:false});
+   return res.status(200).json({data:{...data,evidencePriorities}});
   }catch{
    return res.status(503).json(apiError('WORKFORCE_ANALYTICS_UNAVAILABLE',
     'Verified workforce source or founder analytics migration unavailable'));

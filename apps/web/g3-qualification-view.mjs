@@ -40,13 +40,16 @@ export function createG3QualificationView(payload){
   ['Observed unit mismatches',counts.shortageRowsWithIncompatibleObservedInventoryUnit,'Requires canonical unit evidence'],
   ['Job cards not observed',counts.shortageRowsWithoutObservedLinkedJobCard,'Limited read only'],
   ['Observed job/BOM conflicts',counts.shortageRowsWithObservedJobBomConflict,'Not a release qualification'],
-  ['Released baselines without BOM',counts.releasedBaselinesWithoutBom,'Release and effectivity proof required']
+  ['Released baselines without BOM',counts.releasedBaselinesWithoutBom,'Release and effectivity proof required'],
+  ['Released job cards without approval timestamp',counts.productionReleasedCardsMissingApprovalTimestamp,'An approval date alone is not a verified signed production release']
  ].map(([label,value,note])=>Object.freeze({label,value:n(value),note}));
  const missingBom=n(counts.releasedBaselinesWithoutBom);
  const missingStock=n(counts.shortageRowsWithoutObservedInventorySku);
+ const missingJobApproval=n(counts.productionReleasedCardsMissingApprovalTimestamp);
  const next=[
   ...(missingBom?['Engineering: investigate '+missingBom+' released baseline(s) with missing BOM revision evidence.']:[]),
   ...(missingStock?['Inventory: reconcile '+missingStock+' unmatched shortage observation(s) against complete balances.']:[]),
+  ...(missingJobApproval?['Production/QA: investigate '+missingJobApproval+' released job card(s) without recorded approval time and verify independent authorization.']:[]),
   'Source owners: provide independent revisions, signed source timestamps and full pagination/count proofs.',
   'Engineering/Quality: qualify applicable BOM, VEDM/VIBPE validation, material allowables and signed release.',
   'Recovery: complete G2b isolated restore with independent evidence.',

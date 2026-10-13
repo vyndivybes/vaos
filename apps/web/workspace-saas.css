@@ -554,3 +554,40 @@
 .va-mic-diagnostic__button:focus-visible{outline:3px solid #195d8a;outline-offset:2px}
 .va-mic-diagnostic__button:disabled{opacity:.6;cursor:wait}
 #vaos-voice-mic-diagnostic{flex:1 1 220px}
+
+
+/* Founder workforce discovery: prominent, accessible links and evidence honesty. */
+.workspace-body .va-founder-operations {
+  margin: 20px 0 24px;
+  padding: clamp(16px, 2.2vw, 26px);
+  border: 1px solid rgba(238, 194, 104, .32);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(24, 33, 47, .96), rgba(16, 21, 30, .94));
+  color: #f2f5fa;
+}
+.workspace-body .va-founder-operations__head h2 { margin: 4px 0 10px; font-size: clamp(1.35rem, 2.2vw, 1.85rem); line-height: 1.25; }
+.workspace-body .va-founder-operations__head p:not(.va-eyebrow) { margin: 0 0 18px; font-size: 15px; line-height: 1.6; color: #d5dbe5; }
+.workspace-body .va-founder-operations__links { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.workspace-body .va-founder-operations__links a {
+  display: flex; flex-direction: column; justify-content: center; min-width: 0; min-height: 105px; gap: 8px;
+  padding: 16px; border: 1px solid rgba(201, 217, 239, .28); border-radius: 12px;
+  background: rgba(255,255,255,.055); color: #f7f8fc; text-decoration: none;
+}
+.workspace-body .va-founder-operations__links a:hover,
+.workspace-body .va-founder-operations__links a:focus-visible { outline: 2px solid #f0c36d; outline-offset: 2px; background: rgba(255,255,255,.11); }
+.workspace-body .va-founder-operations__links strong { font-size: 17px; line-height: 1.32; }
+.workspace-body .va-founder-operations__links span { color: #d4deec; font-size: 14px; line-height: 1.5; }
+.workspace-body .va-founder-operations__delivery { margin-top: 20px; }
+.workspace-body .va-founder-operations__delivery h3 { margin: 0 0 12px; font-size: 18px; color: #f4f6fb; }
+.workspace-body .va-founder-operations__table-scroll { max-width: 100%; overflow-x: auto; border: 1px solid rgba(201,217,239,.24); border-radius: 12px; }
+.workspace-body .va-founder-operations__delivery table { width: 100%; min-width: 640px; border-collapse: collapse; font-size: 14px; }
+.workspace-body .va-founder-operations__delivery :is(th,td) { padding: 12px 14px; text-align: left; vertical-align: top; border-bottom: 1px solid rgba(201,217,239,.15); }
+.workspace-body .va-founder-operations__delivery th { font-size: 14px; color: #f4d28f; background: rgba(255,255,255,.06); }
+.workspace-body .va-founder-operations__delivery td { color: #e6eaf2; }
+.workspace-body .va-founder-operations__delivery td a { color: #f5d28d; text-decoration: underline; text-underline-offset: 3px; }
+.workspace-body .va-founder-operations__notice { margin: 12px 0 0; color: #d6deea; font-size: 14px; line-height: 1.55; }
+.workspace-body .va-control-plane-count { margin: 7px 0 0; color: inherit; opacity: .83; font-size: 14px; line-height: 1.4; }
+@media (max-width: 700px) {
+ .workspace-body .va-founder-operations__links { grid-template-columns: 1fr; }
+ .workspace-body .va-founder-operations__links a { min-height: 78px; }
+}

@@ -5,6 +5,7 @@ import {makeCommercialReader} from './voice-commercial.mjs';
 import {G3_REQUIRED_READS,assessG3SourceReadiness} from '../../../intelligence/g3-source-readiness.mjs';
 import {auditG3NumericSource,summarizeG3NumericAudits} from '../../../intelligence/g3-quantitative-contract.mjs';
 import {assessG3CrossSource} from '../../../intelligence/g3-cross-source-reconciliation.mjs';
+import {inspectG3SourceProvenance} from '../../../intelligence/g3-provenance-preflight.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
 const CONTROL='founder-readonly-browser-v1';
 /** Founder-triggered bounded source-provenance check. No raw rows, optimizer
@@ -50,9 +51,13 @@ export function createG3ReadinessHandler({getReader=makeCommercialReader,now=()=
   try{
    const report=assessG3SourceReadiness(results.map(x=>x.observation),{now:now()});
    const quantitativeDiagnostics=summarizeG3NumericAudits(results.map(x=>x.numeric));
-   const crossSourceDiagnostics=assessG3CrossSource(Object.fromEntries(
-    G3_REQUIRED_READS.map((route,index)=>[route.domain,results[index].sourceData])));
-   return res.status(200).json({data:{...report,quantitativeDiagnostics,crossSourceDiagnostics}});
+   const observedSources=Object.fromEntries(
+    G3_REQUIRED_READS.map((route,index)=>[route.domain,results[index].sourceData]));
+   const crossSourceDiagnostics=assessG3CrossSource(observedSources);
+   const sourceProvenanceDiagnostics=inspectG3SourceProvenance(observedSources);
+   return res.status(200).json({data:{
+    ...report,quantitativeDiagnostics,crossSourceDiagnostics,sourceProvenanceDiagnostics
+   }});
   }catch{
    return res.status(503).json(apiError('G3_QUALIFICATION_HOLD','Source input qualification unavailable'));
   }

@@ -25,6 +25,10 @@ test('route exists and only signed-in founder may inspect the workforce',async()
  const {res,state}=response();await handler(req(),res);
  assert.equal(state.status,200);assert.equal(state.body.data.employees.length,16);
  assert.equal(state.headers['Cache-Control'],'no-store');assert.equal(state.body.data.actionAuthorized,false);
+ assert.equal(state.body.data.commissioningBoard.schemaVersion,'VAOS_WORKFORCE_EXECUTION_BOARD_V1');
+ assert.equal(state.body.data.commissioningBoard.actionAuthorized,false);
+ assert.equal(state.body.data.commissioningBoard.audit.employeesWithoutCompleteReviewedScope,16);
+ assert.equal(state.body.data.commissioningBoard.forecast.employeesWithoutQualifiedForecast,16);
  assert.deepEqual(calls,['shyamsundhar1982@gmail.com']);
 });
 test('reject all writes, query manipulation and malformed source without leaking data',async()=>{

@@ -9,3 +9,9 @@ Each path retains only already-approved pseudonymous node/link identifiers, doma
 NO_PATH_OBSERVED means no path within this bounded projection; it never establishes absence of an enterprise relationship. Enterprise completeness is always false. Held legacy and unprojected link counts remain visible. Link creation does not certify current source freshness, record versions, signatures, causality or engineering release. No action or dispatch is authorized.
 
 This increment supplies metadata traversal for requirements 01/02, not complete semantic GraphRAG or temporal-version acceptance. No database changes, business writes, model calls or new permissions. Independent restore and signed-in production acceptance remain open.
+
+## Founder decision support
+
+With supervised JARVIS investigation selected, type or speak “Show recorded links from quality to project risk.” The existing adaptive-intelligence endpoint also accepts “Trace recorded paths from engineering baseline to quality” in `mode=jarvis-x&eval=v3-readonly`. The bounded deterministic grammar accepts quality/QA CAPA, engineering/engineering baseline and project risk, with distinct endpoints. Broader questions retain their existing adaptive routing.
+
+Matching questions use exactly one existing governed graph read and zero model calls, other domain reads or business writes. Numbered path references retain the corresponding pseudonymous link identifiers and relation types. Display and spoken responses explicitly require independent source review; missing/invalid sources return a sanitized source hold. No path produces HOLD, not an enterprise relationship denial. This is directed metadata retrieval, not semantic GraphRAG or independent consensus.

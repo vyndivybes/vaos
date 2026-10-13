@@ -52,3 +52,26 @@ test('missing verified history is not presented as zero or a synthetic forecast'
  assert.equal(qa.forecast.projectedFinishAt,null);
  assert.equal(qa.defects.status,'SOURCE_NOT_LINKED');
 });
+
+test('reported qualification assessments and CAPA provenance never become departmental audit PASS',()=>{
+ const caseSource={...source,employees:[{...source.employees[0],
+  qualificationAssessment:{status:'PASS',targetLevel:3,assessedAt:'2026-10-12T10:00:00Z',assessedBy:'qualified-reviewer'},
+  capaCounts:{OPEN:3},capaCases:[{id:'capa-001',status:'OPEN',sourceAction:'QA.OPEN_CAPA',openedAt:'2026-10-11T10:00:00Z'}]}]};
+ const x=buildWorkforceAnalytics(caseSource).employees.find(x=>x.id==='qa');
+ assert.equal(x.qualificationAssessment.status,'PASS');
+ assert.equal(x.audit.status,'UNVERIFIED_NO_REVIEW_LEDGER');
+ assert.equal(x.defects.status,'PARTIAL_CAPA_SOURCE');
+ assert.deepEqual(x.defects.capaByStatus,{OPEN:3});
+ assert.equal(x.defects.open,null); // other defect ledgers are not linked
+});
+test('forged CAPA counts, duplicate case IDs, and future assessment time fail closed',()=>{
+ const base={...source.employees[0]};
+ for(const fields of [
+  {capaCounts:{OPEN:-1}},
+  {capaCounts:{OPEN:NaN}},
+  {capaCounts:{OPEN:1},capaCases:[{id:'same',status:'OPEN',openedAt:'2026-10-11T10:00:00Z'}, {id:'same',status:'OPEN',openedAt:'2026-10-11T10:00:00Z'}]},
+  {qualificationAssessment:{status:'PASS',assessedAt:'2028-10-11T10:00:00Z',targetLevel:3}},
+ ]){
+  assert.throws(()=>buildWorkforceAnalytics({...source,employees:[{...base,...fields}]}));
+ }
+});

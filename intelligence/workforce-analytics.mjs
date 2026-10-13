@@ -35,6 +35,39 @@ function validatedClosures(events,asOf){
  }
  return counts;
 }
+function qualificationAssessment(value,observedAt){
+ if(value===undefined||value===null)return {status:'NOT_RECORDED',targetLevel:null,assessedAt:null,assessedBy:null};
+ if(!value||typeof value!=='object'||Array.isArray(value)||
+    typeof value.status!=='string'||!/^[A-Z_]{2,40}$/.test(value.status)||
+    !Number.isInteger(value.targetLevel)||value.targetLevel<0||value.targetLevel>4||
+    !iso(value.assessedAt)||Date.parse(value.assessedAt)>Date.parse(observedAt)||
+    (value.assessedBy!==null&&value.assessedBy!==undefined&&typeof value.assessedBy!=='string'))
+    throw Error('QUALIFICATION_ASSESSMENT_UNVERIFIED');
+ return {status:value.status,targetLevel:value.targetLevel,assessedAt:value.assessedAt,assessedBy:value.assessedBy||null};
+}
+function capaEvidence(counts,cases,observedAt){
+ if(counts===undefined||counts===null)return {status:'SOURCE_NOT_LINKED',open:null,closed:null};
+ if(typeof counts!=='object'||Array.isArray(counts)||Object.keys(counts).length>20||
+    !Array.isArray(cases)||cases.length>20)throw Error('CAPA_SOURCE_INVALID');
+ const mapped={};
+ for(const [key,value] of Object.entries(counts)){
+  if(!/^[A-Z_]{2,40}$/.test(key)||!Number.isSafeInteger(value)||value<0)
+    throw Error('CAPA_STATUS_COUNT_INVALID');
+  mapped[key]=value;
+ }
+ const seen=new Set();
+ const verified=cases.map(c=>{
+  if(!c||typeof c.id!=='string'||!c.id.trim()||seen.has(c.id)||
+    typeof c.status!=='string'||!/^[A-Z_]{2,40}$/.test(c.status)||
+    !iso(c.openedAt)||Date.parse(c.openedAt)>Date.parse(observedAt)||
+    (c.sourceAction!==undefined&&c.sourceAction!==null&&typeof c.sourceAction!=='string'))
+   throw Error('CAPA_CASE_UNVERIFIED');
+  seen.add(c.id);
+  if(!Object.hasOwn(mapped,c.status))throw Error('CAPA_STATUS_MISMATCH');
+  return {id:c.id,status:c.status,sourceAction:c.sourceAction||null,openedAt:c.openedAt};
+ });
+ return {status:'PARTIAL_CAPA_SOURCE',open:null,closed:null,capaByStatus:mapped,capaCases:verified};
+}
 function auditFor(id){
  const pages=getDepartmentAuditScope(id)?.pages||[];
  return {status:'UNVERIFIED_NO_REVIEW_LEDGER',checkedAt:null,independentReviewer:null,
@@ -68,7 +101,8 @@ export function buildWorkforceAnalytics(raw){
    sourceStatus:entry?'RECORDED':'NOT_OBSERVED',work:entry?.work||missingWork(),
    trainingWork:entry?.trainingWork&&Number.isSafeInteger(entry.trainingWork.total)?entry.trainingWork:null,
    workItems:entry?.workItems||[],configuredKpis:jobKpis(id),audit,
-   defects:{status:'SOURCE_NOT_LINKED',open:null,closed:null},
+   qualificationAssessment:qualificationAssessment(entry?.qualificationAssessment,raw.observedAt),
+   defects:capaEvidence(entry?.capaCounts,entry?.capaCases,raw.observedAt),
    verifiedClosures:entry?entry.closures:null,
    forecast:forecast(),productionWriteAuthorized:false};
   return Object.freeze(base);

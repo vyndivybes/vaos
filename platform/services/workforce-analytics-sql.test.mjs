@@ -20,3 +20,16 @@ test('qualification drills cannot silently inflate operational output or verifie
  assert.match(sql,/v\.report_sha256 is not null/);
  assert.match(sql,/h\.verified_by_agent_id <> h\.to_agent_id/);
 });
+
+test('CAPA status and qualification are distinct evidence sources with employee ownership joins',()=>{
+ const v2=readFile(new URL('../../supabase/migrations/20261013191000_founder_qualification_capa_reporting_v2.sql',import.meta.url),'utf8');
+ return v2.then(content=>{
+  assert.match(content,/digital_employee_qualification_assessments/);
+  assert.match(content,/capa_records/);
+  assert.match(content,/i\.agent_id=e\.id/);
+  assert.match(content,/qualificationAssessment/);
+  assert.match(content,/capaCounts/);
+  assert.match(content,/capaCases/);
+  assert.doesNotMatch(content,/insert into|delete from|update vaos_private/i);
+ });
+});

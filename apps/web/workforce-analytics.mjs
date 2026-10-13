@@ -37,6 +37,13 @@ function renderWork(emp){
  }
 }
 function renderAudit(emp){
+ $('wa-qualification').textContent=emp.qualificationAssessment.status==='NOT_RECORDED'
+  ?'No qualification assessment on record.'
+  :'Qualification assessment: '+emp.qualificationAssessment.status+
+   ' · Q'+emp.qualificationAssessment.targetLevel+
+   ' · '+time(emp.qualificationAssessment.assessedAt)+
+   ' · Assessor: '+display(emp.qualificationAssessment.assessedBy)+
+   '. This is NOT a departmental audit pass.';
  $('wa-audit').textContent='Independent audit outcome: '+emp.audit.status+
   '. No PASS, defect closure or qualification inferred from assigned routes.';
  const tbody=$('wa-audit-pages');tbody.replaceChildren();
@@ -72,8 +79,18 @@ function renderEmployee(){
  }
  $('wa-forecast').textContent=emp.forecast.status+' — '+emp.forecast.reason+
   '. No projected completion date or confidence interval is claimed.';
- $('wa-defects').textContent='Status: '+emp.defects.status+
-  '. Defect severity, CAPA and retesting records are not connected; no zero-defect claim.';
+ $('wa-defects').textContent=emp.defects.status==='PARTIAL_CAPA_SOURCE'
+  ?'Linked CAPA records by employee. This is NOT a complete defect register, severity assessment, or independent closure verification.'
+  :'CAPA source unavailable. Defect severity, repair evidence, and retesting are unverified.';
+ const cc=$('wa-capa-status');cc.replaceChildren();
+ const cases=$('wa-capa-cases');cases.replaceChildren();
+ if(emp.defects.status==='PARTIAL_CAPA_SOURCE'){
+  const entries=Object.entries(emp.defects.capaByStatus);
+  const maxCapa=Math.max(1,...entries.map(e=>e[1]));
+  for(const [status,count] of entries)bar(cc,'CAPA '+status,count,maxCapa);
+  if(!entries.length)cc.textContent='No CAPA records in this connected register (other defect sources not assessed).';
+  for(const item of emp.defects.capaCases)cases.append(element('li',item.id+' · '+item.status+' · '+time(item.openedAt)));
+ }
  renderWork(emp);renderAudit(emp);renderRoster(latest);
 }
 async function refresh(){

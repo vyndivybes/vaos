@@ -43,3 +43,9 @@ test('status exposes truthful readiness but never offers unchecked data write po
  const disabled=harness({control:undefined});const r=await disabled.run();
  assert.equal(r.status,200);assert.equal(r.body.data.enabled,false);assert.equal(r.body.data.writeAuthorized,false);
 });
+
+test('founder can ask one question about a verified extracted document excerpt without writes',async()=>{
+ const h=harness();const a=await h.run('ANSWER_DOCUMENT',{text:'Engineering job card summary: The drawing includes an unapproved revision and a recorded clearance of 35 mm. Verify against official source.',question:'Is the engineering release certified?',confirm:true});
+ assert.equal(a.status,200);assert.equal(a.body.data.stored,false);assert.equal(a.body.data.actionAuthorized,false);
+ assert.equal(h.invocations[0].type,'image');assert.ok(h.invocations[0].input.messages[0].content.includes('untrusted'));
+});

@@ -216,7 +216,7 @@ test('founder workspace makes workforce outputs discoverable without presenting 
  assert.match(html,/Evidence qualification pending/);
  assert.match(html,/Backend diagnostics only/);
  assert.match(html,/id="visible-agent-count"/);
- assert.match(script,/model\\.agents\\.map\\(\\(agent\\)/);
- assert.doesNotMatch(script,/model\\.agents\\.slice\\(/);
+ assert.match(script,/model\.agents\.map\(\(agent\)/);
+ assert.doesNotMatch(script,/model\.agents\.slice\(/);
  assert.match(script,/visible-agent-count/);
 });

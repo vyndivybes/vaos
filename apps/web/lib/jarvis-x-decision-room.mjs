@@ -44,7 +44,7 @@ function gatewayReceipt(row,clock){
  // read. Never confuse it with record-created or source-updated times.
  if(row.status!=='OBSERVED')return Object.freeze({at:null,ageSeconds:null,status:'NO_OBSERVED_RECEIPT'});
  const stamp=row.gatewayReadAt;
- const parsed=typeof stamp==='string'&&/^\\d{4}-\\d\\d-\\d\\dT\\d\\d:\\d\\d:\\d\\d\\.\\d{3}Z$/.test(stamp)
+ const parsed=typeof stamp==='string'&&/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$/.test(stamp)
   ?Date.parse(stamp):NaN;
  const possible=Number.isFinite(parsed)&&new Date(parsed).toISOString()===stamp;
  const age=Number.isFinite(clock)&&possible?clock-parsed:NaN;

@@ -109,14 +109,16 @@ export function createAdaptiveIntelligenceHandler({
   const fallback=buildAdaptiveFallback({question,observations:evidence});
   const sources=observed.flatMap(x=>permittedTechnicalSources(x.sources));
   let result=fallback,reasoningMode='DETERMINISTIC_EVIDENCE';
-  let citationCount=0;
+  let citationCount=0,modelCandidateObserved=false;
   let verification={status:'NOT_MODEL_VERIFIED',reasons:[],causalClaimsCertified:false,
    businessActionAuthorized:false,limitations:['NO_GENERATIVE_CLAIMS_ACCEPTED']};
   if(evidence.some(x=>x.status==='OBSERVED')&&typeof ai?.run==='function'&&quotaBucket){
    try{
     if((await claim(quotaBucket))?.allowed===true){
      modelCalls++;
-     const draft=validateAdaptiveDraft(await synthesize({ai,question,observations:evidence}),evidence);
+     const candidate=await synthesize({ai,question,observations:evidence});
+     const draft=validateAdaptiveDraft(candidate,evidence);
+     modelCandidateObserved=true;
      verification=independentlyCheckDraft(draft,evidence);
      if(verification.status!=='BOUNDED_CONSISTENCY_PASS')throw Error('INDEPENDENT_CHECK_REJECTED');
      citationCount=draft.citations.length;
@@ -165,8 +167,14 @@ export function createAdaptiveIntelligenceHandler({
   // model's tool plan. Its graph edges are schema hypotheses; optimization
   // uses abstract review slots, not resource/cash/production forecasts.
   const jarvisX=analysisMode==='jarvis-x'
-   ?createJarvisXPreview({observations:observed,reviewSlots:2,now:now()}):null;
-  if(jarvisX)result={...result,answer:(result.answer+'\n\n'+jarvisX.brief).slice(0,6400)};
+   ?createJarvisXPreview({observations:observed,reviewSlots:2,now:now(),
+     candidateObserved:modelCandidateObserved,
+     verification:{status:verification.status,reasons:verification.reasons}}):null;
+  if(jarvisX){
+   const reviewSuffix='\n\n'+jarvisX.brief+
+    (jarvisX.reviewReconciliation.safetyVetoPresent?'\n\nREVIEW — '+jarvisX.reviewReconciliation.summary:'');
+   result={...result,answer:result.answer.slice(0,6400-reviewSuffix.length)+reviewSuffix};
+  }
   return res.status(200).json({data:{...result,sourceSystem:'VAOS_ADAPTIVE',
    ...(jarvisX?{jarvisX}:{}),
    sourceCoverage:{observed:evidence.filter(x=>x.status==='OBSERVED').length,

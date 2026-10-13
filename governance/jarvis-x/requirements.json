@@ -105,9 +105,18 @@
       "id": "13",
       "name": "Consensus and dissent tracking",
       "workstream": "orchestration",
-      "coverage": "pending",
+      "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Independent disagreements retained without majority overriding safety holds"
+      "acceptance": "Independent disagreements retained without majority overriding safety holds",
+      "implementationEvidence": [
+        "apps/web/lib/jarvis-review-reconciliation.mjs",
+        "apps/web/api/adaptive-intelligence.mjs"
+      ],
+      "limitations": [
+        "MODEL_AND_RULE_CHECK_ONLY",
+        "QUALIFIED_AGENT_REVIEWS_NOT_OBSERVED",
+        "CURRENT_RESPONSE_ONLY"
+      ]
     },
     {
       "id": "14",

@@ -3,6 +3,7 @@
  * scheduling solver, no agent dispatch, no writes, and no additional AI calls.
  * All domain statuses must come from the already-verified VAOS read gateway.
  */
+import {reconcileJarvisReview} from './jarvis-review-reconciliation.mjs';
 const AUTHORITIES=Object.freeze({
  COMMERCIAL:'listSalesOrders',
  FINANCE:'getAccountingWorkbench',
@@ -136,7 +137,7 @@ export function planGovernedAgentReviews(graph){
   qualificationRequired:true
  });
 }
-export function createJarvisXPreview({observations=[],reviewSlots=2,now=Date.now()}={}){
+export function createJarvisXPreview({observations=[],reviewSlots=2,now=Date.now(),candidateObserved=false,verification}={}){
  const evidenceGraph=buildEvidenceGraph(observations,{now});
  const coordination=planGovernedAgentReviews(evidenceGraph);
  const reviewActions=evidenceGraph.nodes.filter(x=>x.status==='OBSERVED').map(x=>({
@@ -151,6 +152,7 @@ export function createJarvisXPreview({observations=[],reviewSlots=2,now=Date.now
   :observedNodes.every(x=>x.gatewayReceipt.status==='RECENT_GATEWAY_READ')
    ?'RECENT_GATEWAY_RECEIPTS_ONLY':'READ_RECEIPTS_PARTIAL_OR_STALE';
  const unresolvedDomains=evidenceGraph.nodes.filter(x=>x.status==='HOLD').map(x=>x.id);
+ const reviewReconciliation=reconcileJarvisReview({candidateObserved,verification,sourceHolds:unresolvedDomains});
  const limitations=Object.freeze(['NO_REAL_COST_OR_CAPACITY_OPTIMIZATION',
   'NO_CAUSAL_PROOF','SOURCE_FRESHNESS_UNVERIFIED','NO_AGENT_QUALIFICATION_PROOF']);
  const brief=status==='HOLD'
@@ -163,7 +165,7 @@ export function createJarvisXPreview({observations=[],reviewSlots=2,now=Date.now
    (provenanceReadiness==='RECENT_GATEWAY_RECEIPTS_ONLY'?'recent only; source age unknown':'unverified or stale')+
    '. No agent dispatched or business action taken.';
  return Object.freeze({
-  status,evidenceGraph,optimization,coordination,brief,
+  status,evidenceGraph,optimization,coordination,brief,reviewReconciliation,
   evidenceFreshness:'UNVERIFIED',unresolvedDomains,limitations,
   provenanceReadiness,sourceDataFreshnessCertified:false,
   autonomousOperationsEnabled:false,productionPlanningEligible:false,

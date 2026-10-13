@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
+<meta name="theme-color" content="#101318"/><meta name="description" content="Founder-only evidence-based employee performance and audit analytics"/>
+<link rel="icon" href="/assets/vayu-shastr-original.webp" type="image/webp"/>
+<link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/workforce-analytics.css"/>
+<title>VAOS · Workforce Analytics</title></head><body>
+<header class="wa-header"><div><small>VĀYŪ SHASTR · VAOS</small><h1>Workforce Analytics</h1><p>Founder Command · 16 digital employees · evidence-backed read-only reporting</p></div><a href="/founder-console.html">← Founder Command</a></header>
+<main class="wa-main">
+ <section class="wa-panel" aria-labelledby="workforce-title"><div class="wa-heading"><h2 id="workforce-title">Workforce overview</h2><button id="wa-refresh" type="button">Refresh verified records</button></div><p id="wa-status" aria-live="polite">Authenticating and reading governed records…</p>
+ <p id="wa-observed">No validated database snapshot yet.</p><div id="wa-totals" class="wa-stats" aria-live="polite"></div>
+ <div class="wa-scroll"><table><caption>All 16 digital employees · select an employee to inspect</caption><thead><tr><th>Employee</th><th>Lifecycle</th><th>Work</th><th>Verified 90d</th><th>Audit</th></tr></thead><tbody id="wa-roster"></tbody></table></div></section>
+ <section class="wa-panel" aria-labelledby="employee-title"><div class="wa-heading"><h2 id="employee-title">Individual employee dashboard</h2><label for="wa-select">Employee <select id="wa-select"></select></label></div>
+ <div id="wa-profile"></div><div class="wa-grid">
+ <div class="wa-subpanel"><h3>Work distribution</h3><p>Registered work-package status, not an audit-pass percentage.</p><div id="wa-status-bars"></div></div>
+ <div class="wa-subpanel"><h3>Verified completion trend</h3><p>Independently verified handoff closures in each trailing window, not task-plan attainment.</p><div id="wa-trend"></div></div>
+ <div class="wa-subpanel"><h3>Adaptive role analysis</h3><p>Role-specific KPIs from the VAOS job catalog. Values appear only when measured.</p><ul id="wa-kpis"></ul></div>
+ <div class="wa-subpanel"><h3>Forecast &amp; planning</h3><p id="wa-forecast">Forecast qualification pending.</p></div>
+ </div>
+ <div class="wa-grid">
+ <div class="wa-subpanel"><h3>Current and recent work</h3><div class="wa-scroll"><table><thead><tr><th>Mission / action</th><th>Status</th><th>Updated</th></tr></thead><tbody id="wa-work"></tbody></table></div></div>
+ <div class="wa-subpanel"><h3>Individual departmental audits</h3><p id="wa-audit">Independent audit result source not yet linked.</p><div class="wa-scroll"><table><thead><tr><th>Page / scope</th><th>Evidence</th></tr></thead><tbody id="wa-audit-pages"></tbody></table></div></div>
+ </div>
+ <div class="wa-grid">
+ <div class="wa-subpanel"><h3>Defects, nonconformances &amp; CAPA</h3><p id="wa-defects">Not yet connected to an independently evidenced defect register; no zero-defect claim.</p></div>
+ <div class="wa-subpanel"><h3>Communication with founder</h3><p>Review recorded requests and issue a governed instruction in Founder Command. Recorded messages are not proof of dispatch or an employee reply.</p><a href="/founder-console.html">Open Founder Command inbox →</a></div>
+ </div>
+ </section>
+ <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
+</main><script type="module" src="/workforce-analytics.mjs"></script></body></html>

@@ -27,6 +27,10 @@ test('persisted state does not imply runtime liveness',()=>{
  assert.equal(x[0].qualification,'Q3');assert.equal(x[0].liveness,'UNVERIFIED');
  assert.equal(safeAgentSnapshot({agents:[{id:'fake',lifecycle:'ACTIVE'}]}).length,0);
 });
+test('Founder Command links to individual workforce analytics without a dispatch shortcut',async()=>{
+ const html=await readFile(new URL('./founder-console.html',import.meta.url),'utf8');
+ assert.ok(html.includes('href="/workforce-analytics.html"'));
+});
 test('install shell never caches private messages or claims commands were sent',async()=>{
  const [manifestText,html,script]=await Promise.all([
   readFile(new URL('./manifest.webmanifest',import.meta.url),'utf8'),

@@ -6,7 +6,7 @@ const DOMAINS=Object.freeze(['PROCUREMENT','INVENTORY','PRODUCTION','ENGINEERING
 const obj=x=>x!==null&&typeof x==='object'&&!Array.isArray(x);
 const safeArray=(x)=>Array.isArray(x)&&x.length<=50?x:null;
 const verifiedDate=x=>typeof x==='string'&&Number.isFinite(Date.parse(x))&&
- /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}/.test(x);
+ /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/.test(x);
 const revisionHint=(domain,row)=>{
  if(!obj(row))return false;
  const f=domain==='ENGINEERING'?'revision_code': 'sales_order_revision';

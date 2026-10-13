@@ -98,3 +98,33 @@ async function loadCoordination(){
 }
 refresh?.addEventListener('click',loadCoordination);
 if(root)loadCoordination();
+const learningButton=$('jarvis-learning-review');
+const learningFile=$('jarvis-learning-file');
+learningFile?.addEventListener('change',()=>{
+ $('jarvis-learning-results')?.replaceChildren();
+ const state=$('jarvis-learning-status');
+ if(state)state.textContent='Selected outcomes have not been reviewed. No result inferred.';
+});
+learningButton?.addEventListener('click',async()=>{
+ const file=learningFile?.files?.[0],state=$('jarvis-learning-status'),results=$('jarvis-learning-results');
+ if(!state||!results)return;
+ results.replaceChildren();
+ if(!file||file.size>262144){state.textContent='Select a paired outcome JSON file at most 256 KiB.';return;}
+ learningButton.disabled=true;learningFile.disabled=true;state.textContent='Reviewing declared outcomes. No model or policy will change.';
+ try{
+  const body=await file.text();JSON.parse(body);
+  const response=await fetch('/api/jarvis-learning-review',{method:'POST',credentials:'same-origin',cache:'no-store',headers:{'Content-Type':'application/json',Accept:'application/json'},body});
+  if(!response.ok)throw Error();
+  const {data}=await response.json();
+  if(data?.schemaVersion!=='JARVIS_PAIRED_EVALUATION_V1'||data.autoPromotionAuthorized!==false||data.stored!==false)throw Error();
+  for(const text of ['Samples: '+data.candidate.sampleCount,
+   'Candidate accuracy: '+(data.candidate.accuracy===null?'Unverified':(100*data.candidate.accuracy).toFixed(1)+'% of declared outcomes'),
+   'Paired regressions: '+data.regressions+'; improvements: '+data.improvements+'; safety regressions: '+data.safetyRegressions,
+   'Unsupported candidate claims: '+data.candidate.unsupportedClaims,
+   'Review holds: '+data.holds.join(', ')])results.append(node('li',text));
+  state.dataset.state='hold';state.textContent='Descriptive results only. Reviewer identity and outcomes are unverified. Nothing saved; no promotion, policy change or live acceptance awarded.';
+ }catch{
+  results.replaceChildren();state.dataset.state='unavailable';
+  state.textContent='Review unavailable or rejected. Use valid paired scores without raw source content and sign in as founder. No result inferred.';
+ }finally{learningButton.disabled=false;learningFile.disabled=false;}
+});

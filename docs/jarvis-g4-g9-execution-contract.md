@@ -27,3 +27,13 @@ The Founder Command evidence panel displays these proposals alongside source dia
 - G3.1F requires independent real source reconciliation and out-of-sample forecast/backtest evidence. Fixtures and structural numeric screening cannot substitute.
 
 Further acceptance depends on immutable source exports, authenticated browser/device sessions and independent adjudication. Keep these holds separate from safe development and read-only training; do not manufacture timestamps or PASS rows.
+
+## Governed learning review increment
+
+Founder Command now accepts a manually selected paired-outcome JSON file through founder-only, same-origin `POST /api/jarvis-learning-review`. The existing strict evaluator rejects raw questions, answers, documents, extra fields, self-review and invalid pairings. Input is limited to 256 KiB and at most 1,000 pairs. Only aggregate metrics are returned; no sample/reviewer IDs, transcripts or outcomes are persisted. Baseline/candidate accuracy, Brier score, ECE, p95 latency, paired regressions and unsupported claims remain descriptive metrics from client-declared scores. Even twenty perfect results cannot authenticate independent review, satisfy G5, qualify forecasts or promote a model. No model calls, policy edits, dispatch or source reads occur.
+
+Use the existing evaluator JSON contract documented in `jarvis-x-master-implementation-plan.md`. Submit only approved pseudonymous outcome scores. This endpoint adds an interactive review seam, not an autonomous learner or production outcome ledger.
+
+Fresh read-only Supabase aggregate audit at 2026-10-13T17:59:22Z found 16 ACTIVE employees, 11 recorded Q3+, one recent heartbeat record, one department review and zero forecast qualifications. A separate aggregate assessment check found **16 PASS rows covering 15 distinct employees**, all with evidence references. The previous 16-row finding must not be presented as 16 independently qualified employees. No record was changed.
+
+Independent read-only Neon audit at 2026-10-13T18:01:59Z confirmed three released engineering baselines, all missing BOM revision references; zero BOM release and engineering release decision rows; four released job cards, three missing approval timestamps. Issues #69/#70 remain warranted.

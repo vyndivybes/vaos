@@ -57,6 +57,20 @@
           <tbody id="mission-rows"></tbody>
         </table>
       </div>
+      <details id="g4-handoff-audit" class="g4-evidence" hidden>
+        <summary><strong>G4 · Handoff evidence trail</strong> <span>Recorded events, dissent and acceptance holds</span></summary>
+        <p id="g4-handoff-category" class="g4-evidence-category"></p>
+        <div class="g4-evidence-stats">
+          <div><small>Recorded chains</small><strong id="g4-chain-count">—</strong></div>
+          <div><small>Dissent or return</small><strong id="g4-dissent-count">—</strong></div>
+          <div><small>G4 acceptance</small><strong id="g4-acceptance">HOLD</strong></div>
+        </div>
+        <p id="g4-evidence-holds" class="mission-warning g4-evidence-holds"></p>
+        <div class="mission-table-scroll">
+          <table class="mission-table"><thead><tr><th>Handoff</th><th>Owner</th><th>Recorded checker</th><th>Transition chain</th><th>Dissent</th></tr></thead><tbody id="g4-handoff-list"></tbody></table>
+        </div>
+        <p class="mission-footnote">A complete database event chain is not signed independent reviewer acceptance or production readiness. Training missions remain training even when all recorded transitions are complete. This view cannot dispatch agents or change ledgers.</p>
+      </details>
       <p class="mission-footnote">A VERIFIED row requires a different reviewer and a matching reviewed-evidence reference. READY_FOR_CLOSURE does not mean final administrative approval.</p>
     </section>
   </main>

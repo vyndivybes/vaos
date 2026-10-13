@@ -24,7 +24,7 @@
     "test": "npm run test:platform && npm run test:web && npm run verify:web && npm run lint && npm run test:langgraph && npm run test:department-audit && npm run test:g3-sandbox",
     "test:langgraph": "node --test integrations/langgraph/agent-supervisor.test.mjs apps/web/api/langgraph.test.mjs",
     "test:department-audit": "node --test platform/qualification/department-audit.test.mjs",
-    "test:g3-sandbox": "node --test intelligence/g3-synthetic-sandbox.test.mjs intelligence/g3-source-readiness.test.mjs"
+    "test:g3-sandbox": "node --test intelligence/g3-synthetic-sandbox.test.mjs intelligence/g3-source-readiness.test.mjs intelligence/g3-quantitative-contract.test.mjs"
   },
   "devDependencies": {
     "wrangler": "4.136.3"

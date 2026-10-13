@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {planJarvisCoordination} from './jarvis-coordination.mjs';
+import {planJarvisCoordination, reconcileJarvisAssessmentRows} from './jarvis-coordination.mjs';
 import {VAOS_WORKFORCE_AGENT_IDS} from '../platform/runtime/vaos-eight-operating-model.mjs';
 import {createJarvisCoordinationHandler} from '../apps/web/api/jarvis-coordination.mjs';
 import {createSessionToken,SESSION_COOKIE} from '../apps/web/lib/auth.mjs';
@@ -57,4 +57,32 @@ test('unavailable authoritative snapshot returns redacted HOLD',async()=>{
  const res={setHeader(){},status(n){code=n;return this},json(x){body=x}};
  await handler({method:'GET',url:'https://vaos.example/api/jarvis-coordination',headers:{cookie:`${SESSION_COOKIE}=${createSessionToken('shyamsundhar1982@gmail.com')}`}},res);
  assert.equal(code,503);assert.doesNotMatch(JSON.stringify(body),/secret-value/);
+});
+
+test('sixteen PASS ledger rows covering fifteen identities do not satisfy sixteen-employee assessment coverage',()=>{
+ const rows=VAOS_WORKFORCE_AGENT_IDS.filter(employeeId=>employeeId!=='orchestrator')
+  .map(employeeId=>({employeeId,status:'PASS'}));
+ rows.push({employeeId:'knowledge',status:'PASS'});
+ const coverage=reconcileJarvisAssessmentRows(rows);
+ assert.equal(coverage.recordedPassRows,16);
+ assert.equal(coverage.distinctEmployeesWithPass,15);
+ assert.deepEqual(coverage.missingPassEmployeeIds,['orchestrator']);
+ assert.deepEqual(coverage.repeatedPassEmployeeIds,['knowledge']);
+ assert.equal(coverage.status,'RECORDED_PASS_COVERAGE_HOLD');
+ assert.equal(coverage.qualifiedForDispatch,false);
+ assert.equal(coverage.independentEvidenceVerified,false);
+ assert.doesNotMatch(JSON.stringify(coverage),/assessedBy|evidenceRefs/);
+});
+test('complete recorded PASS coverage still never qualifies operational competence or dispatch',()=>{
+ const rows=VAOS_WORKFORCE_AGENT_IDS.map(employeeId=>({employeeId,status:'PASS'}));
+ const coverage=reconcileJarvisAssessmentRows(rows);
+ assert.equal(coverage.distinctEmployeesWithPass,16);
+ assert.equal(coverage.status,'RECORDED_PASS_COVERAGE_ONLY');
+ assert.equal(coverage.independentEvidenceVerified,false);
+ assert.equal(coverage.qualifiedForDispatch,false);
+});
+test('assessment coverage evidence rejects unknown identity, malformed status and excess records',()=>{
+ for(const rows of [[{employeeId:'invented',status:'PASS'}],[{employeeId:'qa',status:'pass'}],Array(257).fill({employeeId:'qa',status:'PASS'})]){
+  assert.throws(()=>reconcileJarvisAssessmentRows(rows),/ASSESSMENT_COVERAGE_INPUT_INVALID/);
+ }
 });

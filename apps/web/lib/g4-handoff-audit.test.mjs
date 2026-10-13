@@ -82,3 +82,48 @@ test('Mission Status UI shows read-only G4 trail, preserved dissent and training
  assert.match(js,/textContent/);
  assert.doesNotMatch(js,/innerHTML|eval\(/);
 });
+
+test('canonical verification rejection, resubmission and later independent VERIFY retain dissent without false chain failure',()=>{
+ const s=example();
+ s.handoffEvents=[
+  ...s.handoffEvents.slice(0,3),
+  {id:5,handoff_id:'handoff-1',outcome:'REJECT_VERIFICATION',from_status:'SUBMITTED',to_status:'RETURNED',by_agent_id:'project',created_at:'2026-10-13T10:00:03Z'},
+  {id:6,handoff_id:'handoff-1',outcome:'RESUBMIT',from_status:'RETURNED',to_status:'PENDING',by_agent_id:'qa',created_at:'2026-10-13T10:00:04Z'},
+  {id:7,handoff_id:'handoff-1',outcome:'ACCEPT',from_status:'PENDING',to_status:'ACCEPTED',by_agent_id:'qa',created_at:'2026-10-13T10:00:05Z'},
+  {id:8,handoff_id:'handoff-1',outcome:'SUBMIT',from_status:'ACCEPTED',to_status:'SUBMITTED',by_agent_id:'qa',created_at:'2026-10-13T10:00:06Z'},
+  {id:9,handoff_id:'handoff-1',outcome:'VERIFY',from_status:'SUBMITTED',to_status:'COMPLETED',by_agent_id:'project',created_at:'2026-10-13T10:00:07Z'},
+ ];
+ s.handoffs[0].verified_at='2026-10-13T10:00:08Z';
+ const x=summarizeG4HandoffTrail(s);
+ assert.equal(x.recordedCompleteChains,1);
+ assert.equal(x.recordedDissentCount,1);
+ assert.equal(x.handoffs[0].trailStatus,'RECORDED_CHAIN_COMPLETE_ONLY');
+ assert.equal(x.commissioned,false);
+});
+test('canonical information request, owner resubmission and return to normal acceptance are preserved',()=>{
+ const s=example();
+ s.handoffEvents=[
+  s.handoffEvents[0],
+  {id:5,handoff_id:'handoff-1',outcome:'REQUEST_INFORMATION',from_status:'PENDING',to_status:'INFORMATION_REQUIRED',by_agent_id:'qa',created_at:'2026-10-13T10:00:00.250Z'},
+  {id:6,handoff_id:'handoff-1',outcome:'RESUBMIT',from_status:'INFORMATION_REQUIRED',to_status:'PENDING',by_agent_id:'orchestrator',created_at:'2026-10-13T10:00:00.500Z'},
+  ...s.handoffEvents.slice(1),
+ ];
+ const x=summarizeG4HandoffTrail(s);
+ assert.equal(x.recordedCompleteChains,1);
+ assert.equal(x.recordedDissentCount,1);
+ assert.equal(x.commissioned,false);
+});
+test('a chronological but impossible canonical state transition cannot be labelled a complete recorded chain',()=>{
+ const s=example();
+ s.handoffEvents[1].to_status='SUBMITTED';
+ s.handoffEvents[2].from_status='SUBMITTED';
+ s.handoffEvents[2].to_status='SUBMITTED';
+ const x=summarizeG4HandoffTrail(s);
+ assert.equal(x.recordedCompleteChains,0);
+ assert.equal(x.handoffs[0].trailStatus,'RECORDED_CHAIN_INCOMPLETE');
+ assert.equal(x.commissioned,false);
+});
+test('requester cannot impersonate recipient in canonical ACCEPT receipt',()=>{
+ const s=example();s.handoffEvents[1].by_agent_id='orchestrator';
+ assert.equal(summarizeG4HandoffTrail(s).recordedCompleteChains,0);
+});

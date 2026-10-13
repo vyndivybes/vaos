@@ -1,6 +1,7 @@
 const $=id=>document.getElementById(id);
 const workLabels=[['planned','Planned'],['ready','Ready / queued'],['inProgress','In progress'],['completed','Marked completed'],['blocked','Blocked'],['failed','Failed'],['cancelled','Cancelled']];
 let latest=null,selection='orchestrator';
+let employeeSearch='',selectedChartKind='columns';
 function element(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=String(text);if(cls)e.className=cls;return e;}
 function cell(row,value){const td=element('td',value);row.append(td);return td;}
 function display(value){return value===undefined||value===null?'Not evidenced':String(value);}
@@ -19,6 +20,7 @@ function counts(host,items){host.replaceChildren();for(const [name,value] of ite
 function renderRoster(data){
  const table=$('wa-roster');table.replaceChildren();
  for(const emp of data.employees){
+  if(employeeSearch&&!([emp.name,emp.department,emp.lifecycle,emp.audit.status].join(' ').toLowerCase().includes(employeeSearch)))continue;
   const tr=element('tr');tr.dataset.current=String(emp.id===selection);
   const td=cell(tr,'');const button=element('button',emp.name);button.type='button';
   button.addEventListener('click',()=>{selection=emp.id;$('wa-select').value=selection;renderEmployee();});
@@ -62,6 +64,38 @@ function renderAudit(emp){
  }
  if(emp.audit.history?.length){const row=element('tr');cell(row,'Review history');cell(row,emp.audit.history.map(r=>r.id+' · '+r.outcome+' · '+time(r.reviewedAt)+(r.supersedesId?' · supersedes '+r.supersedesId:'')).join(' / '));tbody.append(row);}
 }
+
+function renderEmployeeCharts(emp){
+ const root=$('wa-evidence-chart');root.replaceChildren();
+ const series=workLabels.map(([key,label])=>({label,value:emp.work[key]}))
+  .filter(x=>typeof x.value==='number'&&Number.isSafeInteger(x.value)&&x.value>=0);
+ if(!series.length){root.textContent='No validated work-package counts are available. Unknown is not zero.';return;}
+ const total=series.reduce((a,x)=>a+x.value,0);
+ if(total===0){root.textContent='No work packages recorded in these categories. Other operational activity is not inferred.';return;}
+ const maximum=Math.max(1,...series.map(x=>x.value));
+ const colors=['#edc06e','#54beb5','#83b0ef','#b899df','#d48e9a','#d9a066','#a1b98c'];
+ if(selectedChartKind==='bars'){for(const x of series)bar(root,x.label,x.value,maximum);return;}
+ if(selectedChartKind==='donut'){
+  const pieces=[];let a=0;
+  series.forEach((x,i)=>{const b=a+x.value/total*100;pieces.push(colors[i]+' '+a+'% '+b+'%');a=b;});
+  const ring=element('div',undefined,'wa-chart-donut');
+  ring.style.background='conic-gradient('+pieces.join(',')+')';
+  ring.setAttribute('role','img');ring.setAttribute('aria-label',series.map(x=>x.label+' '+x.value).join('; '));
+  ring.append(element('div',total+' registered work packages','wa-chart-donut-hole'));
+  const legend=element('ul',undefined,'wa-chart-legend');
+  series.forEach((x,i)=>{const li=element('li',x.label+' · '+x.value);li.style.borderLeft='6px solid '+colors[i];legend.append(li);});
+  root.append(ring,legend);return;
+ }
+ const columns=element('div',undefined,'wa-graph-columns');
+ series.forEach((x,i)=>{
+  const col=element('div',undefined,'wa-chart-column');
+  const track=element('div',undefined,'wa-chart-column-track');
+  const fill=element('div',undefined,'wa-chart-column-fill');fill.style.height=(100*x.value/maximum)+'%';fill.style.background=colors[i];track.append(fill);
+  col.append(element('strong',x.value),track,element('small',x.label));columns.append(col);
+ });
+ root.append(columns);
+}
+
 function renderEmployee(){
  if(!latest)return;
  const emp=latest.employees.find(e=>e.id===selection)||latest.employees[0];
@@ -117,7 +151,7 @@ function renderEmployee(){
  $('wa-report-status').textContent=emp.reports.status+' · Founder read-only projection. Report provenance does not imply external delivery.';
  $('wa-reports').replaceChildren();
  for(const r of emp.reports.reports)$('wa-reports').append(element('li',r.actionType+' · Work '+r.workPackageId+' · Handoff '+r.handoffId+' · Author '+r.author+' · Independently verified by '+r.reviewer+' at '+time(r.verifiedAt)+' · Report '+r.id+' · SHA-256 '+r.reportSha256));
- renderWork(emp);renderAudit(emp);renderRoster(latest);
+ renderWork(emp);renderAudit(emp);renderRoster(latest);renderEmployeeCharts(emp);
 }
 async function refresh(){
  $('wa-status').textContent='Reading workforce evidence…';$('wa-refresh').disabled=true;
@@ -157,9 +191,11 @@ async function refresh(){
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
   $('wa-observed').textContent='No validated snapshot';$('wa-ops-status').textContent='Operational evidence unavailable; liveness not certified.';$('wa-totals').replaceChildren();
   $('wa-roster').replaceChildren();$('wa-select').replaceChildren();
-  for(const id of ['wa-profile','wa-work','wa-status-bars','wa-trend','wa-kpis','wa-forecast','wa-defects','wa-capa-status','wa-capa-cases','wa-audit','wa-qualification','wa-audit-pages','wa-progress','wa-progress-coverage','wa-reports','wa-report-status'])$(id).replaceChildren();
+  for(const id of ['wa-profile','wa-work','wa-status-bars','wa-trend','wa-kpis','wa-forecast','wa-defects','wa-capa-status','wa-capa-cases','wa-audit','wa-qualification','wa-audit-pages','wa-progress','wa-progress-coverage','wa-reports','wa-report-status','wa-evidence-chart'])$(id).replaceChildren();
  }finally{$('wa-refresh').disabled=false;}
 }
+$('wa-employee-search').addEventListener('input',event=>{employeeSearch=String(event.target.value||'').trim().toLowerCase();if(latest)renderRoster(latest);});
+$('wa-chart-kind').addEventListener('change',event=>{selectedChartKind=event.target.value;if(latest){const emp=latest.employees.find(x=>x.id===selection);if(emp)renderEmployeeCharts(emp);}});
 $('wa-refresh').addEventListener('click',refresh);
 $('wa-select').addEventListener('change',event=>{selection=event.target.value;renderEmployee();});
 refresh();

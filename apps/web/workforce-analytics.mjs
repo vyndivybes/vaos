@@ -106,6 +106,65 @@ function renderEvidencePriorities(data){
  for(const x of entries)for(const tag of x.missing||[])gaps.set(tag,(gaps.get(tag)||0)+1);
  counts(host,[['Employees requiring review',entries.filter(x=>x.status==='HOLD').length+'/16'],...([...gaps].sort((a,b)=>b[1]-a[1]).map(([name,n])=>[evidenceLabel(name),n]))]);
 }
+
+function workboardRow(host,title,notes,agent=null,url=null){
+ const row=element('article',undefined,'wa-action-row');row.dataset.search=[title,...notes].join(' ').toLowerCase();
+ row.append(element('strong',title));for(const note of notes)row.append(element('p',note));
+ if(typeof url==='string'&&url.startsWith('/mission-status.html?missionId=')&&url.length<150){
+  const link=element('a','Review source mission ↗');link.href=url;row.append(link);
+ }
+ if(agent&&latest?.employees?.some(x=>x.id===agent)){
+  const button=element('button','Inspect employee');button.addEventListener('click',()=>{
+   selection=agent;$('wa-select').value=selection;renderEmployee();$('employee-title').scrollIntoView?.({block:'start'});
+  });row.append(button);
+ }
+ host.append(row);
+}
+function filterCommissioningRows(){
+ const q=String($('wa-action-search').value||'').trim().toLowerCase();
+ for(const id of ['wa-blocked-work','wa-audit-work','wa-capa-work','wa-forecast-work'])
+  for(const item of $(id).querySelectorAll('.wa-action-row'))item.hidden=Boolean(q&&!item.dataset.search.includes(q));
+}
+function renderCommissioningBoard(data){
+ for(const id of ['wa-blocked-work','wa-audit-work','wa-capa-work','wa-forecast-work'])$(id).replaceChildren();
+ const summary=$('wa-commissioning-totals');summary.replaceChildren();
+ const b=data?.commissioningBoard;
+ if(!b||b.schemaVersion!=='VAOS_WORKFORCE_EXECUTION_BOARD_V1'||b.actionAuthorized!==false||
+  b.releaseHoldOverridden!==false||b.commissioned!==false||
+  !Array.isArray(b.blocked?.items)||!Array.isArray(b.audit?.results)||b.audit.results.length!==16||
+  !Array.isArray(b.capa?.openCases)||!Array.isArray(b.forecast?.results)||b.forecast.results.length!==16||
+  !Array.isArray(b.reporting?.results)||b.reporting.results.length!==16){
+  $('wa-commissioning-status').textContent='Commissioning evidence unavailable. No holds may be cleared.';return;
+ }
+ $('wa-commissioning-status').textContent='Read-only action register. No agent dispatch, release, audit PASS, CAPA closure or forecast certification is inferred.';
+ counts(summary,[['Blocked packages',b.blocked.count],['Employees requiring audited scopes',b.audit.employeesWithoutCompleteReviewedScope],
+  ['Routes without reviewed PASS',b.audit.outstandingRoutes],['Open CAPA',b.capa.openCases.length],
+  ['Forecasts unqualified',b.forecast.employeesWithoutQualifiedForecast],['Employees with historical reports',b.reporting.employeesWithRecordedReports]]);
+ const blocked=$('wa-blocked-work');
+ for(const x of b.blocked.items)workboardRow(blocked,x.workPackageId+' · '+x.status,
+  [x.employeeName+' · '+x.actionType,'Mission: '+display(x.missionId),'Root cause evidence: '+x.blockerReason,'Next: '+x.nextEvidence],x.employeeId,x.missionUrl);
+ if(!b.blocked.items.length)blocked.textContent='No blocked packages in this evidence projection; wider operational scope remains unverified.';
+ const audit=$('wa-audit-work');
+ for(const x of b.audit.results)workboardRow(audit,x.employeeName+' · '+x.verifiedPassedRoutes+'/'+x.requiredRoutes+' reviewed PASS',
+  ['Department: '+x.department,'Failures: '+x.failedRoutes+' · Not independently passed: '+x.missingOrPendingRoutes,
+   'Routes: '+x.routes.map(p=>p.route+' ['+p.status+']').join(' · '),
+   'Checks: '+x.requiredChecks.join(', '),'Next: '+x.nextEvidence],x.employeeId);
+ const capas=$('wa-capa-work');
+ for(const x of b.capa.openCases)workboardRow(capas,x.id+' · '+x.status,
+  ['Employee: '+x.assignedEmployeeId,'Retest: '+x.retestStatus,'Next: '+x.nextEvidence],x.assignedEmployeeId);
+ if(!b.capa.openCases.length)capas.textContent='No open cases in the linked source; other defect records remain outside this assessment.';
+ const plans=$('wa-forecast-work');
+ for(const x of b.forecast.results){
+  const r=b.reporting.results.find(y=>y.employeeId===x.employeeId);
+  workboardRow(plans,x.employeeName+' · '+x.status,
+   ['Approved baselines: '+display(x.approvedBaselineCount),
+    'Forecast accepted: '+(x.qualified?'Recorded qualification; check validity':'HOLD'),
+    'Forecast evidence: '+x.nextEvidence,'Reports: '+(r?.recordedReports??0)+' · '+(r?.status||'NOT_RECORDED'),
+    'Delivery: '+(r?.nextEvidence||'Unknown')+' No outbound delivery certified.'],x.employeeId);
+ }
+ filterCommissioningRows();
+}
+
 function renderEmployee(){
  if(!latest)return;
  const emp=latest.employees.find(e=>e.id===selection)||latest.employees[0];
@@ -186,6 +245,7 @@ async function refresh(){
    throw Error('WORKFORCE_OPERATIONAL_EVIDENCE_UNVERIFIED');
   latest=data;
   renderEvidencePriorities(data);
+   renderCommissioningBoard(data);
   $('wa-status').textContent='Read-only workforce evidence loaded; independent live operational certification remains HOLD.';
   $('wa-ops-status').textContent=
    'Operational runtime NOT certified. '+op.recentHeartbeatRecords24h+
@@ -208,10 +268,13 @@ async function refresh(){
  }catch{
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
   $('wa-observed').textContent='No validated snapshot';$('wa-ops-status').textContent='Operational evidence unavailable; liveness not certified.';$('wa-totals').replaceChildren();
-  $('wa-roster').replaceChildren();$('wa-select').replaceChildren();$('wa-evidence-priorities').replaceChildren();$('wa-evidence-priority-detail').replaceChildren();
+  $('wa-roster').replaceChildren();$('wa-select').replaceChildren();$('wa-commissioning-totals').replaceChildren();
+  $('wa-commissioning-status').textContent='Source unavailable; no corrective evidence qualified.';
+  for(const id of ['wa-blocked-work','wa-audit-work','wa-capa-work','wa-forecast-work'])$(id).replaceChildren();$('wa-evidence-priorities').replaceChildren();$('wa-evidence-priority-detail').replaceChildren();
   for(const id of ['wa-profile','wa-work','wa-status-bars','wa-trend','wa-kpis','wa-forecast','wa-defects','wa-capa-status','wa-capa-cases','wa-audit','wa-qualification','wa-audit-pages','wa-progress','wa-progress-coverage','wa-reports','wa-report-status','wa-evidence-chart'])$(id).replaceChildren();
  }finally{$('wa-refresh').disabled=false;}
 }
+$('wa-action-search').addEventListener('input',filterCommissioningRows);
 $('wa-employee-search').addEventListener('input',event=>{employeeSearch=String(event.target.value||'').trim().toLowerCase();if(latest)renderRoster(latest);});
 $('wa-chart-kind').addEventListener('change',event=>{selectedChartKind=event.target.value;if(latest){const emp=latest.employees.find(x=>x.id===selection);if(emp)renderEmployeeCharts(emp);}});
 $('wa-refresh').addEventListener('click',refresh);

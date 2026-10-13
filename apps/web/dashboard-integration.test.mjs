@@ -26,5 +26,7 @@ test('founder workforce dashboard supports employee search, collapsible reports 
  assert.match(html,/id="wa-chart-kind"/);
  assert.match(html,/id="wa-evidence-chart"/);
  assert.match(html,/<details[^>]*>/);
- assert.match(js,/chartSvg/);
+ assert.match(js,/renderEmployeeCharts/);
+ assert.match(js,/wa-chart-donut/);
+ assert.match(js,/wa-graph-columns/);
 });

@@ -47,7 +47,11 @@ export function formatAdaptiveStatus(data){
   ?' · '+(elapsed/1000).toFixed(1)+'s':'';
  const pilot=data?.v3Pilot?.pilotState==='READ_ONLY_EVALUATION_ACTIVE'&&data?.v3Pilot?.v3AutonomyState==='HOLD'
   ?'V3 supervised evaluation active (autonomous upgrade on HOLD) · ':'';
- return pilot+'Adaptive '+label+' · '+observed+' sources observed'+why+timing+'. No business changes.';
+ const jarvis=data?.jarvisX?.mode==='READ_ONLY_ADVISORY_PREVIEW'
+  &&data?.jarvisX?.actionAuthorized===false
+  &&data?.jarvisX?.coordination?.dispatchedAgents===0
+  ?'JARVIS X read-only preview (hypothetical reviews only) · ':'';
+ return pilot+jarvis+'Adaptive '+label+' · '+observed+' sources observed'+why+timing+'. No business changes.';
 }
 export function voiceCapabilityReady(x){
  return x?.enabled===true&&x?.manualReviewRequired===true
@@ -218,7 +222,7 @@ function init(){
   let speaking=false;
   try{
    const investigate=adaptive?.checked===true;
-   const route=investigate?'/api/adaptive-intelligence?q='+encodeURIComponent(intent.question)+'&eval=v3-readonly'
+   const route=investigate?'/api/adaptive-intelligence?q='+encodeURIComponent(intent.question)+'&eval=v3-readonly&mode=jarvis-x'
     :intent.kind==='EVIDENCE'
     ?'/api/federated-knowledge?q='+encodeURIComponent(intent.question)
     :intent.domain==='engineering'

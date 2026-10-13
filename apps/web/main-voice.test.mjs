@@ -106,7 +106,7 @@ test('decision brief is short, card-safe and available as separate spoken execut
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const voice=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.ok(html.includes('/main-voice.mjs?v=20261013-voice-esm-restored'));
+ assert.ok(html.includes('/main-voice.mjs?v=20261013-jarvis-x-review-v1'));
  assert.ok(voice.includes('player.speak(spokenAnswer||lastAnswer)'));
  assert.doesNotMatch(voice,/innerHTML\\s*=/);
 });
@@ -116,7 +116,7 @@ test('adaptive intelligence is user-visible, read-only, and never trusts unverif
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const js=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.match(html,/id="vaos-voice-adaptive" type="checkbox" checked/);
- assert.match(html,/main-voice\.mjs\?v=20261013-voice-esm-restored/);
+ assert.match(html,/main-voice\.mjs\?v=20261013-jarvis-x-review-v1/);
  assert.match(js,/\/api\/adaptive-intelligence\?q=/);
  const sha='a'.repeat(40);
  const safe='https://github.com/vayu-shastr/adv-vibpe/blob/'+sha+'/docs/KP.md';
@@ -169,4 +169,19 @@ test('supervised V3 mode remains explicit about HOLD even when model produces bo
  const {readFile}=await import('node:fs/promises');
  const source=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.ok(source.includes('&eval=v3-readonly'));
+});
+
+test('JARVIS X preview status is explicit and cannot imply autonomous agent dispatch or optimized production',async()=>{
+ const v=formatAdaptiveStatus({
+  sourceCoverage:{observed:2},reasoningMode:'DETERMINISTIC_EVIDENCE',
+  jarvisX:{mode:'READ_ONLY_ADVISORY_PREVIEW',actionAuthorized:false,
+   coordination:{dispatchedAgents:0}}});
+ assert.match(v,/JARVIS X read-only preview/i);
+ assert.match(v,/No business changes/);
+ const bad=formatAdaptiveStatus({sourceCoverage:{observed:1},
+  jarvisX:{mode:'READ_ONLY_ADVISORY_PREVIEW',actionAuthorized:true}});
+ assert.doesNotMatch(bad,/JARVIS X read-only preview/i);
+ const {readFile}=await import('node:fs/promises');
+ const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.ok(script.includes('&mode=jarvis-x'),'supervised adaptive requests must select the governed read-only preview');
 });

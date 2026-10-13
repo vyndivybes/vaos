@@ -353,3 +353,56 @@ test('coach guidance is present in actual model planning and synthesis without e
  assert.deepEqual(prompts.map(p=>p.temperature),[0,0]);
  assert.ok(prompts.every(p=>!p.prompt.includes('private@domain.test')));
 });
+
+
+test('JARVIS X founder decision room reuses only authorized existing reads without adding model calls or dispatch',async()=>{
+ const actions=[];
+ const handler=createAdaptiveIntelligenceHandler({
+  claim:async()=>({allowed:false}),
+  getReader:()=>({execute:async job=>{
+   actions.push(job.actionType);
+   const authority={
+    'PROCUREMENT.OBSERVE_SHORTAGE':'getConfiguredDemandShortages',
+    'PRODUCTION.OBSERVE_WIP':'getProductionJobCards'
+   }[job.actionType];
+   if(!authority)throw Error('UNEXPECTED_READ');
+   return {actionType:job.actionType,sourceAuthority:authority,
+     data:{records:[{id:'synthetic1',status:'open'}]}};
+  }})
+ });
+ const request=req('What supplier shortages affect production readiness?');
+ request.url+='&eval=v3-readonly&mode=jarvis-x';
+ const {state,res}=collect();await handler(request,res);
+ assert.equal(state.status,200);
+ const data=state.payload.data;
+ assert.equal(data.jarvisX.status,'REVIEW_PREVIEW');
+ assert.equal(data.jarvisX.coordination.dispatchedAgents,0);
+ assert.equal(data.jarvisX.optimization.reviewSlots,2);
+ assert.equal(data.jarvisX.extraModelCalls,0);
+ assert.equal(data.modelCalls,0);
+ assert.equal(data.actionAuthorized,false);
+ assert.equal(data.jarvisX.actionAuthorized,false);
+ assert.deepEqual(actions,['PROCUREMENT.OBSERVE_SHORTAGE','PRODUCTION.OBSERVE_WIP']);
+ assert.match(data.answer,/JARVIS X SIMULATION/);
+ assert.ok(data.answer.length<=6500);
+});
+test('JARVIS X remains founder-only and rejects unknown preview mode or unauthenticated calls',async()=>{
+ const handler=createAdaptiveIntelligenceHandler({getReader:()=>{throw Error('SHOULD_NOT_READ')}});
+ for(const [patch,expected] of [
+  ['&mode=jarvis-x&eval=v3-readonly',401],
+  ['&mode=execute-agent',401],
+ ]){
+  const request={...req('What is our material risk?'),headers:{}};
+  request.url+=patch;const {state,res}=collect();await handler(request,res);
+  assert.equal(state.status,expected);
+ }
+ const request=req('What is our material risk?');request.url+='&mode=execute-agent';
+ const {state,res}=collect();await handler(request,res);
+ assert.equal(state.status,422);
+});
+test('ordinary adaptive voice questions remain unaffected by optional JARVIS X module',async()=>{
+ const handler=createAdaptiveIntelligenceHandler({claim:async()=>({allowed:false})});
+ const {state,res}=collect();await handler(req('How is our production performance?'),res);
+ assert.equal(state.status,200);
+ assert.equal(state.payload.data.jarvisX,undefined);
+});

@@ -9,6 +9,7 @@ import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {selectEvidenceGapRead,independentlyCheckDraft} from '../lib/adaptive-investigation.mjs';
 import {summarizeAdaptiveDiagnostics} from '../lib/adaptive-upgrade-readiness.mjs';
 import {assessV3CandidateMode} from '../lib/adaptive-v3-activation.mjs';
+import {createJarvisXPreview} from '../lib/jarvis-x-decision-room.mjs';
 import {planAdaptiveReads,validateAdaptiveDraft,synthesizeAdaptiveBrief,
  fallbackAdaptivePlan,formatAdaptiveEvidence,permittedTechnicalSources,
  buildAdaptiveFallback} from '../lib/adaptive-intelligence.mjs';
@@ -66,10 +67,12 @@ export function createAdaptiveIntelligenceHandler({
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder-only intelligence'));
   if(req.env?.VAOS_VOICE_CONTROL!==CONTROL)
    return res.status(409).json(apiError('ADAPTIVE_DISABLED','Read-only founder intelligence not commissioned'));
-  let question='',evaluationRequest='';try{const u=new URL(req.url);question=u.searchParams.get('q')||'';evaluationRequest=u.searchParams.get('eval')||'';}catch{}
+  let question='',evaluationRequest='',analysisMode='';try{const u=new URL(req.url);question=u.searchParams.get('q')||'';evaluationRequest=u.searchParams.get('eval')||'';analysisMode=u.searchParams.get('mode')||'';}catch{}
   if(question.length<5||question.length>300||/[\x00-\x1f\x7f]/.test(question)||
     resolveVoiceIntent(question).reason==='BLOCKED_OR_UNBOUNDED')
    return res.status(422).json(apiError('ADAPTIVE_QUESTION_REJECTED','Read-only non-secret question required'));
+  if(analysisMode!==''&&!(analysisMode==='jarvis-x'&&evaluationRequest==='v3-readonly'))
+   return res.status(422).json(apiError('JARVIS_X_MODE_DENIED','Founder supervised read-only mode required'));
 
   const startedAt=now();
   // Planning is dynamic only when bounded local Workers AI inference is available;
@@ -156,7 +159,14 @@ export function createAdaptiveIntelligenceHandler({
     :'Model conclusions withheld or unavailable; only authorized observations are reported.')+
    '\n\nINVESTIGATION TRACE — '+investigation.map(x=>x.phase+
     (x.tool?' '+x.tool:'')+(x.result?' '+x.result:'')).join(' → ')+'.'};
+  // JARVIS X extends the existing authenticated evidence path, NEVER the
+  // model's tool plan. Its graph edges are schema hypotheses; optimization
+  // uses abstract review slots, not resource/cash/production forecasts.
+  const jarvisX=analysisMode==='jarvis-x'
+   ?createJarvisXPreview({observations:evidence,reviewSlots:2}):null;
+  if(jarvisX)result={...result,answer:(result.answer+'\n\n'+jarvisX.brief).slice(0,6400)};
   return res.status(200).json({data:{...result,sourceSystem:'VAOS_ADAPTIVE',
+   ...(jarvisX?{jarvisX}:{}),
    sourceCoverage:{observed:evidence.filter(x=>x.status==='OBSERVED').length,
     requested:evidence.length},sources,planningMode:selected.mode,
    focus:selected.focus,selectedTools:selected.tools,followupRead,executionCount:observed.length,

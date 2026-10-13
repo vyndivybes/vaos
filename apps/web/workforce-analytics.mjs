@@ -55,7 +55,8 @@ function renderEmployee(){
   ' · Status: '+emp.lifecycle+' · Qualification: '+(emp.qualificationLevel===null?'not evidenced':'Q'+emp.qualificationLevel)+
   ' · Activity: '+emp.activitySignal),
  element('p','Current assignment: '+display(emp.currentAssignment)),
- element('p','Last independently evidenced activity: '+time(emp.lastVerifiedActivityAt)));
+ element('p','Last independently evidenced activity: '+time(emp.lastVerifiedActivityAt)),
+ element('p','Qualification drills: '+display(emp.trainingWork?.total)+' total · '+display(emp.trainingWork?.completed)+' marked completed (not operational output)'));
  const bars=$('wa-status-bars');bars.replaceChildren();
  const max=Math.max(1,...workLabels.map(([key])=>emp.work[key]??0));
  for(const [key,label] of workLabels)bar(bars,label,emp.work[key],max);

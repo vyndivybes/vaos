@@ -1,5 +1,6 @@
 api/
 lib/*
+!lib/mission-status-model.mjs
 !lib/voice-pilot.mjs
 !lib/voice-pilot-controller.mjs
 !lib/voice-one-shot.mjs

@@ -1,0 +1,77 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {buildEvidenceGraph,optimizeReviewQueue,planGovernedAgentReviews,createJarvisXPreview} from './jarvis-x-decision-room.mjs';
+const sample=[
+ {tool:'PROCUREMENT',status:'OBSERVED',summary:'47 shortage lines; Customer Email PRIVATE@example.com',sourceAuthority:'getConfiguredDemandShortages'},
+ {tool:'PRODUCTION',status:'OBSERVED',summary:'4 job cards',sourceAuthority:'getProductionJobCards'},
+ {tool:'ENGINEERING',status:'HOLD',summary:'Engineering unavailable or incomplete.',sourceAuthority:null},
+];
+test('knowledge graph includes only selected governed source domains and labels inferred relations as hypotheses',()=>{
+ const graph=buildEvidenceGraph(sample);
+ assert.equal(graph.nodes.length,3);assert.equal(graph.nodes[0].status,'OBSERVED');
+ assert.equal(graph.nodes[0].authority,'getConfiguredDemandShortages');
+ assert.equal(graph.nodes[2].authority,null);
+ assert.ok(graph.edges.some(e=>e.from==='PROCUREMENT'&&e.to==='PRODUCTION'));
+ assert.ok(graph.edges.every(e=>e.assurance==='UNVERIFIED_DEPENDENCY_HYPOTHESIS'));
+ assert.equal(graph.graphAuthority,'TRANSIENT_SOURCE_STATUS_ONLY');
+ assert.doesNotMatch(JSON.stringify(graph),/PRIVATE@example\.com|47 shortage lines|job cards/);
+ assert.equal(graph.holdCount,1);
+});
+test('knowledge graph fails closed for unsupported tool names and forged status/authority',()=>{
+ for(const rows of [
+  [{tool:'EXECUTE_PAYMENT',status:'OBSERVED',sourceAuthority:'none'}],
+  [{tool:'FINANCE',status:'OBSERVED',sourceAuthority:''}],
+  [{tool:'FINANCE',status:'FRAUD',sourceAuthority:'ledger'}],
+  [...sample,sample[0]], 
+ ])assert.throws(()=>buildEvidenceGraph(rows),/JARVIS_X_EVIDENCE_INVALID/);
+});
+test('constraint optimizer selects globally best bounded review subset, not greedy top-ranked single item',()=>{
+ const actions=[
+  {id:'A',reviewCost:2,priority:7,owner:'FINANCE',evidenceStatus:'OBSERVED'},
+  {id:'B',reviewCost:1,priority:4,owner:'PRODUCTION',evidenceStatus:'OBSERVED'},
+  {id:'C',reviewCost:1,priority:4,owner:'PROCUREMENT',evidenceStatus:'OBSERVED'}
+ ];
+ const p=optimizeReviewQueue(actions,{reviewSlots:2});
+ assert.deepEqual(p.selected.map(x=>x.id),['B','C']);
+ assert.equal(p.totalPriority,8);assert.equal(p.selectedReviewUnits,2);
+ assert.equal(p.monetaryForecastCertified,false);
+ assert.equal(p.executionAuthorized,false);
+ assert.equal(p.objectiveType,'HEURISTIC_REVIEW_PRIORITY_ONLY');
+});
+test('constraint optimizer refuses external attacker-supplied giant capacity, negative costs and unsupported payloads',()=>{
+ assert.throws(()=>optimizeReviewQueue([{id:'PAY',reviewCost:-1,priority:100,owner:'FINANCE',evidenceStatus:'OBSERVED'}]),/JARVIS_X_OPTIMIZATION_INVALID/);
+ assert.throws(()=>optimizeReviewQueue([], {reviewSlots:999}),/JARVIS_X_OPTIMIZATION_INVALID/);
+ assert.throws(()=>optimizeReviewQueue([{id:'SCRIPT',reviewCost:1,priority:1,owner:'EXECUTOR',evidenceStatus:'OBSERVED'}]),/JARVIS_X_OPTIMIZATION_INVALID/);
+});
+test('governed coordinator assigns proposed qualified roles only; never dispatches DEs or changes policies',()=>{
+ const graph=buildEvidenceGraph(sample);
+ const plan=planGovernedAgentReviews(graph);
+ assert.equal(plan.operation,'PROPOSE_ONLY');
+ assert.equal(plan.dispatchedAgents,0);
+ assert.equal(plan.authorizedWrites,0);
+ assert.ok(plan.reviews.some(x=>x.domain==='ENGINEERING'&&x.evidenceStatus==='HOLD'));
+ assert.ok(plan.reviews.every(x=>x.assignment==='NOT_DISPATCHED'&&x.qualification==='UNVERIFIED'));
+ assert.ok(plan.reviews.every(x=>!/(PAY|EXECUTE|APPROVE)/.test(x.id)));
+});
+test('no observed source means decision-room HOLD rather than fabricated plan or optimized manufacturing result',()=>{
+ const out=createJarvisXPreview({observations:[{tool:'FINANCE',status:'HOLD',summary:'finance unavailable'}]});
+ assert.equal(out.status,'HOLD');
+ assert.deepEqual(out.optimization.selected,[]);
+ assert.equal(out.actionAuthorized,false);
+ assert.equal(out.simulationOnly,true);
+ assert.match(out.brief,/HOLD/);
+});
+test('coherent observed evidence yields read-only review optimization, not production math or autonomy',()=>{
+ const out=createJarvisXPreview({observations:sample,reviewSlots:2});
+ assert.equal(out.status,'REVIEW_PREVIEW');
+ assert.equal(out.evidenceGraph.holdCount,1);
+ assert.equal(out.optimization.reviewSlots,2);
+ assert.ok(out.optimization.selected.length<=2);
+ assert.equal(out.coordination.dispatchedAgents,0);
+ assert.equal(out.qualifiedForProductionOptimization,false);
+ assert.equal(out.extraModelCalls,0);
+ assert.equal(out.extraNetworkCalls,0);
+ assert.equal(out.actionAuthorized,false);
+ assert.ok(out.brief.length<=560);
+ assert.match(out.brief,/hypothetical|simulation/i);
+ assert.doesNotMatch(JSON.stringify(out),/PRIVATE@example\.com/);
+});

@@ -55,16 +55,18 @@ export function createVoiceReadback({
      if(active!==st)return;
      clearTimer(st);st.index++;st.started=false;next();
     };
-    utterance.onerror=()=>{
+    utterance.onerror=event=>{
      if(active!==st)return;
-     conclude(st,'ERROR','SPEECH_ERROR');
+     const allowed=new Set(['audio-busy','audio-hardware','network','synthesis-unavailable','synthesis-failed','language-unavailable','voice-unavailable','text-too-long','invalid-argument','not-allowed','canceled','interrupted']);
+     const reason=allowed.has(event?.error)?'SPEECH_'+event.error.replaceAll('-','_').toUpperCase():'SPEECH_ERROR';
+     conclude(st,'ERROR',reason);
     };
     st.timer=schedule(()=>{
      if(active!==st||st.started)return;
      conclude(st,'ERROR','SPEECH_NOT_STARTED');
     },5000);
     synthesis.speak(utterance);
-    onState('QUEUED');
+    if(active===st)onState('QUEUED');
    }catch{
     conclude(st,'ERROR','SPEECH_UNAVAILABLE');
    }

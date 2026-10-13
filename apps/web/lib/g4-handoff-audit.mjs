@@ -5,7 +5,7 @@
  */
 const value=(obj,snake,camel)=>obj?.[snake]??obj?.[camel];
 const asText=v=>typeof v==='string'?v.trim():'';
-const stamp=v=>typeof v==='string'&&/^d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(v)
+const stamp=v=>typeof v==='string'&&/^[0-9]{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d+)?(?:Z|[+-]\d\d:\d\d)$/.test(v)
  &&Number.isFinite(Date.parse(v))?Date.parse(v):null;
 const dissentOutcomes=new Set(['INFORMATION_REQUIRED','REQUEST_INFO','RETURN','REJECT','ESCALATE','ESCALATED','DISPUTE','REOPEN']);
 const safeArray=a=>Array.isArray(a)&&a.length<=512;
@@ -68,9 +68,6 @@ export function summarizeG4HandoffTrail(snapshot) {
    }else if(!dissentOutcomes.has(normalized[i].outcome))coherent=false;
   }
   const verifiedAt=stamp(value(h,'verified_at','verifiedAt'));
-  const complete=coherent&&cursor===3&&normalized.at(-1)?.outcome==='VERIFY'
-   &&normalized.at(-1)?.to==='COMPLETED'&&asText(h.status)==='COMPLETED'
-   &&checker!==''&&checker!==owner&&checker!==fromAgent||false;
   // Verifier may be the requester; the only immutable restriction from the
   // existing handoff contract is that recipient cannot verify its own work.
   const recordedComplete=Boolean(coherent&&cursor===3&&normalized.at(-1)?.outcome==='VERIFY'

@@ -100,3 +100,49 @@ test('G3.1D does not accept source-supplied self-certification or claim unbounde
  assert.equal(x.sourceRevisionVerified,false);
  assert.equal(x.quantityCertifiedForOptimization,false);
 });
+
+test('G3.1D independently observed released engineering baselines missing BOM are explicitly held',()=>{
+ const records=Array.from({length:3},(_,n)=>({
+  id:'SECRET-BL-'+n,status:'released',revision_code:'R5',bom_revision:null,
+  confidentialNote:'do-not-export'
+ }));
+ const result=auditG3NumericSource('ENGINEERING',{baselines:records,changeOrders:[]});
+ assert.equal(result.status,'FIELD_CONTRACT_HOLD');
+ assert.equal(result.invalidRows,3);
+ assert.deepEqual(result.reasonCodes,['ENGINEERING_RELEASED_BOM_UNASSIGNED']);
+ assert.equal(result.fieldFailureCounts.ENGINEERING_RELEASED_BOM_UNASSIGNED,3);
+ assert.equal(result.quantityCertifiedForOptimization,false);
+ assert.equal(result.productionReleaseCertified,false);
+ assert.doesNotMatch(JSON.stringify(result),/SECRET-BL|do-not-export/);
+});
+test('G3.1D permits a draft engineering baseline without BOM but never certifies its release',()=>{
+ const result=auditG3NumericSource('ENGINEERING',{
+  changeOrders:[],baselines:[{id:'BL-DRAFT',revision_code:'R1',bom_revision:null,status:'draft'}]
+ });
+ assert.equal(result.status,'STRUCTURAL_CANDIDATE_UNCERTIFIED');
+ assert.equal(result.productionReleaseCertified,false);
+ assert.equal(result.quantityCertifiedForOptimization,false);
+});
+test('G3.1D splits invalid engineering fields and still holds forged released BOMs',()=>{
+ const result=auditG3NumericSource('ENGINEERING',{changeOrders:[],baselines:[
+  {id:'!',revision_code:'',bom_revision:'wrong spaces',status:'released'},
+  {id:'OK',revision_code:'R5',bom_revision:'R5',status:'released'}
+ ]});
+ assert.equal(result.status,'FIELD_CONTRACT_HOLD');
+ assert.equal(result.invalidRows,1);
+ assert.deepEqual(result.reasonCodes,[
+  'ENGINEERING_BASELINE_ID_INVALID','ENGINEERING_REVISION_INVALID','ENGINEERING_BOM_REVISION_INVALID'
+ ]);
+ assert.equal(result.fieldFailureCounts.ENGINEERING_BOM_REVISION_INVALID,1);
+ assert.equal(result.productionReleaseCertified,false);
+});
+test('G3.1D mixed quantity units remain on hold even when each row is structurally valid',()=>{
+ const result=auditG3NumericSource('INVENTORY',{records:[
+  {sku:'T700',unit:'g',quantity_balance:'1000'},
+  {sku:'T700',unit:'kg',quantity_balance:'1'}
+ ]});
+ assert.equal(result.status,'FIELD_CONTRACT_HOLD');
+ assert.equal(result.structurallyValidRows,2);
+ assert.equal(result.fieldFailureCounts.MIXED_UNCONVERTED_UNITS,1);
+ assert.equal(result.numericUnitReconciliationVerified,false);
+});

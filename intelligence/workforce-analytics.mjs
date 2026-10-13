@@ -1,6 +1,7 @@
 import {VAOS_WORKFORCE_AGENT_IDS,VAOS_JOB_CATALOG} from '../platform/runtime/vaos-eight-operating-model.mjs';
 import {getDepartmentAuditScope} from '../platform/qualification/department-audit.mjs';
 import {departmentResults,plannedProgress,qualifiedForecast,capaRetests,governedReports} from './workforce-evidence.mjs';
+import {assessWorkforceOperationalReadiness} from './workforce-operational-readiness.mjs';
 
 // Read-only workforce analytics. Never substitute mission state for evidence of audit, defect
 // closure or runtime liveness. No production actions and no use of synthetic history.
@@ -127,7 +128,8 @@ export function buildWorkforceAnalytics(raw){
  summary.employeesWithQualifiedForecast=employees.filter(e=>e.forecast.status==='INDEPENDENTLY_QUALIFIED_PROJECTION').length;
  summary.approvedBaselines=employees.reduce((s,e)=>s+(e.progress.baselineCount||0),0);
  summary.independentAuditReviews=employees.reduce((s,e)=>s+(e.audit.history?.length||0),0);
+ const operationalReadiness=assessWorkforceOperationalReadiness(employees,raw.observedAt);
  return Object.freeze({schemaVersion:'VAOS_FOUNDER_ANALYTICS_V1',observedAt:raw.observedAt,
   dataCoverage:registered+'/16',actionAuthorized:false,source:'GOVERNED_POSTGRES_WORK_PACKAGES',
-  summary,employees});
+  summary,employees,operationalReadiness});
 }

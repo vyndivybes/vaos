@@ -63,3 +63,18 @@ test('G3.1E missing comparand fields cannot silently pass comparison',()=>{
  assert.equal(x.holds.includes('CROSS_SOURCE_COMPARAND_FIELDS_MISSING'),true);
  assert.equal(x.completeDatasetVerified,false);
 });
+
+test('G3.1E exposes released production card approval-timestamp gaps without granting release',()=>{
+ const x=base();
+ x.PRODUCTION.records=[
+  {...x.PRODUCTION.records[0],status:'released',approved_at:null},
+  {id:'J2',status:'released',bom_revision:'R1',approved_at:'2026-10-13T10:00:00.000Z'},
+  {id:'J3',status:'draft',bom_revision:'R1',approved_at:null}
+ ];
+ const s=assessG3CrossSource(x);
+ assert.equal(s.counts.productionReleasedCardsMissingApprovalTimestamp,1);
+ assert.ok(s.holds.includes('PRODUCTION_RELEASE_APPROVAL_TIMESTAMP_UNOBSERVED'));
+ assert.equal(s.engineeringReleaseVerified,false);
+ assert.equal(s.actionAuthorized,false);
+ assert.doesNotMatch(JSON.stringify(s),/SO-1|SKU1|J2/);
+});

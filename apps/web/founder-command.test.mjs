@@ -27,7 +27,7 @@ test('persisted state does not imply runtime liveness',()=>{
  assert.equal(x[0].qualification,'Q3');assert.equal(x[0].liveness,'UNVERIFIED');
  assert.equal(safeAgentSnapshot({agents:[{id:'fake',lifecycle:'ACTIVE'}]}).length,0);
 });
-test('install shell never caches private messages or claims commands were sent',async()=>{
+test('Founder Command links to individual workforce analytics without a dispatch shortcut',async()=>{\n const html=await readFile(new URL('./founder-console.html',import.meta.url),'utf8');\n assert.match(html,/href=\"\\/workforce-analytics\\.html\"/);\n});\ntest('install shell never caches private messages or claims commands were sent',async()=>{
  const [manifestText,html,script]=await Promise.all([
   readFile(new URL('./manifest.webmanifest',import.meta.url),'utf8'),
   readFile(new URL('./founder-console.html',import.meta.url),'utf8'),

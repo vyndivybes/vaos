@@ -170,3 +170,18 @@ test('supervised V3 mode remains explicit about HOLD even when model produces bo
  const source=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.ok(source.includes('&eval=v3-readonly'));
 });
+
+test('JARVIS X preview status is explicit and cannot imply autonomous agent dispatch or optimized production',async()=>{
+ const v=formatAdaptiveStatus({
+  sourceCoverage:{observed:2},reasoningMode:'DETERMINISTIC_EVIDENCE',
+  jarvisX:{mode:'READ_ONLY_ADVISORY_PREVIEW',actionAuthorized:false,
+   coordination:{dispatchedAgents:0}}});
+ assert.match(v,/JARVIS X read-only preview/i);
+ assert.match(v,/No business changes/);
+ const bad=formatAdaptiveStatus({sourceCoverage:{observed:1},
+  jarvisX:{mode:'READ_ONLY_ADVISORY_PREVIEW',actionAuthorized:true}});
+ assert.doesNotMatch(bad,/JARVIS X read-only preview/i);
+ const {readFile}=await import('node:fs/promises');
+ const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.ok(script.includes('&mode=jarvis-x'),'supervised adaptive requests must select the governed read-only preview');
+});

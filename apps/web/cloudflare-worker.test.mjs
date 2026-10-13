@@ -160,7 +160,7 @@ test('Slack event ingress fails closed before the public asset router', async ()
   assert.equal((await response.json()).reason, 'SLACK_EVENTS_NOT_COMMISSIONED');
 });
 
-test('production browser bundles all static main-voice dependencies or mic AND speaker fail together',async()=>{
+test('production voice and workforce pages ship their complete browser module dependencies',async()=>{
  const {readFile}=await import('node:fs/promises');
  const {resolve,dirname,relative}=await import('node:path');
  const base=new URL('.',import.meta.url);
@@ -172,7 +172,7 @@ test('production browser bundles all static main-voice dependencies or mic AND s
   return rules.includes('lib/*')&&!rules.includes('!'+path);
  };
  const visited=new Set();
- const queue=['main-voice.mjs'];
+ const queue=['main-voice.mjs','mission-status.mjs','agent-supervision.mjs','workforce-analytics.mjs'];
  while(queue.length){
   const path=queue.shift();if(visited.has(path))continue;
   visited.add(path);
@@ -190,6 +190,7 @@ test('production browser bundles all static main-voice dependencies or mic AND s
  }
  assert.ok(visited.has('lib/microphone-diagnostics.mjs'));
  assert.ok(visited.has('lib/adaptive-read-planner.mjs'));
+ assert.ok(visited.has('lib/mission-status-model.mjs'));
 });
 
 test('workspace stylesheet is noncacheable just like HTML and browser JS',async()=>{

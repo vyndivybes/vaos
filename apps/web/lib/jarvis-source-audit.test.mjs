@@ -71,7 +71,7 @@ test('source authority SQL applies authenticated key and only returns aggregate 
  const sql=await readFile(new URL('../../../supabase/migrations/20261013095500_jarvis_g2b_source_integrity_audit_v1.sql',import.meta.url),'utf8');
  assert.match(sql,/vaos_private\.assert_server_key\(p_server_key\)/);
  assert.match(sql,/security definer/i);
- assert.match(sql,/source_endpoint_jobs_succeeded/i);
+ assert.match(sql,/'sourceEndpointJobsSucceeded'/i);
  assert.match(sql,/updated_at/i);
  assert.match(sql,/revoke all on function public\.vaos_jarvis_source_audit/i);
  assert.match(sql,/grant execute on function public\.vaos_jarvis_source_audit\(text\) to service_role/i);

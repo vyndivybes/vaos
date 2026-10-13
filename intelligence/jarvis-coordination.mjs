@@ -34,3 +34,38 @@ export function planJarvisCoordination(snapshot, {now=Date.now()}={}) {
   reviews,dispatchedAgents:0,modelCalls:0,actionAuthorized:false,agentDispatchAuthorized:false,
   productionWritesAuthorized:false,qualificationCertified:false};
 }
+
+/**
+ * Reconcile normalized assessment-ledger rows without confusing row count with
+ * distinct employee coverage. Historical re-assessments may legitimately
+ * repeat an employee; missing identities cannot be filled by duplicate rows.
+ * Input is a caller-supplied observation, not authenticated production proof.
+ * No raw evidence, reviewer identities or operational authority is exported.
+ */
+export function reconcileJarvisAssessmentRows(rows) {
+ if(!Array.isArray(rows)||rows.length>256)throw Error('ASSESSMENT_COVERAGE_INPUT_INVALID');
+ const counts=new Map(VAOS_WORKFORCE_AGENT_IDS.map(id=>[id,0]));
+ let recordedPassRows=0;
+ for(const row of rows) {
+  if(!row||typeof row!=='object'||Array.isArray(row)||
+     !counts.has(row.employeeId)||typeof row.status!=='string'||
+     !/^[A-Z][A-Z_]{1,39}$/.test(row.status))
+   throw Error('ASSESSMENT_COVERAGE_INPUT_INVALID');
+  if(row.status==='PASS') {
+   recordedPassRows++;
+   counts.set(row.employeeId,counts.get(row.employeeId)+1);
+  }
+ }
+ const missingPassEmployeeIds=VAOS_WORKFORCE_AGENT_IDS.filter(id=>counts.get(id)===0);
+ const repeatedPassEmployeeIds=VAOS_WORKFORCE_AGENT_IDS.filter(id=>counts.get(id)>1);
+ return Object.freeze({
+  schemaVersion:'VAOS_JARVIS_ASSESSMENT_COVERAGE_V1',
+  status:missingPassEmployeeIds.length?'RECORDED_PASS_COVERAGE_HOLD':'RECORDED_PASS_COVERAGE_ONLY',
+  totalCanonicalEmployees:VAOS_WORKFORCE_AGENT_IDS.length,
+  recordedPassRows,distinctEmployeesWithPass:VAOS_WORKFORCE_AGENT_IDS.length-missingPassEmployeeIds.length,
+  missingPassEmployeeIds:Object.freeze(missingPassEmployeeIds),
+  repeatedPassEmployeeIds:Object.freeze(repeatedPassEmployeeIds),
+  readOnly:true,rawRecordProvenanceVerified:false,independentEvidenceVerified:false,
+  qualifiedForDispatch:false,actionAuthorized:false,productionWritesAuthorized:false
+ });
+}

@@ -33,7 +33,7 @@ test('G3 solver handles scarce resources and searches for the minimum feasible m
  assert.equal(a.endDay<=b.startDay||b.endDay<=a.startDay,true);
 });
 test('G3 rejects infeasible plans and blocks unreleased engineering assumptions',()=>{
- const no=optimizeSandboxSchedule({...planning,horizonDays:2,jobs:[planning.jobs[0],
+ const no=optimizeSandboxSchedule({...planning,horizonDays:2,jobs:[{...planning.jobs[0],deadlineDay:2},
  {...planning.jobs[1],durationDays:2,deadlineDay:2}]});
  assert.equal(no.status,'INFEASIBLE_SYNTHETIC');
  assert.equal(no.actionAuthorized,false);

@@ -1,0 +1,595 @@
+{
+  "schemaVersion": "VAOS_ISOLATED_ROLE_EXERCISES_V1",
+  "observedAt": "2026-10-13T18:47:13.955Z",
+  "sourceBaselineCommit": "699857171ff5eda1ecc19b7533e92ddd40f9cae4",
+  "sourceHashes": {
+    "platform/qualification/workforce-role-training.mjs": "db42d70e37e80c5a49a965080c83254170d4dba28503fabc525b6d70489f4ae5",
+    "platform/qualification/workforce-training-store.mjs": "e3c270840ae6a454001c9d0807e86c9f20b6b97a2c94ae64222717afa2072bb8",
+    "platform/qualification/workforce-training-fixtures.mjs": "a9434bf567917e77f122d9a17bb8918e247b0bdc731a6e9a2861ceb8e57712c9",
+    "platform/qualification/workforce-role-training.test.mjs": "c87b0e373ea0ea832a5a03696f35118acff6fbe1af056d78a783cf52373ac1a0",
+    "scripts/qualification/workforce-role-exercises.mjs": "61b2fdddcd0cf9aaa24c0fae6e28c1384ee496b2f39480cab1978fa83dfe3f64"
+  },
+  "environment": "LOCAL_ISOLATED_SYNTHETIC",
+  "synthetic": true,
+  "networkUsed": false,
+  "persistence": "Single-writer local files; not PostgreSQL recovery or authenticated hosted acceptance",
+  "employeeCount": 16,
+  "exerciseCount": 32,
+  "employees": [
+    {
+      "employeeId": "orchestrator",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-ORCHESTRATOR-GOOD",
+          "sourceHash": "1ef9dc2e79cf79ff280d638b132f12619b13f837663422e5476419c07a14955e",
+          "outputHash": "b37143863ded774430bffed6cf1372a310142b30fc87a23219321ad7b7482171",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "OWNER_MISSING",
+            "PREREQUISITE_MISSING"
+          ],
+          "observed": [
+            "OWNER_MISSING",
+            "PREREQUISITE_MISSING"
+          ],
+          "sourceRef": "TRAINING-ORCHESTRATOR-BAD",
+          "sourceHash": "85b7c15f12e0f0749b0ac30ea0fdc292aaa9429d2497486f7d9a79da31dc09ce",
+          "outputHash": "2f8510cbaa9dfa58ef74c6e1a1ebde2ede2d9389fea85bf5b3db6bd929471ed9",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "project",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PROJECT-GOOD",
+          "sourceHash": "9e7fc3b0a53c28213db3b776679f60f7b7970650d0974d2b2469e1d67d0bfaa2",
+          "outputHash": "f7a78ceb9c40a02244538fde78f851770bfc6823d1c4796e895d79e7c619cb49",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "TASK_OVERDUE"
+          ],
+          "observed": [
+            "TASK_OVERDUE"
+          ],
+          "sourceRef": "TRAINING-PROJECT-BAD",
+          "sourceHash": "e83dbe5c9b7c8ffd891604867ba23806e097b9c790546110b3c50a6dbac9529b",
+          "outputHash": "dd284187bc8615f7b21e13ff252dd5fc607554ac82a5e8b0f9c0a459f6de0312",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "vibpe",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-VIBPE-GOOD",
+          "sourceHash": "8a12e6fb86ed7933901236c77a3d13a79d5346b833f51fff28278f138800988c",
+          "outputHash": "48c15bbc70db247e61f1d5af989b7fb80b6929e2a019a557be28a63ae9285364",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "CONFIGURATION_MISMATCH",
+            "ALLOWABLES_UNVALIDATED"
+          ],
+          "observed": [
+            "CONFIGURATION_MISMATCH",
+            "ALLOWABLES_UNVALIDATED"
+          ],
+          "sourceRef": "TRAINING-VIBPE-BAD",
+          "sourceHash": "d6fe14b6158cad4320730eb76a6cda14a9350193e06a10736997cf88c0230208",
+          "outputHash": "f11fa764f10a1efe0d0b7e1636280749fe44ddda47597de3d7226b9a5ac3ad3b",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "qa",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-QA-GOOD",
+          "sourceHash": "60084fa4c037e3938a4497090c2c8df3ccbc99122e777894100cd990b252312f",
+          "outputHash": "4adc37b80d3913d8a612b1934666e68f432b4b09fd914a154d20066c4658bd6e",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "DEFECT_PRESENT",
+            "RETEST_REQUIRED"
+          ],
+          "observed": [
+            "DEFECT_PRESENT",
+            "RETEST_REQUIRED"
+          ],
+          "sourceRef": "TRAINING-QA-BAD",
+          "sourceHash": "3330a7e370c8ebf8646a498c3f73bf5a9c61d7fa5044b60c5fb0fce144465632",
+          "outputHash": "4a9d8a3f6adc6a1f22758a7adf980e95cec250107c85f3fa7ee1cfbff38c4894",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "risk",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-RISK-GOOD",
+          "sourceHash": "a82ac55c84a2293c63bc46040fe49df5db38602177693c7c98057780c339ad86",
+          "outputHash": "41395542884b2d31a1e66deb43d28cf111e22b1af4ba4daeafc8bbfe23d8c3a2",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "BLOCKER_OBSERVED",
+            "RISK_SCORE_UNQUALIFIED"
+          ],
+          "observed": [
+            "BLOCKER_OBSERVED",
+            "RISK_SCORE_UNQUALIFIED"
+          ],
+          "sourceRef": "TRAINING-RISK-BAD",
+          "sourceHash": "d63216585b0fbeac20b87ce3fadbc52d3caf14536c4494d58ddcd6e69faec6fb",
+          "outputHash": "de8198291450c7a7d0e2ac1db2527851829c30aa6be1132d4e1a1b5dad833f60",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "security",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-SECURITY-GOOD",
+          "sourceHash": "a847e617c4b05b516df549c8712cb5e9e27e1e0359ff15a57077aecc0f034f56",
+          "outputHash": "a39e5fcfc45d8870b525b0be934d8fc2620c8973e373e003eb1a29cf2ac2c483",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "ROLE_ACCESS_DENIED",
+            "SESSION_INVALID"
+          ],
+          "observed": [
+            "ROLE_ACCESS_DENIED",
+            "SESSION_INVALID"
+          ],
+          "sourceRef": "TRAINING-SECURITY-BAD",
+          "sourceHash": "5f3a4bf7182790898c3810390b744319129b63f9fd5e5f138d57e1938852d3a6",
+          "outputHash": "eb87b982a062d101505a8118453b88e2529e513e021ca5bd2a240520acacf08c",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "knowledge",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-KNOWLEDGE-GOOD",
+          "sourceHash": "97d58dca7a373b5fdf420b416d20c2d19cc2c5c31c251f88ba11dc72b95ec72d",
+          "outputHash": "7f9e34e9d64b6a7058d3c2b336c930ff6f6bcd93a5415ca4f958e790352bae01",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "SOURCE_MISSING",
+            "SOURCE_CONTRADICTION"
+          ],
+          "observed": [
+            "SOURCE_MISSING",
+            "SOURCE_CONTRADICTION"
+          ],
+          "sourceRef": "TRAINING-KNOWLEDGE-BAD",
+          "sourceHash": "ab9efde06884c2dc31343d4f5e168bf347e395f23f6e92c3754bd0c8e4f7927b",
+          "outputHash": "077de2ae4285c01ab11809e8991953dca4cc664d65a4b39aa15e5a83fe5dad55",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "release",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-RELEASE-GOOD",
+          "sourceHash": "5e9a7fb847a89fadb7d26762ccabd731933966c69059c64ec102d83dc452f891",
+          "outputHash": "810960eec29016daeeea8495c416cf77d2ea8bb71fac3b8d6c15bb0fb9ea988e",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "RELEASE_APPROVAL_MISSING",
+            "RELEASE_EVIDENCE_INCOMPLETE"
+          ],
+          "observed": [
+            "RELEASE_APPROVAL_MISSING",
+            "RELEASE_EVIDENCE_INCOMPLETE"
+          ],
+          "sourceRef": "TRAINING-RELEASE-BAD",
+          "sourceHash": "275d2ce3e31cf2fa44c762277f9d1a6ead97bd184ac1b6e97b6fafe4f54fb681",
+          "outputHash": "0474c43c11f5c43883f783f0d6665aca721be62680313987b854c152e9428e40",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "commercial",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-COMMERCIAL-GOOD",
+          "sourceHash": "d56cd807cb61e590068387fafb704960d0d2cb280d231d565f5a707f96d53b2b",
+          "outputHash": "0b64805b36497a80443114c5918309bcb41205f19c8bc3f246ade67b7c9e2623",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "COMMITMENT_UNAPPROVED"
+          ],
+          "observed": [
+            "COMMITMENT_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-COMMERCIAL-BAD",
+          "sourceHash": "3c695fa5fd0c630724d49ece496737101048fa031b29399db5cfdb5f6a327945",
+          "outputHash": "849193cf220c1ffa94575577ed7da170f27cb8875b8e43593668f444c0a856cc",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "procurement",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PROCUREMENT-GOOD",
+          "sourceHash": "8105dd5ba6cc8bf8fae3f8a3e996a3de70e2cb29cd323555785dba41a6906375",
+          "outputHash": "8f95e6e833a0afae8a63cc89c0af60e4f77ec5cacd0913ce8da26af2c9a79352",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "UNIT_MISSING",
+            "SHORTAGE_OBSERVED"
+          ],
+          "observed": [
+            "UNIT_MISSING",
+            "SHORTAGE_OBSERVED"
+          ],
+          "sourceRef": "TRAINING-PROCUREMENT-BAD",
+          "sourceHash": "5822961b74e2115d7be44c370ae5714ebad2a57b303197954cf220472c4c101b",
+          "outputHash": "89323e8fc9bcb39bfaf71ac4057015682298297a9e6896b935bee42bc40cb16e",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "inventory",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-INVENTORY-GOOD",
+          "sourceHash": "4804208eaf8a8746b3cd97ddf2292f2cfa7273e478be869622c35b2293374a14",
+          "outputHash": "486e3619e396211f563de70626a5ea37bfeb1fb69cd995beaf5baba11c3caba9",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "NEGATIVE_STOCK",
+            "LOT_TRACE_MISSING"
+          ],
+          "observed": [
+            "NEGATIVE_STOCK",
+            "LOT_TRACE_MISSING"
+          ],
+          "sourceRef": "TRAINING-INVENTORY-BAD",
+          "sourceHash": "c702d477e8caf3f3e87c3e5d8688a67f9304982f0e63e6bcdecbfb0ec615bb35",
+          "outputHash": "e7c31816b66a97d70d76118510071a6a51001258d3efdf915c475953321b87a3",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "production",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PRODUCTION-GOOD",
+          "sourceHash": "cbbeb8aabb8b68ce2d95fc1ea853f656a8a25ea32f491216d433bc325b080627",
+          "outputHash": "ff32d3c7e5bf7ebe8841e42860e869f241a0da2c0b959923a92583c9ea545ffd",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "CONFIGURATION_MISMATCH",
+            "QUALITY_HOLD"
+          ],
+          "observed": [
+            "CONFIGURATION_MISMATCH",
+            "QUALITY_HOLD"
+          ],
+          "sourceRef": "TRAINING-PRODUCTION-BAD",
+          "sourceHash": "2f71cf1d03bc21d4d23cdd598549b0e96f7a3dbf7786e27f4e30e822ad25a1a2",
+          "outputHash": "0d751faeebce0ce584cec86418ecce75182b38ec6f3ec9caf07ec65701ce0621",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "maintenance",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-MAINTENANCE-GOOD",
+          "sourceHash": "cdfca1321faa669dd59663e03c6e548db206d438eb4d3f70514a86fa398b3da5",
+          "outputHash": "6585404ccfac43c97b5f88db2212205729e63ec259c63e02ebf954d37ac6e57a",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "MAINTENANCE_OVERDUE",
+            "RETURN_PROOF_MISSING"
+          ],
+          "observed": [
+            "MAINTENANCE_OVERDUE",
+            "RETURN_PROOF_MISSING"
+          ],
+          "sourceRef": "TRAINING-MAINTENANCE-BAD",
+          "sourceHash": "c74b121c5c0a1686456d658b8f10a50cfeb57201794b6715271c65e429902b38",
+          "outputHash": "4e79f55b600e9284cdca5b660658dac626ae7ca15e92dc24bbdd4b81e81c2048",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "finance",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-FINANCE-GOOD",
+          "sourceHash": "c417cc44c69ef05e4efff0552f87a45573fa205aad51ab902535242c7f9e5532",
+          "outputHash": "e3d63642abe0be57528e04fee96896585932a9a4f5a726a6cb9ae7213699e4d0",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "LEDGER_UNBALANCED",
+            "PAYMENT_APPROVAL_MISSING"
+          ],
+          "observed": [
+            "LEDGER_UNBALANCED",
+            "PAYMENT_APPROVAL_MISSING"
+          ],
+          "sourceRef": "TRAINING-FINANCE-BAD",
+          "sourceHash": "aa292de8bc93d9ef53ee0e5a9c7cba418e2fff2afd3140fc1d773ee092cc1779",
+          "outputHash": "d66409cf517ce4d5ad3b1a0236f1bab1b23c926071200c0dc1b1a7b34a639c4c",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "people",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PEOPLE-GOOD",
+          "sourceHash": "66e46b47543cad84fac0eb0d5e0c05eaf6fbd5fb5b7a3ed3980e50d8520ef8bf",
+          "outputHash": "5e9002f2f01ff0eb96acccf9c9614d0de5aa4fac31692f50ef201564d0360f2b",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "ATTENDANCE_SOURCE_MISSING",
+            "PAYROLL_UNAPPROVED"
+          ],
+          "observed": [
+            "ATTENDANCE_SOURCE_MISSING",
+            "PAYROLL_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-PEOPLE-BAD",
+          "sourceHash": "7ec7ee8027aa6d429fb5cb87a064e6fd57d993e66d181d36f84c21d4be1fb651",
+          "outputHash": "dbe5d38b5d5921d434f60d1894dd68d787663922e267985131c2cdb9ba4f96a0",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "engineering-configuration",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-ENGINEERING-CONFIGURATION-GOOD",
+          "sourceHash": "6f3af6b8652d862e1aa051755011724eb1c942a82f9da26ce6a7a34e9320a0ea",
+          "outputHash": "8455d088fc804fbd5ee9c1c1e1606155425902c7542d5f722232a88e68148495",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "BOM_REVISION_MISMATCH",
+            "EFFECTIVITY_UNAPPROVED"
+          ],
+          "observed": [
+            "BOM_REVISION_MISMATCH",
+            "EFFECTIVITY_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-ENGINEERING-CONFIGURATION-BAD",
+          "sourceHash": "5caba327a82483c77b0d4f45ff81130ed3fab96d76275538cd9e774a7a106948",
+          "outputHash": "40baebb627b50300554e7736996d04ddfd9e780043ae271effff002a4066edba",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    }
+  ],
+  "qualificationGranted": false,
+  "productionWrites": false,
+  "evidenceHash": "d31793c17f44b5c347c565e5a38ed1621f30d1e063e91f68ce85b730c942f32c"
+}

@@ -1,4 +1,5 @@
 import {GROUP_DIVISIONS,READ_DOMAINS,groupSignalRows} from './lib/group-portfolio.mjs';
+import {chartSvg} from './lib/dashboard-charts.mjs';
 
 const ERP='https://vyndios.vayushastr.workers.dev';
 const destinations={
@@ -9,7 +10,7 @@ const destinations={
 };
 const focusModules={crm:'commercial',hr:'people',finance:'finance','supply-chain':'procurement',manufacturing:'production'};
 const clean=(s)=>String(s??'').replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;').replaceAll("'",'&#39;');
-const state={snapshot:null,error:'',loading:false,selectedUnit:null,focus:'portfolio',lastFetch:null};
+const state={snapshot:null,error:'',loading:false,selectedUnit:null,focus:'portfolio',lastFetch:null,chartKind:'columns'};
 const safeExternal=(path)=>ERP+destinations[path];
 const text=(value)=>clean(value);
 const number=(value)=>Number(value||0).toLocaleString('en-IN');
@@ -86,8 +87,49 @@ function decisionStrip(){
  ${missing.length?`<p class="va-hold-note" role="status">Unverified source observations: ${text(missing.join(', '))}. HOLD means unknown, not zero.</p>`:''}
  </section>`;
 }
+
+function drawDepartment(root){
+ const id=focusModules[state.focus], source=READ_DOMAINS.find(x=>x.id===id);
+ const labels={crm:'CRM & Sales',hr:'Human Resources',finance:'Finance','supply-chain':'Supply Chain',manufacturing:'Manufacturing'};
+ const notes={crm:'Sales pipeline is observed; the complete customer CRM master and revenue remain unqualified.',hr:'People Office source reachability is not proof of payroll, hiring or employee headcount.',finance:'Financial balances, budgets and inter-unit attribution are not certified from connectivity.', 'supply-chain':'Procurement and stock require separate SKU, unit, BOM and approved release evidence.',manufacturing:'Production source reachability is not evidence of released materials, qualified WIP or throughput.'};
+ const entries=state.snapshot?.sources||READ_DOMAINS.map(x=>({...x,status:'HOLD'}));
+ const current=entries.find(x=>x.id===id);
+ const signed=entries.filter(x=>x.status==='OBSERVED').length;
+ const counts=[{label:'Signed reads',value:signed},{label:'Unverified reads',value:entries.length-signed}];
+ root.innerHTML=`<div class="va-focused-dashboard">
+  <header><p class="va-eyebrow">DEPARTMENT INTELLIGENCE · SIGNED OBSERVATION ONLY</p><h2>${text(labels[state.focus])}</h2>
+   <p>${text(notes[state.focus])}</p><p>These are connectivity qualifications, not business performance metrics. No unknown value is displayed as zero.</p>
+   <p><a class="va-button va-button--primary" target="_blank" rel="noopener noreferrer" href="${safeExternal(id)}">Open ${text(labels[state.focus])} in VYNDI OS ↗</a>
+    <button type="button" class="va-button va-button--outline" data-portfolio-refresh>Refresh evidence</button></p>
+  </header>
+  ${state.error?`<p class="va-hold-note" role="status">${text(state.error)}</p>`:''}
+  <div class="va-focused-metrics"><article><small>Selected read contract</small><strong>${text(source?.label||'Unconfigured')}</strong>${current?badge(current.status):badge('HOLD')}</article>
+  <article><small>Signed source reads</small><strong>${state.snapshot?signed+' / '+READ_DOMAINS.length:'Unavailable'}</strong><span>Across all eight source contracts</span></article>
+  <article><small>Approved department KPIs</small><strong>HOLD</strong><span>Not available through this read contract</span></article></div>
+  <details class="va-dashboard-fold" open><summary>Readiness charts and graph styles</summary>
+   <label>Chart style <select data-chart-kind><option value="columns">Columns</option><option value="bars">Horizontal bars</option><option value="donut">Doughnut</option></select></label>
+   <div data-readiness-chart>${state.snapshot?chartSvg(counts,state.chartKind,'Signed read contract coverage'):'<p>Verified observations not available. Chart withheld.</p>'}</div>
+   <p>Charted values are signed source counts, not sales, cash flow, headcount, inventory quantity or production output.</p></details>
+  <details class="va-dashboard-fold"><summary>Search and inspect connected data sources</summary>
+   <label>Filter contracts <input type="search" data-contract-search placeholder="Search finance, sales, production…" /></label>
+   <div class="va-contract-list">${entries.map(x=>`<article data-read-contract="${text(x.id+' '+x.label.toLowerCase())}"><strong>${text(x.label)}</strong>${badge(x.status)}
+    <a href="${safeExternal(x.id)}" target="_blank" rel="noopener noreferrer">Open source ↗</a></article>`).join('')}</div>
+  </details>
+  <details class="va-dashboard-fold"><summary>Outstanding qualification and audit requirements</summary>
+    <p>Complete dataset and source revisions, departmental maker-checker review, engineering release where applicable, and authoritative transaction values remain required. This screen performs no production writes.</p>
+  </details>
+ </div>`;
+ root.querySelector('[data-portfolio-refresh]')?.addEventListener('click',()=>void refreshPortfolio(root,{force:true}));
+ const selector=root.querySelector('[data-chart-kind]');selector.value=state.chartKind;
+ selector.addEventListener('change',e=>{state.chartKind=e.target.value;root.querySelector('[data-readiness-chart]').innerHTML=state.snapshot?chartSvg(counts,state.chartKind,'Signed read contract coverage'):'<p>Verified observations not available. Chart withheld.</p>';});
+ root.querySelector('[data-contract-search]')?.addEventListener('input',e=>{
+  const term=e.target.value.toLowerCase().trim();root.querySelectorAll('[data-read-contract]').forEach(node=>{node.hidden=!node.dataset.readContract.includes(term);});
+ });
+}
+
 function draw(root){
  if(!root)return;
+ if(state.focus!=='portfolio'){drawDepartment(root);return;}
  root.innerHTML=`${groupSummary()}
  ${state.error?`<div role="status" class="va-hold-note">Source observation unavailable. ${text(state.error)} All unverified measures remain on HOLD.</div>`:''}
  ${tiles()}

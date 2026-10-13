@@ -62,8 +62,8 @@
         <a href="/agent-supervision.html" class="sidebar-mission-link">Agent monitoring ↗</a>
         <a href="/founder-console.html" class="sidebar-mission-link">Founder command lab ↗</a>
         <a href="/founder-console.html#g3-intelligence-panel" class="sidebar-mission-link">JARVIS X qualification ↗</a>
-        <a href="/workforce-analytics.html" class="sidebar-mission-link">16-employee analytics ↗</a>
         <a href="/jarvis-multimodal.html" class="sidebar-mission-link">JARVIS file intelligence (preview) ↗</a>
+        <a href="/workforce-analytics.html" class="sidebar-mission-link">16-employee analytics ↗</a>
         <button class="sidebar-signout" id="logout-button" type="button"><span>↪</span> Sign out</button>
       </div>
     </aside>
@@ -258,6 +258,19 @@
           </div>
           <span class="module-phase">Governed source data</span>
         </div>
+        <section class="va-metric-dash" id="module-evidence-analytics" hidden aria-label="Searchable module metrics and evidence">
+          <header><h3>Observed module counts</h3><p id="module-evidence-source">Loading source provenance…</p></header>
+          <details open><summary>Compare recorded counts · selectable chart style</summary>
+            <label>Visualisation <select id="module-evidence-style" aria-label="Module chart style">
+              <option value="columns">Columns</option><option value="bars">Horizontal bars</option><option value="donut">Doughnut</option>
+            </select></label>
+            <div id="module-evidence-chart" aria-live="polite"></div>
+          </details>
+          <details open><summary>Search and filter governed records</summary>
+            <label>Filter records <input type="search" id="module-record-search" placeholder="Search record ID, owner, status or activity" autocomplete="off" /></label>
+            <p id="module-search-result" role="status">Record search is read-only.</p>
+          </details>
+        </section>
         <section id="group-portfolio" class="va-group-dashboard" hidden aria-live="polite"></section>
         <section class="enterprise-trace-graph metallic-gold-rim" id="enterprise-trace-graph" hidden>
           <div class="trace-graph-header">

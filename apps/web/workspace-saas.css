@@ -591,3 +591,43 @@
  .workspace-body .va-founder-operations__links { grid-template-columns: 1fr; }
  .workspace-body .va-founder-operations__links a { min-height: 78px; }
 }
+
+/* Source-backed dashboards: generous typography, semantic disclosure and keyboard focus */
+.workspace-body .va-focused-dashboard,.workspace-body .va-metric-dash {font-size:16px;line-height:1.6;color:#23344a}
+.workspace-body .va-focused-dashboard>header {background:linear-gradient(115deg,#1b3455,#286879);color:#fff;border-radius:14px;padding:clamp(20px,3vw,30px);margin-bottom:16px}
+.workspace-body .va-focused-dashboard>header h2 {font-size:clamp(25px,3vw,34px);margin:3px 0 10px;color:#fff}
+.workspace-body .va-focused-dashboard>header p {font-size:16px;line-height:1.6;color:#e5f1f5}
+.workspace-body .va-focused-dashboard>header .va-button {display:inline-flex;margin:6px 8px 4px 0;min-height:42px;align-items:center}
+.workspace-body .va-focused-metrics {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-bottom:14px}
+.workspace-body .va-focused-metrics article {display:flex;flex-direction:column;gap:8px;min-width:0;padding:20px;background:#fff;border:1px solid #bdccda;border-radius:12px}
+.workspace-body .va-focused-metrics small {font-size:15px;color:#40536a}
+.workspace-body .va-focused-metrics strong {font-size:clamp(18px,2vw,24px);overflow-wrap:anywhere}
+.workspace-body .va-focused-metrics span {font-size:14px;color:#495d74}
+.workspace-body .va-dashboard-fold,.workspace-body .va-metric-dash {background:#fff;border:1px solid #bfcbd7;border-radius:12px;margin:12px 0;padding:18px}
+.workspace-body .va-dashboard-fold summary,.workspace-body .va-metric-dash summary {font-size:18px;font-weight:700;cursor:pointer;min-height:40px;color:#213c55}
+.workspace-body .va-dashboard-fold summary:focus-visible,.workspace-body .va-metric-dash summary:focus-visible {outline:3px solid #a17012;outline-offset:3px}
+.workspace-body .va-dashboard-fold label,.workspace-body .va-metric-dash label {font-size:16px;font-weight:600;display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin:12px 0}
+.workspace-body .va-dashboard-fold :is(select,input),.workspace-body .va-metric-dash :is(select,input) {font:inherit;font-size:16px;min-height:44px;padding:8px 12px;border:1px solid #7a94a8;border-radius:8px;background:#fff;color:#1c3547}
+.workspace-body .va-dashboard-fold input,.workspace-body .va-metric-dash input {flex:1;min-width:190px;max-width:520px}
+.workspace-body .va-contract-list {display:grid;gap:8px;margin:14px 0}
+.workspace-body .va-contract-list article {display:flex;align-items:center;flex-wrap:wrap;gap:12px;background:#f0f5f8;padding:12px;border:1px solid #c3d1dd;border-radius:8px}
+.workspace-body .va-contract-list article[hidden] {display:none!important}
+.workspace-body .va-contract-list article strong {font-size:16px;min-width:190px;flex:1}
+.workspace-body .va-contract-list a {font-size:15px;color:#164d80;text-decoration:underline}
+.workspace-body .va-metric-dash>header h3 {font-size:22px;margin:2px 0}
+.workspace-body .va-metric-dash>header p,.workspace-body .va-dashboard-fold>p,.workspace-body #module-search-result {font-size:15px;color:#385269}
+.workspace-body .va-evidence-svg {display:block;width:100%;max-width:850px;max-height:330px;height:auto;margin:10px auto;background:#f3f7fa;border-radius:10px;min-height:170px}
+.workspace-body .va-evidence-svg .va-evidence-axis {font-size:12px;fill:#213a50}
+.workspace-body .va-evidence-svg .va-evidence-value {font-size:16px;font-weight:700;fill:#142e42}
+.workspace-body .va-evidence-svg .va-evidence-total {font-size:32px;font-weight:800;fill:#142e42}
+.workspace-body .va-graph-empty {padding:30px 16px;background:#fff8ec;color:#503a18;border:1px solid #c8a972;border-radius:10px}
+.workspace-body .operational-record[hidden],.workspace-body .domain-record-row[hidden] {display:none!important}
+/* Globally correct the miniature telemetry labels shown on the captured live screens. */
+.workspace-body .operational-workspace :is(small,p,span),.workspace-body .domain-workspace :is(small,p,span),
+.workspace-body .va-group-dashboard :is(small,p,span) {font-size:max(14px, .875rem);line-height:1.55}
+.workspace-body .operational-workspace :is(strong,h3),.workspace-body .domain-workspace :is(strong,h3){font-size:max(16px,1rem)}
+@media(max-width:760px){
+ .workspace-body .va-focused-metrics {grid-template-columns:1fr}
+ .workspace-body .va-dashboard-fold,.workspace-body .va-metric-dash {padding:14px}
+ .workspace-body .va-evidence-svg {min-height:125px}
+}

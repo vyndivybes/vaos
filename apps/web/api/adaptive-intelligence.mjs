@@ -28,14 +28,15 @@ async function governedEngineering({req,fetchImpl,getReader}){
   method:'GET',url,headers:req.headers,env:req.env},response);
  return status===200?payload?.data:null;
 }
-async function readOne(tool,{req,getReader,getEngineering,fetchImpl}){
+async function readOne(tool,{req,getReader,getEngineering,fetchImpl,now}){
  if(tool==='ENGINEERING'){
   try{
    const response=await getEngineering({req,getReader,fetchImpl});
    if(response?.status!=='OBSERVED'||response.authorityScope!=='VEDM_CURRENT_CONFIGURATION'||
       typeof response.answer!=='string')throw Error('ENGINEERING_HOLD');
    return {tool,status:'OBSERVED',summary:response.answer.slice(0,600),
-    sourceAuthority:'VEDM_CURRENT_CONFIGURATION',sources:permittedTechnicalSources(response.sources)};
+    sourceAuthority:'VEDM_CURRENT_CONFIGURATION',sources:permittedTechnicalSources(response.sources),
+    gatewayReadAt:new Date(now()).toISOString()};
   }catch{return {tool,status:'HOLD'};}
  }
  const domain=DOMAIN[tool],actionType=VOICE_DOMAIN_ACTIONS[domain];
@@ -50,7 +51,7 @@ async function readOne(tool,{req,getReader,getEngineering,fetchImpl}){
    throw Error('ADAPTIVE_AUTHORITY_MISMATCH');
   const parsed=observeAdviceDomain(domain,result.data);
   return {tool,status:'OBSERVED',summary:parsed.summary+'; recent or selected source records, not an audited enterprise total.',
-   sourceAuthority:contract.authority};
+   sourceAuthority:contract.authority,gatewayReadAt:new Date(now()).toISOString()};
  }catch{return {tool,status:'HOLD'};}
 }
 export function createAdaptiveIntelligenceHandler({
@@ -94,13 +95,13 @@ export function createAdaptiveIntelligenceHandler({
    }catch{selected=fallbackAdaptivePlan(question);fallbackReason='MODEL_ERROR';}
   }
   const primary=await Promise.all(selected.tools.map(tool=>readOne(tool,{
-   req,getReader,getEngineering,fetchImpl
+   req,getReader,getEngineering,fetchImpl,now
   })));
   // A second bounded read is permitted ONLY when a first-wave source held,
   // and never exceeds the three-read policy. It cannot clear the original hold.
   const followupRead=selectEvidenceGapRead({tools:selected.tools,observations:primary});
   const extra=followupRead?await readOne(followupRead,{
-   req,getReader,getEngineering,fetchImpl
+   req,getReader,getEngineering,fetchImpl,now
   }):null;
   const observed=extra?[...primary,extra]:primary;
   const evidence=formatAdaptiveEvidence(observed);
@@ -163,7 +164,7 @@ export function createAdaptiveIntelligenceHandler({
   // model's tool plan. Its graph edges are schema hypotheses; optimization
   // uses abstract review slots, not resource/cash/production forecasts.
   const jarvisX=analysisMode==='jarvis-x'
-   ?createJarvisXPreview({observations:evidence,reviewSlots:2}):null;
+   ?createJarvisXPreview({observations:observed,reviewSlots:2,now:now()}):null;
   if(jarvisX)result={...result,answer:(result.answer+'\n\n'+jarvisX.brief).slice(0,6400)};
   return res.status(200).json({data:{...result,sourceSystem:'VAOS_ADAPTIVE',
    ...(jarvisX?{jarvisX}:{}),

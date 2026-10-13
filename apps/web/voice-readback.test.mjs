@@ -20,7 +20,7 @@ test('speaker error and playback failure report reasons; microphone can resume',
  assert.equal(p.speak('Readable diagnostic.'),true);
  synth.last.onerror?.({error:'voice-unavailable'});
  assert.equal(p.active(),false);
- assert.ok(events.includes('SPEECH_ERROR'));
+ assert.ok(events.includes('SPEECH_VOICE_UNAVAILABLE'));
  assert.ok(events.includes('ERROR'));
 });
 test('browser lacking speech synthesis returns false without throwing; manual response stays visible',()=>{
@@ -58,4 +58,11 @@ test('Indic playback uses explicitly chosen browser language without breaking En
  assert.equal(player.speak('தமிழில் பதில்.'),true);
  assert.equal(heard[0].lang,'ta-IN');
  player.cancel();
+});
+
+test('speech diagnostics whitelist browser reasons and never echo arbitrary event data',()=>{
+ for(const [error,expected] of [['network','SPEECH_NETWORK'],['synthesis-failed','SPEECH_SYNTHESIS_FAILED'],['private@example.test','SPEECH_ERROR'],[undefined,'SPEECH_ERROR']]){
+  const states=[],errors=[];const player=createVoiceReadback({synthesis:{speak:u=>u.onerror({error}),cancel(){}},UtteranceClass:class {},onState:x=>states.push(x),onError:x=>errors.push(x),schedule:()=>1,clear:()=>{}});
+  assert.equal(player.speak('Read-only answer.'),false);assert.deepEqual(errors,[expected]);assert.deepEqual(states,['ERROR']);
+ }
 });

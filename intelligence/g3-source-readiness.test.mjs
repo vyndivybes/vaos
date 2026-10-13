@@ -74,7 +74,7 @@ test('G3.1 founder-only handler executes no more than 4 signed reads and leaks z
  assert.equal(state.result.data.gatewayReadCoverage,4);
  assert.equal(state.result.data.canRunRealDataOptimizer,false);
  assert.equal(state.result.data.actionAuthorized,false);
- assert.doesNotMatch(JSON.stringify(state.result),/secret@|976543|approved|2099|rawRecord/);
+ assert.doesNotMatch(JSON.stringify(state.result),/secret@|976543|engineeringRelease|2099|rawRecord/);
  assert.equal(calls.every(x=>x.actionType.endsWith('.OBSERVE_SHORTAGE')||
    x.actionType.endsWith('.OBSERVE_STOCK')||x.actionType.endsWith('.OBSERVE_WIP')||
    x.actionType.endsWith('.OBSERVE_CONFIGURATION')),true);

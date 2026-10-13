@@ -78,7 +78,9 @@ function statusLabel(status) {
 }
 
 function renderAgents() {
-  document.querySelector('#agent-grid').innerHTML = model.agents.slice(0, 6).map((agent) => `
+  const registered = model.agents.length;
+  document.querySelector('#visible-agent-count').textContent = registered+' registered control-plane agent'+(registered===1?'':'s')+' shown · not proof of runtime liveness or qualification';
+  document.querySelector('#agent-grid').innerHTML = model.agents.map((agent) => `
     <article class="agent-card">
       <div class="agent-card__top"><span class="agent-status agent-status--${esc(agent.status)}"><i></i>${esc(statusLabel(agent.status))}</span><span class="authority-badge">L${esc(agent.authority)}</span></div>
       <h3>${esc(agent.name)}</h3><p>${esc(agent.task)}</p>

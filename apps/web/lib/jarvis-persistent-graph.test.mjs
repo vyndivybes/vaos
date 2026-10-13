@@ -9,7 +9,7 @@ const fixture={schemaVersion:'G2B_AUTHORITY_GRAPH_V1',sourceSystem:'VAOS_GOVERNE
  graphStorage:'POSTGRES_EXISTING_GOVERNED_LINKS',status:'OBSERVED',asOf:'2026-10-13T01:00:00Z',
  sourceDataFreshnessCertified:false,causalRelationshipsVerified:false,
  cryptographicSignatureVerified:false,sourceRecordVersionsVerified:false,
- eligibleLinkCount:1,heldLegacyLinkCount:2,
+ eligibleLinkCount:1,heldLegacyLinkCount:2,unprojectedLinkCount:2,
  links:[{id:'link:g2b:'+hash,source:'node:g2b:'+hash,
  target:'node:g2b:'+('b'.repeat(64)),sourceDomain:'PROJECT_RISK',
  targetDomain:'ENGINEERING_BASELINE',relationType:'DRIVES_CHANGE',
@@ -19,6 +19,7 @@ test('G2b accepts only bounded authoritative, privacy-safe graph projections',()
  assert.equal(g.status,'OBSERVED');
  assert.equal(g.links.length,1);
  assert.equal(g.heldLegacyLinkCount,2);
+ assert.equal(g.unprojectedLinkCount,2);
  assert.equal(g.actionAuthorized,false);
  assert.equal(g.persistenceVerified,true);
  assert.equal(g.sourceDataFreshnessCertified,false);

@@ -4,6 +4,7 @@ import {createSupabaseControlStore} from '../../../platform/persistence/supabase
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {buildWorkforceAnalytics} from '../../../intelligence/workforce-analytics.mjs';
 import {evaluateEmployeeEvidencePriorities} from '../../../intelligence/workforce-evidence-priorities.mjs';
+import {buildWorkforceCommissioningBoard} from '../../../intelligence/workforce-commissioning-board.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const defaultStore=env=>createSupabaseControlStore(resolveDurableControlConfig(env));
@@ -25,7 +26,8 @@ export function createWorkforceAnalyticsHandler({getStore=defaultStore}={}){
   try{
    const data=buildWorkforceAnalytics(await getStore(req.env).founderWorkforceOverview(session.email));
    const evidencePriorities=evaluateEmployeeEvidencePriorities({employees:data.employees,actionAuthorized:false});
-   return res.status(200).json({data:{...data,evidencePriorities}});
+   const commissioningBoard=buildWorkforceCommissioningBoard(data);
+   return res.status(200).json({data:{...data,evidencePriorities,commissioningBoard}});
   }catch{
    return res.status(503).json(apiError('WORKFORCE_ANALYTICS_UNAVAILABLE',
     'Verified workforce source or founder analytics migration unavailable'));

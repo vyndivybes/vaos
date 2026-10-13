@@ -31,7 +31,8 @@ export function createG3ReadinessHandler({getReader=makeCommercialReader,now=()=
      id:'g3-readonly:'+randomUUID(),intentId:'g3-readonly:'+randomUUID(),
      payload:{limit:50,missionId:'vaos-founder-g3-source-readiness'}
     });
-    if(result?.actionType!==route.actionType||result?.sourceAuthority!==route.authority)
+    if(result?.actionType!==route.actionType||result?.sourceAuthority!==route.authority||
+       !result.data||typeof result.data!=='object')
      throw Error('G3_SOURCE_AUTHORITY_MISMATCH');
     const stamp=new Date(now()).toISOString();
     return {domain:route.domain,actionType:route.actionType,

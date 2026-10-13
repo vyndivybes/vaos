@@ -75,3 +75,15 @@ test('forged CAPA counts, duplicate case IDs, and future assessment time fail cl
   assert.throws(()=>buildWorkforceAnalytics({...source,employees:[{...base,...fields}]}));
  }
 });
+
+test('workforce operational evidence never treats PASS assessment or heartbeat as live certification',()=>{
+ const input={...source,employees:[{...source.employees[0],lastVerifiedActivityAt:'2026-10-13T09:00:00Z',
+  qualificationAssessment:{status:'PASS',targetLevel:3,assessedAt:'2026-10-12T10:00:00Z',assessedBy:'checker'}}]};
+ const x=buildWorkforceAnalytics(input);
+ assert.equal(x.operationalReadiness.schemaVersion,'VAOS_WORKFORCE_OPERATIONAL_EVIDENCE_V1');
+ assert.equal(x.operationalReadiness.recentHeartbeatRecords24h,1);
+ assert.equal(x.operationalReadiness.assessmentsMarkedPass,1);
+ assert.equal(x.operationalReadiness.operationalRuntimeCertified,false);
+ assert.equal(x.operationalReadiness.agentDispatchAuthorized,false);
+ assert.equal(x.operationalReadiness.independentlyAuditedEmployees,0);
+});

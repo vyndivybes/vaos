@@ -20,13 +20,30 @@ const unit=x=>typeof x==='string'&&UNITS.has(x.toLowerCase());
 const result=(domain,status,sampledRows,structurallyValidRows,reasonCodes,extra={})=>Object.freeze({
  schemaVersion:'G3_1D_NUMERIC_SOURCE_AUDIT_V1',domain,status,
  sampledRows,structurallyValidRows,invalidRows:sampledRows-structurallyValidRows,
- reasonCodes:Object.freeze([...reasonCodes]),
+ reasonCodes:Object.freeze([...reasonCodes]),fieldFailureCounts:Object.freeze({}),
  sourceRecordsExported:false,completeDatasetVerified:false,
  sourceRevisionVerified:false,sourceRecordFreshnessVerified:false,
  numericUnitReconciliationVerified:false,quantityCertifiedForOptimization:false,
  productionReleaseCertified:false,actionAuthorized:false,
  ...extra
 });
+/** Source-shape faults only. A released engineering baseline without a BOM
+ * reference is structurally readable but cannot be qualified for production.
+ * Draft baselines may intentionally have no BOM; neither state grants release.
+ */
+function engineeringFieldIssues(row){
+ if(!obj(row))return ['ENGINEERING_RECORD_INVALID'];
+ const issues=[];
+ if(!id(row.id))issues.push('ENGINEERING_BASELINE_ID_INVALID');
+ if(!version(row.revision_code))issues.push('ENGINEERING_REVISION_INVALID');
+ if(typeof row.status!=='string'||!/^[A-Za-z_]{1,40}$/.test(row.status))
+  issues.push('ENGINEERING_STATUS_INVALID');
+ const absent=row.bom_revision===null||row.bom_revision===undefined||row.bom_revision==='';
+ if(absent&&row.status==='released')issues.push('ENGINEERING_RELEASED_BOM_UNASSIGNED');
+ else if(!absent&&!version(row.bom_revision))
+  issues.push('ENGINEERING_BOM_REVISION_INVALID');
+ return issues;
+}
 function validateRow(domain,row){
  if(!obj(row))return false;
  if(domain==='PROCUREMENT'){
@@ -42,9 +59,7 @@ function validateRow(domain,row){
     &&typeof row.status==='string'&&/^[A-Za-z_]{1,40}$/.test(row.status)
     &&n!==null&&Number.isSafeInteger(n)&&n>0;
  }
- if(domain==='ENGINEERING')
-  return id(row.id)&&version(row.revision_code)&&version(row.bom_revision)
-    &&typeof row.status==='string'&&/^[A-Za-z_]{1,40}$/.test(row.status);
+ if(domain==='ENGINEERING')return engineeringFieldIssues(row).length===0;
  return false;
 }
 /** Validate a bounded sample returned by a signed, approved route.
@@ -63,26 +78,30 @@ export function auditG3NumericSource(domain,data){
  if(records.length===0)
   return result(domain,'NO_NUMERIC_ROWS_OBSERVED',0,0,['EMPTY_SAMPLE_NOT_ENTERPRISE_ZERO']);
  let valid=0;
- const reasons=new Set(),unitsBySku=new Map();
+ const reasons=new Set(),unitsBySku=new Map(),failureCounts=new Map();
+ const issue=code=>{
+  reasons.add(code);
+  failureCounts.set(code,(failureCounts.get(code)||0)+1);
+ };
  for(const row of records){
   const good=validateRow(domain,row);
   if(good)valid++;
-  else reasons.add('FIELD_TYPE_OR_VALUE_UNVERIFIED');
+  else for(const code of domain==='ENGINEERING'
+   ?engineeringFieldIssues(row):['FIELD_TYPE_OR_VALUE_UNVERIFIED'])issue(code);
   if((domain==='PROCUREMENT'||domain==='INVENTORY')&&obj(row)
     &&id(row.sku)&&typeof row.unit==='string'&&unit(row.unit)){
    const u=row.unit.toLowerCase();
    const old=unitsBySku.get(row.sku);
-   if(old&&old!==u)reasons.add('MIXED_UNCONVERTED_UNITS');
+   if(old&&old!==u)issue('MIXED_UNCONVERTED_UNITS');
    unitsBySku.set(row.sku,u);
   }
  }
- if(reasons.has('MIXED_UNCONVERTED_UNITS'))
-  return result(domain,'FIELD_CONTRACT_HOLD',records.length,valid,[...reasons]);
- return result(domain,valid===records.length?'STRUCTURAL_CANDIDATE_UNCERTIFIED':'FIELD_CONTRACT_HOLD',
+ return result(domain,reasons.size===0?'STRUCTURAL_CANDIDATE_UNCERTIFIED':'FIELD_CONTRACT_HOLD',
   records.length,valid,[...reasons],
   {sampleAtLimit:records.length===50,
    unitConversionApplied:false,
-   externalDocumentEvidenceChecked:false
+   externalDocumentEvidenceChecked:false,
+   fieldFailureCounts:Object.freeze(Object.fromEntries([...failureCounts].sort(([a],[b])=>a.localeCompare(b))))
   });
 }
 export function summarizeG3NumericAudits(sources=[]){

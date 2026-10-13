@@ -15,7 +15,9 @@
       "implementation": [
         "apps/web/lib/jarvis-persistent-graph.mjs",
         "apps/web/lib/jarvis-graph-paths.mjs",
-        "apps/web/api/jarvis-authority-graph.mjs"
+        "apps/web/api/jarvis-authority-graph.mjs",
+        "apps/web/lib/jarvis-graph-advice.mjs",
+        "apps/web/api/adaptive-intelligence.mjs"
       ],
       "limitations": "Bounded directed link metadata only; no semantic GraphRAG answer generation, independently verified record versions, causal certification or isolated database restore. Signed-in final-surface acceptance pending."
     },

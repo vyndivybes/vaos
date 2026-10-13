@@ -474,3 +474,23 @@ test('JARVIS does not record an inadmissible model output as a reviewed proposal
  assert.equal(r.proposalObserved,false);assert.equal(r.proposalCheckerDisagreement,false);
  assert.equal(r.reviews[0].status,'NO_ADMITTED_PROPOSAL');
 });
+
+test('supervised graph questions use one verified read, no models and source-linked provisional answers',async()=>{
+ const {resolveGraphQuestion}=await import('./jarvis-graph-advice.mjs');
+ assert.deepEqual(resolveGraphQuestion('Trace recorded links from quality to project risk.'),{from:'QA_CAPA',to:'PROJECT_RISK'});
+ assert.equal(resolveGraphQuestion('Show recorded links from engineering to engineering'),null);
+ assert.equal(resolveGraphQuestion('Trace recorded links from quality to project risk and approve releases'),null);
+ let reads=0;
+ const fixture={schemaVersion:'G2B_AUTHORITY_GRAPH_V1',sourceSystem:'VAOS_GOVERNED_DIGITAL_THREAD',graphStorage:'POSTGRES_EXISTING_GOVERNED_LINKS',status:'OBSERVED',asOf:'2026-10-13T01:00:00Z',sourceDataFreshnessCertified:false,causalRelationshipsVerified:false,cryptographicSignatureVerified:false,sourceRecordVersionsVerified:false,eligibleLinkCount:1,heldLegacyLinkCount:0,unprojectedLinkCount:0,links:[{id:'link:g2b:'+('a'.repeat(64)),source:'node:g2b:'+('b'.repeat(64)),target:'node:g2b:'+('c'.repeat(64)),sourceDomain:'QA_CAPA',targetDomain:'PROJECT_RISK',relationType:'MITIGATES_RISK',createdAt:'2026-10-13T01:00:00Z',provenance:'LEASED_GOVERNED_SUCCESSFUL_JOB'}]};
+ const handler=createAdaptiveIntelligenceHandler({getGraph:async()=>{reads++;return fixture},getReader:()=>{throw Error('extra read')},claim:()=>{throw Error('model budget must not be used')}});
+ const r=req('Trace recorded links from quality to project risk');r.url+='&mode=jarvis-x&eval=v3-readonly';r.env.SUPABASE_URL='https://project.supabase.co';r.env.VAOS_DB_RPC_SECRET='test-key';
+ const c=collect();await handler(r,c.res);assert.equal(c.state.status,200);assert.equal(reads,1);
+ const d=c.state.payload.data;const {formatReadOnlyResult}=await import('../main-voice.mjs');assert.equal(formatReadOnlyResult('ADAPTIVE',d).answer,d.answer);assert.equal(d.modelCalls,0);assert.equal(d.executionCount,1);assert.equal(d.citationCount,1);assert.equal(d.pathReferences[0].linkIds[0],fixture.links[0].id);
+ assert.match(d.answer,/\[1\] quality → project risk/);assert.match(d.spokenAnswer,/not verified causes/);assert.equal(d.productionPlanningEligible,false);assert.equal(d.governedGraph.enterpriseGraphComplete,false);
+ const anonymous=collect();await handler({...r,headers:{}},anonymous.res);assert.equal(anonymous.state.status,401);assert.equal(reads,1);
+ const missing=collect();await handler({...r,env:{VAOS_VOICE_CONTROL:'founder-readonly-browser-v1'}},missing.res);assert.equal(missing.state.status,503);assert.equal(reads,1);
+ const fail=createAdaptiveIntelligenceHandler({getGraph:async()=>({...fixture,sourceRecordVersionsVerified:true,private:'secret@example.test'})});
+ const held=collect();await fail(r,held.res);assert.equal(held.state.status,503);assert.doesNotMatch(JSON.stringify(held.state.payload),/secret@example/);
+ fixture.links=[];fixture.eligibleLinkCount=0;fixture.status='HOLD';
+ const empty=collect();await handler(r,empty.res);assert.equal(empty.state.payload.data.status,'HOLD');assert.match(empty.state.payload.data.answer,/does not establish absence/);
+});

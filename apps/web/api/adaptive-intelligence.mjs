@@ -1,3 +1,5 @@
+import {readPersistentGraph} from '../lib/jarvis-persistent-graph.mjs';
+import {resolveGraphQuestion,buildGraphAdvice} from '../lib/jarvis-graph-advice.mjs';
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
 import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
@@ -56,7 +58,7 @@ async function readOne(tool,{req,getReader,getEngineering,fetchImpl,now,collectG
  }catch{return {tool,status:'HOLD'};}
 }
 export function createAdaptiveIntelligenceHandler({
- getReader=makeCommercialReader,getEngineering=governedEngineering,
+ getReader=makeCommercialReader,getEngineering=governedEngineering,getGraph=readPersistentGraph,
  fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,
  plan=planAdaptiveReads,synthesize=synthesizeAdaptiveBrief,now=()=>Date.now(),
 }={}){
@@ -75,6 +77,16 @@ export function createAdaptiveIntelligenceHandler({
    return res.status(422).json(apiError('ADAPTIVE_QUESTION_REJECTED','Read-only non-secret question required'));
   if(analysisMode!==''&&!(analysisMode==='jarvis-x'&&evaluationRequest==='v3-readonly'))
    return res.status(422).json(apiError('JARVIS_X_MODE_DENIED','Founder supervised read-only mode required'));
+
+  const graphQuery=analysisMode==='jarvis-x'?resolveGraphQuestion(question):null;
+  if(graphQuery){
+   if(!req.env?.SUPABASE_URL||!req.env?.VAOS_DB_RPC_SECRET)
+    return res.status(503).json(apiError('GRAPH_SOURCE_HOLD','Authorized durable graph source unavailable'));
+   try{
+    const graph=await getGraph({url:req.env.SUPABASE_URL,serverSecret:req.env.VAOS_DB_RPC_SECRET,fetchImpl});
+    return res.status(200).json({data:buildGraphAdvice(graph,graphQuery)});
+   }catch{return res.status(503).json(apiError('GRAPH_SOURCE_HOLD','Verified graph source unavailable'));}
+  }
 
   const startedAt=now();
   // Planning is dynamic only when bounded local Workers AI inference is available;

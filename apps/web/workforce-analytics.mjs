@@ -96,11 +96,28 @@ function renderEmployeeCharts(emp){
  root.append(columns);
 }
 
+const evidenceLabels={INDEPENDENT_AUDIT:'Independent audit not verified',AUDIT_RECORD:'Audit record absent',FORECAST_EVIDENCE:'Forecast evidence missing',OPERATIONAL_REPORT:'Operational report not independently qualified',COMPETENCE_ASSESSMENT:'Competence assessment not qualified'};
+const evidenceLabel=code=>evidenceLabels[code]||String(code).replace(/_/g,' ');
+function renderEvidencePriorities(data){
+ const host=$('wa-evidence-priorities');host.replaceChildren();
+ const entries=Array.isArray(data?.evidencePriorities)?data.evidencePriorities:[];
+ if(entries.length!==16){host.append(element('p','Evidence priority matrix is missing or incomplete. Employee qualification remains HOLD.'));return;}
+ const gaps=new Map();
+ for(const x of entries)for(const tag of x.missing||[])gaps.set(tag,(gaps.get(tag)||0)+1);
+ counts(host,[['Employees requiring review',entries.filter(x=>x.status==='HOLD').length+'/16'],...([...gaps].sort((a,b)=>b[1]-a[1]).map(([name,n])=>[evidenceLabel(name),n]))]);
+}
 function renderEmployee(){
  if(!latest)return;
  const emp=latest.employees.find(e=>e.id===selection)||latest.employees[0];
  if(!emp)return;
  selection=emp.id;
+ const gate=$('wa-evidence-priority-detail');gate.replaceChildren();
+ const entry=latest.evidencePriorities?.find(x=>x.id===emp.id);
+ if(!entry){gate.append(element('p','No independent evidence-priority record for this employee. Qualification HOLD.'));}
+ else{
+  gate.append(element('strong',entry.status==='HOLD'?'Evidence HOLD · independent review needed':'Records present · independent review still needed'));
+  const list=element('ul');for(const missing of entry.missing||[])list.append(element('li',evidenceLabel(missing)));if(!list.children.length)list.append(element('li','No recorded gaps under this limited check; not a certification.'));gate.append(list);
+ }
  $('wa-profile').replaceChildren();
  $('wa-profile').append(element('strong',emp.name),element('p','Department: '+display(emp.department)+
   ' · Status: '+emp.lifecycle+' · Qualification: '+(emp.qualificationLevel===null?'not evidenced':'Q'+emp.qualificationLevel)+
@@ -168,6 +185,7 @@ async function refresh(){
    !Array.isArray(op.employees)||op.employees.length!==16)
    throw Error('WORKFORCE_OPERATIONAL_EVIDENCE_UNVERIFIED');
   latest=data;
+  renderEvidencePriorities(data);
   $('wa-status').textContent='Read-only workforce evidence loaded; independent live operational certification remains HOLD.';
   $('wa-ops-status').textContent=
    'Operational runtime NOT certified. '+op.recentHeartbeatRecords24h+
@@ -190,7 +208,7 @@ async function refresh(){
  }catch{
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
   $('wa-observed').textContent='No validated snapshot';$('wa-ops-status').textContent='Operational evidence unavailable; liveness not certified.';$('wa-totals').replaceChildren();
-  $('wa-roster').replaceChildren();$('wa-select').replaceChildren();
+  $('wa-roster').replaceChildren();$('wa-select').replaceChildren();$('wa-evidence-priorities').replaceChildren();$('wa-evidence-priority-detail').replaceChildren();
   for(const id of ['wa-profile','wa-work','wa-status-bars','wa-trend','wa-kpis','wa-forecast','wa-defects','wa-capa-status','wa-capa-cases','wa-audit','wa-qualification','wa-audit-pages','wa-progress','wa-progress-coverage','wa-reports','wa-report-status','wa-evidence-chart'])$(id).replaceChildren();
  }finally{$('wa-refresh').disabled=false;}
 }

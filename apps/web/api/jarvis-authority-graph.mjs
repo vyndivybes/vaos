@@ -1,5 +1,6 @@
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
+import {queryGraphPaths} from '../lib/jarvis-graph-paths.mjs';
 import {readPersistentGraph} from '../lib/jarvis-persistent-graph.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
 export function createJarvisGraphHandler({read=readPersistentGraph}={}){
@@ -14,11 +15,22 @@ export function createJarvisGraphHandler({read=readPersistentGraph}={}){
    return res.status(409).json(apiError('GRAPH_NOT_COMMISSIONED','Founder read-only control not enabled'));
   if(!req.env?.SUPABASE_URL||!req.env?.VAOS_DB_RPC_SECRET)
    return res.status(503).json(apiError('GRAPH_SOURCE_HOLD','Authorized durable graph source unavailable'));
+  let query;
+  try{
+   const params=new URL(req.url,'https://vaos.local').searchParams;
+   if([...params].length){
+    if([...params.keys()].some(k=>!['mode','from','to'].includes(k))
+     ||['mode','from','to'].some(k=>params.getAll(k).length!==1)
+     ||params.get('mode')!=='paths')throw Error('QUERY_INVALID');
+    query={from:params.get('from'),to:params.get('to')};
+    queryGraphPaths(null,query);
+   }
+  }catch{return res.status(400).json(apiError('GRAPH_QUERY_INVALID','Use mode=paths and governed from/to domains'));}
   try{
    const graph=await read({url:req.env.SUPABASE_URL,
     serverSecret:req.env.VAOS_DB_RPC_SECRET,fetchImpl:globalThis.fetch});
    // Never leak upstream data, credentials, or error messages.
-   return res.status(200).json({data:graph});
+   return res.status(200).json({data:query?queryGraphPaths(graph,query):graph});
   }catch{
    return res.status(503).json(apiError('GRAPH_SOURCE_HOLD','Verified graph source unavailable'));
   }

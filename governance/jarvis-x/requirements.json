@@ -11,7 +11,13 @@
       "workstream": "knowledge",
       "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Authority-checked graph retrieval with source-linked answers and independent version checks"
+      "acceptance": "Authority-checked graph retrieval with source-linked answers and independent version checks",
+      "implementation": [
+        "apps/web/lib/jarvis-persistent-graph.mjs",
+        "apps/web/lib/jarvis-graph-paths.mjs",
+        "apps/web/api/jarvis-authority-graph.mjs"
+      ],
+      "limitations": "Bounded directed link metadata only; no semantic GraphRAG answer generation, independently verified record versions, causal certification or isolated database restore. Signed-in final-surface acceptance pending."
     },
     {
       "id": "02",
@@ -19,7 +25,13 @@
       "workstream": "knowledge",
       "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Version/effectivity checks plus actual isolated database restore"
+      "acceptance": "Version/effectivity checks plus actual isolated database restore",
+      "implementation": [
+        "apps/web/lib/jarvis-persistent-graph.mjs",
+        "apps/web/lib/jarvis-graph-paths.mjs",
+        "apps/web/api/jarvis-authority-graph.mjs"
+      ],
+      "limitations": "Bounded directed link metadata only; no semantic GraphRAG answer generation, independently verified record versions, causal certification or isolated database restore. Signed-in final-surface acceptance pending."
     },
     {
       "id": "03",

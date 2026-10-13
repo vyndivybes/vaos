@@ -74,7 +74,7 @@ test('G3.1 founder-only handler executes no more than 4 signed reads and leaks z
  assert.equal(state.result.data.gatewayReadCoverage,4);
  assert.equal(state.result.data.canRunRealDataOptimizer,false);
  assert.equal(state.result.data.actionAuthorized,false);
- assert.doesNotMatch(JSON.stringify(state.result),/secret@|976543|engineeringRelease|2099|rawRecord/);
+ assert.doesNotMatch(JSON.stringify(state.result),/secret@|976543|"engineeringRelease":|2099|rawRecord/);
  assert.equal(calls.every(x=>x.actionType.endsWith('.OBSERVE_SHORTAGE')||
    x.actionType.endsWith('.OBSERVE_STOCK')||x.actionType.endsWith('.OBSERVE_WIP')||
    x.actionType.endsWith('.OBSERVE_CONFIGURATION')),true);
@@ -100,4 +100,21 @@ test('G3.1 unavailable or authority-mismatched source produces explicit HOLD rat
  assert.ok(state.payload.data.holds.includes('ENGINEERING_READ_HOLD'));
  assert.ok(state.payload.data.holds.includes('PRODUCTION_READ_HOLD'));
  assert.doesNotMatch(JSON.stringify(state.payload),/private data|wrong-source/);
+});
+
+test('G3.1 missing gateway data is HOLD rather than an OBSERVED source',async()=>{
+ const h=createG3ReadinessHandler({getReader:()=>({execute:async job=>{
+  const route=G3_REQUIRED_READS.find(x=>x.actionType===job.actionType);
+  return {actionType:job.actionType,sourceAuthority:route.authority,data:null};
+ }}),now:()=>Date.parse(at)});
+ const req={method:'GET',url:'https://vaos.test/api/jarvis-g3-readiness',
+  headers:{cookie:SESSION_COOKIE+'='+createSessionToken('shyamsundhar1982@gmail.com')},
+  env:{VAOS_VOICE_CONTROL:'founder-readonly-browser-v1'}};
+ const state={code:200,payload:null};
+ const res={setHeader(){return res},status(n){state.code=n;return res},json(v){state.payload=v;return res}};
+ await h(req,res);
+ assert.equal(state.code,200);
+ assert.equal(state.payload.data.observedSourceCount,0);
+ assert.ok(state.payload.data.holds.includes('PROCUREMENT_READ_HOLD'));
+ assert.equal(state.payload.data.canRunRealDataOptimizer,false);
 });

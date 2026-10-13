@@ -1,0 +1,377 @@
+{
+  "schemaVersion": "JARVIS_DOCUMENT_REQUIREMENTS_V1",
+  "sourceDocumentSha256": "ba38ad4818f4121ea08ed480f4941737d366ba0532004fa3664b48ed3911bffb",
+  "reviewedAt": "2026-10-13",
+  "scope": "VAOS integration and acceptance; VYNDI OS code alone does not qualify VAOS",
+  "completionRule": "Every requirement needs exact-source implementation, relevant tests and independent final-surface evidence. G5 alone does not complete this register.",
+  "requirements": [
+    {
+      "id": "01",
+      "name": "GraphRAG",
+      "workstream": "knowledge",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Authority-checked graph retrieval with source-linked answers and independent version checks"
+    },
+    {
+      "id": "02",
+      "name": "Temporal knowledge graph",
+      "workstream": "knowledge",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Version/effectivity checks plus actual isolated database restore"
+    },
+    {
+      "id": "03",
+      "name": "Hybrid retrieval augmented generation",
+      "workstream": "knowledge",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Semantic, lexical and authoritative SQL retrieval evaluated on unseen questions"
+    },
+    {
+      "id": "04",
+      "name": "Adaptive model routing",
+      "workstream": "knowledge",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Measured complexity routing with enforced free-only budget and fallback"
+    },
+    {
+      "id": "05",
+      "name": "Neuro-symbolic reasoning",
+      "workstream": "knowledge",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Model proposals constrained by tested deterministic rules and calculations"
+    },
+    {
+      "id": "06",
+      "name": "Claim-level fact verification",
+      "workstream": "knowledge",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Each material claim reconciled to independent authorized source evidence"
+    },
+    {
+      "id": "07",
+      "name": "Causal inference",
+      "workstream": "knowledge",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Explicit causal assumptions and independently reviewed interventions or counterfactuals"
+    },
+    {
+      "id": "08",
+      "name": "Confidence calibration",
+      "workstream": "knowledge",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Independent outcomes with Brier/calibration analysis and out-of-sample review"
+    },
+    {
+      "id": "09",
+      "name": "Agent-to-Agent protocol",
+      "workstream": "orchestration",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Authenticated interoperable A2A exchange with policy and replay checks"
+    },
+    {
+      "id": "10",
+      "name": "Advanced MCP tool registry",
+      "workstream": "orchestration",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Approved capability discovery with narrow scoped invocation and expiry"
+    },
+    {
+      "id": "11",
+      "name": "Durable agent workflows",
+      "workstream": "orchestration",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Interrupted-work recovery without duplicated effects or lost audit lineage"
+    },
+    {
+      "id": "12",
+      "name": "Dynamic task decomposition",
+      "workstream": "orchestration",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Complex objectives decomposed and routed only to qualified roles"
+    },
+    {
+      "id": "13",
+      "name": "Consensus and dissent tracking",
+      "workstream": "orchestration",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Independent disagreements retained without majority overriding safety holds"
+    },
+    {
+      "id": "14",
+      "name": "Agent performance benchmarking",
+      "workstream": "orchestration",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Role-specific accuracy latency evidence and policy outcomes independently reviewed"
+    },
+    {
+      "id": "15",
+      "name": "Capability-based authorization",
+      "workstream": "orchestration",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Least-privilege scopes expiry revocation and negative boundary acceptance"
+    },
+    {
+      "id": "16",
+      "name": "Sandboxed computer operations",
+      "workstream": "orchestration",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Isolated approved browser operations with evidence and controlled credentials"
+    },
+    {
+      "id": "17",
+      "name": "Monte Carlo simulation",
+      "workstream": "simulation",
+      "coverage": "synthetic_only",
+      "productionAccepted": false,
+      "acceptance": "Real outcome distributions calibrated and approved before operational use"
+    },
+    {
+      "id": "18",
+      "name": "Constraint optimization",
+      "workstream": "simulation",
+      "coverage": "synthetic_only",
+      "productionAccepted": false,
+      "acceptance": "Real capacity BOM and demand model validated against independent feasible plans"
+    },
+    {
+      "id": "19",
+      "name": "Bayesian risk updating",
+      "workstream": "simulation",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Documented priors likelihoods and validated evidence updates"
+    },
+    {
+      "id": "20",
+      "name": "Sensitivity analysis",
+      "workstream": "simulation",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Reproducible assumption perturbations and independently checked impact rankings"
+    },
+    {
+      "id": "21",
+      "name": "Critical-path intelligence",
+      "workstream": "simulation",
+      "coverage": "synthetic_only",
+      "productionAccepted": false,
+      "acceptance": "Authoritative dependency durations and calendar reconciliation"
+    },
+    {
+      "id": "22",
+      "name": "Predictive maintenance",
+      "workstream": "simulation",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Asset inspection histories and out-of-sample maintenance validation"
+    },
+    {
+      "id": "23",
+      "name": "Supply-chain resilience modelling",
+      "workstream": "simulation",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Qualified supplier and inventory alternatives with explicit assumptions"
+    },
+    {
+      "id": "24",
+      "name": "Multi-objective optimization",
+      "workstream": "simulation",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Cost time quality risk trade-offs with approved units and feasibility checks"
+    },
+    {
+      "id": "25",
+      "name": "Streaming speech recognition",
+      "workstream": "voice",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Incremental speech with measured latency privacy and usage limits"
+    },
+    {
+      "id": "26",
+      "name": "Voice activity detection",
+      "workstream": "voice",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Speech onset/offset accuracy measured on representative audio"
+    },
+    {
+      "id": "27",
+      "name": "Barge-in recognition",
+      "workstream": "voice",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Spoken interruption cancels playback and prevents duplicated requests"
+    },
+    {
+      "id": "28",
+      "name": "On-device wake-word detection",
+      "workstream": "voice",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Local wake detection with verified no continuous cloud audio export"
+    },
+    {
+      "id": "29",
+      "name": "Contextual conversation memory",
+      "workstream": "voice",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Follow-up context survives permitted sessions with isolation expiry and recovery"
+    },
+    {
+      "id": "30",
+      "name": "Multilingual speech intelligence",
+      "workstream": "voice",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Tamil Malayalam Hindi and English recognition/readback independently accepted"
+    },
+    {
+      "id": "31",
+      "name": "Multimodal document understanding",
+      "workstream": "perception",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Authorized image/table/drawing extraction with claim-level evidence"
+    },
+    {
+      "id": "32",
+      "name": "3D engineering visualization",
+      "workstream": "perception",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Controlled CAD/FEA geometry and deviations rendered against exact revisions"
+    },
+    {
+      "id": "L1",
+      "name": "Outcome-based learning",
+      "workstream": "learning",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Verified recommendation/outcome pairs and reviewed improvement proposals"
+    },
+    {
+      "id": "L2",
+      "name": "Self-evaluation engine",
+      "workstream": "learning",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Independent reviewed outputs scored without self-certification"
+    },
+    {
+      "id": "L3",
+      "name": "Shadow model evaluation",
+      "workstream": "learning",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Paired unseen samples preserve regressions and forbid automatic promotion"
+    },
+    {
+      "id": "L4",
+      "name": "Automated regression generation",
+      "workstream": "learning",
+      "coverage": "pending",
+      "productionAccepted": false,
+      "acceptance": "Observed failures generate reproducible tests through approved engineering release"
+    },
+    {
+      "id": "R1",
+      "name": "OpenTelemetry tracing",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Question-to-tool-to-verification spans linked without sensitive payloads"
+    },
+    {
+      "id": "R2",
+      "name": "Event sourcing",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Chronological audit reconstruction preserves effects and authority"
+    },
+    {
+      "id": "R3",
+      "name": "Cryptographically signed evidence",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Tampering replay and source-version signatures independently checked"
+    },
+    {
+      "id": "R4",
+      "name": "Policy-as-code",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Independent policy enforcement demonstrated at every execution boundary"
+    },
+    {
+      "id": "R5",
+      "name": "Prompt-injection defence",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Adversarial source/tool content cannot change policy or exfiltrate data"
+    },
+    {
+      "id": "R6",
+      "name": "Runtime anomaly detection",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Unusual behavior and tool/cost rates detected with tested response"
+    },
+    {
+      "id": "R7",
+      "name": "Circuit breakers",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Unhealthy providers fail closed and recover only on qualified health"
+    },
+    {
+      "id": "R8",
+      "name": "Automatic recovery drills",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Actual encrypted backup restored into isolated Postgres with reconciliation"
+    },
+    {
+      "id": "R9",
+      "name": "Canary and shadow deployments",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Restricted traffic acceptance plus independently exercised rollback"
+    },
+    {
+      "id": "R10",
+      "name": "Data-loss prevention",
+      "workstream": "reliability",
+      "coverage": "foundation",
+      "productionAccepted": false,
+      "acceptance": "Secrets personnel and proprietary engineering data blocked from unauthorized egress"
+    }
+  ]
+}

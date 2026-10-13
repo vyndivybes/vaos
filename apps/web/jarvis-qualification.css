@@ -32,6 +32,10 @@
 .g3-intelligence .g3-links{display:flex;flex-wrap:wrap;gap:10px}
 .g3-intelligence .g3-links a{display:inline-block;color:#fff0c8;padding:10px 12px;border:1px solid #8c7249;border-radius:8px;text-decoration:underline;text-underline-offset:3px;font-size:14px}
 .g3-intelligence .g3-links a:hover{background:#26384b}
+.g3-intelligence #jarvis-learning-file{display:block;max-width:100%;margin:10px 0;color:#e7edf4}
+.g3-intelligence #jarvis-learning-review{min-height:44px;padding:10px 16px;border-radius:8px;border:1px solid #ffc777;background:#f1b85a;color:#12191f;font-weight:700;cursor:pointer}
+.g3-intelligence #jarvis-learning-review:disabled{opacity:.55;cursor:wait}
+.g3-intelligence #jarvis-learning-results li{overflow-wrap:anywhere}
 .g3-intelligence :is(button,a):focus-visible{outline:3px solid #fee3a7;outline-offset:3px}
 @media(max-width:1050px){.g3-intelligence .g3-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}.g3-intelligence .g3-cross{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){.g3-intelligence .g3-metrics,.g3-intelligence .g3-cross{grid-template-columns:minmax(0,1fr)}.g3-intelligence .g3-intro button{width:100%}.g3-intelligence .g3-table-wrap{margin-inline:-4px}}

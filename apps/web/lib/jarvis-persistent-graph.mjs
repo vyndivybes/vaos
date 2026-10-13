@@ -22,6 +22,7 @@ export function validatePersistentGraph(raw){
   ||raw.sourceRecordVersionsVerified!==false
   ||!Number.isSafeInteger(raw.eligibleLinkCount)||raw.eligibleLinkCount<0||raw.eligibleLinkCount>100
   ||!Number.isSafeInteger(raw.heldLegacyLinkCount)||raw.heldLegacyLinkCount<0
+  ||!Number.isSafeInteger(raw.unprojectedLinkCount)||raw.unprojectedLinkCount<raw.heldLegacyLinkCount
   ||!Array.isArray(raw.links)||raw.links.length!==raw.eligibleLinkCount
   ||raw.links.length>100||raw.status!==(raw.links.length?'OBSERVED':'HOLD'))
   FAIL();
@@ -44,6 +45,7 @@ export function validatePersistentGraph(raw){
   schemaVersion:raw.schemaVersion,sourceSystem:raw.sourceSystem,graphStorage:raw.graphStorage,
   status:raw.status,asOf:raw.asOf,
   eligibleLinkCount:raw.eligibleLinkCount,heldLegacyLinkCount:raw.heldLegacyLinkCount,
+  unprojectedLinkCount:raw.unprojectedLinkCount,
   links:Object.freeze(links),
   persistenceVerified:true,
   sourceDataFreshnessCertified:false,causalRelationshipsVerified:false,

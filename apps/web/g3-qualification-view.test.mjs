@@ -17,7 +17,7 @@ function fixture(){
   crossSourceDiagnostics:{schemaVersion:'G3_1E_SOURCE_CROSSWALK_V1',actionAuthorized:false,agentDispatchAuthorized:false,canRunRealDataOptimizer:false,
    counts:{procurementSampleRows:47,shortageRowsWithoutObservedInventorySku:46,
     shortageRowsWithIncompatibleObservedInventoryUnit:0,shortageRowsWithoutObservedLinkedJobCard:0,
-    shortageRowsWithObservedJobBomConflict:0,releasedBaselinesWithoutBom:3}},
+    shortageRowsWithObservedJobBomConflict:0,releasedBaselinesWithoutBom:3,productionReleasedCardsMissingApprovalTimestamp:3}},
   sourceProvenanceDiagnostics:{schemaVersion:'G3_1E_PROVENANCE_PREFLIGHT_V1',actionAuthorized:false,agentDispatchAuthorized:false,canRunRealDataOptimizer:false,
    domains:d.map(domain=>({domain,revisionHintRows:1,timeHintRows:0,unitHintRows:1,sampleAtLimit:false,
     sourceRevisionVerified:false,completeDatasetVerified:false}))}
@@ -31,6 +31,7 @@ test('G3 view displays four source observations without claiming qualified relea
  assert.equal(x.sources[3].sampled,3);
  assert.equal(x.checks[1].value,46);
  assert.equal(x.checks[5].value,3);
+ assert.equal(x.checks[6].value,3);
  assert.equal(x.forecast,'HOLD');
  assert.equal(x.actionAuthorized,false);
  assert.ok(x.next.some(text=>text.includes('missing BOM')));

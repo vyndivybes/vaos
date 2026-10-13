@@ -1,5 +1,6 @@
 import {VAOS_WORKFORCE_AGENT_IDS, VAOS_WORKFORCE_QUALIFICATION_FLOOR} from '../platform/runtime/vaos-eight-operating-model.mjs';
 
+const ASSESSMENT_DATE=/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/;
 const ROUTES=Object.freeze({
  PROCUREMENT:['procurement','qa'], INVENTORY:['inventory','qa'],
  PRODUCTION:['production','qa'], ENGINEERING:['engineering-configuration','vibpe']
@@ -14,24 +15,43 @@ export function planJarvisCoordination(snapshot, {now=Date.now()}={}) {
  const project=id=>{
   const row=rows.find(r=>r.id===id),q=row.qualificationLevel;
   const recordedFloorMet=row.status==='ACTIVE'&&Number.isInteger(q)&&q>=VAOS_WORKFORCE_QUALIFICATION_FLOOR[id]&&q<=4;
+  const a=row.latestAssessment;
+  // An assessment is a persisted claim, not independent validation of competence.
+  const assessmentDate=typeof a?.assessedAt==='string'&&ASSESSMENT_DATE.test(a.assessedAt)?Date.parse(a.assessedAt):NaN;
+  const recordedAssessmentFloorMet=recordedFloorMet&&a?.status==='PASS'&&
+   Number.isInteger(a.targetLevel)&&a.targetLevel>=VAOS_WORKFORCE_QUALIFICATION_FLOOR[id]&&
+   a.targetLevel<=q&&Number.isFinite(assessmentDate)&&assessmentDate<=now;
   const time=typeof row.heartbeatAt==='string'?Date.parse(row.heartbeatAt):NaN;
   const age=now-time;
   return {id,recordedQualification:Number.isInteger(q)&&q>=0&&q<=4?q:null,
-   recordedFloorMet,heartbeatEvidence:Number.isFinite(age)&&age>=0
+   recordedFloorMet,recordedAssessmentFloorMet,
+   heartbeatEvidence:Number.isFinite(age)&&age>=0
     ?age<=86400000?'RECENT_RECORD_ONLY':'STALE_RECORD':'MISSING_OR_INVALID',
    independentCompetenceVerified:false,runtimeVerified:false};
  };
+ const projected=new Map(VAOS_WORKFORCE_AGENT_IDS.map(id=>[id,project(id)]));
+ const missingOrInvalidPassEmployeeIds=VAOS_WORKFORCE_AGENT_IDS.filter(id=>!projected.get(id).recordedAssessmentFloorMet);
+ const assessmentCoverage={
+  latestRecordedPassEmployees:16-missingOrInvalidPassEmployeeIds.length,
+  missingOrInvalidPassEmployeeIds,
+  allSixteenRecorded:missingOrInvalidPassEmployeeIds.length===0,
+  historicalMultiplicityVerified:false,independentEvidenceVerified:false,
+  qualifiedForDispatch:false,
+ };
  const reviews=COORDINATION_DOMAINS.map(domain=>{
   const [ownerId,verifierId]=ROUTES[domain];
-  const owner=project(ownerId),verifier=project(verifierId);
+  const owner=projected.get(ownerId),verifier=projected.get(verifierId);
+  const floorMet=owner.recordedFloorMet&&verifier.recordedFloorMet;
+  const assessmentsMet=owner.recordedAssessmentFloorMet&&verifier.recordedAssessmentFloorMet;
   return {domain,owner,verifier,assignment:'NOT_DISPATCHED',
-   status:owner.recordedFloorMet&&verifier.recordedFloorMet?'REVIEW_PROPOSAL_ONLY':'RECORDED_QUALIFICATION_HOLD',
-   holds:['SOURCE_VERSION_AND_SCOPE_REQUIRED','INDEPENDENT_ROLE_EVIDENCE_REQUIRED',
+   status:!floorMet?'RECORDED_QUALIFICATION_HOLD':!assessmentsMet?'RECORDED_ASSESSMENT_HOLD':'REVIEW_PROPOSAL_ONLY',
+   holds:[...(!assessmentsMet?['PERSISTED_ROLE_ASSESSMENT_REQUIRED']:[]),
+    'SOURCE_VERSION_AND_SCOPE_REQUIRED','INDEPENDENT_ROLE_EVIDENCE_REQUIRED',
     'FOUNDER_WORKFLOW_APPROVAL_REQUIRED','DURABLE_HANDOFF_AND_READBACK_REQUIRED']};
  });
  return {schemaVersion:'VAOS_JARVIS_COORDINATION_PROPOSAL_V1',status:'PROPOSAL_ONLY',
   source:'VAOS_PERSISTED_WORKFORCE_REGISTER',observedAt:new Date(now).toISOString(),
-  reviews,dispatchedAgents:0,modelCalls:0,actionAuthorized:false,agentDispatchAuthorized:false,
+  assessmentCoverage,reviews,dispatchedAgents:0,modelCalls:0,actionAuthorized:false,agentDispatchAuthorized:false,
   productionWritesAuthorized:false,qualificationCertified:false};
 }
 

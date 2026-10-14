@@ -314,6 +314,19 @@ function init(){
   state();
  });
  stop.addEventListener('click',()=>{
+  // If only the synthesized answer is active, Stop means stop playback, not
+  // end the founder's still-valid read-only conversation. This prevents
+  // legitimate "And the blockers?" follow-ups after stopping a long answer.
+  // The five-minute/three-follow-up volatile context bounds stay in force.
+  if(player.active()&&!recognition&&!controller&&!wake?.isEnabled()){
+   stopInterruption();
+   player.cancel();
+   setStatus('Spoken answer stopped. You can ask a follow-up in this tab.');
+   state();
+   return;
+  }
+  // Stop while the mic, hands-free or source request is active still ends
+  // the session, invalidates late callbacks and clears conversation context.
   wake?.disable('Hey VAOS switched off. Microphone stopped.');
   cancel();conversation.clear();setStatus('Stopped. No business actions authorized. Conversation context cleared.');
  });

@@ -4,6 +4,8 @@
 import {FOUNDER_AI_MODEL} from './founder-ai-draft.mjs';
 import {buildCoachingInstructions,suggestCoachedNextCheck} from './adaptive-coaching.mjs';
 export const ADAPTIVE_TOOLS=Object.freeze(['COMMERCIAL','FINANCE','PROCUREMENT','INVENTORY','PRODUCTION','PEOPLE','ENGINEERING']);
+// No weather observation source exists in this audited read-only tool set.
+export const isWeatherQuestion=question=>typeof question==='string'&&/\bweather\b/i.test(question);
 const ALLOWED=new Set(ADAPTIVE_TOOLS);
 const UNSAFE=/\b(approve(?:d)?|authoriz(?:ed|e)|pay(?:ment)?|transfer funds|send money|delete|deploy|execute|dispatch|post invoice|certif(?:ied|y)|guarantee(?:d)?|release (?:the )?design|secrets?|password|token|credentials?|api key)\b/i;
 const SOURCE=/^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/[a-f0-9]{40}\/[A-Za-z0-9_./-]+$/i;
@@ -43,6 +45,7 @@ export async function planAdaptiveReads({ai,question}={}){
 }
 export function fallbackAdaptivePlan(question){
  const q=String(question||'').toLowerCase();
+ if(isWeatherQuestion(q))return {tools:[],focus:'Weather source not connected',mode:'RULE_FALLBACK'};
  const matches=[
   ['COMMERCIAL',/\b(sales|orders?|customer|demand|crm|quote|pipeline)\b/],
   ['FINANCE',/\b(financ\w*|cash|fund\w*|bank|profit\w*|cost\w*|runway|expense\w*|budget\w*|ledger)\b/],

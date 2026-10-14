@@ -20,7 +20,7 @@
 .mission-footnote{color:#a8b3be;font-size:12px;line-height:1.6}.mission-footer{text-align:center;color:#85909a;padding:32px 15px;font-size:12px}
 @media(max-width:650px){.mission-bar{align-items:flex-start;flex-direction:column}.mission-lookup-row{flex-direction:column}.mission-stats{grid-template-columns:1fr}.mission-shell{padding:18px}}
 
-.g4-evidence{margin-top:28px;border:1px solid #846748;border-radius:14px;padding:16px;background:#171e25}
+.g4-evidence{margin-top:28px;border:1px solid #846748;border-radius:14px;padding:16px;background:#171e25;color:#dce5ed}
 .g4-evidence summary{cursor:pointer;display:flex;gap:10px;flex-wrap:wrap;align-items:center;color:#f1cb8b;font-size:clamp(14px,2vw,17px)}
 .g4-evidence summary span{font-size:12px;color:#c1cbd2}
 .g4-evidence-category{margin:18px 0;color:#f3dbac;font-weight:700;line-height:1.5;overflow-wrap:anywhere}
@@ -28,5 +28,7 @@
 .g4-evidence-stats>div{border:1px solid #394550;padding:12px;display:grid;gap:7px;border-radius:10px}
 .g4-evidence-stats small{font-size:12px;color:#bdc6ce}
 .g4-evidence-stats strong{font-size:clamp(15px,2vw,21px);overflow-wrap:anywhere}
+.g4-evidence .g4-evidence-stats strong{color:#f3dbac}
+.g4-evidence .mission-table td{color:#dce5ed}
 .g4-evidence-holds{line-height:1.6;overflow-wrap:anywhere}
 @media(max-width:650px){.g4-evidence-stats{grid-template-columns:1fr}.g4-evidence{padding:12px}}

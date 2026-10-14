@@ -152,48 +152,28 @@ $('founder-ai-draft').addEventListener('click',async()=>{
  finally{$('founder-ai-draft').disabled=false;}
 });
 $('record-draft').addEventListener('click',async()=>{
- if(!prepared||!pendingMessageId){message.textContent='Prepare a draft first.';return;}
- // A changed form must never send an older draft without another explicit confirmation.
+ // Reports and override proposals remain separately recorded without routing.
+ if(!prepared||!pendingMessageId||prepared.kind==='INSTRUCTION'){
+  message.textContent='Use Create and assign mission for direct founder instructions.';return;
+ }
  if(agentSelect.value!==prepared.recipientAgentId||$('instruction').value.trim()!==prepared.instruction
-    ||$('command-kind').value!==prepared.kind){
+    ||commandKind.value!==prepared.kind){
   message.textContent='Form changed. Prepare the draft again before recording.';return;
  }
  $('record-draft').disabled=true;
- let recorded=false;
  try{
   const r=await fetch('/api/founder-inbox',{method:'POST',credentials:'same-origin',
    headers:{'Content-Type':'application/json'},body:JSON.stringify({
     messageId:pendingMessageId,agentId:prepared.recipientAgentId,
-    kind:prepared.kind,instruction:prepared.instruction
+    kind:prepared.kind,instruction:prepared.instruction,
    })});
   const payload=await r.json();
   if(!r.ok||payload?.data?.message?.status!=='RECORDED_NOT_ROUTED')throw Error();
-  recorded=true;
-  if(prepared.kind==='INSTRUCTION'&&prepared.recipientAgentId==='orchestrator'){
-   const routed=await fetch('/api/missions',{method:'POST',credentials:'same-origin',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({operation:'ROUTE_FOUNDER_INSTRUCTION',messageId:pendingMessageId})});
-   const result=(await routed.json())?.data;
-   if(!routed.ok||!result||result.sourceMessageId!==pendingMessageId||
-      !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(result.missionId)||
-      !Number.isInteger(result.assignedWorkPackages)||!Number.isInteger(result.totalWorkPackages)||
-      result.businessEffectsExecuted!==false)throw Error('MISSION_ROUTING_UNCONFIRMED');
-   $('mission-id').value=result.missionId;
-   $('mission-summary').textContent='Mission '+result.missionId+
-     '\nAssigned: '+result.assignedWorkPackages+'/'+result.totalWorkPackages+
-     '\nStatus: '+result.status+
-     '\nAssignments are recorded; departmental execution is separate.';
-   message.textContent='Mission '+result.missionId+' — '+result.assignedWorkPackages+
-     '/'+result.totalWorkPackages+' assignments recorded. Open Mission Status for details.';
-  }else{
-   message.textContent='Recorded in founder inbox. No execution or agent routing occurred.';
-  }
-  pendingMessageId=null;prepared=null;$('draft-panel').hidden=true;
+  pendingMessageId=null;prepared=null;preparedText='';$('draft-panel').hidden=true;
+  message.textContent='Recorded in founder inbox; report or override was not executed.';
   await loadHistory();
  }catch{
-  message.textContent=recorded
-   ?'Instruction recorded, but mission assignment is unconfirmed. Retry the same prepared instruction; no duplicate mission will be created.'
-   :'Recording not confirmed. Retry the same prepared instruction and ID.';
+  message.textContent='Recording unconfirmed. Retry the unchanged draft and recorded ID.';
  }finally{$('record-draft').disabled=false;}
 });
 $('copy-draft').addEventListener('click',async()=>{

@@ -50,6 +50,39 @@ export async function createFounderMission({command,messageId,request}={}){
  });
 }
 
+
+/** One bounded execution pass, using the existing governed mission consumer.
+ * This does not bypass the authority or maker/checker controls; hourly scheduled
+ * continuation handles remaining or unavailable assignments.
+ */
+export async function runFounderMissionSafe({missionId,request}={}){
+ if(!MISSION.test(missionId||'')||typeof request!=='function'){
+  throw Error('FOUNDER_MISSION_EXECUTION_INVALID');
+ }
+ const result=await request('/api/missions',{
+  method:'POST',credentials:'same-origin',
+  headers:{'Content-Type':'application/json'},
+  body:JSON.stringify({operation:'RUN_SAFE',missionId,maxHandoffs:4}),
+ });
+ let data;
+ try{data=(await result.json())?.data;}catch{}
+ const consumed=data?.consumed,reviewed=data?.reviewed;
+ if(!result.ok||consumed?.missionId!==missionId||reviewed?.missionId!==missionId
+   ||!Number.isSafeInteger(consumed.submitted)||consumed.submitted<0||consumed.submitted>4
+   ||!Number.isSafeInteger(reviewed.verified)||reviewed.verified<0||reviewed.verified>4
+   ||!Number.isSafeInteger(consumed.returned)||consumed.returned<0||consumed.returned>4
+   ||!Number.isSafeInteger(reviewed.returned)||reviewed.returned<0||reviewed.returned>4
+   ||!Array.isArray(consumed.holds)||consumed.holds.length>4){
+  throw Error('FOUNDER_MISSION_EXECUTION_UNCONFIRMED');
+ }
+ return Object.freeze({
+  submitted:consumed.submitted,
+  verified:reviewed.verified,
+  returned:consumed.returned+reviewed.returned,
+  held:consumed.holds.length,
+ });
+}
+
 export function formatFounderMissionResults(record,id){
  const s=record?.summary,work=record?.jobs;
  if(!MISSION.test(id||'')||record?.schemaVersion!=='VAOS_FOUNDER_MISSION_RESULTS_V1'

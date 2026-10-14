@@ -16,7 +16,7 @@ import {getDurableControlService} from '../lib/durable-control-provider.mjs';
 import {isDigitalWorkforceQuestion,planJarvisCoordination} from '../../../intelligence/jarvis-coordination.mjs';
 import {planAdaptiveReads,validateAdaptiveDraft,synthesizeAdaptiveBrief,
  fallbackAdaptivePlan,formatAdaptiveEvidence,permittedTechnicalSources,
- buildAdaptiveFallback} from '../lib/adaptive-intelligence.mjs';
+ buildAdaptiveFallback,isWeatherQuestion} from '../lib/adaptive-intelligence.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const CONTROL='founder-readonly-browser-v1';
@@ -80,6 +80,21 @@ export function createAdaptiveIntelligenceHandler({
    return res.status(422).json(apiError('ADAPTIVE_QUESTION_REJECTED','Read-only non-secret question required'));
   if(analysisMode!==''&&!(analysisMode==='jarvis-x'&&evaluationRequest==='v3-readonly'))
    return res.status(422).json(apiError('JARVIS_X_MODE_DENIED','Founder supervised read-only mode required'));
+
+  // A business location in the question does not make its weather available
+  // from inventory, supplier or production records. Do not call a model or
+  // spend a read budget on unrelated observations.
+  if(isWeatherQuestion(question)){
+   const startedAt=now();
+   return res.status(200).json({data:{
+   ...buildAdaptiveFallback({question,observations:[]}),sourceSystem:'VAOS_ADAPTIVE',
+   sources:[],sourceCoverage:{observed:0,requested:0},selectedTools:[],
+   modelCalls:0,executionCount:0,readOnly:true,advisoryOnly:true,automationExecuted:false,
+   diagnostics:summarizeAdaptiveDiagnostics({elapsedMs:now()-startedAt,planningMode:'RULE_FALLBACK',
+    reasoningMode:'DETERMINISTIC_EVIDENCE',modelCalls:0,fallbackReason:'UNSUPPORTED_QUESTION',
+    observed:0,requested:0,verificationStatus:'NOT_MODEL_VERIFIED'}),
+   }});
+  }
 
   // Digital qualifications belong to the persisted VAOS register. HR personnel
   // counts and engineering release records cannot answer these questions.

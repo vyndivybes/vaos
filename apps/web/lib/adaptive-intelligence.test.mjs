@@ -10,6 +10,23 @@ const workforceSnapshot=()=>({workforce:{digitalEmployees:VAOS_WORKFORCE_AGENT_I
  evidenceRefs:['PRIVATE-REF'],owner:'private@example.test',
 }))}});
 
+test('unsupported current-weather requests cannot be answered from supplier or factory record counts',async()=>{
+ let reads=0,claims=0;
+ const h=createAdaptiveIntelligenceHandler({getReader:()=>{reads++;throw Error('UNRELATED_READ')},
+  getEngineering:()=>{reads++;throw Error('UNRELATED_READ')},
+  claim:()=>{claims++;return {allowed:true}},
+  plan:async()=>({tools:['PROCUREMENT','PRODUCTION'],focus:'supplier factory',mode:'MODEL_PLANNED'})});
+ for(const question of ['What is the current weather at our supplier factory?','What is the weather at the production warehouse?']){
+  const {state,res}=collect();await h(req(question),res);
+  assert.equal(state.status,200);const d=state.payload.data;
+  assert.equal(d.status,'HOLD');assert.match(d.answer,/cannot substantiate/i);
+  assert.equal(d.modelCalls,0);assert.equal(d.executionCount,0);
+  assert.equal(d.actionAuthorized,false);assert.equal(d.diagnostics.modelAvailability,'UNSUPPORTED_QUESTION');
+  assert.doesNotMatch(d.answer,/47 shortage|4 production|source domains observed/);
+ }
+ assert.equal(reads,0);assert.equal(claims,0);
+});
+
 test('digital employee qualification reads the canonical register once without HR, engineering or model planning',async()=>{
  let reads=0;
  const h=createAdaptiveIntelligenceHandler({getWorkforceSnapshot:async()=>{reads++;return workforceSnapshot()},

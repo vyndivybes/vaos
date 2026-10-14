@@ -262,3 +262,30 @@ test('G5 regression: governed explanations and engineering release questions can
  assert.equal(permitted.domain,'governance');
  assert.equal(classifyDashboardQuestion('Approve the payment now').kind,'DENY');
 });
+
+
+test('G5 founder mission and governance explanations display as bounded read-only answers, not commands',()=>{
+ const mission={status:'OBSERVED',readOnly:true,actionAuthorized:false,
+  businessEffectsExecuted:false,schemaVersion:'VAOS_FOUNDER_MISSION_ANSWER_V1',
+  sourceSystem:'VAOS_MISSION_CONTROL',sourceAuthority:'vaos_founder_mission_answer_summary',
+  answer:'Mission mission-test is still active; saved evidence is not yet independently reviewed.'};
+ assert.match(formatReadOnlyResult('INSIGHT',mission).answer,/mission-test/);
+ const policy={schemaVersion:'VAOS_GOVERNANCE_EXPLANATION_V1',status:'OBSERVED',
+  sourceSystem:'VAOS_POLICY',readOnly:true,actionAuthorized:false,
+  answer:'No. Only the governed approval pathway can authorize a supplier payment.'};
+ assert.match(formatReadOnlyResult('INSIGHT',policy).answer,/governed approval/i);
+ assert.throws(()=>formatReadOnlyResult('INSIGHT',{...policy,actionAuthorized:true}),/VOICE_INSIGHT_UNVERIFIED/);
+ assert.throws(()=>formatReadOnlyResult('INSIGHT',{...mission,sourceAuthority:'fabricated'}),/VOICE_INSIGHT_UNVERIFIED/);
+});
+test('G5 two-week question creates a specific bounded prelaunch action plan without pretending tasks were dispatched',()=>{
+ const q=classifyDashboardQuestion('Which prelaunch activities should I prioritize over the next two weeks?');
+ assert.equal(q.kind,'STARTUP');
+ const employees=Array.from({length:16},(_,i)=>({id:'employee-'+i,roleFloorMet:true}));
+ const result=formatReadOnlyResult('STARTUP',{schemaVersion:'VAOS_PRELAUNCH_WORKSPACE_V1',
+  operatingPhase:'PRELAUNCH',automaticBusinessEffectsAuthorized:false,employees});
+ assert.match(result.answer,/Week 1/i);
+ assert.match(result.answer,/Week 2/i);
+ assert.match(result.answer,/incorporation/i);
+ assert.match(result.answer,/Toray/i);
+ assert.match(result.answer,/no employee was dispatched/i);
+});

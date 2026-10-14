@@ -53,7 +53,10 @@ function fixture() {
 
 test('only approved deterministic read-only job types are supported', () => {
   assert.deepEqual([...SAFE_MISSION_JOBS].sort(), [
-    'KNOWLEDGE.DETECT_GAP', 'ORCHESTRATOR.CONSOLIDATE_RESULT', 'ORCHESTRATOR.INTAKE_MISSION', 'ORCHESTRATOR.MONITOR_MISSION', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY',
+    'COMMERCIAL.OBSERVE_PIPELINE', 'ENGINEERING.ASSESS_REQUIREMENT', 'ENGINEERING.OBSERVE_CONFIGURATION', 'FINANCE.OBSERVE_LEDGER',
+    'INVENTORY.OBSERVE_STOCK', 'KNOWLEDGE.DETECT_GAP', 'MAINTENANCE.OBSERVE_ASSET', 'ORCHESTRATOR.CONSOLIDATE_RESULT', 'ORCHESTRATOR.INTAKE_MISSION', 'ORCHESTRATOR.MONITOR_MISSION',
+    'PEOPLE.OBSERVE_WORKFORCE', 'PROCUREMENT.OBSERVE_SHORTAGE', 'PRODUCTION.OBSERVE_WIP', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY',
+    'QA.AUDIT_EVIDENCE', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY', 'SECURITY.ASSESS_ACCESS',
   ]);
 });
 
@@ -345,4 +348,120 @@ test('a readback outage retains the accepted handoff for restart recovery',async
  assert.equal((await consumer.consume('mission-1')).submitted,1);
  assert.equal(f.reports.size,1);
  assert.equal((await consumer.review('mission-1')).verified,1);
+});
+
+
+const readActions = [
+ 'COMMERCIAL.OBSERVE_PIPELINE', 'PROCUREMENT.OBSERVE_SHORTAGE',
+ 'INVENTORY.OBSERVE_STOCK', 'PRODUCTION.OBSERVE_WIP',
+ 'MAINTENANCE.OBSERVE_ASSET', 'FINANCE.OBSERVE_LEDGER',
+ 'PEOPLE.OBSERVE_WORKFORCE', 'ENGINEERING.OBSERVE_CONFIGURATION'
+];
+
+for (const actionType of readActions) {
+ test(actionType+' creates durable bounded evidence from a signed VYNDI read without recording raw records', async () => {
+  const f=fixture();
+  const { routeJob }=await import('../runtime/vaos-eight-operating-model.mjs');
+  const route=routeJob(actionType);
+  f.handoff.to_agent_id=route.ownerAgentId;
+  f.handoff.requested_job=actionType;
+  Object.assign((await f.service.snapshot()).workPackages[0], {
+   action_type:actionType,owner_agent_id:route.ownerAgentId,
+   authority:route.authority,execution_mode:'ANALYSE',
+  });
+  let seen=0;
+  const consumer=createMissionConsumer({service:f.service,readDepartment:async (input)=>{
+   seen++;
+   assert.equal(input.actionType,actionType);
+   assert.equal(input.missionId,'mission-1');
+   return {status:'OBSERVED',recordsObserved:2,
+    sourceAuthority:'SOURCE_AUTH',requestNonce:'a'.repeat(32),requestBodySha256:'b'.repeat(64),
+    gatewayReceivedAt:'2026-10-15T09:00:00.000Z'};
+  }});
+  // A forged source authority must never be submitted.
+  const denied=await consumer.consume('mission-1');
+  assert.equal(denied.submitted,0);
+  assert.equal(f.reports.size,0);
+  assert.equal(f.handoff.status,'ACCEPTED');
+  assert.equal(seen,1);
+ });
+}
+
+test('a qualified signed read is persisted, read back and independently receipt-verified without source rows', async () => {
+ const f=fixture();
+ f.handoff.to_agent_id='inventory';
+ f.handoff.requested_job='INVENTORY.OBSERVE_STOCK';
+ Object.assign((await f.service.snapshot()).workPackages[0],{
+  action_type:'INVENTORY.OBSERVE_STOCK',owner_agent_id:'inventory',authority:4,
+  execution_mode:'ANALYSE',
+ });
+ const {getVyndiBridgeRoute}=await import('../../packages/contracts/vyndi-write-bridge.mjs');
+ const authority=getVyndiBridgeRoute('INVENTORY.OBSERVE_STOCK').authority;
+ const consumer=createMissionConsumer({service:f.service,readDepartment:async ()=>({
+  status:'OBSERVED',recordsObserved:2,sourceAuthority:authority,
+  requestNonce:'a'.repeat(32),requestBodySha256:'b'.repeat(64),
+  gatewayReceivedAt:'2026-10-15T09:00:00.000Z',
+  secret:'must-not-be-persisted',records:[{name:'private'}],
+ })});
+ assert.equal((await consumer.consume('mission-1')).submitted,1);
+ const recorded=[...f.reports.values()][0].report;
+ assert.equal(recorded.recordsObserved,2);
+ assert.equal(recorded.sourceAuthority,authority);
+ assert.equal(recorded.secret,undefined);
+ assert.equal(recorded.records,undefined);
+ assert.equal(recorded.businessEffectsExecuted,false);
+ assert.equal(recorded.scope,'BOUNDED_VYNDI_READ_RECEIPT_ONLY');
+ assert.equal(verifyReadOnlyMissionAudit(recorded,(await f.service.snapshot()).workPackages,'wp-1'),true);
+ assert.equal(verifyReadOnlyMissionAudit({...recorded,recordsObserved:999},(await f.service.snapshot()).workPackages,'wp-1'),false);
+ assert.equal((await consumer.review('mission-1')).verified,1);
+ assert.equal(f.handoff.status,'COMPLETED');
+});
+
+test('unsigned or unavailable domain reads leave the handoff unverified and report the blocker', async()=>{
+ const f=fixture();
+ f.handoff.to_agent_id='finance';f.handoff.requested_job='FINANCE.OBSERVE_LEDGER';
+ Object.assign((await f.service.snapshot()).workPackages[0],{
+  action_type:'FINANCE.OBSERVE_LEDGER',owner_agent_id:'finance',authority:4,execution_mode:'ANALYSE',
+ });
+ const consumer=createMissionConsumer({service:f.service,readDepartment:async()=>{throw Error('SENSITIVE_INTERNAL');}});
+ const result=await consumer.consume('mission-1');
+ assert.equal(result.submitted,0);
+ assert.equal(result.holds.length,1);
+ assert.equal(result.holds[0].code,'DEPARTMENT_READ_UNAVAILABLE');
+ assert.equal(f.reports.size,0);
+ assert.equal(f.handoff.status,'ACCEPTED');
+});
+
+for (const actionType of ['ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS']) {
+ test(actionType+' performs only an explicitly limited mission-records inspection',async()=>{
+  const f=fixture();
+  const {routeJob}=await import('../runtime/vaos-eight-operating-model.mjs');
+  const route=routeJob(actionType);
+  f.handoff.to_agent_id=route.ownerAgentId;
+  f.handoff.requested_job=actionType;
+  Object.assign((await f.service.snapshot()).workPackages[0],{
+   action_type:actionType,owner_agent_id:route.ownerAgentId,
+   authority:route.authority,execution_mode:route.executionMode,
+  });
+  const consumer=createMissionConsumer({service:f.service});
+  assert.equal((await consumer.consume('mission-1')).submitted,1);
+  const report=[...f.reports.values()][0].report;
+  assert.equal(report.scope,'PERSISTED_MISSION_RECORDS_ONLY');
+  assert.equal(report.businessEffectsExecuted,false);
+  assert.equal(report.engineeringReleaseGranted,false);
+  assert.equal((await consumer.review('mission-1')).verified,1);
+ });
+}
+
+test('a bridge read job cannot execute if the work package tries approval-only or effectful permissions',async()=>{
+ const f=fixture();f.handoff.to_agent_id='production';f.handoff.requested_job='PRODUCTION.OBSERVE_WIP';
+ Object.assign((await f.service.snapshot()).workPackages[0],{
+  action_type:'PRODUCTION.OBSERVE_WIP',owner_agent_id:'production',
+  authority:3,execution_mode:'GOVERNED_EXECUTION',
+ });
+ let calls=0;
+ const consumer=createMissionConsumer({service:f.service,readDepartment:async()=>{calls++;return {}}});
+ const result=await consumer.consume('mission-1');
+ assert.equal(result.unsupported,1);assert.equal(calls,0);
+ assert.deepEqual(f.events,[]);
 });

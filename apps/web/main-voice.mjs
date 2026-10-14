@@ -42,6 +42,7 @@ export function classifyDashboardQuestion(value){
 export function shouldUseAdaptiveAnswer(intent,selected){
  if(selected!==true||!intent||intent.kind==='DENY'||intent.kind==='STARTUP')return false;
  if(intent.kind==='ADVISORY'||['group','missions'].includes(intent.domain))return true;
+ if(/\b(?:weather|rain|temperature|snow|humidity|storm)\b/i.test(intent.question||''))return true;
  return typeof intent.question==='string'
   &&/\b(?:digital|ai|artificial intelligence)\s+(?:employees?|agents?|workforce)\b|\b(?:orchestrator|knowledge agent)\b/i.test(intent.question);
 }

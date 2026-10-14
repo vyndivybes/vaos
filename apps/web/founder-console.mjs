@@ -3,6 +3,19 @@ import {formatMissionSnapshotSpokenPreview} from './lib/voice-pilot.mjs';
 const $=id=>document.getElementById(id),shell=$('founder-shell'),message=$('command-message'),agentSelect=$('agent');
 let preparedText='';let pendingMessageId=null;let prepared=null;
 for(const agent of AGENTS){const option=document.createElement('option');option.value=agent.id;option.textContent=agent.name;agentSelect.append(option);}
+
+const commandKind=$('command-kind');
+function syncInstructionRecipient(){
+ const missionInstruction=commandKind.value==='INSTRUCTION';
+ if(missionInstruction)agentSelect.value='orchestrator';
+ agentSelect.disabled=missionInstruction;
+ $('record-draft').textContent=missionInstruction?'Create and assign mission':'Record in VAOS inbox';
+ preparedText='';pendingMessageId=null;prepared=null;
+ $('draft-panel').hidden=true;
+}
+commandKind.addEventListener('change',()=>{syncInstructionRecipient();refresh();loadHistory();});
+syncInstructionRecipient();
+
 async function refresh(){
  $('agent-status').textContent='Reading persisted agent records…';
  try{
@@ -30,7 +43,7 @@ $('command-form').addEventListener('submit',event=>{
   const a=AGENTS.find(a=>a.id===d.recipientAgentId);
   preparedText='Recipient: '+a.name+' ('+d.recipientAgentId+')\nType: '+d.kind+'\nStatus: DRAFT_NOT_SENT\n\n'+d.instruction+'\n\nRequires governed submission. No authority granted.';
   $('draft-output').textContent=preparedText;$('draft-panel').hidden=false;
-  message.textContent='Draft prepared locally. It has NOT been sent to an agent.';
+  message.textContent=d.kind==='INSTRUCTION'?'Instruction ready for Orchestrator routing. Confirm to create and assign the mission.':'Draft prepared locally. It has NOT been sent to an agent.';
  }catch{message.textContent='Invalid draft. Enter a specific instruction (5–2000 characters).';}
 });
 async function loadHistory(){
@@ -101,6 +114,7 @@ $('record-draft').addEventListener('click',async()=>{
   message.textContent='Form changed. Prepare the draft again before recording.';return;
  }
  $('record-draft').disabled=true;
+ let recorded=false;
  try{
   const r=await fetch('/api/founder-inbox',{method:'POST',credentials:'same-origin',
    headers:{'Content-Type':'application/json'},body:JSON.stringify({
@@ -109,11 +123,32 @@ $('record-draft').addEventListener('click',async()=>{
    })});
   const payload=await r.json();
   if(!r.ok||payload?.data?.message?.status!=='RECORDED_NOT_ROUTED')throw Error();
-  message.textContent='Recorded in founder inbox — NOT ROUTED or executed.';
+  recorded=true;
+  if(prepared.kind==='INSTRUCTION'&&prepared.recipientAgentId==='orchestrator'){
+   const routed=await fetch('/api/missions',{method:'POST',credentials:'same-origin',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({operation:'ROUTE_FOUNDER_INSTRUCTION',messageId:pendingMessageId})});
+   const result=(await routed.json())?.data;
+   if(!routed.ok||!result||result.sourceMessageId!==pendingMessageId||
+      !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(result.missionId)||
+      !Number.isInteger(result.assignedWorkPackages)||!Number.isInteger(result.totalWorkPackages)||
+      result.businessEffectsExecuted!==false)throw Error('MISSION_ROUTING_UNCONFIRMED');
+   $('mission-id').value=result.missionId;
+   $('mission-summary').textContent='Mission '+result.missionId+
+     '\nAssigned: '+result.assignedWorkPackages+'/'+result.totalWorkPackages+
+     '\nStatus: '+result.status+
+     '\nAssignments are recorded; departmental execution is separate.';
+   message.textContent='Mission '+result.missionId+' — '+result.assignedWorkPackages+
+     '/'+result.totalWorkPackages+' assignments recorded. Open Mission Status for details.';
+  }else{
+   message.textContent='Recorded in founder inbox. No execution or agent routing occurred.';
+  }
   pendingMessageId=null;prepared=null;$('draft-panel').hidden=true;
   await loadHistory();
  }catch{
-  message.textContent='Recording not confirmed. No agent action occurred. Retry the same prepared draft and ID.';
+  message.textContent=recorded
+   ?'Instruction recorded, but mission assignment is unconfirmed. Retry the same prepared instruction; no duplicate mission will be created.'
+   :'Recording not confirmed. Retry the same prepared instruction and ID.';
  }finally{$('record-draft').disabled=false;}
 });
 $('copy-draft').addEventListener('click',async()=>{

@@ -35,7 +35,7 @@ export function isMissionRecoveryQuestion(question){
 
 const checks=[
  {domain:'group',re:/\b(group|all divisions|across divisions|whole company|consolidat|v[aā]y[uū] shastr)\b/i},
- {domain:'missions',re:/\b(mission|agent mission|task handoff|digital employee mission)\b/i},
+ {domain:'missions',re:/\b(missions?|agent missions?|task handoffs?|digital employee missions?)\b/i},
  {domain:'crm',re:/\b(crm|conversion|prospect|customer follow.up|customer master|lead qualification|deal pipeline)\b/i},
  {domain:'finance',re:/\b(financ\w*|revenues?|profits?|losses|cash|ledger|expenses?|expenditures?|budgets?|invoices?|receivables?|payables?|money|payment status|journals?|bank|accounting)\b/i},
  {domain:'procurement',re:/\b(procure\w*|purchase orders?|material shortages?|shortages?|suppliers?|replenishment|material requirements?|supply chain)\b/i},

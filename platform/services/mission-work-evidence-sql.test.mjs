@@ -59,3 +59,27 @@ test('handoff execution and verification require currently qualified active acto
   assert.match(sql,/qualification_level/i);
   assert.match(sql,/responsibility_contracts/i);
 });
+
+
+test('G4 departmental read migration retains exact action allowlists, Q floors and private signed evidence',async()=>{
+ const sql=await readFile(new URL('../../supabase/migrations/20261015110000_g4_departmental_read_handoffs_v1.sql',import.meta.url),'utf8');
+ for(const action of [
+  'COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK',
+  'PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER',
+  'PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION',
+  'ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS']){
+  assert.ok(sql.includes("'"+action+"'"),action);
+ }
+ assert.match(sql,/requestBodySha256/);
+ assert.match(sql,/HANDOFF_EVIDENCE_REPORT_INVALID/);
+ assert.match(sql,/v_work\.authority <> 5/);
+ assert.match(sql,/v_work\.human_approval_required/);
+ assert.match(sql,/v_work\.execution_mode <> 'ANALYSE'/);
+ assert.match(sql,/create or replace function vaos_private\.assert_current_handoff_actor/i);
+ assert.match(sql,/when 'finance' then 4/);
+ assert.match(sql,/when 'engineering-configuration' then 4/);
+ assert.match(sql,/else 99/);
+ assert.match(sql,/from public,anon,authenticated/);
+ assert.match(sql,/to service_role/);
+ assert.doesNotMatch(sql,/grant execute .* to (anon|authenticated)/i);
+});

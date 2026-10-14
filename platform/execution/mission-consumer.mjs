@@ -1,4 +1,5 @@
 import { routeJob } from '../runtime/vaos-eight-operating-model.mjs';
+import { getVyndiBridgeRoute } from '../../packages/contracts/vyndi-write-bridge.mjs';
 
 /**
  * Small, deliberately allowlisted read-only operating capabilities.
@@ -13,9 +14,81 @@ export const SAFE_MISSION_JOBS = Object.freeze([
   'ORCHESTRATOR.INTAKE_MISSION',
   'ORCHESTRATOR.MONITOR_MISSION',
   'ORCHESTRATOR.CONSOLIDATE_RESULT',
+  // Scoped inspections of persisted mission records only, NOT domain certification.
+  'ENGINEERING.ASSESS_REQUIREMENT',
+  'QA.AUDIT_EVIDENCE',
+  'SECURITY.ASSESS_ACCESS',
+  // Existing signed, source-bound VYNDI read contracts (no business writes).
+  'COMMERCIAL.OBSERVE_PIPELINE',
+  'PROCUREMENT.OBSERVE_SHORTAGE',
+  'INVENTORY.OBSERVE_STOCK',
+  'PRODUCTION.OBSERVE_WIP',
+  'MAINTENANCE.OBSERVE_ASSET',
+  'FINANCE.OBSERVE_LEDGER',
+  'PEOPLE.OBSERVE_WORKFORCE',
+  'ENGINEERING.OBSERVE_CONFIGURATION',
 ]);
 
 const SAFE = new Set(SAFE_MISSION_JOBS);
+
+const BRIDGE_READ_ACTIONS = new Set([
+ 'COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE',
+ 'INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP',
+ 'MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER',
+ 'PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION',
+]);
+const MISSION_RECORD_INSPECTIONS = new Set([
+ 'ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS',
+]);
+export function isMissionBridgeReadAction(actionType) {
+ const contract=getVyndiBridgeRoute(actionType);
+ return BRIDGE_READ_ACTIONS.has(actionType)&&contract?.effectClass==='read'
+   &&contract.executionEnabled===true&&contract.state==='READ_READY';
+}
+function validIso(value){
+ return typeof value==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value)
+  &&Number.isFinite(Date.parse(value))&&new Date(value).toISOString()===value;
+}
+function bridgeReport(actionType,workPackageId,observation) {
+ const contract=getVyndiBridgeRoute(actionType);
+ if(!isMissionBridgeReadAction(actionType)||observation?.status!=='OBSERVED'
+   ||observation.sourceAuthority!==contract.authority
+   ||!Number.isSafeInteger(observation.recordsObserved)
+   ||observation.recordsObserved<0||observation.recordsObserved>100
+   ||!/^[a-f0-9]{32}$/i.test(observation.requestNonce||'')
+   ||!/^[a-f0-9]{64}$/i.test(observation.requestBodySha256||'')
+   ||!validIso(observation.gatewayReceivedAt)) throw Error('DEPARTMENT_READ_RECEIPT_INVALID');
+ return {
+  schemaVersion:'vaos.read-only-mission-audit.v1',kind:'READ_ONLY_MISSION_AUDIT',
+  actionType,workPackageId,
+  scope:'BOUNDED_VYNDI_READ_RECEIPT_ONLY',
+  findings:['BOUNDED_SELECTED_RECORDS:'+observation.recordsObserved],
+  sourceSystem:'VYNDI_OS',sourceAuthority:contract.authority,
+  recordsObserved:observation.recordsObserved,
+  gatewayReceivedAt:observation.gatewayReceivedAt,
+  requestNonce:observation.requestNonce,
+  requestBodySha256:observation.requestBodySha256,
+  sourceRevisionVerified:false,sourceCompletenessVerified:false,
+  businessEffectsExecuted:false,engineeringReleaseGranted:false,
+ };
+}
+function verifyBridgeReport(report,items,workPackageId){
+ if(!isMissionBridgeReadAction(report?.actionType))return false;
+ const original=normalizedPackages(items).find(item=>item.id===workPackageId);
+ if(!original||original.actionType!==report.actionType
+   ||original.ownerAgentId!==routeJob(report.actionType).ownerAgentId)return false;
+ // Rebuild the receipt from the exact allowlisted fields, rejecting extra keys and
+ // source data. A signed request receipt is evidence of a bounded read, NOT proof
+ // that the underlying records are complete, current or production-authorized.
+ const expected=bridgeReport(report.actionType,workPackageId,{
+  status:'OBSERVED',sourceAuthority:report.sourceAuthority,
+  recordsObserved:report.recordsObserved,requestNonce:report.requestNonce,
+  requestBodySha256:report.requestBodySha256,gatewayReceivedAt:report.gatewayReceivedAt,
+ });
+ return Object.keys(report).length===Object.keys(expected).length
+  &&Object.entries(expected).every(([key,value])=>JSON.stringify(report[key])===JSON.stringify(value));
+}
+
 const OPEN = new Set(['PLANNED', 'READY', 'IN_PROGRESS', 'BLOCKED', 'FAILED']);
 const TERMINAL = new Set(['COMPLETED', 'CANCELLED']);
 
@@ -50,6 +123,8 @@ function normalizedPackages(items) {
     slaHours: prop(item, 'sla_hours', 'slaHours') ?? null,
     actionType: prop(item, 'action_type', 'actionType') ?? null,
     ownerAgentId: prop(item, 'owner_agent_id', 'ownerAgentId') ?? null,
+    authority: item?.authority ?? null,
+    humanApprovalRequired: prop(item, 'human_approval_required', 'humanApprovalRequired') === true,
   });
   });
 }
@@ -92,6 +167,18 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId, 
     });
     findings.push(...dependencies.filter(entry => entry.state !== 'COMPLETED').map(entry =>
       `PREREQUISITE:${entry.child}:${entry.dependency}:${entry.state}`));
+  } else if (MISSION_RECORD_INSPECTIONS.has(actionType)) {
+    // This work inspects ONLY the governed mission record. It never asserts
+    // a VEDM engineering assessment, an operational QA audit or real IAM review.
+    if (actionType === 'ENGINEERING.ASSESS_REQUIREMENT') {
+      findings = ['ENGINEERING_SOURCE_NOT_ATTACHED_TO_MISSION'];
+    } else if (actionType === 'QA.AUDIT_EVIDENCE') {
+      findings = external.filter(item => item.status !== 'COMPLETED')
+        .map(item => 'UNVERIFIED_WORK_PACKAGE:'+item.id+':'+item.status);
+    } else {
+      findings = external.filter(item => item.humanApprovalRequired || Number(item.authority)>2)
+        .map(item => 'RESTRICTED_WORK_PACKAGE:'+item.id);
+    }
   } else if (actionType === 'PROJECT.TRACK_DEPENDENCY') {
     findings = dependencies.filter((entry) => entry.state !== 'COMPLETED').map((entry) =>
       `${entry.child} -> ${entry.dependency}: ${entry.state}`);
@@ -138,6 +225,11 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId, 
     findings: findings.sort(compare),
     referencedWorkPackages: workPackages.length,
     ...(actionType.startsWith('ORCHESTRATOR.') ? { scope: 'PERSISTED_MISSION_PLAN_ONLY' } : {}),
+    ...(MISSION_RECORD_INSPECTIONS.has(actionType) ? {
+      scope: 'PERSISTED_MISSION_RECORDS_ONLY',
+      businessEffectsExecuted: false,
+      engineeringReleaseGranted: false,
+    } : {}),
     ...(actionType === 'PROJECT.DETECT_DELAY' ? {
       scope: 'MISSION_CATALOG_SLA_ONLY',
       observedAt,
@@ -153,6 +245,7 @@ export function verifyReadOnlyMissionAudit(report, items, workPackageId, { nowEp
   try {
     if (!report || typeof report !== 'object' || Array.isArray(report)) return false;
     if (!SAFE.has(report.actionType)) return false;
+    if (BRIDGE_READ_ACTIONS.has(report.actionType)) return verifyBridgeReport(report, items, workPackageId);
     if (report.actionType === 'PROJECT.DETECT_DELAY') {
       const observedMs = parseObservedAt(report.observedAt);
       if (!Number.isFinite(nowEpochMs) || observedMs > nowEpochMs
@@ -184,14 +277,16 @@ function safeJobValidated(handoff, item) {
   if (!SAFE.has(actionType) || !item || item.id !== handoffWorkPackage(handoff)) return false;
   const route = routeJob(actionType);
   const mode = prop(item, 'execution_mode', 'executionMode');
+  const signedRead = isMissionBridgeReadAction(actionType)
+    && route.authority === 5 && mode === 'ANALYSE';
   return prop(item, 'action_type', 'actionType') === actionType
     && route.ownerAgentId === handoffOwner(handoff)
     && prop(item, 'owner_agent_id', 'ownerAgentId') === handoffOwner(handoff)
     && !route.humanApprovalRequired
     && !packageHumanApproval(item)
-    && route.authority <= 2
+    && (route.authority <= 2 || signedRead)
     && Number.isInteger(item.authority)
-    && item.authority >= 0 && item.authority <= 2
+    && item.authority === route.authority
     && ['ANALYSE', 'PREPARE'].includes(route.executionMode)
     && mode === route.executionMode;
 }
@@ -219,7 +314,7 @@ function evidenceRef(evidenceId) {
   return requiredString(evidenceId, 'MISSION_EVIDENCE_ID_REQUIRED');
 }
 
-export function createMissionConsumer({ service } = {}) {
+export function createMissionConsumer({ service, readDepartment } = {}) {
   const methods = ['snapshot', 'transitionHandoff', 'recordWorkEvidence', 'getWorkEvidence'];
   if (!service || methods.some((name) => typeof service[name] !== 'function')) {
     throw new Error('MISSION_CONSUMER_SERVICE_REQUIRED');
@@ -231,13 +326,18 @@ export function createMissionConsumer({ service } = {}) {
       const limit = maxCount(maxHandoffs);
       const initial = requiredSnapshot(await service.snapshot(id), id);
       let submitted = 0, unsupported = 0, attempted = 0, returned = 0;
-      const used = [];
+      const used = [], holds = [];
       for (const handoff of initial.handoffs) {
         if (attempted >= limit) break;
         if (!['PENDING', 'ACCEPTED'].includes(handoff.status)) continue;
         const wp = initial.workPackages.find((item) => item.id === handoffWorkPackage(handoff));
         if (!safeJobValidated(handoff, wp)) {
           unsupported += 1;
+          continue;
+        }
+        if (isMissionBridgeReadAction(handoffAction(handoff)) && typeof readDepartment !== 'function') {
+          unsupported += 1;
+          holds.push({handoffId:handoff.id,actionType:handoffAction(handoff),code:'DEPARTMENT_READ_HANDLER_UNAVAILABLE'});
           continue;
         }
         attempted += 1;
@@ -271,7 +371,23 @@ export function createMissionConsumer({ service } = {}) {
           returned += 1;
           continue;
         }
-        const report = prior?.report ?? calculateReadOnlyMissionAudit(handoffAction(handoff), refreshed.workPackages, handoffWorkPackage(handoff));
+        let report = prior?.report;
+        if (!report && isMissionBridgeReadAction(handoffAction(handoff))) {
+          try {
+            const observation = await readDepartment({
+              actionType:handoffAction(handoff),missionId:id,
+              workPackageId:handoffWorkPackage(handoff),handoffId:handoff.id,
+              handoffVersion:version,
+            });
+            report = bridgeReport(handoffAction(handoff),handoffWorkPackage(handoff),observation);
+          } catch {
+            // Preserve ACCEPTED for deterministic retry. Do not submit an
+            // unavailable source as an empty, successful departmental report.
+            holds.push({handoffId:handoff.id,actionType:handoffAction(handoff),code:'DEPARTMENT_READ_UNAVAILABLE'});
+            continue;
+          }
+        }
+        if (!report) report = calculateReadOnlyMissionAudit(handoffAction(handoff), refreshed.workPackages, handoffWorkPackage(handoff));
         const recorded = prior ? { evidenceId: prior.id } : await service.recordWorkEvidence({
           handoffId: handoff.id,
           expectedVersion: version,
@@ -295,7 +411,7 @@ export function createMissionConsumer({ service } = {}) {
         used.push(handoff.id);
         submitted += 1;
       }
-      return { missionId: id, submitted, unsupported, returned, handoffs: used };
+      return { missionId: id, submitted, unsupported, returned, handoffs: used, holds };
     },
 
     async review(missionId, { maxHandoffs = 4 } = {}) {

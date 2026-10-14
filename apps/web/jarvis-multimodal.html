@@ -28,4 +28,8 @@ video{max-width:100%;max-height:360px}
 <p class="notice">Files up to 1 MB for document conversion; image bytes are resized before transmission. Videos remain on your device and only a paused frame can be submitted. Conversion is advisory, not document certification.</p></section>
 <section class="panel" id="doc-panel" hidden><h2>Extracted document text</h2><p class="sub">Check completeness against the source. AI may omit complex tables, images, equations or scanned handwriting.</p><pre id="document-text"></pre><button id="ask-doc" type="button">Ask JARVIS about this excerpt</button></section>
 <section class="panel" id="result-panel" hidden><h2>Unverified advisory explanation</h2><pre id="result"></pre><p class="notice">Not an engineering release, approved finding, QA certification or instruction to execute a production operation.</p></section>
-</main><script type="module" src="/jarvis-multimodal.mjs"></script></body></html>
+<section class="panel" id="vedm-panel" hidden><h2>Current controlled VEDM / VIBPE authority</h2>
+<p class="sub">Independent read-only check against commit-pinned engineering records. The upload remains unverified; this lookup does not establish that your uploaded document, drawing, picture or video frame matches the released engineering configuration.</p>
+<button id="compare-vedm" type="button">Check current VEDM authority (separate)</button>
+<pre id="vedm-result" aria-live="polite">No VEDM comparison has been requested.</pre></section>
+</main><script type="module" src="/jarvis-multimodal.mjs?v=20261015-g7-source-evidence-v1"></script></body></html>

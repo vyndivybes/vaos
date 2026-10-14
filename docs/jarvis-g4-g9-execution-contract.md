@@ -1,5 +1,7 @@
 # JARVIS phased execution contract
 
+The [14 October founder acceptance reconciliation](jarvis-founder-acceptance-20261014.md) records approval and commissioning of the delivered read-only G4 scope, completed local training and one English voice trial. Approval for these scopes is settled. The remaining criteria below apply to broader operational capabilities and must not impose another human reviewer or repeated founder approval on the accepted scope.
+
 The existing 46-requirement register and G2–G5 contracts remain controlling. G4 is qualified coordination; G5 is independent signed-in acceptance, including at least 20 unseen questions, source-grounded accuracy, voice and measured latency. The handover's learning and G6–G9 names describe extensions, not replacements for these gates. No phase below is fully commissioned by this document.
 
 | Phase | Existing implementation to reuse | Acceptance still required |

@@ -4,7 +4,7 @@
  * handoff as a closed production mission.
  */
 const ID=/^[A-Za-z0-9][A-Za-z0-9._:-]{3,95}$/;
-const STATUSES=new Set(['ACTIVE','PLANNED','READY_FOR_CLOSURE','COMPLETED','CLOSED','BLOCKED','FAILED','CANCELLED']);
+const STATUSES=new Set(['ACTIVE','PLANNED','READY_FOR_CLOSURE','COMPLETED','CLOSED','BLOCKED','HOLD','FAILED','CANCELLED']);
 const safeCount=n=>Number.isSafeInteger(n)&&n>=0&&n<=100000;
 export function buildFounderMissionAnswer(question,source){
  if(typeof question!=='string'||question.length<5||question.length>300

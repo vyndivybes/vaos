@@ -6,6 +6,11 @@ import {assessG3CrossSource} from '../../../intelligence/g3-cross-source-reconci
 
 const REQUIRED=['procurement','inventory','production','engineering'];
 const findings=Object.freeze([
+ {field:'legacyMigratedReleaseLabelsWithoutBom',code:'LEGACY_MIGRATION_BASELINES_UNVERIFIED',
+  classification:'RECORDED_PROVENANCE_GAP',severity:'MEDIUM',title:'Three legacy migration baselines are not approved production releases',
+  explanation:'The source marks these baselines released, but its cutover migration created and approved them automatically. No production BOM is linked. Their historical status must not be treated as genuine engineering release.',
+  action:'Keep the system-migration baselines as prelaunch reference; prepare a controlled engineering revision and link a BOM only after actual approval and release.',
+  sourceDomains:['engineering']},
  {field:'shortageRowsWithObservedJobBomConflict',code:'OBSERVED_JOB_BOM_REVISION_CONFLICT',
   classification:'OBSERVED_DISCREPANCY',severity:'HIGH',title:'Procurement and job-card BOM revisions disagree',
   explanation:'At least one selected shortage line and its observed linked job card reference different BOM revisions. This is a traceability conflict, not proof that the conflict delayed the build.',
@@ -43,6 +48,10 @@ const findings=Object.freeze([
   sourceDomains:['procurement','production']}
 ]);
 const sourceObject=x=>x&&typeof x==='object'&&!Array.isArray(x);
+const isLegacyMigrationRelease=row=>row?.status==='released'&&(!row?.bom_revision)&&(
+ row?.release_disposition==='LEGACY_MIGRATION_UNVERIFIED'||row?.created_by==='system:migration'||
+ row?.approved_by==='system:migration'||String(row?.source_ref||'').startsWith('CUTOVER:'));
+
 
 /** Founder-declared company phase. Source records may still be proposed, demo or
  * actual: a gateway receipt does not establish their individual origin.
@@ -62,6 +71,11 @@ const REVIEW_PRIORITY=Object.freeze({
 const PRIORITY_ORDER=['RECONCILE_SOURCE_CONFLICT','COMPLETE_RELEASE_TRACE',
  'COMPLETE_RECORD_LINKS','CHECK_SOURCE_COVERAGE'];
 const PREPARATION_STEPS=Object.freeze({
+ LEGACY_MIGRATION_BASELINES_UNVERIFIED:[
+  'Preserve the three original migration entries and audit history; do not manufacture engineering approvals.',
+  'Use the VEDM-controlled candidate geometry and materials as proposed engineering inputs, not a production release.',
+  'Create a genuinely controlled revision and link a qualified BOM release only when approval, effectivity and configuration documents exist.'
+ ],
  OBSERVED_JOB_BOM_REVISION_CONFLICT:[
   'Review the procurement shortage line and linked production job-card BOM revision in their existing departmental records.',
   'Compare both revisions against the VEDM proposal and the actual approved, effective engineering release; do not assume a proposed revision is released.',
@@ -147,7 +161,8 @@ function buildSampleEvidence(data){
  });
  baselines.forEach((row,i)=>{
   if(row?.status==='released'&&!normalized(row?.bom_revision))
-   emit('RELEASED_ENGINEERING_BASELINES_WITHOUT_BOM',
+   emit(isLegacyMigrationRelease(row)?'LEGACY_MIGRATION_BASELINES_UNVERIFIED':
+    'RELEASED_ENGINEERING_BASELINES_WITHOUT_BOM',
     [ref('engineering','baselines',i+1)]);
  });
  jobs.forEach((row,i)=>{
@@ -225,9 +240,14 @@ export function buildDataAgentInvestigation({question,observations=[]}={}){
   snapshotConsistencyVerified:false,actionAuthorized:false,readOnly:true
  };
  const evidence=buildSampleEvidence(data);
+ const legacyMigratedReleaseLabelsWithoutBom=data.ENGINEERING.baselines
+  .filter(isLegacyMigrationRelease).length;
+ const counts={...assessment.counts,legacyMigratedReleaseLabelsWithoutBom,
+  releasedBaselinesWithoutBom:Math.max(0,
+   assessment.counts.releasedBaselinesWithoutBom-legacyMigratedReleaseLabelsWithoutBom)};
  const values=findings.map(template=>({
   code:template.code,title:template.title,classification:template.classification,
-  severity:template.severity,observedCount:assessment.counts[template.field],
+  severity:template.severity,observedCount:counts[template.field],
   explanation:template.explanation,action:template.action,
   sourceDomains:template.sourceDomains,
   reviewPriority:REVIEW_PRIORITY[template.classification],

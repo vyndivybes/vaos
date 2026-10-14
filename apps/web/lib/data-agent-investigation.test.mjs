@@ -22,6 +22,7 @@ test('business delay and root cause questions discover the four existing crosswa
  assert.equal(selectDataAgentSources('Why is production delayed?').investigate,true);
  assert.equal(selectDataAgentSources('Find the root cause of material shortages').investigate,true);
  assert.equal(selectDataAgentSources('Analyse finance and procurement').investigate,false);
+ assert.equal(selectDataAgentSources('Why is our financial position weak?').investigate,false);
  assert.equal(selectDataAgentSources('Please approve a job card').status,'DENIED');
 });
 test('existing G3.1E crosswalk reveals actual observed revision, unit and provenance discrepancies without raw identifiers',()=>{

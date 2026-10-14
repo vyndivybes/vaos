@@ -168,3 +168,26 @@ test('prelaunch missing BOM has a safe checklist rather than prompting fake engi
  assert.match(result.decisionBrief.preparationSteps.join(' '),/not.*(invent|assume)|without.*approv|draft/i);
  assert.match(result.decisionBrief.preparationSteps.join(' '),/VEDM/i);
 });
+
+test('three migration-created released labels are preparation placeholders, not approved BOM release defects',()=>{
+ const base={
+  procurement:{records:[]},inventory:{records:[]},production:{records:[]},
+  engineering:{baselines:[
+   {id:'ENG-ALTITUDE-C2',status:'released',bom_revision:null,source_ref:'CUTOVER:src/lib/finance/engineering-engine.ts',created_by:'system:migration',approved_by:'system:migration',release_disposition:'LEGACY_MIGRATION_UNVERIFIED'},
+   {id:'ENG-LATITUDE-C3',status:'released',bom_revision:null,source_ref:'CUTOVER:src/lib/finance/engineering-engine.ts',created_by:'system:migration',approved_by:'system:migration',release_disposition:'LEGACY_MIGRATION_UNVERIFIED'},
+   {id:'ENG-LONGITUDE-A2',status:'released',bom_revision:null,source_ref:'CUTOVER:src/lib/finance/engineering-engine.ts',created_by:'system:migration',approved_by:'system:migration',release_disposition:'LEGACY_MIGRATION_UNVERIFIED'}
+  ],changeOrders:[]}
+ };
+ const report=buildDataAgentInvestigation({question:'Why is production delayed?',
+  observations:Object.entries(base).map(([domain,data])=>({domain,status:'OBSERVED',data}))});
+ assert.equal(report.findings.length,1);
+ assert.equal(report.findings[0].code,'LEGACY_MIGRATION_BASELINES_UNVERIFIED');
+ assert.equal(report.findings[0].observedCount,3);
+ assert.equal(report.findings[0].operationalImpactVerified,false);
+ assert.equal(report.findings.find(f=>f.code==='RELEASED_ENGINEERING_BASELINES_WITHOUT_BOM'),undefined);
+ assert.match(report.decisionBrief.explanation,/not proof of a live production delay/i);
+ assert.match(report.decisionBrief.nextStep,/migration|prelaunch/i);
+ assert.equal(report.decisionBrief.recordWritePermitted,false);
+ assert.equal(report.findings[0].evidenceTrail.length,3);
+ assert.equal(JSON.stringify(report).includes('ENG-ALTITUDE-C2'),false);
+});

@@ -1,5 +1,6 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
+import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-timing.mjs';
 import {isAdvisoryQuestion} from './lib/business-advice.mjs';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
@@ -10,6 +11,12 @@ import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './li
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
 const SALES=/\b(sales|revenue|orders?|invoices?|customers?|deals?|pipeline|receivables?|quotations?)\b/i;
+const SIGNED_VYNDI_SOURCE_AUTHORITIES=new Set([
+ 'listSalesOrders','getConfiguredDemandShortages','getAuthoritativeInventory',
+ 'getProductionJobCards','getAssetMaintenanceState','getAccountingWorkbench',
+ 'listPeopleOfficeAuthority','getEngineeringChangeControlState',
+]);
+const G5_ISO_UTC=/^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 export function sanitizeVoiceTranscript(value){
  if(typeof value!=='string')return null;
  const s=value.trim().replace(/^(hey|hello|hi)\s+vaos\s*[,.:!?-]?\s*/i,'').trim();
@@ -112,6 +119,21 @@ export function formatReadOnlyResult(kind,data){
    ||typeof data.answer!=='string'||data.answer.length<8||data.answer.length>5000
    ||data.status==='OBSERVED'&&!['VYNDI_OS','ENGINEERING_FEDERATION'].includes(data.sourceSystem))
    throw Error('VOICE_INSIGHT_UNVERIFIED');
+  if(data.sourceSystem==='VYNDI_OS'&&data.status==='OBSERVED'){
+   // A signed selected-window observation is not a certified enterprise total.
+   if(!SIGNED_VYNDI_SOURCE_AUTHORITIES.has(data.sourceAuthority)
+      ||!Number.isSafeInteger(data.recordsObserved)||data.recordsObserved<0||data.recordsObserved>100
+      ||data.sourceWindow!=='BOUNDED_SELECTED_ROWS'
+      ||data.dataCompleteness!=='BOUNDED_SOURCE_WINDOW'
+      ||typeof data.observedAt!=='string'||!G5_ISO_UTC.test(data.observedAt)
+      ||!Number.isFinite(Date.parse(data.observedAt)))
+    throw Error('VOICE_INSIGHT_UNVERIFIED');
+   const provenance='SOURCE [1] VYNDI OS · '+data.sourceAuthority+
+    ' · '+data.recordsObserved+' selected records, up to 100 per read · observed '+data.observedAt+
+    '. This is not a complete business total or an independently qualified financial or engineering release.';
+   return {status:'OBSERVED',answer:(data.answer.slice(0,2600)+'\n\n'+provenance).slice(0,2900),
+    spokenAnswer:data.answer.slice(0,900),sources:[],language:['en','ta','ml','hi'].includes(data.language)?data.language:'en'};
+  }
   const refs=data.sourceSystem==='ENGINEERING_FEDERATION'&&Array.isArray(data.sources)
    ?data.sources.filter(x=>x&&typeof x.url==='string'
     &&/^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/[0-9a-f]{40}\//.test(x.url)).slice(0,6):[];
@@ -148,6 +170,7 @@ function init(){
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
  let localSpeech=null,interruption=null;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown';
+ const g5Timing=createG5ResponseTiming();
  const setStatus=message=>{note.textContent=message;};
  const player=createVoiceReadback({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
@@ -244,6 +267,7 @@ function init(){
   if(intent.kind==='DENY'){setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
   cancel();busy=true;lastAnswer='';spokenAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
+  const requestedAt=performance.now();
   const abort=new AbortController();controller=abort;
   const timer=setTimeout(()=>abort.abort(),25000);
   let speaking=false;
@@ -292,9 +316,12 @@ function init(){
     a.textContent=ref.repository+' · '+ref.path+(Number.isInteger(ref.line)?' : '+ref.line:'');sources.append(a);
    }
    const diagnostic=typeof data?.diagnosticCode==='string'&&/^[A-Z][A-Z_]{4,55}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
-   setStatus(investigate
+   const measured=g5Timing.record(Math.max(0,performance.now()-requestedAt),
+     normalized.status==='OBSERVED'?'OBSERVED':'HOLD');
+   setStatus((investigate
     ?formatAdaptiveStatus(data)
-    :normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic);
+    :normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic)
+    +' · '+formatG5ResponseTiming(measured));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
    if(controller!==abort)return;
@@ -303,7 +330,9 @@ function init(){
    lastAnswer=expired?expiredText:'I could not retrieve a verified business answer. No records were changed.';
    spokenAnswer=lastAnswer;
    answer.textContent=lastAnswer;
-   setStatus(expired?'Request timed out. Try again or check source connections.':String(error?.message||'Read-only lookup unavailable.'));
+   const measured=g5Timing.record(Math.max(0,performance.now()-requestedAt),'ERROR');
+   setStatus((expired?'Request timed out. Try again or check source connections.':
+    'Read-only lookup unavailable.')+' · '+formatG5ResponseTiming(measured));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
  });

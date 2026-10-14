@@ -205,7 +205,13 @@ export function buildDataAgentInvestigation({question,observations=[]}={}){
   schemaVersion:'VAOS_DATA_AGENT_INVESTIGATION_V1',status:'BOUNDED_EVIDENCE',
   summary,findings:values,operatingContext:OPERATING_CONTEXT,
   decisionBrief:makeDecisionBrief(values,'BOUNDED_EVIDENCE'),
-  chart:{title:'Observed linkage discrepancy counts',rows:values.map(x=>({label:x.title,value:x.observedCount}))},
+  chart:{title:'Types of findings by review priority',unit:'finding_types',
+   rows:PRIORITY_ORDER.map(priority=>({
+    label:priority==='RECONCILE_SOURCE_CONFLICT'?'Record mismatch':
+     priority==='COMPLETE_RELEASE_TRACE'?'Release documentation':
+     priority==='COMPLETE_RECORD_LINKS'?'Unlinked records':'Sample coverage',
+    value:values.filter(x=>x.reviewPriority===priority).length
+   })).filter(x=>x.value>0)},
   holds:['INDEPENDENT_SOURCE_SNAPSHOT_AND_REVISION_UNVERIFIED',
    'SELECTED_ROWS_NOT_COMPLETE_ENTERPRISE_DATASET',
    'ACTUAL_CAUSAL_IMPACT_NOT_ESTABLISHED'],

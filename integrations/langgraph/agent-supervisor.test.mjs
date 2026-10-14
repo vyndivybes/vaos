@@ -30,7 +30,7 @@ function fixture() {
     },
     async recordWorkEvidence(input) {
       assert.equal(input.byAgentId, 'project');
-      evidence.set('evidence-001', { handoff_id: handoff.id, report: structuredClone(input.report) });
+      evidence.set('evidence-001', { id: 'evidence-001', handoff_id: handoff.id, author_agent_id: input.byAgentId, report: structuredClone(input.report) });
       return { evidenceId: 'evidence-001' };
     },
     async getWorkEvidence(id) { return structuredClone(evidence.get(id)); },

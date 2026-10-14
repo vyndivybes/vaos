@@ -6,11 +6,14 @@ import {resolveVoiceIntent,VOICE_DOMAIN_ACTIONS,interpretVoiceRecords,formatVoic
 import {translateAdvisory} from './business-advisor.mjs';
 import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
 import {ADVISORY_LANGUAGES} from '../lib/business-advice.mjs';
+import {buildFounderMissionAnswer} from '../lib/founder-mission-answers.mjs';
+import {getEightAgentOperatingService} from '../lib/operating-provider.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const CONTROL='founder-readonly-browser-v1';
 const QUERY=/^[\s\S]{5,300}$/;
-export function createVoiceInsightHandler({getReader=makeCommercialReader}={}){
+export function createVoiceInsightHandler({getReader=makeCommercialReader,
+ getMissionSummary=env=>getEightAgentOperatingService(env).founderMissionAnswerSummary()}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -25,6 +28,30 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader}={}){
   const intent=resolveVoiceIntent(question);
   if(intent.reason==='BLOCKED_OR_UNBOUNDED')
    return res.status(422).json(apiError('VOICE_WRITE_DENIED','No write or sensitive request permitted'));
+
+  // This is an explanation of existing governance, not a request to authorize
+  // a transaction. It cannot call the payment, procurement or production adapters.
+  if(intent.domain==='governance'){
+   return res.status(200).json({data:{
+    schemaVersion:'VAOS_GOVERNANCE_EXPLANATION_V1',
+    status:'OBSERVED',sourceSystem:'VAOS_POLICY',readOnly:true,actionAuthorized:false,
+    answer:'No. JARVIS cannot approve supplier payments, pay a supplier, issue a purchase order, or authorize production release by itself. It may prepare evidence, analyze source records and draft proposals using the existing authorized employees. Actual payments, procurement commitments and engineering/production release require their distinct governed approvals and released engineering inputs. A founder question in Ask VAOS does not authorize any transaction.',
+   }});
+  }
+  if(intent.domain==='missions'){
+   try{
+    const source=await getMissionSummary(req.env);
+    const answer=buildFounderMissionAnswer(question,source);
+    return res.status(200).json({data:answer});
+   }catch{
+    return res.status(200).json({data:{
+     status:'HOLD',sourceSystem:'VAOS_MISSION_CONTROL',readOnly:true,
+     actionAuthorized:false,businessEffectsExecuted:false,
+     answer:'The persisted mission ledger could not be read for this question. No mission status, completed handoff, or evidence reference is invented. Use the existing Mission Tracking interface while this source is unavailable.',
+    }});
+   }
+  }
+
   const action=VOICE_DOMAIN_ACTIONS[intent.domain];
   if(!action){
    const answer=formatVoiceAnswer(intent,null);
@@ -54,6 +81,7 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader}={}){
     // supplies actionType, which is a routing identifier, not a citation.
     sourceAuthority:contract.authority,
     recordsObserved:counted.recordsObserved,
+    recordOrigin:'UNVERIFIED_PRELAUNCH_OR_DEMONSTRATION_POSSIBLE',
     sourceWindow:'BOUNDED_SELECTED_ROWS',
     readOnly:true,actionAuthorized:false,sourceSystem:'VYNDI_OS',
     observedAt:new Date().toISOString(),dataCompleteness:'BOUNDED_SOURCE_WINDOW'}});

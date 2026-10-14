@@ -94,6 +94,12 @@ export function createEightAgentOperatingService({ store } = {}) {
       return durableStore.getWorkEvidence(requiredText(evidenceId, 'MISSION_EVIDENCE_ID_REQUIRED'));
     },
 
+    async founderMissionAnswerSummary() {
+      if(typeof durableStore.founderMissionAnswerSummary!=='function')
+        throw new Error('MISSION_ANSWER_SOURCE_UNAVAILABLE');
+      return durableStore.founderMissionAnswerSummary();
+    },
+
     async listRunnableMissions({ limit = 8 } = {}) {
       if (!Number.isInteger(limit) || limit < 1 || limit > 8) {
         throw new Error('MISSION_DISCOVERY_LIMIT_INVALID');

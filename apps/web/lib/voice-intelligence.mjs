@@ -7,9 +7,35 @@ const sensitive=/\b(secret|token|password|credentials|api key|private key)\b/i;
 const criticalWrites=/\b(approve|reject|execute|delete|transfer|dispatch|submit|authorize|authorise|activate|deactivate|override|merge|deploy|issue|write|post invoice|pay supplier)\b/i;
 const imperative=/^(?:please[ ,]+)?(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b|\b(?:can you|could you|please|i authorize you to|i want you to)[ ,]+(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b/i;
 const banned={test:q=>sensitive.test(q)||criticalWrites.test(q)||imperative.test(q)};
+
+// Read-only explanations about governed authority are NOT approval requests.
+// Do not let a question-word disguise an instruction to perform an action.
+export function isGovernanceExplanation(question){
+ const q=typeof question==='string'?question.trim():'';
+ return q.length>=10&&q.length<=300
+  &&/\b(?:can|could|may|are|is|what|why|how|whether|explain)\b/i.test(q)
+  &&/\b(?:approve|authori[sz]e|release|payment|pay|procure|purchase|dispatch|execute)\b/i.test(q)
+  &&/\b(?:explain|limit(?:ation)?s?|authorit(?:y|ies)|permissions?|allowed|permitted|by yourself|without a bom|without an approved bom)\b/i.test(q)
+  &&!/\b(?:do it|now|go ahead|please approve|please pay|actually approve|proceed with payment|execute the payment|i authorize|make the payment)\b/i.test(q);
+}
+export function isEngineeringAuthorityQuestion(question){
+ return typeof question==='string'&&(
+  /\b(?:toray|prepreg|carbon (?:fiber|fibre|composite)|vedm|frameset|laminate|tsai.wu|hashin|engineering validation|engineering readiness|geometry revision)\b/i.test(question)
+  ||/\b(?:manufacturing|production|released|approved)\s+(?:bom|bill of materials)\b/i.test(question)
+  ||/\b(?:procurement|purchase|production)\b.{0,75}\b(?:without|before)\b.{0,45}\b(?:bom|engineering release)\b/i.test(question)
+  ||/\b(?:bom|bill of materials)\b.{0,65}\b(?:procurement|release|manufactur)/i.test(question)
+ );
+}
+export function isMissionRecoveryQuestion(question){
+ return typeof question==='string'&&(
+  /\b(?:handoffs?|mission|departmental tasks?)\b.{0,150}\b(?:interrupt(?:ed|ion)?|recover(?:ed|y)?|restart|resume|saved report)\b/i.test(question)
+  ||/\b(?:recover|restart|resume)\b.{0,150}\b(?:handoffs?|mission|departmental tasks?|saved reports?)\b/i.test(question)
+ );
+}
+
 const checks=[
  {domain:'group',re:/\b(group|all divisions|across divisions|whole company|consolidat|v[aā]y[uū] shastr)\b/i},
- {domain:'missions',re:/\b(mission|agent mission|task handoff|digital employee mission)\b/i},
+ {domain:'missions',re:/\b(missions?|agent missions?|task handoffs?|digital employee missions?)\b/i},
  {domain:'crm',re:/\b(crm|conversion|prospect|customer follow.up|customer master|lead qualification|deal pipeline)\b/i},
  {domain:'finance',re:/\b(financ\w*|revenues?|profits?|losses|cash|ledger|expenses?|expenditures?|budgets?|invoices?|receivables?|payables?|money|payment status|journals?|bank|accounting)\b/i},
  {domain:'procurement',re:/\b(procure\w*|purchase orders?|material shortages?|shortages?|suppliers?|replenishment|material requirements?|supply chain)\b/i},
@@ -34,7 +60,12 @@ export const VOICE_DOMAIN_ACTIONS=Object.freeze({
 });
 export function resolveVoiceIntent(question){
  const q=typeof question==='string'?question.trim():'';
- if(q.length<5||q.length>300||banned.test(q))return {domain:'unsupported',reason:'BLOCKED_OR_UNBOUNDED'};
+ if(q.length<5||q.length>300||sensitive.test(q))return {domain:'unsupported',reason:'BLOCKED_OR_UNBOUNDED'};
+ if(isEngineeringAuthorityQuestion(q)&&(!banned.test(q)||isGovernanceExplanation(q)))
+  return {domain:'engineering',reason:'CONTROLLED_ENGINEERING_AUTHORITY'};
+ if(isGovernanceExplanation(q))return {domain:'governance',reason:'READ_ONLY_AUTHORITY_EXPLANATION'};
+ if(banned.test(q))return {domain:'unsupported',reason:'BLOCKED_OR_UNBOUNDED'};
+ if(isMissionRecoveryQuestion(q))return {domain:'missions',reason:'MISSION_RECOVERY_EXPLANATION'};
  const native=[
   ['finance',/வரவு|செலவு|நிதி|பணம்|വരുമാനം|ചെലവ്|ധനം|वित्त|खर्च|पैसा|राजस्व/],
   ['procurement',/கொள்முதல்|சப்ளையர்|பொருள் பற்றாக்குறை|വാങ്ങൽ|വിതരണക്കാര|सप्लायर|खरीद|कमी/],
@@ -81,8 +112,9 @@ export function interpretVoiceRecords(domain,data,{limit=100}={}){
   }
   const ordered=['lead','confirmed','delivered','cancelled'];
   answer=prefix+label(count,'sales order')+' observed. '+ordered.map(x=>label(statuses.get(x)||0,x+' order')).join('; ')
-    +'. '+committedUnits+' ordered units on confirmed orders.'
-    +' These are sales orders, not CRM customer conversions, collected cash or recognized revenue.'+partial;
+    +'. '+committedUnits+' ordered units on orders carrying recorded status "confirmed".'
+    +' Status labels are not independently verified real customer transactions; records may be synthetic or prelaunch.'
+    +' These are sales-order records, not evidence of collected cash or recognized revenue.'+partial;
  }else if(domain==='finance'){
   const ledger=recordRows(data,'ledger'),journals=recordRows(data,'journals');
   count=ledger.length+journals.length;
@@ -93,7 +125,7 @@ export function interpretVoiceRecords(domain,data,{limit=100}={}){
   const people=recordRows(data,'people'),authority=recordRows(data,'authority');
   count=people.length;
   answer=prefix+label(people.length,'personnel record')+' and '+label(authority.length,'people-office authority row')+' observed.'
-   +' These counts are not verified active headcount or payroll-readiness approvals. Individual staff information is withheld.'+partial;
+   +' These counts are not verified active headcount or payroll-readiness approvals. Records may include synthetic or prelaunch entries. Individual staff information is withheld.'+partial;
  }else if(domain==='engineering'){
   const changes=recordRows(data,'changeOrders'),baselines=recordRows(data,'baselines');
   count=changes.length+baselines.length;
@@ -108,9 +140,9 @@ export function interpretVoiceRecords(domain,data,{limit=100}={}){
   const records=recordRows(data);count=records.length;
   const metric={procurement:'material shortage line',inventory:'inventory-balance record',production:'production job card'}[domain];
   answer=prefix+(count?label(count,metric)+' observed.':'No matching source rows returned for '+metric+'. This is not proof of no risk.')
-    +(domain==='procurement'?' These are shortage lines, not a verified total quantity of interchangeable material units.':
+    +(domain==='procurement'?' These are shortage lines, not confirmed shortages for approved builds or a verified total quantity of interchangeable material units. Records may be proposed or demonstration data.':
       domain==='inventory'?' Stock records may have different units and reservations; no total stock quantity or valuation is inferred.':
-      ' Job cards represent recorded work and not accepted finished goods.')+partial;
+      ' Job cards are recorded entries, potentially planned or demonstration records; they are not proof of actual production or accepted finished goods.')+partial;
  }
  return {status:'OBSERVED',answer:answer+notes,sourceSystem:'VYNDI_OS',sourceAuthority:VOICE_DOMAIN_ACTIONS[domain],recordsObserved:count};
 }

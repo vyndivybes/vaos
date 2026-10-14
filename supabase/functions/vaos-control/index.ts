@@ -173,6 +173,9 @@ Deno.serve(async (req: Request) => {
       p_server_key: serverKey,
       p_evidence_id: payload.evidenceId,
     }
+  } else if (operation === 'founderMissionAnswerSummary') {
+    rpcName = 'vaos_founder_mission_answer_summary'
+    args = { p_server_key: serverKey }
   } else if (operation === 'listRunnableMissions') {
     rpcName = 'vaos_list_runnable_missions'
     args = {

@@ -69,7 +69,25 @@ export function buildEngineeringFinding({
  const kp=typeof knowledgeRegister==='string'?wanted.filter(x=>new RegExp('\\b'+x+'\\b').test(knowledgeRegister)):[];
  const relevant=authority.records.filter(x=>/controlling|not released|superseded/i.test(x.status)).slice(0,5);
  const state=relevant.map(x=>x.object+': '+x.status).join('; ');
+ const prepregQuestion=/\b(?:toray|prepreg|resin system|t700s|t800s)\b/i.test(question||'')
+  &&/\b(?:validat|qualified|approved|production|material|final)\w*/i.test(question||'');
+ const bomQuestion=/\b(?:bom|bill of materials)\b/i.test(question||'')
+  &&/\b(?:procure|purchas|buy|orders?|start|releas)/i.test(question||'');
+ const materialGateOpen=/\bMATERIAL-01\b/i.test(authority.openGates||'')||
+  /\bMATERIAL-01\b[^\n]{0,110}\b(?:OPEN|HOLD|unqualified|pending)\b/i.test(vedmStatus||'');
+ const focused=prepregQuestion?[
+  'TORAY / PREPREG VALIDATION — '+(materialGateOpen
+   ?'No final production-qualified Toray prepreg is established by the controlling VEDM record. MATERIAL-01 remains an open gate; supplier candidate discussions are not validation or release.'
+   :'The inspected controlling VEDM records do not establish a production-qualified Toray prepreg. Obtain the signed material qualification and supplier allowables before claiming release.'),
+  'A production job-card count is not evidence of prepreg validation.'
+ ]:bomQuestion?[
+  'BOM / PROCUREMENT AUTHORITY — Preliminary supplier research, draft RFQs, quotations and lead-time comparisons can be prepared without a released manufacturing BOM.',
+  'Issuing production purchase orders or calculating approved material quantities from a proposed BOM is not permitted. JARVIS cannot authorize production release without a released BOM and engineering approval. Released BOM, approved engineering/material inputs and governed purchasing authorization remain prerequisites.',
+  'A shortage-line count does not certify the purchase quantity or authorize procurement.'
+ ]:[];
+
  const answer=[
+  ...focused,
   'Present engineering record check: '+ecos.length+' ECO rows observed ('+changelog+'); '+baselines.length+' PDM baseline rows ('+baselinePart+').',
   'VEDM controlling configuration: '+(state||'no relevant controlling status found in the current register')+'.',
   authority.openGates?'Current VEDM open gates: '+authority.openGates:'',

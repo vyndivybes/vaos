@@ -101,3 +101,53 @@ test('G5 HOLD never carries stale source authority, numeric observation metadata
  assert.equal(state.body.data.status,'HOLD');
  for(const key of ['recordsObserved','sourceWindow','observedAt','sourceAuthority'])assert.equal(state.body.data[key],undefined);
 });
+
+
+test('G5: read-only authorization questions explain limits and do not access payment or dispatch adapters',async()=>{
+ let readerCalls=0,missionCalls=0;
+ const h=createVoiceInsightHandler({
+  getReader:()=>{readerCalls++;return {execute:async()=>{throw Error('DO_NOT_CALL')}};},
+  getMissionSummary:async()=>{missionCalls++;throw Error('DO_NOT_CALL');}
+ });
+ const {state,res}=response();
+ await h(req('Can you approve a supplier payment or release production by yourself? Explain your authorization limits.'),res);
+ assert.equal(state.code,200);
+ assert.equal(state.body.data.status,'OBSERVED');
+ assert.equal(state.body.data.schemaVersion,'VAOS_GOVERNANCE_EXPLANATION_V1');
+ assert.equal(state.body.data.actionAuthorized,false);
+ assert.match(state.body.data.answer,/cannot (?:approve|execute)/i);
+ assert.match(state.body.data.answer,/founder|authorized/i);
+ assert.equal(readerCalls,0);assert.equal(missionCalls,0);
+});
+
+test('G5: mission Q&A reads protected real summary, not generic model HOLD',async()=>{
+ const summary={
+  schemaVersion:'VAOS_FOUNDER_MISSION_SUMMARY_V1',sourceAuthority:'vaos_founder_mission_answer_summary',
+  sourceWindow:'LATEST_10_MISSIONS',totalMissions:1,
+  missions:[{id:'mission-test1',status:'ACTIVE',workPackages:2,completedWorkPackages:1,
+   blockedWorkPackages:0,unfinishedHandoffs:1,awaitingReview:0,failedHandoffs:0,
+   latestUpdate:'2026-10-15T08:00:00Z'}],latestVerifiedWork:null,
+ };
+ let called=0;
+ const h=createVoiceInsightHandler({
+  getMissionSummary:async()=>{called++;return summary;},
+  getReader:()=>{throw Error('unrelated business read');}
+ });
+ const {state,res}=response();
+ await h(req('Which assigned missions remain unfinished and why?'),res);
+ assert.equal(state.code,200);
+ assert.equal(state.body.data.status,'OBSERVED');
+ assert.equal(state.body.data.sourceSystem,'VAOS_MISSION_CONTROL');
+ assert.match(state.body.data.answer,/mission-test1/);
+ assert.equal(called,1);
+});
+
+test('G5: unavailable mission datastore does not generate fake completed mission histories',async()=>{
+ const h=createVoiceInsightHandler({
+  getMissionSummary:async()=>{throw Error('service unavailable with private info');}
+ });
+ const {state,res}=response();
+ await h(req('What happened in the latest completed departmental mission?'),res);
+ assert.equal(state.body.data.status,'HOLD');
+ assert.doesNotMatch(JSON.stringify(state.body),/private info/);
+});

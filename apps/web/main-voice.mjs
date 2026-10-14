@@ -28,6 +28,8 @@ export function classifyDashboardQuestion(value){
  if(!MODIFICATION.test(q)&&/\b(startup|prelaunch|start (?:my |the )?company|company readiness|first records|next startup actions)\b/i.test(q))return {kind:'STARTUP',question:q};
  const route=resolveVoiceIntent(q);
  if(route.reason==='BLOCKED_OR_UNBOUNDED')return {kind:'DENY',question:q};
+ if(['CONTROLLED_ENGINEERING_AUTHORITY','MISSION_RECOVERY_EXPLANATION','READ_ONLY_AUTHORITY_EXPLANATION'].includes(route.reason)||['missions','governance'].includes(route.domain))
+  return {kind:'INSIGHT',question:q,domain:route.domain};
  if(isAdvisoryQuestion(q)&&planAdaptiveReads(q).state!=='DENIED')return {kind:'ADVISORY',question:q,domain:'advisory'};
  return {kind:route.domain==='documentation'?'EVIDENCE':'INSIGHT',question:q,domain:route.domain};
 }
@@ -41,7 +43,8 @@ export function classifyDashboardQuestion(value){
  */
 export function shouldUseAdaptiveAnswer(intent,selected){
  if(selected!==true||!intent||intent.kind==='DENY'||intent.kind==='STARTUP')return false;
- if(intent.kind==='ADVISORY'||['group','missions'].includes(intent.domain))return true;
+ if(['governance','missions'].includes(intent.domain)||intent.domain==='engineering')return false;
+ if(intent.kind==='ADVISORY'||intent.domain==='group')return true;
  if(/\b(?:weather|rain|temperature|snow|humidity|storm)\b/i.test(intent.question||''))return true;
  return typeof intent.question==='string'
   &&/\b(?:digital|ai|artificial intelligence)\s+(?:employees?|agents?|workforce)\b|\b(?:orchestrator|knowledge agent)\b/i.test(intent.question);
@@ -49,7 +52,7 @@ export function shouldUseAdaptiveAnswer(intent,selected){
 
 export function isDirectBusinessQuestion(value){
  const text=typeof value==='string'?value.trim():'';
- if(!/^(?:what|how|which|where|when|who|show|list|tell me|give me|do we|are there|is there|summarize|report)\b/i.test(text))return false;
+ if(!/^(?:what|how|which|where|when|who|can you|could you|show|list|tell me|give me|do we|are there|is there|summarize|report)\b/i.test(text))return false;
  const intent=classifyDashboardQuestion(text);
  return intent.kind!=='DENY';
 }
@@ -84,7 +87,9 @@ export function formatReadOnlyResult(kind,data){
  if(kind==='STARTUP'){
   if(data?.schemaVersion!=='VAOS_PRELAUNCH_WORKSPACE_V1'||data.operatingPhase!=='PRELAUNCH'||!Array.isArray(data.employees)||data.employees.length!==16||data.automaticBusinessEffectsAuthorized!==false)throw Error('PRELAUNCH_SOURCE_INVALID');
   const available=data.employees.filter(e=>e.roleFloorMet===true).length;
-  return {status:'OBSERVED',answer:available+' of 16 registered roles are available for startup preparation. Company transaction history is not required. Next: prepare the departmental worksheets in Company Startup; review the cited proposed VEDM engineering revision; enter your first real business records when their inputs exist. Unknown amounts stay blank, and an actual build still needs its engineering release. No business action was executed.',sources:[],language:'en'};
+  const fortnight='PRELAUNCH PRIORITIES — NEXT TWO WEEKS (proposed, not assigned).\\nWeek 1: (1) Knowledge/Corporate — reconcile the existing incorporation and CA handoff pack, mark missing filings clearly. (2) Engineering/VEDM — consolidate the authoritative geometry, Toray material requests and open validation gates. (3) Finance — prepare an opening-budget worksheet with unknown amounts unfilled.\\nWeek 2: (4) Procurement — collect draft supplier enquiries and quotations; do not release purchase orders without the appropriate BOM and approvals. (5) Commercial — build a proposed customer and lead pipeline, distinguishing prospective contacts from confirmed real orders. (6) Project/QA — map prototype dependencies, responsibilities and evidence gaps into a founder-reviewable action register.\\nThis is a proposed plan; no employee was dispatched and no document review or actual expenditure is claimed.';
+  return {status:'OBSERVED',answer:available+' of 16 registered roles have recorded preparation status.\\n\\n'+fortnight,
+    sources:[],language:'en'};
  }
  if(kind==='COMMERCIAL'){
   if(data?.readOnly!==true||data?.actionAuthorized!==false

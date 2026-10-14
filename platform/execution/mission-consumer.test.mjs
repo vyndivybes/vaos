@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {routeJob} from '../runtime/vaos-eight-operating-model.mjs';
 import {
   createMissionConsumer,
   calculateReadOnlyMissionAudit,
@@ -26,7 +27,12 @@ function fixture() {
       assert.equal(input.expectedVersion, handoff.version);
       const mapping = { ACCEPT: 'ACCEPTED', SUBMIT: 'SUBMITTED', VERIFY: 'COMPLETED', REJECT_VERIFICATION: 'RETURNED' };
       if (input.outcome === 'ACCEPT' || input.outcome === 'SUBMIT') assert.equal(input.byAgentId, handoff.to_agent_id);
-      if (input.outcome === 'VERIFY' || input.outcome === 'REJECT_VERIFICATION') assert.equal(input.byAgentId, handoff.to_agent_id === 'orchestrator' ? (handoff.requested_job === 'ORCHESTRATOR.CONSOLIDATE_RESULT' ? 'knowledge' : 'project') : 'orchestrator');
+      if (input.outcome === 'VERIFY' || input.outcome === 'REJECT_VERIFICATION') {
+        const route=routeJob(handoff.requested_job);
+        const checker=route.verifierAgentIds.find(id=>id!==handoff.to_agent_id)
+          || (handoff.to_agent_id==='orchestrator'?'project':'orchestrator');
+        assert.equal(input.byAgentId,checker);
+      }
       handoff.version += 1;
       handoff.status = mapping[input.outcome];
       handoff.evidence_refs = [...new Set([...handoff.evidence_refs, ...(input.evidenceRefs || [])])];

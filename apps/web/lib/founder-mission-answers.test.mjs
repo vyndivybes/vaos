@@ -58,3 +58,30 @@ test('G5 persisted HOLD missions are valid pending missions',()=>{
  assert.match(answer.answer,/mission-a \(HOLD/);
  assert.match(answer.answer,/1 blocked/);
 });
+
+
+test('G5 distinguishes outstanding work from ready-for-closure and cancelled historical missions',()=>{
+ const live={...source,missions:[
+  {...source.missions[0],status:'HOLD',workPackages:9,completedWorkPackages:0,
+   blockedWorkPackages:5,unfinishedHandoffs:0},
+  {...source.missions[1],status:'READY_FOR_CLOSURE',workPackages:3,completedWorkPackages:3},
+  {...source.missions[2],status:'CANCELLED',workPackages:2,completedWorkPackages:1},
+ ]};
+ const result=buildFounderMissionAnswer('Which assigned missions remain unfinished, and why?',live);
+ assert.equal(result.status,'OBSERVED');
+ const [outstanding,rest]=result.answer.split('Awaiting closure:');
+ assert.match(outstanding,/mission-a \(HOLD: 0 of 9 completed; 5 blocked/);
+ assert.doesNotMatch(outstanding,/mission-b|mission-c/);
+ assert.match(rest,/mission-b/);
+ assert.doesNotMatch(result.answer,/mission-c/);
+ assert.match(result.answer,/cancelled missions? excluded/i);
+});
+test('G5 finished work awaiting closure is not mislabeled as unfinished departmental execution',()=>{
+ const live={...source,totalMissions:1,missions:[
+  {...source.missions[0],status:'READY_FOR_CLOSURE',workPackages:5,
+   completedWorkPackages:5,blockedWorkPackages:0,unfinishedHandoffs:0,awaitingReview:0},
+ ],latestVerifiedWork:null};
+ const result=buildFounderMissionAnswer('Which assigned missions remain unfinished?',live);
+ assert.match(result.answer,/No unfinished work/);
+ assert.match(result.answer,/Awaiting closure: mission-a/);
+});

@@ -19,3 +19,28 @@ export const ROLE_EXERCISES={
  'engineering-configuration':{good:{expectedRevision:'TRAINING-R1',observedRevision:'TRAINING-R1',effectivityApproved:true},bad:{expectedRevision:'TRAINING-R1',observedRevision:'TRAINING-R2',effectivityApproved:false},expected:['BOM_REVISION_MISMATCH','EFFECTIVITY_UNAPPROVED']},
 };
 export function teachingRecord(employeeId,variant){return {id:'TRAINING-'+employeeId.toUpperCase()+'-'+variant.toUpperCase(),synthetic:true,...ROLE_EXERCISES[employeeId][variant]};}
+
+// Additional answer keys separate each finding and exercise boundary conditions.
+export const EXTENDED_ROLE_EXERCISES={
+ orchestrator:[{name:'owner-only',patch:{owner:''},expected:['OWNER_MISSING']},{name:'prerequisite-only',patch:{prerequisite:''},expected:['PREREQUISITE_MISSING']}],
+ project:[{name:'at-deadline',patch:{dueAt:TRAINING_OBSERVED_AT},expected:[]},{name:'completed-late',patch:{dueAt:'2026-10-13T00:00:00Z',completed:true},expected:[]}],
+ vibpe:[{name:'configuration-only',patch:{configurationMatches:false},expected:['CONFIGURATION_MISMATCH']},{name:'allowables-only',patch:{allowablesValidated:false},expected:['ALLOWABLES_UNVALIDATED']}],
+ qa:[{name:'reviewed-defect',patch:{defect:true,retestReviewed:true},expected:['DEFECT_PRESENT']},{name:'no-defect-no-retest',patch:{defect:false,retestReviewed:false},expected:[]}],
+ risk:[{name:'blocker-only',patch:{blocked:true},expected:['BLOCKER_OBSERVED']},{name:'unscored-only',patch:{scored:false},expected:['RISK_SCORE_UNQUALIFIED']}],
+ security:[{name:'role-only',patch:{roleAllowed:false},expected:['ROLE_ACCESS_DENIED']},{name:'session-only',patch:{sessionValid:false},expected:['SESSION_INVALID']}],
+ knowledge:[{name:'source-only',patch:{sourceRef:''},expected:['SOURCE_MISSING']},{name:'contradiction-only',patch:{contradiction:true},expected:['SOURCE_CONTRADICTION']}],
+ release:[{name:'approval-only',patch:{approved:false},expected:['RELEASE_APPROVAL_MISSING']},{name:'evidence-only',patch:{evidenceComplete:false},expected:['RELEASE_EVIDENCE_INCOMPLETE']}],
+ commercial:[{name:'zero-order',patch:{orderQty:0},expected:[]},{name:'zero-unapproved',patch:{orderQty:0,commitmentApproved:false},expected:['COMMITMENT_UNAPPROVED']}],
+ procurement:[{name:'stock-surplus',patch:{available:6},expected:[]},{name:'shortage-only',patch:{available:4},expected:['SHORTAGE_OBSERVED']}],
+ inventory:[{name:'zero-balance',patch:{issues:5},expected:[]},{name:'negative-only',patch:{issues:6},expected:['NEGATIVE_STOCK']}],
+ production:[{name:'configuration-only',patch:{configurationMatches:false},expected:['CONFIGURATION_MISMATCH']},{name:'quality-only',patch:{qualityHold:true},expected:['QUALITY_HOLD']}],
+ maintenance:[{name:'at-deadline',patch:{dueAt:TRAINING_OBSERVED_AT},expected:[]},{name:'return-only',patch:{returnProof:false},expected:['RETURN_PROOF_MISSING']}],
+ finance:[{name:'zero-balanced',patch:{debitPaise:0,creditPaise:0},expected:[]},{name:'unbalanced-only',patch:{creditPaise:9999},expected:['LEDGER_UNBALANCED']}],
+ people:[{name:'attendance-only',patch:{attendanceRef:''},expected:['ATTENDANCE_SOURCE_MISSING']},{name:'payroll-only',patch:{payrollApproved:false},expected:['PAYROLL_UNAPPROVED']}],
+ 'engineering-configuration':[{name:'revision-only',patch:{observedRevision:'TRAINING-R2'},expected:['BOM_REVISION_MISMATCH']},{name:'effectivity-only',patch:{effectivityApproved:false},expected:['EFFECTIVITY_UNAPPROVED']}],
+};
+export function roleTrainingCases(id){
+ return [{name:'good',record:teachingRecord(id,'good'),expected:[]},
+ {name:'bad',record:teachingRecord(id,'bad'),expected:ROLE_EXERCISES[id].expected},
+ ...EXTENDED_ROLE_EXERCISES[id].map(x=>({name:x.name,record:{...teachingRecord(id,'good'),...x.patch,id:'TRAINING-'+id.toUpperCase()+'-'+x.name.toUpperCase()},expected:x.expected}))];
+}

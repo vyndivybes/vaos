@@ -48,24 +48,42 @@ export function buildFounderMissionAnswer(question,source){
     'I cannot identify a latest completed mission or invent a saved evidence reference.';
   }
  }else{
-  const unfinished=source.missions.filter(m=>m.status!=='CLOSED'&&m.status!=='COMPLETED'
-   ||m.completedWorkPackages<m.workPackages||m.unfinishedHandoffs>0);
+  // A closed or cancelled mission is not current outstanding execution.
+  // READY_FOR_CLOSURE means work is complete but administrative closure
+  // remains; it belongs in a separate group, not under unfinished work.
+  const awaitingClosure=source.missions.filter(m=>m.status==='READY_FOR_CLOSURE');
+  const cancelled=source.missions.filter(m=>m.status==='CANCELLED');
+  const unfinished=source.missions.filter(m=>
+    !['CLOSED','COMPLETED','CANCELLED','READY_FOR_CLOSURE'].includes(m.status)
+    && (m.completedWorkPackages<m.workPackages || m.unfinishedHandoffs>0
+      || m.awaitingReview>0 || ['HOLD','BLOCKED','FAILED'].includes(m.status)));
   if(unfinished.length===0){
-   answer=source.totalMissions>source.missions.length
-    ?'No unfinished mission was observed among the latest '+source.missions.length+
-      ' of '+source.totalMissions+' persisted missions. Older history was not included.'
-    :'No unfinished mission is currently identified in the '+source.totalMissions+
-      ' persisted mission summaries.';
+   answer='No unfinished work identified in the latest '+source.missions.length+
+    ' of '+source.totalMissions+' persisted missions. ';
   }else{
-   answer='Unfinished persisted missions (latest '+source.missions.length+
-    ' of '+source.totalMissions+'): '+
+   answer='Unfinished work (latest '+source.missions.length+
+    ' of '+source.totalMissions+' persisted missions): '+
     unfinished.slice(0,8).map(m=>m.id+' ('+m.status+': '+m.completedWorkPackages+
      ' of '+m.workPackages+' completed; '+m.blockedWorkPackages+
      ' blocked; '+m.unfinishedHandoffs+' unfinished handoffs; '+m.awaitingReview+
      ' submitted awaiting checker)').join('; ')+'. ';
-   answer+='Statuses identify work remaining; the underlying reason/cause is not established by status counts. '+
-    'Consult the mission evidence for a specific recorded blocker before claiming a root cause.';
   }
+  if(awaitingClosure.length){
+   answer+='Awaiting closure: '+awaitingClosure.map(m=>m.id+
+    ' ('+m.completedWorkPackages+' of '+m.workPackages+
+    ' work packages completed)').join('; ')+'. ';
+  }
+  if(cancelled.length){
+   answer+=cancelled.length+' cancelled missions excluded from unfinished work. ';
+  }
+  if(source.totalMissions>source.missions.length){
+   answer+='Older missions are outside this latest-ten-record window. ';
+  }
+  if(unfinished.length){
+   answer+='Statuses identify work remaining; the underlying reason/cause is not established by status counts. '+
+    'Consult the saved mission evidence for specific blockers before claiming a root cause.';
+  }
+
  }
  return Object.freeze({
   schemaVersion:'VAOS_FOUNDER_MISSION_ANSWER_V1',sourceSystem:'VAOS_MISSION_CONTROL',

@@ -119,3 +119,84 @@ test('G6 app wires prior successful read into the existing question flow, never 
  assert.match(source,/TTL_MS=300000/);
  assert.doesNotMatch(source,/sessionStorage|localStorage|indexedDB|\/api\/.*POST|fetch\(/);
 });
+
+
+test('G6: pressing Stop during spoken readback keeps bounded context for two real mission follow-up GETs',async()=>{
+ const saved={document:globalThis.document,window:globalThis.window,fetch:globalThis.fetch};
+ const requests=[],speech={utterances:[],cancels:0};
+ const el=id=>{
+  const listeners=new Map();
+  return {id,listeners,checked:false,disabled:false,value:'',textContent:'',dataset:{},
+   attributes:{},className:'',addEventListener(name,fn){listeners.set(name,fn);},
+   setAttribute(name,value){this.attributes[name]=value;},
+   replaceChildren(){},append(){},
+   click(){return listeners.get('click')?.({type:'click'});}
+  };
+ };
+ const ids=['vaos-voice-mic','vaos-voice-stop','vaos-voice-ask','vaos-voice-speak',
+  'vaos-voice-question','vaos-voice-answer','vaos-voice-status','vaos-voice-sources',
+  'vaos-voice-speech-toggle','vaos-wake-toggle','vaos-wake-indicator',
+  'vaos-wake-status','vaos-voice-test'];
+ const nodes=Object.fromEntries(ids.map(id=>[id,el(id)]));
+ nodes['vaos-voice-speech-toggle'].checked=true;
+ const root={querySelector(s){return nodes[s.slice(1)]||null;}};
+ globalThis.document={visibilityState:'visible',querySelector:s=>s==='#vaos-main-voice'?root:null,
+  addEventListener(){}};
+ class Recognition{
+  processLocally=false;
+  static async available(){return 'available';}
+  start(){}
+  abort(){this.onend?.();}
+  stop(){this.onend?.();}
+ }
+ globalThis.window={isSecureContext:true,SpeechRecognition:Recognition,addEventListener(){},
+  speechSynthesis:{
+   cancel(){speech.cancels++;},
+   speak(utterance){speech.utterances.push(utterance);utterance.onstart?.();}
+  },
+  SpeechSynthesisUtterance:class{constructor(value){this.text=value;}}
+ };
+ globalThis.fetch=async(url)=>{
+  requests.push(String(url));
+  if(url==='/api/voice-capabilities')return {ok:true,json:async()=>({data:{
+   enabled:true,manualReviewRequired:true,actionAuthorized:false,
+   agentDispatch:false,automaticSubmission:false,serverAudioEnabled:false,
+  }})};
+  return {ok:true,json:async()=>({data:{
+   schemaVersion:'VAOS_FOUNDER_MISSION_ANSWER_V1',sourceSystem:'VAOS_MISSION_CONTROL',
+   sourceAuthority:'vaos_founder_mission_answer_summary',
+   status:'OBSERVED',readOnly:true,actionAuthorized:false,businessEffectsExecuted:false,
+   answer:'Eight persisted missions observed: two have unfinished work, five await closure, and one is cancelled. No business changes were performed.',
+  }})};
+ };
+ try{
+  await import('./main-voice.mjs?g6-live-followup-after-voice-stop-20261015');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  nodes['vaos-voice-question'].value='“Which assigned missions remain unfinished?”';
+  await nodes['vaos-voice-ask'].click();
+  assert.match(nodes['vaos-voice-answer'].textContent,/Eight persisted missions/);
+  assert.ok(speech.utterances.length>0,'first spoken answer should be active');
+  const first=requests.filter(s=>s.startsWith('/api/voice-insight?'));
+  assert.equal(first.length,1);
+  assert.match(decodeURIComponent(first[0]),/Which assigned missions remain unfinished/);
+
+  await nodes['vaos-voice-stop'].click();
+  assert.ok(speech.cancels>0,'Stop must cancel speech');
+  assert.match(nodes['vaos-voice-status'].textContent,/spoken answer stopped/i);
+  nodes['vaos-voice-question'].value='And the blockers?';
+  await nodes['vaos-voice-ask'].click();
+  const second=requests.filter(s=>s.startsWith('/api/voice-insight?'));
+  assert.equal(second.length,2);
+  assert.match(decodeURIComponent(second[1]),/Which assigned missions remain unfinished and what blockers are recorded/);
+  assert.match(nodes['vaos-voice-status'].textContent,/G6 follow-up: fresh read-only source/i);
+
+  nodes['vaos-voice-question'].value='And the latest result';
+  await nodes['vaos-voice-ask'].click();
+  const third=requests.filter(s=>s.startsWith('/api/voice-insight?'));
+  assert.equal(third.length,3);
+  assert.match(decodeURIComponent(third[2]),/latest completed departmental mission/);
+  assert.doesNotMatch(decodeURIComponent(third[2]),/q=And the latest result/);
+ }finally{
+  Object.assign(globalThis,saved);
+ }
+});

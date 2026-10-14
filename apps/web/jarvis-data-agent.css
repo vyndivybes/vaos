@@ -1,0 +1,19 @@
+/* JARVIS Data Agent founder-only research panel. No dashboard framework. */
+.data-agent-panel{border:1px solid #d5e3ed;border-radius:18px;background:#fff;color:#21364f}
+.data-agent-panel h2{font-size:clamp(21px,2.6vw,28px);margin:0 0 8px}
+.data-agent-panel h3{font-size:19px;margin:22px 0 8px}
+.data-agent-panel p,.data-agent-panel li{font-size:15px;line-height:1.55}
+.data-agent-panel label{display:block;font-weight:700;font-size:15px;margin:12px 0 8px}
+.data-agent-panel textarea{width:100%;min-height:94px;font-size:16px}
+.data-agent-panel button{font-size:16px}
+.data-agent-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;font:15px/1.65 "Segoe UI",Arial,sans-serif;color:#173954;background:#f4f8fb;border-radius:12px;padding:16px}
+.data-agent-panel select{max-width:320px}
+.data-agent-panel .va-evidence-svg{width:100%;height:auto;min-height:170px;max-height:370px}
+.data-agent-panel .va-evidence-axis,.data-agent-panel .va-evidence-value,.data-agent-panel .va-evidence-total{fill:#233953;font-size:14px}
+.data-agent-panel #data-agent-chart{overflow-x:auto;background:#f7fafc;padding:12px;border-radius:12px}
+.data-agent-panel #data-agent-employees{overflow-x:auto}
+.data-agent-panel table{border-collapse:collapse;width:100%;font-size:14px;min-width:630px}
+.data-agent-panel th,.data-agent-panel td{text-align:left;border-bottom:1px solid #d8e3ec;padding:11px 8px;color:#213a54}
+.data-agent-panel th{background:#f2f7fb}
+.data-agent-panel ul{padding-left:22px}
+@media(max-width:720px){.data-agent-panel pre{font-size:14px}.data-agent-panel table{font-size:13px}}

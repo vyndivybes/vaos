@@ -6,6 +6,14 @@ on:
       - 'apps/web/api/adaptive-intelligence.mjs'
       - 'apps/web/lib/adaptive-intelligence.mjs'
       - 'apps/web/main-voice.mjs'
+      - 'apps/web/api/jarvis-data-agent.mjs'
+      - 'apps/web/api/jarvis-data-agent.test.mjs'
+      - 'apps/web/lib/data-agent-report.mjs'
+      - 'apps/web/jarvis-data-agent.mjs'
+      - 'apps/web/jarvis-data-agent.css'
+      - 'apps/web/founder-console.html'
+      - 'apps/web/cloudflare-worker.mjs'
+      - 'package.json'
       - '.github/workflows/jarvis-controlled-release.yml'
   workflow_dispatch:
     inputs:

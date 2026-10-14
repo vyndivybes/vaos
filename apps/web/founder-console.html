@@ -2,7 +2,7 @@
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
 <meta name="theme-color" content="#101318"/><meta name="description" content="VAOS governed founder command drafting and agent monitoring"/>
 <link rel="manifest" href="/manifest.webmanifest"/><link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp"/>
-<link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/><link rel="stylesheet" href="/operations-refresh.css"/><link rel="stylesheet" href="/jarvis-qualification.css?v=20261013-g31e-v1"/>
+<link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/><link rel="stylesheet" href="/operations-refresh.css"/><link rel="stylesheet" href="/jarvis-data-agent.css"/><link rel="stylesheet" href="/jarvis-qualification.css?v=20261013-g31e-v1"/>
 <title>VAOS · Founder Command</title></head><body class="founder-body">
 <header class="founder-header"><a href="/workspace" class="founder-back">← Workspace</a><div><small>VĀYŪ SHASTR</small><strong>Founder Command</strong></div><span class="founder-mode">Governed draft mode</span></header>
 <nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
@@ -10,11 +10,37 @@
   <a href="/mission-status.html" >Mission tracking</a>
   <a href="/agent-supervision.html" >Agent monitoring</a>
   <a href="/founder-console.html" aria-current="page">Founder command lab</a>
+  <a href="#data-agent-panel">JARVIS Data Agent</a>
   <a href="#g3-intelligence-panel">JARVIS X qualification</a>
   <a href="/jarvis-multimodal.html">JARVIS file intelligence (preview)</a>
 </nav><main class="founder-shell" id="founder-shell" hidden>
  <section class="va-ops-explain"><h2>What is Founder Command for?</h2><p>This is the advanced instruction and governance workspace: draft requests, record them when permitted, inspect evidence, and run separately qualified voice pilots. Recording a draft is <strong>not</strong> dispatch. Day-to-day questions now belong in <a href="/workspace">Ask VAOS on the main dashboard</a>; approvals and transactions still use independent controls.</p></section>
  <section class="founder-panel"><h2>Workforce Analytics &amp; Individual Audit Oversight</h2><p>View all 16 AI employees, their recorded work distribution, independently verified closures, adaptive role KPIs, departmental audit scope, progress evidence and forecast qualification holds.</p><p><a href="/workforce-analytics.html" class="founder-back">Open Workforce Analytics &amp; Individual Audit Dashboards →</a></p></section>
+
+ <section class="founder-panel data-agent-panel" id="data-agent-panel" aria-labelledby="data-agent-title">
+ <p class="founder-hint">JARVIS · Native data intelligence</p>
+ <h2 id="data-agent-title">Ask JARVIS about business data</h2>
+ <p>Ask a read-only question across finance, procurement, inventory, production, sales or the 16 digital employees.
+ This uses existing authorized data gateways and produces charts with source references. No new subscription, arbitrary SQL, model-made quantities or business writes.</p>
+ <form id="data-agent-form">
+ <label for="data-agent-question">Your business question</label>
+ <textarea id="data-agent-question" minlength="5" maxlength="300" rows="3" required
+ placeholder="Analyse our finance, procurement, inventory and production records."></textarea>
+ <button type="submit">Analyse live source records</button>
+ </form>
+ <p id="data-agent-status" role="status" aria-live="polite">No data requested.</p>
+ <pre id="data-agent-answer" aria-label="JARVIS evidence-based answer"></pre>
+ <div class="mission-form">
+ <label for="data-agent-chart-kind">Chart style</label>
+ <select id="data-agent-chart-kind"><option value="bars">Horizontal bars</option><option value="columns">Columns</option><option value="donut">Donut</option></select>
+ </div>
+ <div id="data-agent-chart" role="region" aria-label="Observed evidence chart"></div>
+ <div id="data-agent-employees"></div>
+ <h3>Data provenance</h3>
+ <ul id="data-agent-sources"></ul>
+ <h3>Interpretation limits</h3>
+ <ul id="data-agent-limitations"><li>Live analysis has not yet been requested. A source sample is not a certified total or forecast.</li></ul>
+ </section>
 
  <section class="founder-panel g3-intelligence" id="g3-intelligence-panel" aria-labelledby="g3-title">
   <header class="g3-intro">
@@ -145,4 +171,4 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <p id="voice-pilot-status" role="status" aria-live="polite">Voice qualification not checked.</p>
 <p id="voice-audio-diagnostics" class="founder-hint" role="status" aria-live="polite">Sound diagnostic not run. These controls never send instructions or access mission data.</p>
 </section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
-</main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/jarvis-qualification.mjs?v=20261013-g31e-v1"></script><script type="module" src="/voice-pilot-browser.mjs"></script></body></html>
+</main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/jarvis-data-agent.mjs"></script><script type="module" src="/jarvis-qualification.mjs?v=20261013-g31e-v1"></script><script type="module" src="/voice-pilot-browser.mjs"></script></body></html>

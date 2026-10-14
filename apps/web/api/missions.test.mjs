@@ -283,3 +283,52 @@ test('replayed founder mission reports persisted assignments without duplicating
   assert.equal(r.result.body.data.status, 'PARTIALLY_ASSIGNED');
   assert.deepEqual(calls, ['PLAN', 'DISPATCH']);
 });
+
+
+test('founder may read persisted mission results using the existing mission GET with no writes',async()=>{
+ const calls=[];
+ const handler=createMissionsHandler({
+  getService:()=>({
+   async snapshot(id){calls.push(['snapshot',id]);return {mission:{id,status:'ACTIVE'},workPackages:[{id:'wp-1'}],handoffs:[]};},
+   async getWorkEvidence(id){calls.push(['evidence',id]);return null;}
+  }),
+  getFounderResults:async ({snapshot,getWorkEvidence})=>{
+   assert.equal(snapshot.mission.id,'mission-001');
+   assert.equal(await getWorkEvidence('handoff-version:hand-1:2'),null);
+   return {schemaVersion:'VAOS_FOUNDER_MISSION_RESULTS_V1',missionId:'mission-001',
+    readOnly:true,actionAuthorized:false,summary:{total:1},jobs:[]};
+  },
+ });
+ const responsePair=response();
+ await handler(req('GET',{email:founder,url:'https://vaos.example/api/missions?missionId=mission-001&view=results'}),responsePair.res);
+ assert.equal(responsePair.result.code,200);
+ assert.equal(responsePair.result.body.data.readOnly,true);
+ assert.equal(responsePair.result.body.data.actionAuthorized,false);
+ assert.equal(responsePair.result.body.data.snapshot.mission.id,'mission-001');
+ assert.deepEqual(calls,[['snapshot','mission-001'],['evidence','handoff-version:hand-1:2']]);
+ assert.equal(responsePair.result.headers['Cache-Control'],'no-store');
+});
+test('saved results are founder-only; unknown query keys and views fail closed',async()=>{
+ const f=fixture();
+ for(const options of [
+  {url:'https://vaos.example/api/missions?missionId=mission-001&view=results',email:'kaaviyam1519@gmail.com',expected:403},
+  {url:'https://vaos.example/api/missions?missionId=mission-001&view=results',authenticated:false,expected:401},
+  {url:'https://vaos.example/api/missions?missionId=mission-001&view=execute',email:founder,expected:422},
+  {url:'https://vaos.example/api/missions?missionId=mission-001&view=results&agentId=finance',email:founder,expected:422},
+ ]){
+  const x=response();
+  await f.handler(req('GET',options),x.res);
+  assert.equal(x.result.code,options.expected);
+ }
+ assert.deepEqual(f.calls,[]);
+});
+test('evidence read failures are redacted and cannot be presented as completed departments',async()=>{
+ const h=createMissionsHandler({
+  getService:()=>({async snapshot(id){return {mission:{id},workPackages:[],handoffs:[]};},async getWorkEvidence(){throw Error('private-secret');}}),
+  getFounderResults:async ({getWorkEvidence})=>getWorkEvidence('vaos-evidence:missing'),
+ });
+ const v=response();
+ await h(req('GET',{email:founder,url:'https://vaos.example/api/missions?missionId=mission-001&view=results'}),v.res);
+ assert.equal(v.result.code,503);
+ assert.doesNotMatch(JSON.stringify(v.result.body),/private-secret/);
+});

@@ -5,6 +5,7 @@ import { createMissionConsumer } from '../../../platform/execution/mission-consu
 import { VAOS_JOB_CATALOG, routeJob } from '../../../platform/runtime/vaos-eight-operating-model.mjs';
 import { getFounderInboxStore } from '../lib/founder-inbox-provider.mjs';
 import { readMissionDepartment } from '../lib/mission-department-reader.mjs';
+import { loadFounderMissionResults } from '../lib/founder-mission-results.mjs';
 
 const JOBS = new Set(Object.values(VAOS_JOB_CATALOG).flat().map((job) => job.actionType));
 const ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/;
@@ -126,6 +127,7 @@ export function createMissionsHandler({
   getService = getEightAgentOperatingService,
   createConsumer = ({ service, readDepartment }) => createMissionConsumer({ service, readDepartment }),
   getInboxStore = getFounderInboxStore,
+  getFounderResults = loadFounderMissionResults,
 } = {}) {
   if (typeof getService !== 'function') throw new Error('MISSION_SERVICE_FACTORY_REQUIRED');
   if (typeof createConsumer !== 'function') throw new Error('MISSION_CONSUMER_FACTORY_REQUIRED');
@@ -141,17 +143,36 @@ export function createMissionsHandler({
     if (!session) return res.status(401).json(apiError('UNAUTHENTICATED', 'Authentication required'));
 
     if (req.method === 'GET') {
-      let missionId;
-      try { missionId = new URL(req.url, 'https://vaos.invalid').searchParams.get('missionId'); }
-      catch { missionId = null; }
-      if (!validMissionId(missionId)) {
-        return res.status(422).json(apiError('VALIDATION_ERROR', 'Valid missionId required'));
+      let missionId,view;
+      try {
+        const url=new URL(req.url,'https://vaos.invalid');
+        if([...url.searchParams.keys()].some(k=>!['missionId','view'].includes(k))
+            ||url.searchParams.getAll('missionId').length!==1
+            ||url.searchParams.getAll('view').length>1)throw Error('QUERY_INVALID');
+        missionId=url.searchParams.get('missionId');
+        view=url.searchParams.get('view');
+      }catch{return res.status(422).json(apiError('VALIDATION_ERROR','Valid mission query required'));}
+      if (!validMissionId(missionId)||![null,'results'].includes(view)) {
+        return res.status(422).json(apiError('VALIDATION_ERROR','Valid missionId and view required'));
+      }
+      if(view==='results'&&session.email!==FOUNDER_EMAIL){
+        return res.status(403).json(apiError('FOUNDER_ONLY','Founder evidence readback only'));
       }
       try {
-        const snapshot = await getService(req.env).snapshot(missionId);
+        const service=getService(req.env);
+        const snapshot=await service.snapshot(missionId);
+        if(view==='results'){
+          const results=await getFounderResults({
+            snapshot,getWorkEvidence:evidenceId=>service.getWorkEvidence(evidenceId),
+          });
+          // Preserve existing voice readback without a second mission request.
+          // No immutable raw source rows or secret material is exposed.
+          return res.status(200).json({data:{...results,snapshot}});
+        }
         return res.status(200).json({ data: snapshot });
       } catch {
-        return res.status(503).json(apiError('MISSION_UNAVAILABLE', 'Unable to read mission'));
+        return res.status(503).json(apiError('MISSION_UNAVAILABLE',
+          'Unable to read persisted mission or its immutable evidence'));
       }
     }
 

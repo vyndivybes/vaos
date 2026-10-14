@@ -170,14 +170,39 @@ $('mission-form').addEventListener('submit',async event=>{
  if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(id)){out.textContent='Enter a valid existing mission ID.';return;}
  out.textContent='Reading authoritative mission snapshot…';
  try{
-  const response=await fetch('/api/missions?missionId='+encodeURIComponent(id),{credentials:'same-origin',cache:'no-store'});
+  const response=await fetch('/api/missions?missionId='+encodeURIComponent(id)+'&view=results',
+    {credentials:'same-origin',cache:'no-store'});
   if(!response.ok)throw new Error('MISSION_UNAVAILABLE');
   const record=(await response.json())?.data;
   if(serial!==missionReadSequence||$('mission-id').value.trim()!==id)return;
-  if(!record?.mission||record.mission.id!==id||!Array.isArray(record.workPackages))throw new Error('MISSION_INVALID');
-  const work=record.workPackages;
-  out.textContent='Mission: '+id+'\nStatus: '+(record.mission.status||'UNVERIFIED')+'\nWork packages: '+work.length+'\nCompleted: '+work.filter(p=>p.status==='COMPLETED').length+'\n\nView full evidence in Mission Status.';
-  try{out.dataset.voiceReadback=formatMissionSnapshotSpokenPreview(record,id);}
+  if(record?.schemaVersion!=='VAOS_FOUNDER_MISSION_RESULTS_V1'
+     ||record.missionId!==id||record.readOnly!==true||record.actionAuthorized!==false
+     ||!Array.isArray(record.jobs)||record.summary?.total!==record.jobs.length
+     ||record.snapshot?.mission?.id!==id)throw new Error('MISSION_RESULTS_INVALID');
+  const s=record.summary;
+  const rows=record.jobs.map(item=>{
+   const state=item.ownerAgentId+' · '+item.actionType+' — '+item.resultStatus;
+   if(!item.result)return state;
+   const result=item.result;
+   const source=result.sourceSystem==='VYNDI_OS'
+    ?' | '+result.observedRecords+' selected records from '+result.sourceAuthority
+    :' | '+result.scope;
+   const evidence=' | saved evidence '+result.evidenceId;
+   const findings=result.findings?.length
+    ?'\n   '+result.findings.slice(0,5).join(' · ')+(result.findingsTruncated?' [additional saved findings]':'')
+    :'';
+   return state+source+evidence+findings;
+  });
+  out.textContent='Mission: '+id+'\nStatus: '+record.missionStatus+
+   '\nVerified: '+s.verified+'/'+s.total+
+   ' | Submitted: '+s.awaitingReview+
+   ' | Recorded, recoverable: '+s.recoverable+
+   ' | Retry eligible: '+s.acceptedRetry+
+   ' | Assigned, not started: '+s.assignedNotStarted+
+   ' | Blocked/unassigned: '+s.unsupportedOrBlocked+
+   '\n\nDepartmental results (persisted, read-only)\n'+rows.join('\n')+
+   '\n\nReceipts are bounded observations, not company-wide totals or engineering releases.';
+  try{out.dataset.voiceReadback=formatMissionSnapshotSpokenPreview(record.snapshot,id);}
   catch{delete out.dataset.voiceReadback;}
  }catch{if(serial===missionReadSequence)out.textContent='Mission unavailable. No completion or verification inferred.';}
 });

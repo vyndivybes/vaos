@@ -112,7 +112,8 @@ test('G6 app wires prior successful read into the existing question flow, never 
  assert.match(app,/conversation\.remember\(intent,normalized\.status/);
  assert.match(app,/conversation\.clear\(\)/);
  assert.match(app,/canFollowUp/);
- assert.match(app,/classifyG6Interruption/);
+ assert.match(app,/createG6BargeInListener/);
+ assert.match(source,/classifyG6Interruption/);
  assert.match(app,/player\.cancel\(\)/);
  assert.match(app,/localSpeech\?\.status!=='LOCAL_READY'/);
  assert.match(source,/MAX_FOLLOWUPS=3/);
@@ -212,4 +213,20 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
  }finally{
   Object.assign(globalThis,saved);
  }
+});
+
+
+test('G6: existing voice UI manages long-reply barge-in through local-only consent and VAD, not remote speech fallback',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const app=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ const module=await readFile(new URL('./lib/g6-conversation.mjs',import.meta.url),'utf8');
+ assert.match(app,/getLocalLocale:\(\)=>localSpeech\?\.status==='LOCAL_READY'/);
+ assert.match(app,/isOptedIn:\(\)=>wake\?\.isEnabled\(\)===true&&document\.visibilityState==='visible'/);
+ assert.match(app,/isSpeechActive:\(\)=>player\.active\(\)/);
+ assert.match(app,/function stopInterruption\(\)\{ondeviceBarge\.stop\(\);\}/);
+ assert.match(app,/function startInterruption\(\)\{ondeviceBarge\.start\(\);\}/);
+ assert.match(module,/recognition\.processLocally=true/);
+ assert.match(module,/onActivity\('SPEECH_START'\)/);
+ assert.match(module,/onActivity\('SPEECH_END'\)/);
+ assert.doesNotMatch(module,/fetch\(|localStorage|sessionStorage|navigator\.mediaDevices\.getUserMedia/);
 });

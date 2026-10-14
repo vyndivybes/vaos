@@ -4,7 +4,7 @@
  * Every resolved follow-up is a NEW existing read-only GET with fresh evidence.
  * No new server route, persistence, agent dispatch or voice authorization.
  */
-import {parseWakePhrase} from './hey-vaos.mjs';
+import {parseWakePhrase,extractFinalTranscript} from './hey-vaos.mjs';
 
 const TTL_MS=300000;
 const MAX_FOLLOWUPS=3;
@@ -119,4 +119,95 @@ export function classifyG6Interruption(transcript,allowRead=()=>false){
  if(!wake||question.length<5||question.length>300||REJECT_CONTROL.test(question)||!allowRead(question))
   return {kind:'IGNORE'};
  return {kind:'QUESTION',question};
+}
+
+
+/**
+ * G6 on-device interruption windows. While an already consented browser voice
+ * reply is speaking, rearm a short local-only recognition window after each
+ * timeout/normal completion. Maximum 10 windows x 12 seconds; never
+ * silently enable an ambient/remote microphone or authorize business effects.
+ * The UI handles STOP or a separately allowed explicit "Hey VAOS" question.
+ */
+export function createG6BargeInListener({
+ RecognitionClass,getLocalLocale=()=>null,isSpeechActive=()=>false,
+ isOptedIn=()=>false,allowQuestion=()=>false,onDecision=()=>{},onActivity=()=>{},
+ schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
+}={}){
+ const MAX_WINDOWS=10;
+ const WINDOW_MS=12000;
+ const REARM_MS=250;
+ const LOCAL_LOCALE=/^(?:en-(?:IN|US)|ta-IN|ml-IN|hi-IN)$/;
+ let enabled=false,serial=0,windowCount=0,current=null,restart=null;
+ function clearCurrent(){
+  const job=current;current=null;
+  if(!job)return;
+  if(job.timer!=null)clear(job.timer);
+  try{job.recognition.abort?.();}catch{}
+ }
+ function stop(){
+  ++serial;enabled=false;
+  if(restart!=null){clear(restart);restart=null;}
+  clearCurrent();windowCount=0;
+ }
+ const eligible=()=>enabled&&isSpeechActive()&&isOptedIn()
+   &&LOCAL_LOCALE.test(String(getLocalLocale()||''));
+ function listen(run){
+  if(!eligible()||run!==serial||windowCount>=MAX_WINDOWS){stop();return false;}
+  if(typeof RecognitionClass!=='function'){stop();return false;}
+  let recognition;
+  try{
+   recognition=new RecognitionClass();
+   if(!('processLocally' in recognition)){stop();return false;}
+   recognition.processLocally=true;
+   recognition.lang=getLocalLocale();
+   recognition.continuous=false;recognition.interimResults=false;
+   recognition.maxAlternatives=1;
+  }catch{stop();return false;}
+  const job={recognition,timer:null};current=job;windowCount++;
+  function retire(){
+   if(current!==job||run!==serial)return;
+   clearCurrent();
+   if(!eligible()||windowCount>=MAX_WINDOWS){stop();return;}
+   restart=schedule(()=>{
+    restart=null;
+    if(run!==serial||!eligible())return void stop();
+    listen(run);
+   },REARM_MS);
+  }
+  recognition.onresult=event=>{
+   if(current!==job||run!==serial||!eligible())return;
+   const result=classifyG6Interruption(extractFinalTranscript(event),allowQuestion);
+   if(result.kind==='IGNORE')return;
+   stop();
+   onDecision(result);
+  };
+  recognition.onspeechstart=()=>{
+   if(current===job&&run===serial)onActivity('SPEECH_START');
+  };
+  recognition.onspeechend=()=>{
+   if(current===job&&run===serial)onActivity('SPEECH_END');
+  };
+  recognition.onend=()=>retire();
+  recognition.onerror=event=>{
+   if(current!==job)return;
+   if(['not-allowed','service-not-allowed','audio-capture','language-not-supported'].includes(String(event?.error||''))){
+    stop();onActivity('LOCAL_UNAVAILABLE');return;
+   }
+   retire();
+  };
+  try{
+   recognition.start();
+   if(current===job)job.timer=schedule(retire,WINDOW_MS);
+  }catch{stop();onActivity('LOCAL_UNAVAILABLE');return false;}
+  return enabled;
+ }
+ function start(){
+  if(enabled)return true;
+  if(!isOptedIn()||!isSpeechActive()||typeof RecognitionClass!=='function'
+     ||!LOCAL_LOCALE.test(String(getLocalLocale()||'')))return false;
+  enabled=true;windowCount=0;
+  return listen(++serial);
+ }
+ return Object.freeze({start,stop,isActive:()=>enabled});
 }

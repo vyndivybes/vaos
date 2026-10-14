@@ -9,7 +9,7 @@ const findings=Object.freeze([
  {field:'shortageRowsWithObservedJobBomConflict',code:'OBSERVED_JOB_BOM_REVISION_CONFLICT',
   classification:'OBSERVED_DISCREPANCY',severity:'HIGH',title:'Procurement and job-card BOM revisions disagree',
   explanation:'At least one selected shortage line and its observed linked job card reference different BOM revisions. This is a traceability conflict, not proof that the conflict delayed the build.',
-  action:'Reconcile the shortage line against its job-card BOM and the approved engineering configuration before rescheduling work.',
+  action:'Reconcile the shortage line against the job-card BOM revision and the approved engineering configuration before authorizing or scheduling a build.',
   sourceDomains:['procurement','production']},
  {field:'shortageRowsWithIncompatibleObservedInventoryUnit',code:'OBSERVED_SKU_UNIT_RELATION_UNRECONCILED',
   classification:'OBSERVED_DISCREPANCY',severity:'HIGH',title:'Stock and shortage units do not match',

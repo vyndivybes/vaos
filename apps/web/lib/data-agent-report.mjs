@@ -14,6 +14,7 @@ const GROUP=/\b(group|company|enterprise|all divisions|across divisions|vyndi|va
 const DIGITAL=/\b(?:digital|ai)\s+(?:employee|employees|agents?|workforce)\b|\b(?:16\s+(?:employees|agents)|employee\s+(?:assessment|training|performance|audits?)|workforce analytics)\b/i;
 const QUALIFIED=new Set([...DOMAIN_ORDER,'engineering']);
 const INVESTIGATE=/\b(why|root.cause|bottleneck|blocker|delay(?:ed|s)?|investigat(?:e|ion)|discrepanc(?:y|ies)|holding.up|production.risks?)\b/i;
+const PRODUCTION_TOPIC=/\b(production|manufactur\w*|material|shortage\w*|inventory|stock|supplier\w*|procure\w*|job.cards?|bom|prototype|frames?|engineering|build\w*|production.orders?)\b/i;
 const INVESTIGATION_DOMAINS=Object.freeze(['procurement','inventory','production','engineering']);
 
 export function selectDataAgentSources(question){
@@ -21,7 +22,8 @@ export function selectDataAgentSources(question){
  if(plan.state==='DENIED')return {status:'DENIED',domains:[],workforce:false};
  if(DIGITAL.test(question))return {status:'PLANNED',domains:[],workforce:true,investigate:false};
  // A diagnosis needs the existing G3.1E crosswalk, not just the first named ledger.
- if(INVESTIGATE.test(question))
+ if(INVESTIGATE.test(question)&&PRODUCTION_TOPIC.test(question)||
+  ['procurement','inventory','production','engineering'].filter(x=>plan.domains.includes(x)).length>=3)
   return {status:'PLANNED',domains:[...INVESTIGATION_DOMAINS],workforce:false,investigate:true,
    omitted:[]};
  let domains=plan.domains.filter(x=>QUALIFIED.has(x));

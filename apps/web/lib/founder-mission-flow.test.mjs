@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createFounderMission,formatFounderMissionResults} from './founder-mission-flow.mjs';
+import {createFounderMission,runFounderMissionSafe,formatFounderMissionResults} from './founder-mission-flow.mjs';
 
 const messageId='52a8a9bd-3706-4d05-8941-045bfb64c661';
 const missionId='founder-52a8a9bd37064d058941045bfb64c661';
@@ -96,4 +96,32 @@ test('invalid mission report and excessive job list fail closed without displayi
  assert.throws(()=>formatFounderMissionResults(record,missionId),/FOUNDER_MISSION_RESULTS_INVALID/);
  const tooMany={...record,summary:{total:40},jobs:Array.from({length:40},()=>({}))};
  assert.throws(()=>formatFounderMissionResults(tooMany,missionId),/FOUNDER_MISSION_RESULTS_INVALID/);
+});
+
+
+test('one successful founder instruction triggers existing bounded RUN_SAFE action, not an effectful job',async()=>{
+ const calls=[];
+ const data={consumed:{missionId,submitted:2,unsupported:0,returned:0,holds:[]},
+  reviewed:{missionId,verified:2,returned:0,unsupported:0}};
+ const result=await runFounderMissionSafe({missionId,request:async(url,options)=>{
+  calls.push({url,options});return response(data);
+ }});
+ assert.deepEqual(calls.map(x=>x.url),['/api/missions']);
+ assert.deepEqual(JSON.parse(calls[0].options.body),{operation:'RUN_SAFE',missionId,maxHandoffs:4});
+ assert.equal(calls[0].options.credentials,'same-origin');
+ assert.deepEqual(result,{submitted:2,verified:2,returned:0,held:0});
+});
+test('initial safe run fails closed without falsely claiming results or changing mission identity',async()=>{
+ for(const payload of [
+  {consumed:{missionId:'other',submitted:1,holds:[]},reviewed:{missionId,verified:1}},
+  {consumed:{missionId,submitted:5,holds:[]},reviewed:{missionId,verified:1}},
+  {consumed:{missionId,submitted:1,holds:[]},reviewed:{missionId,verified:9}},
+  {consumed:{missionId,submitted:1,holds:'none'},reviewed:{missionId,verified:1}},
+ ])await assert.rejects(
+  runFounderMissionSafe({missionId,request:async()=>response(payload)}),
+  /FOUNDER_MISSION_EXECUTION_UNCONFIRMED/);
+ await assert.rejects(runFounderMissionSafe({missionId:'bad!!',request:async()=>response({})}),
+  /FOUNDER_MISSION_EXECUTION_INVALID/);
+ await assert.rejects(runFounderMissionSafe({missionId,request:async()=>response({},false)}),
+  /FOUNDER_MISSION_EXECUTION_UNCONFIRMED/);
 });

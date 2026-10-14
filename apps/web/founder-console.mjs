@@ -1,6 +1,6 @@
 import {AGENTS,prepareFounderCommand,safeAgentSnapshot} from './founder-command.mjs';
 import {formatMissionSnapshotSpokenPreview} from './lib/voice-pilot.mjs';
-import {createFounderMission,formatFounderMissionResults} from './lib/founder-mission-flow.mjs';
+import {createFounderMission,runFounderMissionSafe,formatFounderMissionResults} from './lib/founder-mission-flow.mjs';
 const $=id=>document.getElementById(id),shell=$('founder-shell'),message=$('command-message'),agentSelect=$('agent');
 let preparedText='';let pendingMessageId=null;let prepared=null;
 for(const agent of AGENTS){const option=document.createElement('option');option.value=agent.id;option.textContent=agent.name;agentSelect.append(option);}
@@ -88,8 +88,21 @@ async function issueFounderInstruction(){
   const url=new URL(window.location.href);
   url.searchParams.set('missionId',id);
   window.history.replaceState(null,'',url);
+  // Start only the existing safe mission consumer after durable assignment.
+  // Failure here must NOT be treated as failed mission creation or cause
+  // accidental duplicate dispatch. The hourly scheduler resumes queued work.
   message.textContent='Mission assigned: '+mission.assignedWorkPackages+'/'+
-   mission.totalWorkPackages+' eligible departments. Results below update from saved evidence.';
+    mission.totalWorkPackages+' eligible departments. Running permitted tasks…';
+  try{
+   const safe=await runFounderMissionSafe({missionId:id,request:fetch});
+   message.textContent='Mission assigned: '+mission.assignedWorkPackages+'/'+mission.totalWorkPackages+
+    ' departments. Safe pass: '+safe.submitted+' submitted, '+safe.verified+
+    ' independently reviewed, '+safe.held+' source holds. Other work continues on the existing schedule.';
+  }catch{
+   message.textContent='Mission assigned: '+mission.assignedWorkPackages+'/'+
+    mission.totalWorkPackages+
+    ' departments. Immediate execution not confirmed; the existing hourly scheduler will continue permitted work.';
+  }
   await loadFounderMission(id);
   await loadHistory();
  }catch{

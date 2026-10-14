@@ -87,3 +87,25 @@ test('G4 Step 5 issues one founder mission and reads its results in the existing
  assert.match(flow,/createFounderMission/);
  assert.doesNotMatch(script,/\/api\/missions.*RUN_SAFE/);
 });
+
+
+test('G4 Founder Command browser entry imports every roster/command dependency before using them',async()=>{
+ const script=await readFile(new URL('./founder-console.mjs',import.meta.url),'utf8');
+ assert.match(script,/^import\s*\{\s*AGENTS\s*,\s*prepareFounderCommand\s*,\s*safeAgentSnapshot\s*\}\s*from\s*['"]\.\/founder-command\.mjs['"];?/m);
+ assert.match(script,/^import\s*\{\s*createFounderMission\s*,\s*runFounderMissionSafe\s*,\s*formatFounderMissionResults\s*\}\s*from\s*['"]\.\/lib\/founder-mission-flow\.mjs['"];?/m);
+ assert.match(script,/for\(const agent of AGENTS\)/);
+ assert.match(script,/prepareFounderCommand\(/);
+ assert.match(script,/safeAgentSnapshot\(/);
+ assert.match(script,/function syncInstructionRecipient/);
+ assert.match(script,/function loadFounderMission/);
+});
+
+
+test('G4 founder command starts bounded safe work on the same submission, with scheduled fallback',async()=>{
+ const script=await readFile(new URL('./founder-console.mjs',import.meta.url),'utf8');
+ const flow=await readFile(new URL('./lib/founder-mission-flow.mjs',import.meta.url),'utf8');
+ assert.match(script,/await runFounderMissionSafe\(\{missionId:id,request:fetch\}\)/);
+ assert.match(script,/the existing hourly scheduler will continue permitted work/);
+ assert.match(flow,/operation:'RUN_SAFE',missionId,maxHandoffs:4/);
+ assert.match(flow,/businessEffectsExecuted:false/);
+});

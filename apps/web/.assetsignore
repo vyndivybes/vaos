@@ -15,6 +15,7 @@ lib/*
 !lib/g6-conversation.mjs
 !lib/business-advice.mjs
 !lib/voice-readback.mjs
+!lib/voice-acknowledgement.mjs
 !lib/adaptive-read-planner.mjs
 !lib/microphone-diagnostics.mjs
 README.md

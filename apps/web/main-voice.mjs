@@ -8,6 +8,7 @@ import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone-diagnostics.mjs';
 import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
+import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
@@ -208,10 +209,15 @@ function init(){
   wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test'),replyLanguage=$('vaos-voice-language'),adaptive=$('vaos-voice-adaptive'),micCheck=$('vaos-voice-mic-check'),micDiagnostic=$('vaos-voice-mic-diagnostic');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
  let localSpeech=null,interruption=null;
- let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown';
+ let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
  const g5Timing=createG5ResponseTiming();
  const conversation=createG6Conversation();
- const setStatus=message=>{note.textContent=message;};
+ const setStatus=message=>{
+  note.textContent=message;
+  if(root.dataset)root.dataset.voiceState=/\blistening|speech detected/i.test(message)?'listening'
+   :/\bspeaking|speech playback/i.test(message)?'speaking'
+   :/\bretriev|\bchecking|\brequesting|\bthinking/i.test(message)?'working':'ready';
+ };
  const player=createVoiceReadback({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
   language:()=>({ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'}[answerLanguage]||'en-US'),
@@ -219,6 +225,11 @@ function init(){
     if(mode==='SPEAKING'){setStatus('VAOS is speaking.');startInterruption();}},
   onError:code=>setStatus('Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
   onFinished:mode=>{stopInterruption();if(mode==='FINISHED')setStatus('Spoken answer completed.');wake?.resume();state();}
+ });
+ const acknowledgement=createVoiceAcknowledgement({
+  synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
+  outputBusy:()=>player.active(),
+  onError:()=>setStatus('Acknowledgement audio unavailable. The evidence request continues; read the screen.')
  });
  const readiness=()=>getMicrophoneReadiness({capability,
   recognitionAvailable:typeof SpeechRecognition==='function',
@@ -266,6 +277,7 @@ function init(){
  function startInterruption(){ondeviceBarge.start();}
 
  const cancel=()=>{
+  acknowledgement.cancel();
   stopInterruption();
   const active=recognition;recognition=null;
   if(active)try{active.abort()}catch{}
@@ -275,6 +287,7 @@ function init(){
  };
  const speakAnswer=()=>{
   if(!voiceEnabled||!lastAnswer)return false;
+  acknowledgement.cancel();
   wake?.pause();
   stopInterruption();
   const started=player.speak(spokenAnswer||lastAnswer);
@@ -306,6 +319,7 @@ function init(){
    const t=sanitizeVoiceTranscript(extractFinalTranscript(event));
    if(!t){setStatus('No complete spoken question was recognized. Nothing was submitted.');return;}
    input.value=t;
+   voiceRequestPending=true;
    setStatus('Recognized your question. Requesting one read-only VAOS answer…');
    recognition=null;
    try{active.stop?.();}catch{}
@@ -339,16 +353,20 @@ function init(){
   // Stop while the mic, hands-free or source request is active still ends
   // the session, invalidates late callbacks and clears conversation context.
   wake?.disable('Hey VAOS switched off. Microphone stopped.');
+  voiceRequestPending=false;
   cancel();conversation.clear();setStatus('Stopped. No business actions authorized. Conversation context cleared.');
  });
  speech.addEventListener('click',speakAnswer);
  ask.addEventListener('click',async()=>{
   if(busy)return;
+  const requestCameFromVoice=voiceRequestPending;
+  voiceRequestPending=false;
   const resolved=conversation.resolve(input.value);
   const intent=classifyDashboardQuestion(resolved.question);
   if(intent.kind==='DENY'){conversation.clear();setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
   cancel();busy=true;lastAnswer='';spokenAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
+  if(requestCameFromVoice)acknowledgement.announce('SOURCE_REQUESTED',{enabled:voiceEnabled&&speakToggle?.checked===true});
   const requestedAt=performance.now();
   const abort=new AbortController();controller=abort;
   const timer=setTimeout(()=>abort.abort(),25000);
@@ -434,7 +452,7 @@ function init(){
   acceptDirectQuestion:q=>isDirectBusinessQuestion(q)||conversation.canFollowUp(q),
   onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey VAOS.');},
   onDraft:q=>{input.value=q;state();},
-  onConfirm:q=>{input.value=q;ask.click();},
+  onConfirm:q=>{input.value=q;voiceRequestPending=true;ask.click();},
   onStatus:message=>{if(wakeStatus)wakeStatus.textContent=message;},
   onChange:info=>{
    if(wakeToggle){wakeToggle.setAttribute('aria-pressed',String(info.enabled));wakeToggle.textContent=info.enabled?'■ Stop hands-free':'◉ Enable hands-free voice';}

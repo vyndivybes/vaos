@@ -631,3 +631,20 @@
  .workspace-body .va-dashboard-fold,.workspace-body .va-metric-dash {padding:14px}
  .workspace-body .va-evidence-svg {min-height:125px}
 }
+
+
+/* JARVIS voice phase glow. Purely presentational; the main voice status is authoritative. */
+#vaos-main-voice[data-voice-state="listening"] #vaos-wake-indicator,
+#vaos-main-voice[data-voice-state="listening"] #vaos-voice-mic {
+ box-shadow:0 0 0 5px rgba(196,157,79,.14),0 0 24px rgba(196,157,79,.28);
+ animation:vaos-voice-breathe 1.2s ease-in-out infinite alternate;
+}
+#vaos-main-voice[data-voice-state="working"] #vaos-voice-status {
+ border-left:3px solid #c49d4f;
+ padding-left:12px;
+}
+#vaos-main-voice[data-voice-state="speaking"] #vaos-wake-indicator {
+ box-shadow:0 0 18px rgba(196,157,79,.26);
+}
+@keyframes vaos-voice-breathe{to{filter:brightness(1.18);transform:scale(1.015)}}
+@media(prefers-reduced-motion:reduce){#vaos-main-voice [id^="vaos-voice-"],#vaos-main-voice #vaos-wake-indicator{animation:none!important}}

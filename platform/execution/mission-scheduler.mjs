@@ -15,7 +15,8 @@ export async function runScheduledMissionSweep({
   service,
   maxMissions = 4,
   maxHandoffs = 4,
-  createConsumer = ({ service: instance }) => createMissionConsumer({ service: instance }),
+  readDepartment,
+  createConsumer = ({ service: instance, readDepartment: reader }) => createMissionConsumer({ service: instance, readDepartment: reader }),
 } = {}) {
   if (!service || typeof service.listRunnableMissions !== 'function'
       || typeof service.dispatchMission !== 'function') {
@@ -32,7 +33,7 @@ export async function runScheduledMissionSweep({
   if (new Set(discovered.missionIds).size !== discovered.missionIds.length) {
     throw new Error('MISSION_QUEUE_DUPLICATE');
   }
-  const consumer = createConsumer({ service });
+  const consumer = createConsumer({ service, readDepartment });
   let processed = 0, submitted = 0, verified = 0, returned = 0, preparedForClosure = 0;
   const failures = [];
 

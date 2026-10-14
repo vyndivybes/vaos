@@ -11,6 +11,7 @@ lib/*
 !lib/dashboard-charts.mjs
 !lib/hey-vaos.mjs
 !lib/voice-intelligence.mjs
+!lib/g5-response-timing.mjs
 !lib/business-advice.mjs
 !lib/voice-readback.mjs
 !lib/adaptive-read-planner.mjs

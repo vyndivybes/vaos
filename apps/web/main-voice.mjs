@@ -130,6 +130,26 @@ export function formatReadOnlyResult(kind,data){
    spokenAnswer:typeof data.spokenAnswer==='string'&&data.spokenAnswer.length>=20
     &&data.spokenAnswer.length<=450?data.spokenAnswer:data.answer.slice(0,320)};
  }
+ if(kind==='INSIGHT'&&data?.sourceSystem==='VAOS_POLICY'){
+  if(data?.schemaVersion!=='VAOS_GOVERNANCE_EXPLANATION_V1'
+    ||data.readOnly!==true||data.actionAuthorized!==false
+    ||data.status!=='OBSERVED'||typeof data.answer!=='string'
+    ||data.answer.length<30||data.answer.length>2500)
+   throw Error('VOICE_INSIGHT_UNVERIFIED');
+  return {status:'OBSERVED',answer:data.answer,sources:[],language:'en'};
+ }
+ if(kind==='INSIGHT'&&data?.sourceSystem==='VAOS_MISSION_CONTROL'){
+  if(data.readOnly!==true||data.actionAuthorized!==false
+   ||data.businessEffectsExecuted!==false
+   ||!['OBSERVED','HOLD'].includes(data.status)
+   ||typeof data.answer!=='string'||data.answer.length<35||data.answer.length>4000
+   ||(data.status==='OBSERVED'&&
+    (data.schemaVersion!=='VAOS_FOUNDER_MISSION_ANSWER_V1'
+    ||data.sourceAuthority!=='vaos_founder_mission_answer_summary')))
+   throw Error('VOICE_INSIGHT_UNVERIFIED');
+  return {status:data.status,answer:data.answer,sources:[],language:'en'};
+ }
+
  if(kind==='INSIGHT'){
   if(data?.readOnly!==true||data.actionAuthorized!==false
    ||!['VAOS_INTELLIGENCE','VYNDI_OS','ENGINEERING_FEDERATION'].includes(data.sourceSystem)

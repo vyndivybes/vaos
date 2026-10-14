@@ -18,6 +18,10 @@ export function selectDataAgentSources(question){
  if(plan.state==='DENIED')return {status:'DENIED',domains:[],workforce:false};
  if(DIGITAL.test(question))return {status:'PLANNED',domains:[],workforce:true};
  let domains=plan.domains.filter(x=>QUALIFIED.has(x));
+ // Founders routinely say "finance", while the shared planner recognises
+ // "financial" or "cash"; retain the existing source contract without widening tools.
+ if(/\bfinance\b/i.test(question)&&!domains.includes('finance'))
+  domains=['finance',...domains];
  if(!domains.length&&GROUP.test(question))domains=['finance','commercial','procurement','production'];
  if(!domains.length)return {status:'UNSUPPORTED',domains:[],workforce:false};
  return {status:'PLANNED',domains:domains.slice(0,4),workforce:false,

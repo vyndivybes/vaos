@@ -17,3 +17,11 @@
 .data-agent-panel th{background:#f2f7fb}
 .data-agent-panel ul{padding-left:22px}
 @media(max-width:720px){.data-agent-panel pre{font-size:14px}.data-agent-panel table{font-size:13px}}
+
+.data-agent-panel .data-agent-investigation{border:1px solid #bfd6e5;border-radius:14px;background:#f8fbfd;margin:18px 0;padding:14px 16px}
+.data-agent-panel .data-agent-investigation summary{font-size:18px;font-weight:750;cursor:pointer;color:#1f5269}
+.data-agent-panel .data-agent-finding{padding:16px;margin:12px 0;background:#fff;border:1px solid #d5e3ed;border-left:4px solid #397f87;border-radius:10px}
+.data-agent-panel .data-agent-finding h4{font-size:17px;line-height:1.4;margin:0 0 9px;color:#20475c}
+.data-agent-panel .data-agent-finding p{margin:8px 0;font-size:15px;color:#2c445a;overflow-wrap:anywhere}
+.data-agent-panel .mission-form{align-items:center}
+.data-agent-panel .mission-form select{width:auto;min-width:190px}

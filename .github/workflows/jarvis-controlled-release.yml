@@ -10,6 +10,8 @@ on:
       - 'apps/web/api/jarvis-data-agent.mjs'
       - 'apps/web/api/jarvis-data-agent.test.mjs'
       - 'apps/web/lib/data-agent-report.mjs'
+      - 'apps/web/lib/data-agent-investigation.mjs'
+      - 'apps/web/lib/data-agent-investigation.test.mjs'
       - 'apps/web/jarvis-data-agent.mjs'
       - 'apps/web/jarvis-data-agent.css'
       - 'apps/web/founder-console.html'

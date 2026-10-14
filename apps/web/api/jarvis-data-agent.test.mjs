@@ -107,3 +107,49 @@ test('metric reporting refuses unqualified values and does not sum incompatible 
  assert.equal(report.sourceCoverage.observed,1);
  assert.equal(report.holds[0],'PRODUCTION_SOURCE_UNAVAILABLE');
 });
+
+test('delay question investigates four signed production relationships and returns causes as evidence leads only',async()=>{
+ const calls=[],data={
+  'PROCUREMENT.OBSERVE_SHORTAGE':{sourceAuthority:'getConfiguredDemandShortages',
+   data:{records:[{sku:'HIDDEN-SKU',unit:'pcs',sales_order_id:'HIDDEN-ORDER',
+    bom_revision:'BOM-2',shortage_quantity:1,required_quantity:2}]}},
+  'INVENTORY.OBSERVE_STOCK':{sourceAuthority:'getAuthoritativeInventory',
+   data:{records:[{sku:'HIDDEN-SKU',unit:'kg',quantity_balance:3}]}},
+  'PRODUCTION.OBSERVE_WIP':{sourceAuthority:'getProductionJobCards',
+   data:{records:[{id:'HIDDEN-JOB',status:'released',units:1,sales_order_id:'HIDDEN-ORDER',
+    bom_revision:'BOM-1',approved_at:null}]}},
+  'ENGINEERING.OBSERVE_CONFIGURATION':{sourceAuthority:'getEngineeringChangeControlState',
+   data:{baselines:[{id:'HIDDEN-BASE',status:'released',revision_code:'REV1',
+    bom_revision:null}],changeOrders:[]}}
+ };
+ const handler=createJarvisDataAgentHandler({getReader:()=>({execute:async input=>{
+  calls.push(input);return {...data[input.actionType],actionType:input.actionType};
+ }})});
+ const {x,res}=capture();await handler(request('Why is production delayed?'),res);
+ assert.equal(x.status,200);
+ assert.deepEqual(calls.map(x=>x.actionType),[
+  'PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK',
+  'PRODUCTION.OBSERVE_WIP','ENGINEERING.OBSERVE_CONFIGURATION']);
+ assert.ok(calls.every(x=>x.payload.limit===50));
+ assert.equal(x.body.data.investigation?.status,'BOUNDED_EVIDENCE');
+ assert.equal(x.body.data.investigation.causalProofEstablished,false);
+ assert.equal(x.body.data.investigation.findings.length>=4,true);
+ assert.equal(x.body.data.readOnly,true);
+ assert.equal(x.body.data.forecastQualified,false);
+ for(const hidden of ['HIDDEN-SKU','HIDDEN-ORDER','HIDDEN-BASE','HIDDEN-JOB'])
+  assert.ok(!JSON.stringify(x.body).includes(hidden));
+});
+test('unavailable engineering authority holds investigation and does not invent explanations',async()=>{
+ const handler=createJarvisDataAgentHandler({getReader:()=>({execute:async request=>{
+  if(request.actionType==='ENGINEERING.OBSERVE_CONFIGURATION')throw Error('offline');
+  const map={'PROCUREMENT.OBSERVE_SHORTAGE':'getConfiguredDemandShortages',
+   'INVENTORY.OBSERVE_STOCK':'getAuthoritativeInventory',
+   'PRODUCTION.OBSERVE_WIP':'getProductionJobCards'};
+  return {actionType:request.actionType,sourceAuthority:map[request.actionType],data:{records:[]}};
+ }})});
+ const {x,res}=capture();await handler(request('Investigate production blockers'),res);
+ assert.equal(x.status,200);
+ assert.equal(x.body.data.investigation.status,'SOURCE_HOLD');
+ assert.equal(x.body.data.investigation.findings.length,0);
+ assert.ok(x.body.data.investigation.holds.includes('ENGINEERING_SOURCE_HOLD'));
+});

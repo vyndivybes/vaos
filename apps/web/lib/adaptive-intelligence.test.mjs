@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {validateAdaptivePlan,planAdaptiveReads,formatAdaptiveEvidence,buildAdaptiveFallback} from './adaptive-intelligence.mjs';
+import {validateAdaptivePlan,planAdaptiveReads,formatAdaptiveEvidence,buildAdaptiveFallback,isWeatherQuestion} from './adaptive-intelligence.mjs';
 import {createAdaptiveIntelligenceHandler} from '../api/adaptive-intelligence.mjs';
 import {VAOS_WORKFORCE_AGENT_IDS,VAOS_WORKFORCE_QUALIFICATION_FLOOR} from '../../../platform/runtime/vaos-eight-operating-model.mjs';
 
@@ -25,6 +25,34 @@ test('unsupported current-weather requests cannot be answered from supplier or f
   assert.doesNotMatch(d.answer,/47 shortage|4 production|source domains observed/);
  }
  assert.equal(reads,0);assert.equal(claims,0);
+});
+
+test('G5 holds live meteorology synonyms without contaminating technical temperature or commercial forecasts',async()=>{
+ let reads=0,claims=0;
+ const h=createAdaptiveIntelligenceHandler({getReader:()=>{reads++;throw Error('UNRELATED_READ')},
+  getEngineering:()=>{reads++;throw Error('UNRELATED_READ')},
+  claim:()=>{claims++;return {allowed:true}},
+  plan:async()=>({tools:['PROCUREMENT','PRODUCTION'],focus:'supplier factory',mode:'MODEL_PLANNED'})});
+ for(const question of [
+  'What is the current temperature at our supplier factory?',
+  'Is it raining at the production warehouse today?',
+  'What is the outdoor humidity at the material storage site?',
+  'Will there be a storm near the factory tomorrow?',
+ ]){
+  assert.equal(isWeatherQuestion(question),true,question);
+  const {state,res}=collect();await h(req(question),res);
+  assert.equal(state.status,200,question);
+  assert.equal(state.payload.data.status,'HOLD',question);
+  assert.equal(state.payload.data.diagnostics.modelAvailability,'UNSUPPORTED_QUESTION',question);
+  assert.equal(state.payload.data.modelCalls,0,question);
+  assert.equal(state.payload.data.executionCount,0,question);
+  assert.equal(state.payload.data.actionAuthorized,false,question);
+ }
+ assert.equal(reads,0);assert.equal(claims,0);
+ for(const question of [
+  'What is the curing temperature of the carbon composite resin?',
+  'Forecast production capacity from approved job cards next month',
+ ]) assert.equal(isWeatherQuestion(question),false,question);
 });
 
 test('digital employee qualification reads the canonical register once without HR, engineering or model planning',async()=>{

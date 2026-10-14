@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {selectDataAgentSources} from './data-agent-report.mjs';
 import {buildDataAgentInvestigation} from './data-agent-investigation.mjs';
+import {buildDataAgentReport} from './data-agent-report.mjs';
 
 const records={
  procurement:{records:[
@@ -128,4 +129,20 @@ test('hold states retain prelaunch context without inventing root causes or reco
  assert.equal(report.operatingContext.actualProductionIncidentConfirmed,false);
  assert.equal(report.decisionBrief.priority,'RESTORE_SOURCE_OBSERVATIONS');
  assert.equal(report.findings.length,0);
+});
+
+test('charts compare number of findings rather than incomparable or overlapping record counts',()=>{
+ const report=buildDataAgentInvestigation({question:'Why is production delayed?',observations:observed});
+ assert.match(report.chart.title,/types of findings/i);
+ assert.ok(report.chart.rows.every(x=>x.value<=report.findings.length));
+ assert.equal(report.chart.unit,'finding_types');
+ const answer=buildDataAgentReport({question:'Why is production delayed?',
+  observations:observed.map(({domain,status})=>({domain,status,authority:'signed-gateway',
+   count:domain==='engineering'?1:2})),investigation:report});
+ assert.match(answer.answer,/FOUNDER BRIEF.*PRELAUNCH/s);
+ assert.match(answer.answer,/Next preparation step/i);
+ assert.equal(answer.readOnly,true);
+ assert.equal(answer.forecastQualified,false);
+ assert.deepEqual(answer.investigation.decisionBrief,report.decisionBrief);
+ assert.match(answer.answer,/\[1\]/);
 });

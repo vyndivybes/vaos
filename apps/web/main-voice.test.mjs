@@ -289,3 +289,18 @@ test('G5 two-week question creates a specific bounded prelaunch action plan with
  assert.match(result.answer,/Toray/i);
  assert.match(result.answer,/no employee was dispatched/i);
 });
+
+
+test('G5 screenshot questions bypass adaptive HOLD and reach authoritative read-only endpoints',()=>{
+ const samples=[
+  ['Has the proposed Torah pre-break being validated for production','engineering'],
+  ['Which assigned Mission remain unfinished and why','missions'],
+  ['Can you approve a supplier payment yourself explain your limits','governance'],
+ ];
+ for(const [question,domain] of samples){
+  const intent=classifyDashboardQuestion(question);
+  assert.equal(intent.kind,'INSIGHT',question);
+  assert.equal(intent.domain,domain,question);
+  assert.equal(shouldUseAdaptiveAnswer(intent,true),false,question);
+ }
+});

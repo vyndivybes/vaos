@@ -25,7 +25,7 @@ test('no unaudited financial metrics are synthesized and malformed data fails cl
  assert.throws(()=>formatReadOnlyResult('COMMERCIAL',{answer:'fake revenue ₹100000'}));
  assert.throws(()=>formatReadOnlyResult('COMMERCIAL',{readOnly:true,actionAuthorized:true,sourceSystem:'VYNDI_OS',answer:'fake'}));
  assert.equal(formatReadOnlyResult('EVIDENCE',{answer:'not verified',sources:[]}).status,'HOLD');
- assert.equal(formatReadOnlyResult('INSIGHT',{sourceSystem:'VYNDI_OS',status:'OBSERVED',answer:'1 job card',readOnly:true,actionAuthorized:false}).status,'OBSERVED');
+ assert.equal(formatReadOnlyResult('INSIGHT',{sourceSystem:'VYNDI_OS',status:'OBSERVED',answer:'1 job card',readOnly:true,actionAuthorized:false,sourceAuthority:'getProductionJobCards',recordsObserved:1,sourceWindow:'BOUNDED_SELECTED_ROWS',dataCompleteness:'BOUNDED_SOURCE_WINDOW',observedAt:'2026-10-15T08:30:00.000Z'}).status,'OBSERVED');
  assert.throws(()=>formatReadOnlyResult('INSIGHT',{sourceSystem:'VYNDI_OS',status:'OBSERVED',answer:'fictitious data',actionAuthorized:true}));
 });
 test('main workspace voice region and ops navigation surfaces exist and use common UX skin',async()=>{

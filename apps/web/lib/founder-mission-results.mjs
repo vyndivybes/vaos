@@ -109,7 +109,7 @@ export async function loadFounderMissionResults({snapshot,getWorkEvidence}={}){
   const verified=handoff.status==='COMPLETED'&&job.status==='COMPLETED'
     &&nonempty(checker)&&checker!==owner&&evidenceId===evidence?.id
     &&refs.refs.includes('REVIEWED:'+evidenceId);
-  const state=persistedStatus(handoff,{verified:!!verified&&!!projected});
+  const state=persistedStatus(handoff,projected?{verified:!!verified}:null);
   return {...base,checkerAgentId:nonempty(checker),
    resultStatus:handoff.status==='COMPLETED'&&!verified
      ?'VERIFICATION_CHAIN_INCOMPLETE':state,

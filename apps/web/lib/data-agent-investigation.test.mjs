@@ -146,3 +146,25 @@ test('charts compare number of findings rather than incomparable or overlapping 
  assert.deepEqual(answer.investigation.decisionBrief,report.decisionBrief);
  assert.match(answer.answer,/\[1\]/);
 });
+
+test('founder brief is concise and provides preparation steps without treating draft engineering as approved',()=>{
+ const report=buildDataAgentInvestigation({question:'Why is production delayed?',observations:observed});
+ assert.ok(report.decisionBrief.explanation);
+ assert.doesNotMatch(report.decisionBrief.explanation,/recorded recorded/i);
+ assert.equal(report.decisionBrief.priority,'RECONCILE_SOURCE_CONFLICT');
+ assert.ok(report.decisionBrief.preparationSteps.length>=2);
+ assert.ok(report.decisionBrief.preparationSteps.every(x=>typeof x==='string'&&x.length>20));
+ assert.match(report.decisionBrief.preparationSteps.join(' '),/approved|revision|engineering/i);
+ assert.equal(report.decisionBrief.recordWritePermitted,false);
+});
+test('prelaunch missing BOM has a safe checklist rather than prompting fake engineering release',()=>{
+ const noConflict=observed.map(o=>
+  o.domain==='procurement'?{...o,data:{records:[]}}:
+  o.domain==='inventory'?{...o,data:{records:[]}}:
+  o.domain==='production'?{...o,data:{records:[]}}:o);
+ const result=buildDataAgentInvestigation({question:'Why is production delayed?',observations:noConflict});
+ assert.equal(result.decisionBrief.priority,'COMPLETE_RELEASE_TRACE');
+ assert.equal(result.decisionBrief.recordWritePermitted,false);
+ assert.match(result.decisionBrief.preparationSteps.join(' '),/not.*(invent|assume)|without.*approv|draft/i);
+ assert.match(result.decisionBrief.preparationSteps.join(' '),/VEDM/i);
+});

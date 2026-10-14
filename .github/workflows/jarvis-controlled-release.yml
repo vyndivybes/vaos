@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'apps/web/api/adaptive-intelligence.mjs'
+      - 'apps/web/lib/adaptive-intelligence.mjs'
       - 'apps/web/main-voice.mjs'
       - '.github/workflows/jarvis-controlled-release.yml'
   workflow_dispatch:

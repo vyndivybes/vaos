@@ -4,6 +4,7 @@ import { getEightAgentOperatingService } from '../lib/operating-provider.mjs';
 import { createMissionConsumer } from '../../../platform/execution/mission-consumer.mjs';
 import { VAOS_JOB_CATALOG, routeJob } from '../../../platform/runtime/vaos-eight-operating-model.mjs';
 import { getFounderInboxStore } from '../lib/founder-inbox-provider.mjs';
+import { readMissionDepartment } from '../lib/mission-department-reader.mjs';
 
 const JOBS = new Set(Object.values(VAOS_JOB_CATALOG).flat().map((job) => job.actionType));
 const ID_PATTERN = /^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/;
@@ -123,7 +124,7 @@ function validDispatch(body) {
 
 export function createMissionsHandler({
   getService = getEightAgentOperatingService,
-  createConsumer = ({ service }) => createMissionConsumer({ service }),
+  createConsumer = ({ service, readDepartment }) => createMissionConsumer({ service, readDepartment }),
   getInboxStore = getFounderInboxStore,
 } = {}) {
   if (typeof getService !== 'function') throw new Error('MISSION_SERVICE_FACTORY_REQUIRED');
@@ -259,7 +260,7 @@ export function createMissionsHandler({
       ))) {
       try {
         const service = getService(req.env);
-        const consumer = createConsumer({ service });
+        const consumer = createConsumer({ service, readDepartment: input => readMissionDepartment({ ...input, env: req.env }) });
         const options = { maxHandoffs: body.maxHandoffs ?? 4 };
         const consumed = await consumer.consume(body.missionId, options);
         const reviewed = await consumer.review(body.missionId, options);

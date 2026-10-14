@@ -56,3 +56,14 @@ test('Founder Command creates and assigns recorded instructions through the exis
  assert.match(script, /businessEffectsExecuted!==false/);
  assert.doesNotMatch(script, /\/api\/missions.*RUN_SAFE/);
 });
+
+
+test('Founder mission lookup displays persisted employee evidence and recovery from the existing mission route',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const script=await readFile(new URL('./founder-console.mjs',import.meta.url),'utf8');
+ assert.match(script,/view=results/);
+ assert.match(script,/RECOVERABLE|recoverable/);
+ assert.match(script,/VAOS_FOUNDER_MISSION_RESULTS_V1/);
+ assert.match(script,/formatMissionSnapshotSpokenPreview\(record\.snapshot,id\)/);
+ assert.doesNotMatch(script,/\/api\/new-mission-results-screen/);
+});

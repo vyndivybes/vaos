@@ -50,6 +50,11 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader}={}){
     }catch{/* Preserve the original English source-backed answer on failure. */}
    }
    return res.status(200).json({data:{...answer,
+    // The signed read contract is the source authority. The voice formatter
+    // supplies actionType, which is a routing identifier, not a citation.
+    sourceAuthority:contract.authority,
+    recordsObserved:counted.recordsObserved,
+    sourceWindow:'BOUNDED_SELECTED_ROWS',
     readOnly:true,actionAuthorized:false,sourceSystem:'VYNDI_OS',
     observedAt:new Date().toISOString(),dataCompleteness:'BOUNDED_SOURCE_WINDOW'}});
   }catch(error){

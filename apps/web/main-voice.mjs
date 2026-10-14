@@ -1,5 +1,6 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
+import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-timing.mjs';
 import {isAdvisoryQuestion} from './lib/business-advice.mjs';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
@@ -10,6 +11,12 @@ import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './li
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
 const SALES=/\b(sales|revenue|orders?|invoices?|customers?|deals?|pipeline|receivables?|quotations?)\b/i;
+const SIGNED_VYNDI_SOURCE_AUTHORITIES=new Set([
+ 'listSalesOrders','getConfiguredDemandShortages','getAuthoritativeInventory',
+ 'getProductionJobCards','getAssetMaintenanceState','getAccountingWorkbench',
+ 'listPeopleOfficeAuthority','getEngineeringChangeControlState',
+]);
+const G5_ISO_UTC=/^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 export function sanitizeVoiceTranscript(value){
  if(typeof value!=='string')return null;
  const s=value.trim().replace(/^(hey|hello|hi)\s+vaos\s*[,.:!?-]?\s*/i,'').trim();
@@ -27,6 +34,19 @@ export function classifyDashboardQuestion(value){
 /** Explicit hands-free opt-in supports read-only business questions directly.
  * Other speech (including background conversations) never submits a request.
  */
+/** G5: simple factual questions use one signed departmental read. Cross-source
+ * advice and canonical AI-workforce questions keep the existing adaptive path.
+ * This saves the founder's AI budget and avoids substituting model summaries
+ * for a directly available inventory, sales or finance observation.
+ */
+export function shouldUseAdaptiveAnswer(intent,selected){
+ if(selected!==true||!intent||intent.kind==='DENY'||intent.kind==='STARTUP')return false;
+ if(intent.kind==='ADVISORY'||['group','missions'].includes(intent.domain))return true;
+ if(/\b(?:weather|rain|temperature|snow|humidity|storm)\b/i.test(intent.question||''))return true;
+ return typeof intent.question==='string'
+  &&/\b(?:digital|ai|artificial intelligence)\s+(?:employees?|agents?|workforce)\b|\b(?:orchestrator|knowledge agent)\b/i.test(intent.question);
+}
+
 export function isDirectBusinessQuestion(value){
  const text=typeof value==='string'?value.trim():'';
  if(!/^(?:what|how|which|where|when|who|show|list|tell me|give me|do we|are there|is there|summarize|report)\b/i.test(text))return false;
@@ -112,6 +132,21 @@ export function formatReadOnlyResult(kind,data){
    ||typeof data.answer!=='string'||data.answer.length<8||data.answer.length>5000
    ||data.status==='OBSERVED'&&!['VYNDI_OS','ENGINEERING_FEDERATION'].includes(data.sourceSystem))
    throw Error('VOICE_INSIGHT_UNVERIFIED');
+  if(data.sourceSystem==='VYNDI_OS'&&data.status==='OBSERVED'){
+   // A signed selected-window observation is not a certified enterprise total.
+   if(!SIGNED_VYNDI_SOURCE_AUTHORITIES.has(data.sourceAuthority)
+      ||!Number.isSafeInteger(data.recordsObserved)||data.recordsObserved<0||data.recordsObserved>200
+      ||data.sourceWindow!=='BOUNDED_SELECTED_ROWS'
+      ||data.dataCompleteness!=='BOUNDED_SOURCE_WINDOW'
+      ||typeof data.observedAt!=='string'||!G5_ISO_UTC.test(data.observedAt)
+      ||!Number.isFinite(Date.parse(data.observedAt)))
+    throw Error('VOICE_INSIGHT_UNVERIFIED');
+   const provenance='SOURCE [1] VYNDI OS · '+data.sourceAuthority+
+    ' · '+data.recordsObserved+' selected rows (up to 100 per source collection) · observed '+data.observedAt+
+    '. This is not a complete business total or an independently qualified financial or engineering release.';
+   return {status:'OBSERVED',answer:(data.answer.slice(0,2600)+'\n\n'+provenance).slice(0,2900),
+    spokenAnswer:data.answer.slice(0,900),sources:[],language:['en','ta','ml','hi'].includes(data.language)?data.language:'en'};
+  }
   const refs=data.sourceSystem==='ENGINEERING_FEDERATION'&&Array.isArray(data.sources)
    ?data.sources.filter(x=>x&&typeof x.url==='string'
     &&/^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/[0-9a-f]{40}\//.test(x.url)).slice(0,6):[];
@@ -148,6 +183,7 @@ function init(){
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
  let localSpeech=null,interruption=null;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown';
+ const g5Timing=createG5ResponseTiming();
  const setStatus=message=>{note.textContent=message;};
  const player=createVoiceReadback({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
@@ -244,12 +280,13 @@ function init(){
   if(intent.kind==='DENY'){setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
   cancel();busy=true;lastAnswer='';spokenAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
+  const requestedAt=performance.now();
   const abort=new AbortController();controller=abort;
   const timer=setTimeout(()=>abort.abort(),25000);
   let speaking=false;
   try{
    const startup=intent.kind==='STARTUP';
-   const investigate=!startup&&adaptive?.checked===true;
+   const investigate=shouldUseAdaptiveAnswer(intent,adaptive?.checked);
    const route=startup?'/api/prelaunch-workforce':investigate?'/api/adaptive-intelligence?q='+encodeURIComponent(intent.question)+'&eval=v3-readonly&mode=jarvis-x'
     :intent.kind==='EVIDENCE'
     ?'/api/federated-knowledge?q='+encodeURIComponent(intent.question)
@@ -292,9 +329,12 @@ function init(){
     a.textContent=ref.repository+' · '+ref.path+(Number.isInteger(ref.line)?' : '+ref.line:'');sources.append(a);
    }
    const diagnostic=typeof data?.diagnosticCode==='string'&&/^[A-Z][A-Z_]{4,55}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
-   setStatus(investigate
+   const measured=g5Timing.record(Math.min(300000,Math.max(0,performance.now()-requestedAt)),
+     normalized.status==='OBSERVED'?'OBSERVED':'HOLD');
+   setStatus((investigate
     ?formatAdaptiveStatus(data)
-    :normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic);
+    :normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic)
+    +' · '+formatG5ResponseTiming(measured));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
    if(controller!==abort)return;
@@ -303,7 +343,9 @@ function init(){
    lastAnswer=expired?expiredText:'I could not retrieve a verified business answer. No records were changed.';
    spokenAnswer=lastAnswer;
    answer.textContent=lastAnswer;
-   setStatus(expired?'Request timed out. Try again or check source connections.':String(error?.message||'Read-only lookup unavailable.'));
+   const measured=g5Timing.record(Math.min(300000,Math.max(0,performance.now()-requestedAt)),'ERROR');
+   setStatus((expired?'Request timed out. Try again or check source connections.':
+    'Read-only lookup unavailable.')+' · '+formatG5ResponseTiming(measured));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
  });

@@ -78,3 +78,26 @@ test('unknown source row shape reports a qualification failure',async()=>{
  assert.equal(state.code,200);
  assert.equal(state.body.data.diagnosticCode,'VOICE_SOURCE_SCHEMA');
 });
+
+test('G5 observed numerical answer carries exact source authority and selected-window metadata, never a fabricated audited total',async()=>{
+ const h=createVoiceInsightHandler({getReader:()=>({execute:async job=>({
+  actionType:job.actionType,sourceAuthority:'getAuthoritativeInventory',
+  data:{records:[{id:'stock-a'},{id:'stock-b'}]},
+ })})});
+ const {state,res}=response();
+ await h(req('How many stock items are recorded?'),res);
+ assert.equal(state.code,200);
+ assert.equal(state.body.data.status,'OBSERVED');
+ assert.equal(state.body.data.sourceAuthority,'getAuthoritativeInventory');
+ assert.equal(state.body.data.recordsObserved,2);
+ assert.equal(state.body.data.sourceWindow,'BOUNDED_SELECTED_ROWS');
+ assert.match(state.body.data.observedAt,/^\d{4}-\d\d-\d\dT/);
+ assert.equal(state.body.data.dataCompleteness,'BOUNDED_SOURCE_WINDOW');
+ assert.doesNotMatch(state.body.data.answer,/2 total stock items|certified inventory|all inventory is accounted for/i);
+});
+test('G5 HOLD never carries stale source authority, numeric observation metadata or a fabricated receipt',async()=>{
+ const h=createVoiceInsightHandler({getReader:()=>({execute:async()=>{throw Error('unavailable');}})});
+ const {state,res}=response();await h(req('What is our stock position?'),res);
+ assert.equal(state.body.data.status,'HOLD');
+ for(const key of ['recordsObserved','sourceWindow','observedAt','sourceAuthority'])assert.equal(state.body.data[key],undefined);
+});

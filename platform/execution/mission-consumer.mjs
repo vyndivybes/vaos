@@ -279,6 +279,15 @@ export function createMissionConsumer({ service } = {}) {
           report,
         });
         const ref = evidenceRef(recorded.evidenceId);
+        // Submit only the exact immutable report read back from durable storage.
+        const persisted = await service.getWorkEvidence(ref);
+        if (persisted?.id !== ref || persisted.handoff_id !== handoff.id
+          || persisted.author_agent_id !== handoffOwner(handoff)
+          || !persisted.report || Object.keys(persisted.report).length !== Object.keys(report).length
+          || !Object.entries(report).every(([key, value]) => JSON.stringify(persisted.report[key]) === JSON.stringify(value))
+          || !verifyReadOnlyMissionAudit(persisted.report, refreshed.workPackages, handoffWorkPackage(handoff))) {
+          throw new Error('MISSION_EVIDENCE_READBACK_MISMATCH');
+        }
         await service.transitionHandoff({
           handoffId: handoff.id, expectedVersion: version,
           outcome: 'SUBMIT', byAgentId: handoffOwner(handoff), evidenceRefs: [ref],
@@ -305,7 +314,8 @@ export function createMissionConsumer({ service } = {}) {
           try { record = await service.getWorkEvidence(refs[0]); }
           catch { valid = false; }
         }
-        valid = valid && record?.handoff_id === handoff.id
+        valid = valid && record?.id === refs[0] && record?.handoff_id === handoff.id
+          && record?.author_agent_id === handoffOwner(handoff)
           && verifyReadOnlyMissionAudit(record.report, snap.workPackages, handoffWorkPackage(handoff));
         if (valid) {
           await service.transitionHandoff({

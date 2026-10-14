@@ -188,7 +188,7 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
   const second=requests.filter(s=>s.startsWith('/api/voice-insight?'));
   assert.equal(second.length,2);
   assert.match(decodeURIComponent(second[1]),/Which assigned missions remain unfinished and what blockers are recorded/);
-  assert.match(nodes['vaos-voice-status'].textContent,/G6 follow-up: fresh read-only source/i);
+  assert.match(nodes['vaos-voice-answer'].textContent,/Eight persisted missions/,'follow-up must show a grounded answer');
 
   nodes['vaos-voice-question'].value='And the latest result';
   await nodes['vaos-voice-ask'].click();

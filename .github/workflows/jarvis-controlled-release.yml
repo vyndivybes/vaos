@@ -6,6 +6,8 @@ on:
       - 'apps/web/api/adaptive-intelligence.mjs'
       - 'apps/web/lib/adaptive-intelligence.mjs'
       - 'apps/web/main-voice.mjs'
+      - 'apps/web/lib/g6-conversation.mjs'
+      - 'apps/web/lib/g6-conversation.test.mjs'
       - 'apps/web/api/voice-insight.mjs'
       - 'apps/web/lib/voice-intelligence.mjs'
       - 'apps/web/lib/engineering-knowledge.mjs'

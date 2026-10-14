@@ -1,7 +1,7 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
 import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-timing.mjs';
-import {createG6Conversation,classifyG6Interruption} from './lib/g6-conversation.mjs';
+import {createG6Conversation,createG6BargeInListener} from './lib/g6-conversation.mjs';
 import {isAdvisoryQuestion} from './lib/business-advice.mjs';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
@@ -231,32 +231,40 @@ function init(){
   if(wakeToggle)wakeToggle.disabled=!micState.mayListen;
   stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
   speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
- function stopInterruption(){const active=interruption;interruption=null;if(active){clearTimeout(active.timer);try{active.recognition.abort();}catch{}}}
- function startInterruption(){
-  if(interruption||localSpeech?.status!=='LOCAL_READY'||!wake?.isEnabled())return;
-  let r;try{r=new SpeechRecognition();if(!('processLocally' in r))return;r.processLocally=true;r.lang=localSpeech.locale;r.interimResults=false;r.continuous=false;}catch{return;}
-  const active={recognition:r,timer:setTimeout(()=>stopInterruption(),15000)};interruption=active;
-  r.onresult=e=>{
-   if(interruption!==active)return;
-   const result=classifyG6Interruption(extractFinalTranscript(e),question=>{
-    const resolved=conversation.resolve(question);
-    const candidate=classifyDashboardQuestion(resolved.question);
-    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported'
-     &&(conversation.canFollowUp(question)||isDirectBusinessQuestion(question));
-   });
-   if(result.kind==='IGNORE')return;
-   stopInterruption();player.cancel();
+ // One consented, local-only microphone at a time during synthesized speech.
+ // Re-arm bounded short windows on long replies while playback is active.
+ const ondeviceBarge=createG6BargeInListener({
+  RecognitionClass:SpeechRecognition,
+  getLocalLocale:()=>localSpeech?.status==='LOCAL_READY'?localSpeech.locale:null,
+  isSpeechActive:()=>player.active(),
+  isOptedIn:()=>wake?.isEnabled()===true&&document.visibilityState==='visible',
+  allowQuestion:question=>{
+   const resolved=conversation.resolve(question);
+   const candidate=classifyDashboardQuestion(resolved.question);
+   return candidate.kind!=='DENY'&&candidate.domain!=='unsupported'
+    &&(conversation.canFollowUp(question)||isDirectBusinessQuestion(question));
+  },
+  onDecision:result=>{
+   player.cancel();
    if(result.kind==='STOP'){
-    setStatus('Spoken interruption received. Playback stopped.');wake?.resume();state();return;
+    setStatus('Spoken interruption received. Playback stopped.');
+    wake?.resume();state();return;
    }
-   // Require an explicit "Hey VAOS" on-device utterance before a new request.
    input.value=result.question;
-   setStatus('Voice interrupted. Reading the new permitted question.');
+   setStatus('Voice interrupted. Retrieving a fresh read-only answer.');
    ask.click();
-  };
-  r.onend=()=>{if(interruption===active)stopInterruption();};r.onerror=()=>{if(interruption===active)stopInterruption();};
-  try{r.start();}catch{stopInterruption();}
- }
+  },
+  onActivity:activity=>{
+   if(wakeStatus&&wake?.isEnabled()){
+    if(activity==='SPEECH_START')wakeStatus.textContent='On-device voice detected during playback.';
+    if(activity==='SPEECH_END')wakeStatus.textContent='Voice ended; waiting for final transcript.';
+    if(activity==='LOCAL_UNAVAILABLE')wakeStatus.textContent='Local interruption unavailable. Use the mic or Stop control.';
+   }
+  },
+ });
+ function stopInterruption(){ondeviceBarge.stop();}
+ function startInterruption(){ondeviceBarge.start();}
+
  const cancel=()=>{
   stopInterruption();
   const active=recognition;recognition=null;
@@ -268,12 +276,14 @@ function init(){
  const speakAnswer=()=>{
   if(!voiceEnabled||!lastAnswer)return false;
   wake?.pause();
+  stopInterruption();
   const started=player.speak(spokenAnswer||lastAnswer);
   if(!started)wake?.resume();
   state();return started;
  };
  testSpeaker?.addEventListener('click',()=>{
   wake?.pause();
+  stopInterruption();
   const started=player.speak('VAOS speaker test. If you can hear this voice, your browser audio output is working.');
   if(!started)wake?.resume();
   state();
@@ -281,6 +291,7 @@ function init(){
  mic.addEventListener('click',async()=>{
   if(!voiceEnabled||!SpeechRecognition||recognition||busy)return;
   wake?.pause();
+  stopInterruption();
   player.cancel();
   const active=new SpeechRecognition();recognition=active;
   const language=replyLanguage?.value||'en';

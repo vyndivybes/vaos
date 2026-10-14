@@ -46,7 +46,7 @@ export function createWakeListener({
  RecognitionClass,isVisible=()=>true,validateQuestion=()=>true,acceptDirectQuestion=()=>false,
  onStatus=()=>{},onDraft=()=>{},onConfirm=()=>{},onChange=()=>{},onHeard=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
- clock=()=>Date.now(),
+ clock=()=>Date.now(),configureRecognition=()=>{},onInterim=()=>{},onActivity=()=>{},
 }={}){
  let enabled=false,paused=false,current=null,turn=initial(),generation=0,timer=null,restart=null;
  let starts=[],transientFailures=0;
@@ -73,12 +73,15 @@ export function createWakeListener({
   starts.push(now);
   let next;try{next=new RecognitionClass();}catch{disable('Microphone recognition is unavailable in this browser.');return;}
   current=next;
-  next.lang='en-IN';next.continuous=false;next.interimResults=false;next.maxAlternatives=1;
+  next.lang='en-IN';next.continuous=false;next.interimResults=true;next.maxAlternatives=1;
+  try{configureRecognition(next);}catch{disable('On-device wake recognition is unavailable. Use the microphone button or type your question.');return;}
+  next.onspeechstart=()=>onActivity('SPEECH_START');
+  next.onspeechend=()=>onActivity('SPEECH_END');
   const g=generation;
   next.onresult=event=>{
    if(current!==next||!enabled||paused||generation!==g||!isVisible())return;
    const transcript=extractFinalTranscript(event);
-   if(!transcript)return;
+   if(!transcript){const rows=event?.results;let text='';if(rows)for(let i=0;i<rows.length;i++)if(rows[i]?.isFinal!==true)text+=rows[i]?.[0]?.transcript||'';if(text)onInterim(text.slice(0,300));return;}
    const result=advanceWakeTurn(turn,transcript,validateQuestion,{acceptDirectQuestion});
    onHeard(result.event);
    turn=result.state;

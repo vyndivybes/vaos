@@ -20,8 +20,10 @@ test('explicit microphone click and recognized question dispatch one bounded rea
  const els=Object.fromEntries(names.map(n=>[n,el(n)]));
  const root={querySelector(s){return els[s.slice(1)]||null;}};
  class Recognition{
+  processLocally=false;
+  static async available(){return 'available';}
   constructor(){instances.push(this);}
-  start(){}
+  start(){this.started=true;}
   stop(){this.onend?.();}
   abort(){this.onend?.();}
  }
@@ -40,19 +42,20 @@ test('explicit microphone click and recognized question dispatch one bounded rea
  try{
   await import('./main-voice.mjs?microphone-acceptance-20261012');
   await new Promise(resolve=>setTimeout(resolve,0));
-  els['vaos-voice-mic'].click();
-  assert.equal(instances.length,1);
+  await els['vaos-voice-mic'].click();
+  assert.equal(instances.filter(r=>r.started).length,1);
   instances[0].onresult({results:[{isFinal:true,0:{transcript:'How many production job cards are recorded?'}}]});
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.filter(x=>String(x).startsWith('/api/voice-insight?')).length,1);
   assert.match(els['vaos-voice-answer'].textContent,/source is presently unavailable/i);
-  els['vaos-wake-toggle'].click();
-  assert.equal(instances.length,2);
-  instances[1].onresult({results:[{isFinal:true,0:{transcript:'Hey VAOS, what is our material shortage status?'}}]});
+  await els['vaos-wake-toggle'].click();
+  assert.equal(instances.filter(r=>r.started).length,2);
+  assert.equal(instances.at(-1).processLocally,true);
+  instances.at(-1).onresult({results:[{isFinal:true,0:{transcript:'Hey VAOS, what is our material shortage status?'}}]});
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.filter(x=>String(x).startsWith('/api/voice-insight?')).length,2);
   assert.match(els['vaos-voice-answer'].textContent,/source is presently unavailable/i);
-  assert.ok(instances.length>=3,'hands-free microphone should rearm after a completed question');
+  assert.ok(instances.filter(r=>r.started).length>=3,'hands-free microphone should rearm after a completed question');
   instances.at(-1).onresult({results:[{isFinal:true,0:{transcript:'What is our production status?'}}]});
   await new Promise(resolve=>setTimeout(resolve,0));
   assert.equal(requests.filter(x=>String(x).startsWith('/api/voice-insight?')).length,3,
@@ -97,3 +100,4 @@ test('disabled microphone shows an actionable diagnosis without requesting mic a
  assert.match(source,/mic\.disabled=!micState\.mayListen/);
  assert.doesNotMatch(source,/getUserMedia\(\{audio:true/);
 });
+

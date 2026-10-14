@@ -363,8 +363,20 @@ Deno.serve(async (req: Request) => {
       p_qualification_level: payload.qualificationLevel ?? null,
       p_evidence_refs: payload.evidenceRefs || [],
     }
+  } else if (operation === 'prelaunchRecovery') {
+    rpcName = 'vaos_prelaunch_recovery'
+    args = { p_server_key: serverKey, p_actor_email: payload.actorEmail }
+  } else if (operation === 'prelaunchOutput') {
+    rpcName = 'vaos_prelaunch_output'
+    args = { p_server_key: serverKey, p_actor_email: payload.actorEmail,
+      p_request_id: payload.requestId ?? null, p_request_sha256: payload.requestHash ?? null,
+      p_output: payload.output ?? null }
   } else if (operation === 'assessDigitalEmployeeQualification') {
-    if (payload.employeeId === 'project'
+    if (payload.employeeId === 'orchestrator'
+        && payload.targetLevel === 2
+        && payload.profileId === 'ORCHESTRATOR_Q2_COORDINATION_GOVERNANCE_V1') {
+      rpcName = 'vaos_assess_orchestrator_q2_qualification'
+    } else if (payload.employeeId === 'project'
         && payload.targetLevel === 2
         && payload.profileId === 'PROJECT_Q2_PROJECT_CONTROLS_V1') {
       rpcName = 'vaos_assess_project_q2_qualification'

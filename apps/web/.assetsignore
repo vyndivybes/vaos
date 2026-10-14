@@ -20,3 +20,6 @@ package.json
 vercel.json
 cloudflare-worker.mjs
 *.test.mjs
+!lib/local-speech.mjs
+!lib/engineering-mesh.mjs
+

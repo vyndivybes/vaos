@@ -37,6 +37,8 @@ import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
 import founderChat from './api/founder-chat.mjs';
 import jarvisMultimodal from './api/jarvis-multimodal.mjs';
+import prelaunchWorkforce from './api/prelaunch-workforce.mjs';
+import prelaunchRecovery from './api/prelaunch-recovery.mjs';
 import founderConversation from './api/founder-conversation.mjs';
 import voiceCapabilities from './api/voice-capabilities.mjs';
 import voiceDiscover from './api/voice-discover.mjs';
@@ -88,7 +90,9 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/activepieces-mcp/synthetic-repair': activepiecesMcp,
   '/api/activepieces-mcp/code-recovery': activepiecesMcp,
   '/api/activepieces-mcp/discovery-health': activepiecesMcp,
-  '/api/missions': missions,
+    '/api/missions': missions,
+    '/api/prelaunch-workforce': prelaunchWorkforce,
+    '/api/prelaunch-recovery': prelaunchRecovery,
   '/api/project-schedule': projectSchedule,
   '/api/windmill-runtime-status': windmillRuntimeStatus,
   '/api/windmill-scoped-run': windmillScopedRun,
@@ -143,7 +147,7 @@ function jsonError(status, code, message) {
 }
 
 function uncachedWorkspaceAsset(path, response) {
-  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html'].includes(path);
+  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
   const isWorkspaceStylesheet = path.endsWith('.css');
   if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;

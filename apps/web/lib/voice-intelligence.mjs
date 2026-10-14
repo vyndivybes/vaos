@@ -35,6 +35,17 @@ export const VOICE_DOMAIN_ACTIONS=Object.freeze({
 export function resolveVoiceIntent(question){
  const q=typeof question==='string'?question.trim():'';
  if(q.length<5||q.length>300||banned.test(q))return {domain:'unsupported',reason:'BLOCKED_OR_UNBOUNDED'};
+ const native=[
+  ['finance',/வரவு|செலவு|நிதி|பணம்|വരുമാനം|ചെലവ്|ധനം|वित्त|खर्च|पैसा|राजस्व/],
+  ['procurement',/கொள்முதல்|சப்ளையர்|பொருள் பற்றாக்குறை|വാങ്ങൽ|വിതരണക്കാര|सप्लायर|खरीद|कमी/],
+  ['inventory',/கையிருப்பு|சரக்கு|സ്റ്റോക്ക്|ഇൻവെന്ററി|स्टॉक|भंडार/],
+  ['production',/உற்பத்தி|வேலை அட்டை|ഉൽപ്പാദനം|നിർമ്മാണം|उत्पादन|निर्माण/],
+  ['engineering',/பொறியியல்|வடிவமைப்பு|എഞ്ചിനീയറിംഗ്|രൂപകൽപ്പന|इंजीनियरिंग|डिजाइन/],
+  ['people',/ஊழியர்|பணியாளர்|ജീവനക്കാർ|ജീവനക്കാരൻ|कर्मचारी|वेतन/],
+  ['commercial',/விற்பனை|வாடிக்கையாளர்|വിൽപ്പന|ഉപഭോക്താ|बिक्री|ग्राहक/],
+  ['maintenance',/பராமரிப்பு|അറ്റകുറ്റ|പരിപാലനം|रखरखाव/],
+ ];
+ const match=native.find(([,pattern])=>pattern.test(q));if(match)return {domain:match[0],reason:'NATIVE_LANGUAGE_DOMAIN_MATCH'};
  // A request for revenue/profit takes precedence over the group selector;
  // financial consolidation is still a HOLD even if a single ledger is readable.
  if(/\b(group|all divisions|across divisions|whole company|consolidat)\b/i.test(q))

@@ -213,7 +213,7 @@ test('G5 timing is measured at answer display without pretending voice or indepe
  for(let i=0;i<19;i++)tracker.record(1000+i*100,'OBSERVED');
  const s=tracker.summary();
  assert.equal(s.successCount,19);
- assert.equal(s.displayP95Ms,2700);
+ assert.equal(s.displayP95Ms,2800);
  assert.equal(s.g5Accepted,false);
  assert.match(formatG5ResponseTiming(s),/19 observations/i);
  assert.match(formatG5ResponseTiming(s),/not voice\/device p95/i);

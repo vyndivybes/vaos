@@ -14,6 +14,8 @@ if(form){
  const briefHeading=$('data-agent-brief-heading');
  const briefExplanation=$('data-agent-brief-explanation');
  const briefAction=$('data-agent-brief-action');
+ const briefSteps=$('data-agent-brief-steps');
+ const technical=$('data-agent-technical');
  const people=$('data-agent-employees'),limitations=$('data-agent-limitations');
  let latest=null;
  const add=(parent,value,tag='li')=>{
@@ -37,7 +39,8 @@ if(form){
   status.textContent='Reading authorized sources…';latest=null;
   answer.textContent='';evidence.replaceChildren();graph.replaceChildren();
   people.replaceChildren();limitations.replaceChildren();findings.replaceChildren();
-  investigation.hidden=true;brief.hidden=true;focus.value='sources';
+  investigation.hidden=true;brief.hidden=true;briefSteps.replaceChildren();
+  technical.open=true;focus.value='sources';
   const submit=form.querySelector('button[type=submit]');submit.disabled=true;
   try{
    const response=await fetch('/api/jarvis-data-agent?q='+encodeURIComponent(q),{
@@ -76,6 +79,9 @@ if(form){
      briefHeading.textContent=result.decisionBrief.headline;
      briefExplanation.textContent=result.decisionBrief.explanation;
      briefAction.textContent=result.decisionBrief.nextStep;
+     for(const step of result.decisionBrief.preparationSteps||[])
+      add(briefSteps,step);
+     technical.open=false;
     }
     findingStatus.textContent=result.summary;
     focus.value='investigation';

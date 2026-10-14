@@ -82,7 +82,7 @@ export function buildEngineeringFinding({
   'A production job-card count is not evidence of prepreg validation.'
  ]:bomQuestion?[
   'BOM / PROCUREMENT AUTHORITY — Preliminary supplier research, draft RFQs, quotations and lead-time comparisons can be prepared without a released manufacturing BOM.',
-  'Issuing production purchase orders, calculating approved material quantities or authorizing build/production release from a proposed BOM is not permitted through this read-only workflow. Released BOM, approved engineering/material inputs and governed purchasing authorization remain prerequisites.',
+  'Issuing production purchase orders or calculating approved material quantities from a proposed BOM is not permitted. JARVIS cannot authorize production release without a released BOM and engineering approval. Released BOM, approved engineering/material inputs and governed purchasing authorization remain prerequisites.',
   'A shortage-line count does not certify the purchase quantity or authorize procurement.'
  ]:[];
 

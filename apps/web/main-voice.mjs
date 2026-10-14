@@ -1,6 +1,7 @@
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
 import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-timing.mjs';
+import {createG6Conversation,classifyG6Interruption} from './lib/g6-conversation.mjs';
 import {isAdvisoryQuestion} from './lib/business-advice.mjs';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
@@ -209,6 +210,7 @@ function init(){
  let localSpeech=null,interruption=null;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown';
  const g5Timing=createG5ResponseTiming();
+ const conversation=createG6Conversation();
  const setStatus=message=>{note.textContent=message;};
  const player=createVoiceReadback({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
@@ -234,7 +236,24 @@ function init(){
   if(interruption||localSpeech?.status!=='LOCAL_READY'||!wake?.isEnabled())return;
   let r;try{r=new SpeechRecognition();if(!('processLocally' in r))return;r.processLocally=true;r.lang=localSpeech.locale;r.interimResults=false;r.continuous=false;}catch{return;}
   const active={recognition:r,timer:setTimeout(()=>stopInterruption(),15000)};interruption=active;
-  r.onresult=e=>{if(interruption!==active)return;const text=extractFinalTranscript(e);if(/^(?:stop|cancel|hey[ ,]+vaos[ ,]+stop)[ .!]*$/i.test(text||'')){stopInterruption();player.cancel();setStatus('Spoken interruption received. Playback stopped.');wake?.resume();state();}};
+  r.onresult=e=>{
+   if(interruption!==active)return;
+   const result=classifyG6Interruption(extractFinalTranscript(e),question=>{
+    const resolved=conversation.resolve(question);
+    const candidate=classifyDashboardQuestion(resolved.question);
+    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported'
+     &&(conversation.canFollowUp(question)||isDirectBusinessQuestion(question));
+   });
+   if(result.kind==='IGNORE')return;
+   stopInterruption();player.cancel();
+   if(result.kind==='STOP'){
+    setStatus('Spoken interruption received. Playback stopped.');wake?.resume();state();return;
+   }
+   // Require an explicit "Hey VAOS" on-device utterance before a new request.
+   input.value=result.question;
+   setStatus('Voice interrupted. Reading the new permitted question.');
+   ask.click();
+  };
   r.onend=()=>{if(interruption===active)stopInterruption();};r.onerror=()=>{if(interruption===active)stopInterruption();};
   try{r.start();}catch{stopInterruption();}
  }
@@ -296,13 +315,14 @@ function init(){
  });
  stop.addEventListener('click',()=>{
   wake?.disable('Hey VAOS switched off. Microphone stopped.');
-  cancel();setStatus('Stopped. No business actions authorized.');
+  cancel();conversation.clear();setStatus('Stopped. No business actions authorized. Conversation context cleared.');
  });
  speech.addEventListener('click',speakAnswer);
  ask.addEventListener('click',async()=>{
   if(busy)return;
-  const intent=classifyDashboardQuestion(input.value);
-  if(intent.kind==='DENY'){setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
+  const resolved=conversation.resolve(input.value);
+  const intent=classifyDashboardQuestion(resolved.question);
+  if(intent.kind==='DENY'){conversation.clear();setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
   cancel();busy=true;lastAnswer='';spokenAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
   const requestedAt=performance.now();
@@ -328,6 +348,7 @@ function init(){
      ?formatReadOnlyResult('EVIDENCE',formatFederatedVoiceEvidence(data,intent.question))
      :formatReadOnlyResult(intent.kind==='ADVISORY'?'ADVISORY':'INSIGHT',data);
    if(controller!==abort||abort.signal.aborted)return;
+   conversation.remember(intent,normalized.status,{usedContext:resolved.usedContext});
    lastAnswer=normalized.answer;
    spokenAnswer=normalized.spokenAnswer||normalized.answer;
    answerLanguage=normalized.language||'en';
@@ -359,6 +380,7 @@ function init(){
    setStatus((investigate
     ?formatAdaptiveStatus(data)
     :normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic)
+    +(resolved.usedContext?' · G6 follow-up: fresh read-only source':'')
     +' · '+formatG5ResponseTiming(measured));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
@@ -381,8 +403,11 @@ function init(){
   onActivity:activity=>{if(wakeStatus)wakeStatus.textContent=activity==='SPEECH_START'?'Local speech detected.':'Waiting for the final transcript.';},
   RecognitionClass:SpeechRecognition,
   isVisible:()=>document.visibilityState==='visible',
-  validateQuestion:q=>classifyDashboardQuestion(q).kind!=='DENY',
-  acceptDirectQuestion:isDirectBusinessQuestion,
+  validateQuestion:q=>{
+   const candidate=classifyDashboardQuestion(conversation.resolve(q).question);
+   return candidate.kind!=='DENY'&&candidate.domain!=='unsupported';
+  },
+  acceptDirectQuestion:q=>isDirectBusinessQuestion(q)||conversation.canFollowUp(q),
   onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey VAOS.');},
   onDraft:q=>{input.value=q;state();},
   onConfirm:q=>{input.value=q;ask.click();},
@@ -399,7 +424,7 @@ function init(){
  });
  wakeToggle?.addEventListener('click',async()=>{
   if(!voiceEnabled)return;
-  if(wake.isEnabled())wake.disable('Hands-free voice disabled. This tab no longer listens.');
+  if(wake.isEnabled()){wake.disable('Hands-free voice disabled. This tab no longer listens.');conversation.clear();}
   else {
    setStatus('Checking the on-device speech language pack…');
    localSpeech=await prepareLocalSpeech(SpeechRecognition,replyLanguage?.value||'en');
@@ -409,8 +434,8 @@ function init(){
   }
   state();
  });
- replyLanguage?.addEventListener('change',()=>{stopInterruption();localSpeech=null;wake?.disable('Language changed. Enable local hands-free listening for the selected language.');state();});
- document.addEventListener('visibilitychange',()=>{wake.onVisibilityChange();if(document.visibilityState!=='visible'){cancel();state();}});
+ replyLanguage?.addEventListener('change',()=>{stopInterruption();localSpeech=null;conversation.clear();wake?.disable('Language changed. Enable local hands-free listening for the selected language.');state();});
+ document.addEventListener('visibilitychange',()=>{wake.onVisibilityChange();if(document.visibilityState!=='visible'){cancel();conversation.clear();state();}});
  const refreshVoiceCapability=async()=>{
   let mode='unavailable';
   try{
@@ -422,7 +447,7 @@ function init(){
    }
   }catch{}
   capability=mode;voiceEnabled=mode==='enabled';
-  if(!voiceEnabled)wake?.disable('Voice wake capability is not yet qualified for this account.');
+  if(!voiceEnabled){wake?.disable('Voice wake capability is not yet qualified for this account.');conversation.clear();}
   state();return mode;
  };
  // Initial capability discovery does not open or record the microphone.
@@ -447,6 +472,6 @@ function init(){
    setStatus(readiness().message);
   }finally{micCheck.disabled=false;state();}
  });
- window.addEventListener('pagehide',()=>{wake?.disable('Session ended; microphone off.');cancel();},{once:true});
+ window.addEventListener('pagehide',()=>{wake?.disable('Session ended; microphone off.');cancel();conversation.clear();},{once:true});
 }
 if(typeof document!=='undefined')init();

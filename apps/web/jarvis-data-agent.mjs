@@ -8,6 +8,12 @@ if(form){
  const investigation=$('data-agent-investigation');
  const findingStatus=$('data-agent-investigation-status');
  const findings=$('data-agent-investigation-findings');
+ const brief=$('data-agent-founder-brief');
+ const briefStage=$('data-agent-brief-stage');
+ const briefPriority=$('data-agent-brief-priority');
+ const briefHeading=$('data-agent-brief-heading');
+ const briefExplanation=$('data-agent-brief-explanation');
+ const briefAction=$('data-agent-brief-action');
  const people=$('data-agent-employees'),limitations=$('data-agent-limitations');
  let latest=null;
  const add=(parent,value,tag='li')=>{
@@ -31,7 +37,7 @@ if(form){
   status.textContent='Reading authorized sources…';latest=null;
   answer.textContent='';evidence.replaceChildren();graph.replaceChildren();
   people.replaceChildren();limitations.replaceChildren();findings.replaceChildren();
-  investigation.hidden=true;focus.value='sources';
+  investigation.hidden=true;brief.hidden=true;focus.value='sources';
   const submit=form.querySelector('button[type=submit]');submit.disabled=true;
   try{
    const response=await fetch('/api/jarvis-data-agent?q='+encodeURIComponent(q),{
@@ -55,6 +61,22 @@ if(form){
    for(const note of x.limitations||[])add(limitations,note);
    if(x.investigation?.schemaVersion==='VAOS_DATA_AGENT_INVESTIGATION_V1'){
     const result=x.investigation;investigation.hidden=false;
+    if(result.decisionBrief?.headline&&result.operatingContext?.phase==='PRELAUNCH_CONFIGURATION'){
+     brief.hidden=false;
+     briefStage.textContent='PRELAUNCH PREPARATION · Record origin not verified';
+     const labels={
+      RECONCILE_SOURCE_CONFLICT:'First review · record discrepancy',
+      COMPLETE_RELEASE_TRACE:'First review · release documentation',
+      COMPLETE_RECORD_LINKS:'First review · missing relationships',
+      CHECK_SOURCE_COVERAGE:'First review · incomplete source sample',
+      RESTORE_SOURCE_OBSERVATIONS:'Source access required',
+      NO_OBSERVED_DISCREPANCY:'No discrepancy in the selected sample'
+     };
+     briefPriority.textContent=labels[result.decisionBrief.priority]||'Preparation review';
+     briefHeading.textContent=result.decisionBrief.headline;
+     briefExplanation.textContent=result.decisionBrief.explanation;
+     briefAction.textContent=result.decisionBrief.nextStep;
+    }
     findingStatus.textContent=result.summary;
     focus.value='investigation';
     if(!result.findings?.length){
@@ -67,14 +89,36 @@ if(form){
     for(const f of result.findings||[]){
      const item=document.createElement('article');item.className='data-agent-finding';
      add(item,f.title,'h4');
-     add(item,f.observedCount+' selected row(s) · '+f.classification+' · '+f.severity,'p');
+     const priorityLabels={RECONCILE_SOURCE_CONFLICT:'Reconcile mismatch',
+      COMPLETE_RELEASE_TRACE:'Document release history',
+      COMPLETE_RECORD_LINKS:'Complete record links',
+      CHECK_SOURCE_COVERAGE:'Check sampled coverage'};
+     add(item,(priorityLabels[f.reviewPriority]||'Review')+' · '+
+      f.observedCount+' selected row(s), not verified incidents','p');
      add(item,f.explanation,'p');
      add(item,'NEXT ACTION — '+f.action,'p');
      const sourceLabels=f.sourceDomains.map(domain=>{
       const source=x.sources.find(s=>s.domain===domain);
       return source?'['+source.index+'] '+domain:domain;
      });
-     add(item,'EVIDENCE — '+sourceLabels.join(' + '),'p');
+     add(item,'SOURCE VIEWS — '+sourceLabels.join(' + '),'p');
+     if(Array.isArray(f.evidenceTrail)&&f.evidenceTrail.length){
+      const trail=document.createElement('details');trail.className='data-agent-evidence';
+      add(trail,'Inspect matching sample positions ('+f.evidenceTrail.length+
+       ' shown; no personal or commercial identifiers)','summary');
+      const list=document.createElement('ol');
+      for(const match of f.evidenceTrail){
+       const refs=(match.rows||[]).map(ref=>{
+        const source=x.sources.find(s=>s.domain===ref.domain);
+        return '['+(source?.index||'?')+'] '+ref.domain+' '+ref.collection+
+         ' sample row '+ref.position;
+       });
+       add(list,refs.join(' ↔ '));
+      }
+      trail.append(list);
+      add(trail,'These positions refer only to this limited gateway response. They are not stable record IDs or links to complete VYNDI OS records.','p');
+      item.append(trail);
+     }
      findings.append(item);
     }
     if(result.holds?.length)add(findings,'Scope limits: '+result.holds.join('; '),'p');

@@ -33,6 +33,12 @@ async function authenticate(){
   const r=await fetch('/api/session',{credentials:'same-origin',cache:'no-store'});
   if(!r.ok){window.location.replace('/login');return;}
   shell.hidden=false;$('auth-message').hidden=true;await refresh();
+  // Mission ID is only a locator: all evidence must be read again under session auth.
+  const resumed=new URL(window.location.href).searchParams.get('missionId');
+  if(resumed&&/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(resumed)){
+   $('mission-id').value=resumed;
+   await loadFounderMission(resumed);
+  }
  }catch{$('auth-message').textContent='Session unavailable. Sign in from workspace.';}
 }
 agentSelect.addEventListener('change',()=>{$('draft-panel').hidden=true;preparedText='';pendingMessageId=null;prepared=null;refresh();loadHistory();});
@@ -188,48 +194,37 @@ function invalidateMissionVoiceReadback(){
 }
 $('mission-id').addEventListener('input',invalidateMissionVoiceReadback);
 $('voice-readonly-question').addEventListener('input',invalidateMissionVoiceReadback);
-$('mission-form').addEventListener('submit',async event=>{
- event.preventDefault();const id=$('mission-id').value.trim(),out=$('mission-summary');
+async function loadFounderMission(id,{quiet=false}={}){
+ const out=$('mission-summary');
  const serial=++missionReadSequence;
  delete out.dataset.voiceReadback;
- if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(id)){out.textContent='Enter a valid existing mission ID.';return;}
- out.textContent='Reading authoritative mission snapshot…';
+ if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(id)){
+  if(!quiet)out.textContent='Enter a valid existing mission ID.';return false;
+ }
+ if(!quiet)out.textContent='Reading saved departmental results…';
  try{
   const response=await fetch('/api/missions?missionId='+encodeURIComponent(id)+'&view=results',
-    {credentials:'same-origin',cache:'no-store'});
-  if(!response.ok)throw new Error('MISSION_UNAVAILABLE');
+   {credentials:'same-origin',cache:'no-store'});
+  if(!response.ok)throw Error('MISSION_UNAVAILABLE');
   const record=(await response.json())?.data;
-  if(serial!==missionReadSequence||$('mission-id').value.trim()!==id)return;
-  if(record?.schemaVersion!=='VAOS_FOUNDER_MISSION_RESULTS_V1'
-     ||record.missionId!==id||record.readOnly!==true||record.actionAuthorized!==false
-     ||!Array.isArray(record.jobs)||record.summary?.total!==record.jobs.length
-     ||record.snapshot?.mission?.id!==id)throw new Error('MISSION_RESULTS_INVALID');
-  const s=record.summary;
-  const rows=record.jobs.map(item=>{
-   const state=item.ownerAgentId+' · '+item.actionType+' — '+item.resultStatus;
-   if(!item.result)return state;
-   const result=item.result;
-   const source=result.sourceSystem==='VYNDI_OS'
-    ?' | '+result.observedRecords+' selected records from '+result.sourceAuthority
-    :' | '+result.scope;
-   const evidence=' | saved evidence '+result.evidenceId;
-   const findings=result.findings?.length
-    ?'\n   '+result.findings.slice(0,5).join(' · ')+(result.findingsTruncated?' [additional saved findings]':'')
-    :'';
-   return state+source+evidence+findings;
-  });
-  out.textContent='Mission: '+id+'\nStatus: '+record.missionStatus+
-   '\nVerified: '+s.verified+'/'+s.total+
-   ' | Submitted: '+s.awaitingReview+
-   ' | Recorded, recoverable: '+s.recoverable+
-   ' | Retry eligible: '+s.acceptedRetry+
-   ' | Assigned, not started: '+s.assignedNotStarted+
-   ' | Blocked/unassigned: '+s.unsupportedOrBlocked+
-   '\n\nDepartmental results (persisted, read-only)\n'+rows.join('\n')+
-   '\n\nReceipts are bounded observations, not company-wide totals or engineering releases.';
+  if(serial!==missionReadSequence||$('mission-id').value.trim()!==id)return false;
+  out.textContent=formatFounderMissionResults(record,id);
   try{out.dataset.voiceReadback=formatMissionSnapshotSpokenPreview(record.snapshot,id);}
   catch{delete out.dataset.voiceReadback;}
- }catch{if(serial===missionReadSequence)out.textContent='Mission unavailable. No completion or verification inferred.';}
+  const url=new URL(window.location.href);
+  url.searchParams.set('missionId',id);
+  window.history.replaceState(null,'',url);
+  return true;
+ }catch{
+  if(serial===missionReadSequence){
+   out.textContent='Saved mission results unavailable. No departmental completion inferred.';
+  }
+  return false;
+ }
+}
+$('mission-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ await loadFounderMission($('mission-id').value.trim());
 });
 
 let conversationThreadId=null;
@@ -323,3 +318,11 @@ $('send-conversation').addEventListener('click',async()=>{
 });
 
 authenticate();
+// Only refresh evidence for the currently selected mission while this tab is
+// visible. Uses the existing founder-only GET; no new queue, writes or monitoring.
+setInterval(()=>{
+ if(document.visibilityState!=='visible')return;
+ const id=$('mission-id').value.trim();
+ if(!id||id!==new URL(window.location.href).searchParams.get('missionId'))return;
+ void loadFounderMission(id,{quiet:true});
+},60_000);

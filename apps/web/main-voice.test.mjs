@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult,splitDecisionBrief,formatAdaptiveStatus} from './main-voice.mjs';
+import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult,splitDecisionBrief,formatAdaptiveStatus,shouldUseAdaptiveAnswer} from './main-voice.mjs';
 test('voice bot is read-only and blocks operational write or approval commands',()=>{
  for(const s of ['approve PO 123','delete all records','transfer salary','pay supplier','dispatch an agent','post invoice','execute mission','create an order','update a customer'])
   assert.equal(classifyDashboardQuestion(s).kind,'DENY',s);
@@ -226,4 +226,13 @@ test('G5 timing is measured at answer display without pretending voice or indepe
  assert.match(script,/performance\.now\(\)/);
  assert.match(script,/g5Timing\.record/);
  assert.match(script,/formatG5ResponseTiming/);
+});
+
+test('G5 keeps basic factual questions on signed read sources',()=>{
+ assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('How many inventory records?'),true),false);
+ assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('How many finance journals exist?'),true),false);
+ assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('How many production job cards exist?'),true),false);
+ assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('How many digital employees have qualified assessments?'),true),true);
+ assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('How is the weather?'),true),true);
+ assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('Why are suppliers delaying production and increasing costs?'),true),true);
 });

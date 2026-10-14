@@ -6,17 +6,24 @@ import {planAdaptiveReads} from './adaptive-read-planner.mjs';
 const DOMAIN_LABELS=Object.freeze({
  finance:'Ledger and journal records',commercial:'Sales order records',
  procurement:'Material shortage lines',inventory:'Stock balance records',
- production:'Production job cards',people:'HR personnel records'
+ production:'Production job cards',people:'HR personnel records',
+ engineering:'Engineering baseline and change records'
 });
 const DOMAIN_ORDER=['finance','commercial','procurement','inventory','production','people'];
 const GROUP=/\b(group|company|enterprise|all divisions|across divisions|vyndi|vayu|vāyū|business overview|overall business)\b/i;
 const DIGITAL=/\b(?:digital|ai)\s+(?:employee|employees|agents?|workforce)\b|\b(?:16\s+(?:employees|agents)|employee\s+(?:assessment|training|performance|audits?)|workforce analytics)\b/i;
-const QUALIFIED=new Set(DOMAIN_ORDER);
+const QUALIFIED=new Set([...DOMAIN_ORDER,'engineering']);
+const INVESTIGATE=/\b(why|root.cause|bottleneck|blocker|delay(?:ed|s)?|investigat(?:e|ion)|discrepanc(?:y|ies)|holding.up|production.risks?)\b/i;
+const INVESTIGATION_DOMAINS=Object.freeze(['procurement','inventory','production','engineering']);
 
 export function selectDataAgentSources(question){
  const plan=planAdaptiveReads(question);
  if(plan.state==='DENIED')return {status:'DENIED',domains:[],workforce:false};
- if(DIGITAL.test(question))return {status:'PLANNED',domains:[],workforce:true};
+ if(DIGITAL.test(question))return {status:'PLANNED',domains:[],workforce:true,investigate:false};
+ // A diagnosis needs the existing G3.1E crosswalk, not just the first named ledger.
+ if(INVESTIGATE.test(question))
+  return {status:'PLANNED',domains:[...INVESTIGATION_DOMAINS],workforce:false,investigate:true,
+   omitted:[]};
  let domains=plan.domains.filter(x=>QUALIFIED.has(x));
  // Founders routinely say "finance", while the shared planner recognises
  // "financial" or "cash"; retain the existing source contract without widening tools.
@@ -24,7 +31,7 @@ export function selectDataAgentSources(question){
   domains=['finance',...domains];
  if(!domains.length&&GROUP.test(question))domains=['finance','commercial','procurement','production'];
  if(!domains.length)return {status:'UNSUPPORTED',domains:[],workforce:false};
- return {status:'PLANNED',domains:domains.slice(0,4),workforce:false,
+ return {status:'PLANNED',domains:domains.slice(0,4),workforce:false,investigate:false,
   omitted:plan.missingDomains||[]};
 }
 
@@ -33,10 +40,10 @@ function stamp(now){const d=new Date(now);if(!Number.isFinite(d.getTime()))throw
 const BASE_LIMITATIONS=Object.freeze([
  'Counts represent at most 50 selected source rows per business domain, not enterprise totals.',
  'Different source record types cannot be added or interpreted as comparable quantities.',
- 'Trends, root causes and forecasts require verified, reconciled historical periods; none are inferred from snapshot counts.',
+ 'Historical trends and forecasts require verified, reconciled dated records. Cross-source discrepancies provide investigation leads, never independently proven causes.',
  'A gateway receipt time does not establish the age, completeness or revision of the underlying business records.'
 ]);
-export function buildDataAgentReport({question,observations,now=new Date()}){
+export function buildDataAgentReport({question,observations,investigation=null,now=new Date()}){
  if(typeof question!=='string'||!Array.isArray(observations)||observations.length>4)
   throw Error('DATA_AGENT_INPUT_INVALID');
  const receiptAt=stamp(now);
@@ -62,8 +69,12 @@ export function buildDataAgentReport({question,observations,now=new Date()}){
   :s.domain+': unavailable (HOLD)').join('; ');
  const answer=(status==='HOLD'?'No qualified live business observations were available. '
   :'Current bounded observations: ')+details+
-  '. No business record was changed. These are selected record counts, not company-wide totals or a validated forecast.';
+  '. No business record was changed. These are selected record counts, not company-wide totals or a validated forecast.'+
+  (investigation?'\n\nRELATIONSHIP INVESTIGATION — '+investigation.summary+
+  (investigation.findings?.length?'\n'+investigation.findings.slice(0,3).map(x=>
+   x.observedCount+' selected rows: '+x.title+'.').join(' '):''):'');
  return {schemaVersion:'VAOS_DATA_AGENT_V1',status,question,answer,observedAt:receiptAt,
+  ...(investigation?{investigation}:{}),
   sources,metrics,chart:{title:'Observed source records (different units)',kind:'bars',
    rows:metrics.map(m=>({label:m.domain,value:m.value}))},
   sourceCoverage:{observed:metrics.length,requested:sources.length},

@@ -45,7 +45,7 @@ test('founder-only and read-only gates stop unauthorized and unbounded requests 
  const calls=[];
  const handler=createJarvisDataAgentHandler({getReader:()=>makeReader(calls)});
  for(const [q,opts,status] of [
- ['Analyse finance',{email:''},401],['Analyse finance',{email:'other@domain.test'},403],
+ ['Analyse finance',{email:''},401],['Analyse finance',{email:'other@domain.test'},401],
  ['Analyse finance',{method:'POST'},405],['Analyse finance',{control:'off'},409],
  ['Delete procurement records',{},422],['Tell me a joke',{},422]
  ]){

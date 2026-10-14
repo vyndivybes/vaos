@@ -25,3 +25,22 @@
 .data-agent-panel .data-agent-finding p{margin:8px 0;font-size:15px;color:#2c445a;overflow-wrap:anywhere}
 .data-agent-panel .mission-form{align-items:center}
 .data-agent-panel .mission-form select{width:auto;min-width:190px}
+
+/* Prelaunch founder decision view: clear priority without inventing production KPIs. */
+.data-agent-panel .data-agent-prelaunch-note{padding:10px 14px;background:#f4f7f9;border-left:3px solid #628aa1;border-radius:6px;color:#244354}
+.data-agent-panel [hidden]{display:none!important}
+.data-agent-panel .data-agent-founder-brief{padding:20px 22px;margin:16px 0;background:#f5f9fc;border:1px solid #bed3e0;border-radius:14px}
+.data-agent-panel .data-agent-founder-brief h3{font-size:clamp(20px,2.4vw,25px);margin:8px 0;line-height:1.3;color:#18384f}
+.data-agent-panel .data-agent-founder-brief h4{font-size:16px;margin:18px 0 4px;color:#234f68}
+.data-agent-panel .data-agent-founder-brief p{font-size:16px;line-height:1.6;margin:7px 0}
+.data-agent-panel .data-agent-founder-brief .data-agent-stage{font-size:13px;font-weight:800;letter-spacing:.04em;color:#31536a;text-transform:uppercase}
+.data-agent-panel .data-agent-founder-brief .data-agent-brief-priority{font-size:14px;font-weight:750;color:#2e5c77}
+.data-agent-panel .data-agent-evidence{padding:12px 14px;margin-top:12px;background:#f4f8fb;border-radius:10px;border:1px solid #d7e5ec}
+.data-agent-panel .data-agent-evidence summary{font-weight:700;cursor:pointer;font-size:15px;color:#22516a}
+.data-agent-panel .data-agent-evidence li{font-family:ui-monospace,Consolas,monospace;font-size:13px;line-height:1.6;overflow-wrap:anywhere}
+.data-agent-panel .data-agent-evidence p{font-size:13px;color:#4c6576}
+.data-agent-panel .data-agent-finding{border-left-color:#47778c}
+@media(max-width:720px){
+ .data-agent-panel .data-agent-founder-brief{padding:16px}
+ .data-agent-panel .data-agent-founder-brief p{font-size:15px}
+}

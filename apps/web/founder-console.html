@@ -22,6 +22,7 @@
  <h2 id="data-agent-title">Ask JARVIS about business data</h2>
  <p>Ask a read-only question across finance, procurement, inventory, production, sales or the 16 digital employees.
  This uses existing authorized data gateways and produces charts with source references. No new subscription, arbitrary SQL, model-made quantities or business writes.</p>
+ <p class="data-agent-prelaunch-note">Prelaunch preparation view. Source records are not automatically identified as proposed, demo, or actual production. No observed discrepancy proves that production is delayed.</p>
  <form id="data-agent-form">
  <label for="data-agent-question">Your business question</label>
  <textarea id="data-agent-question" minlength="5" maxlength="300" rows="3" required
@@ -29,6 +30,14 @@
  <button type="submit">Analyse live source records</button>
  </form>
  <p id="data-agent-status" role="status" aria-live="polite">No data requested.</p>
+ <section id="data-agent-founder-brief" class="data-agent-founder-brief" aria-labelledby="data-agent-brief-heading" hidden>
+   <p id="data-agent-brief-stage" class="data-agent-stage"></p>
+   <p id="data-agent-brief-priority" class="data-agent-brief-priority"></p>
+   <h3 id="data-agent-brief-heading"></h3>
+   <p id="data-agent-brief-explanation"></p>
+   <h4>Recommended preparation action</h4>
+   <p id="data-agent-brief-action"></p>
+ </section>
  <pre id="data-agent-answer" aria-label="JARVIS evidence-based answer"></pre>
  <div class="mission-form">
  <label for="data-agent-chart-focus">Display metric</label>
@@ -41,7 +50,7 @@
  </div>
  <div id="data-agent-chart" role="region" aria-label="Observed evidence chart"></div>
  <details id="data-agent-investigation" class="data-agent-investigation" hidden open>
- <summary>Production and material relationship investigation</summary>
+ <summary>Source-linked preparation findings</summary>
  <p id="data-agent-investigation-status" role="status" aria-live="polite"></p>
  <div id="data-agent-investigation-findings"></div>
  </details>

@@ -73,3 +73,28 @@ test('unsupported and incomplete domains do not silently substitute unrelated ob
  assert.equal(r.status,'HOLD');assert.match(r.answer,/not yet qualified|not yet consolidated/i);
  assert.equal(formatVoiceAnswer(resolveVoiceIntent('What is our CRM conversion rate?'),null).status,'HOLD');
 });
+
+
+test('G5 reported question-routing defects: controlled material and BOM governance take precedence over generic production and procurement keywords',()=>{
+ const cases=[
+  ['Has the proposed Toray carbon prepreg been validated for final production use?','engineering'],
+  ['What engineering validation remains before the carbon frameset can be released?','engineering'],
+  ['Can we start procurement without a released manufacturing BOM? Explain the limits.','engineering'],
+  ['Which VEDM bicycle geometry revision is currently authoritative?','engineering'],
+  ['If a departmental task is interrupted after saving its report how is the result recovered?','missions'],
+  ['What happened in the latest completed departmental mission? Identify the saved evidence.','missions'],
+  ['Can you tell me which assigned missions remain unfinished and why?','missions'],
+  ['Can you approve a supplier payment or release production by yourself? Explain your authorization limits.','governance'],
+ ];
+ for(const [question,domain] of cases)assert.equal(resolveVoiceIntent(question).domain,domain,question);
+ for(const question of ['Please approve a supplier payment now','Can you approve and execute the payment now?','Pay supplier today'])assert.equal(resolveVoiceIntent(question).reason,'BLOCKED_OR_UNBOUNDED');
+});
+test('known demo and proposed records must never be presented as certified company activity',()=>{
+ const orders=interpretVoiceRecords('commercial',{records:[{status:'confirmed',units:4},{status:'lead',units:1}]});
+ assert.match(orders.answer,/recorded status/i);
+ assert.match(orders.answer,/not independently verified real customer transactions/i);
+ const hr=interpretVoiceRecords('people',{people:[{id:'person-1'}],authority:[]});
+ assert.match(hr.answer,/may include synthetic or prelaunch entries/i);
+ const shortage=interpretVoiceRecords('procurement',{records:[{id:'shortage-1'}]});
+ assert.match(shortage.answer,/not confirmed shortages for approved builds/i);
+});

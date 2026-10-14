@@ -60,37 +60,51 @@ begin
     raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
   end if;
 
+  -- The signed read receipts are metadata only, not independently proven source revisions.
   if v_work.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION') then
     if p_report->>'scope' <> 'BOUNDED_VYNDI_READ_RECEIPT_ONLY'
        or p_report->>'sourceSystem' <> 'VYNDI_OS'
-       or p_report->>'sourceAuthority' <> case v_work.action_type
-         when 'COMMERCIAL.OBSERVE_PIPELINE' then 'listSalesOrders'
-       when 'PROCUREMENT.OBSERVE_SHORTAGE' then 'getConfiguredDemandShortages'
-       when 'INVENTORY.OBSERVE_STOCK' then 'getAuthoritativeInventory'
-       when 'PRODUCTION.OBSERVE_WIP' then 'getProductionJobCards'
-       when 'MAINTENANCE.OBSERVE_ASSET' then 'getAssetMaintenanceState'
-       when 'FINANCE.OBSERVE_LEDGER' then 'getAccountingWorkbench'
-       when 'PEOPLE.OBSERVE_WORKFORCE' then 'listPeopleOfficeAuthority'
-       when 'ENGINEERING.OBSERVE_CONFIGURATION' then 'getEngineeringChangeControlState'
-       end
        or p_report->>'businessEffectsExecuted' <> 'false'
        or p_report->>'engineeringReleaseGranted' <> 'false'
        or p_report->>'sourceRevisionVerified' <> 'false'
        or p_report->>'sourceCompletenessVerified' <> 'false'
        or jsonb_typeof(p_report->'recordsObserved') <> 'number'
        or (p_report->>'recordsObserved') !~ '^[0-9]{1,3}$'
-       or (p_report->>'recordsObserved')::integer not between 0 and 100
        or (p_report->>'requestNonce') !~ '^[a-f0-9]{32}$'
        or (p_report->>'requestBodySha256') !~ '^[a-f0-9]{64}$'
-       or (p_report->>'gatewayReceivedAt') !~ '^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$'
+       or (p_report->>'gatewayReceivedAt') !~ '^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$'
        or jsonb_array_length(p_report->'findings') <> 1
-       or p_report->'findings'->>0 <> 'BOUNDED_SELECTED_RECORDS:' || (p_report->>'recordsObserved')
+       or (p_report->'findings'->>0) <> ('BOUNDED_SELECTED_RECORDS:' || (p_report->>'recordsObserved'))
        or (p_report - array[
          'schemaVersion','kind','actionType','workPackageId','scope','findings',
          'sourceSystem','sourceAuthority','recordsObserved','gatewayReceivedAt',
          'requestNonce','requestBodySha256','sourceRevisionVerified',
          'sourceCompletenessVerified','businessEffectsExecuted','engineeringReleaseGranted'
        ]) <> '{}'::jsonb then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'COMMERCIAL.OBSERVE_PIPELINE' and p_report->>'sourceAuthority' <> 'listSalesOrders' then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'PROCUREMENT.OBSERVE_SHORTAGE' and p_report->>'sourceAuthority' <> 'getConfiguredDemandShortages' then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'INVENTORY.OBSERVE_STOCK' and p_report->>'sourceAuthority' <> 'getAuthoritativeInventory' then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'PRODUCTION.OBSERVE_WIP' and p_report->>'sourceAuthority' <> 'getProductionJobCards' then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'MAINTENANCE.OBSERVE_ASSET' and p_report->>'sourceAuthority' <> 'getAssetMaintenanceState' then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'FINANCE.OBSERVE_LEDGER' and p_report->>'sourceAuthority' <> 'getAccountingWorkbench' then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'PEOPLE.OBSERVE_WORKFORCE' and p_report->>'sourceAuthority' <> 'listPeopleOfficeAuthority' then
+      raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
+    end if;
+    if v_work.action_type = 'ENGINEERING.OBSERVE_CONFIGURATION' and p_report->>'sourceAuthority' <> 'getEngineeringChangeControlState' then
       raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
     end if;
   elsif v_work.action_type in ('ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS') then

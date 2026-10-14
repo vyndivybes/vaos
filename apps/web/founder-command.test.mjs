@@ -42,3 +42,17 @@ test('install shell never caches private messages or claims commands were sent',
  assert.match(html,/rel="manifest"/);assert.match(script,/DRAFT_NOT_SENT/);
  assert.doesNotMatch(script,/serviceWorker\.register|localStorage|sessionStorage/);
 });
+
+
+test('Founder Command creates and assigns recorded instructions through the existing missions API', async () => {
+ const [html, script] = await Promise.all([
+  readFile(new URL('./founder-console.html', import.meta.url), 'utf8'),
+  readFile(new URL('./founder-console.mjs', import.meta.url), 'utf8'),
+ ]);
+ assert.match(html, /Create and assign mission/);
+ assert.match(script, /commandKind\.value==='INSTRUCTION'/);
+ assert.match(script, /agentSelect\.value='orchestrator'/);
+ assert.match(script, /operation:'ROUTE_FOUNDER_INSTRUCTION'/);
+ assert.match(script, /businessEffectsExecuted!==false/);
+ assert.doesNotMatch(script, /\/api\/missions.*RUN_SAFE/);
+});

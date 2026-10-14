@@ -5,6 +5,27 @@ function refs(value){if(value===undefined)return[];if(!Array.isArray(value)||val
 function identity(record){return [record.providerId,record.capability,record.executionJobId,record.intentId,record.providerRunId||''].join('|')}
 function nowDate(fn){const d=fn();if(!(d instanceof Date)||Number.isNaN(d.getTime()))throw fail('RECONCILIATION_CLOCK_INVALID');return d}
 
+const VERIFIED_SOURCES=new Set(['PROVIDER_RUN_READBACK','VERIFIED_CALLBACK']);
+/** Match the terminal provider receipt to the exact original execution.
+ * A resolver's boolean alone, an old dispatch reference or a mismatched
+ * provider run does not establish success or failure of this job.
+ */
+export function hasBoundReconciliationEvidence(row,outcome){
+ const v=outcome?.verification;
+ if(!v||v.verified!==true||!VERIFIED_SOURCES.has(v.evidenceSource))return false;
+ for(const key of ['providerId','capability','executionJobId','intentId','providerRunId']){
+  if(v[key]!==row?.[key])return false;
+ }
+ if(typeof v.evidenceRef!=='string'||!v.evidenceRef.trim()
+   ||v.evidenceRef.length>256||/[\x00-\x1f\x7f]/.test(v.evidenceRef))return false;
+ if(!Array.isArray(outcome.evidenceRefs)||outcome.evidenceRefs.length<1
+   ||outcome.evidenceRefs.length>32
+   ||!outcome.evidenceRefs.includes(v.evidenceRef)
+   ||row.evidenceRefs.includes(v.evidenceRef))return false;
+ return true;
+}
+
+
 export function createInMemoryReconciliationStore(){
   const rows=new Map();
   return Object.freeze({
@@ -103,10 +124,21 @@ export function createReconciliationService({
     }
 
     const status=typeof outcome?.status==='string'?outcome.status.toLowerCase():'';
-    const evidenceRefs=[...new Set([...row.evidenceRefs,...refs(outcome?.evidenceRefs)])];
+    const terminalReadback=status==='succeeded'||status==='failed';
+    const bound=terminalReadback&&hasBoundReconciliationEvidence(row,outcome);
+    // A readback without exact matching execution and source evidence must
+    // not contaminate the persisted evidence trail or close another job.
+    const evidenceRefs=bound?[...new Set([...row.evidenceRefs,...refs(outcome.evidenceRefs)])]:row.evidenceRefs.slice();
     const base={attempts,evidenceRefs,updatedAt:clock.toISOString()};
 
-    if(status==='succeeded'&&outcome?.verification?.verified===true){
+    if(terminalReadback&&!bound){
+      await save({...base,state:'MANUAL_REVIEW',nextAttemptAt:null,errorType:'RECONCILIATION_EVIDENCE_UNBOUND'});
+      await recordAudit({type:'RECONCILIATION.MANUAL_REVIEW',reconciliationId:row.reconciliationId,
+        reason:'RECONCILIATION_EVIDENCE_UNBOUND',occurredAt:clock.toISOString()});
+      return {status:'MANUAL_REVIEW',reconciliationId:row.reconciliationId};
+    }
+
+    if(status==='succeeded'&&bound){
       await save({...base,state:'SUCCEEDED',nextAttemptAt:null,errorType:null});
       await recordAudit({type:'RECONCILIATION.RESOLVED',reconciliationId:row.reconciliationId,state:'SUCCEEDED',occurredAt:clock.toISOString()});
       return {status:'SUCCEEDED',reconciliationId:row.reconciliationId};

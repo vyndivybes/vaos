@@ -25,7 +25,7 @@ test('unknown execution reconciles to succeeded without redispatching the provid
       zapier: async record=>{
         resolverCalls+=1;
         assert.equal(record.providerRunId,'run-1');
-        return {status:'succeeded',evidenceRefs:['evidence:callback'],verification:{verified:true}};
+        return {status:'succeeded',evidenceRefs:['evidence:callback'],verification:{verified:true,providerId:'zapier',capability:'integration.saas',executionJobId:'job-1',intentId:'intent-1',providerRunId:'run-1',evidenceSource:'PROVIDER_RUN_READBACK',evidenceRef:'evidence:callback'}};
       },
     },
     now:()=>new Date('2026-10-08T00:00:00.000Z'),
@@ -70,6 +70,7 @@ test('terminal provider failure resolves to FAILED with safe machine-readable ev
         errorType:'DESTINATION_REJECTED',
         errorMessage:'Bearer secret-do-not-store',
         evidenceRefs:['evidence:failure'],
+        verification:{verified:true,providerId:'zapier',capability:'integration.saas',executionJobId:'job-1',intentId:'intent-1',providerRunId:'run-1',evidenceSource:'PROVIDER_RUN_READBACK',evidenceRef:'evidence:failure'},
       }),
     },
   });
@@ -146,4 +147,76 @@ test('reconciliation store claims are leased so concurrent workers cannot claim 
   assert.equal(claimed.state,'LEASED');
   assert.match(claimed.leaseToken,/^lease:/);
   assert.equal(['worker-a','worker-b'].includes(claimed.leasedBy),true);
+});
+
+
+test('G8: a success flag without run-bound identity must never reconcile an unknown effect as succeeded',async()=>{
+ const store=createInMemoryReconciliationStore(),audits=[];
+ const svc=createReconciliationService({store,recordAudit:async e=>audits.push(e),
+  resolvers:{zapier:async()=>({status:'succeeded',evidenceRefs:['evidence:unbound'],
+   verification:{verified:true}})}});
+ await svc.enqueue(unknown());
+ const result=await svc.reconcileOne();
+ assert.equal(result.status,'MANUAL_REVIEW');
+ const saved=store.get('recon-1');
+ assert.equal(saved.state,'MANUAL_REVIEW');
+ assert.equal(saved.errorType,'RECONCILIATION_EVIDENCE_UNBOUND');
+ assert.deepEqual(saved.evidenceRefs,['evidence:dispatch'],'forged readback evidence must not be stored');
+ assert.equal(audits.some(e=>e.type==='RECONCILIATION.RESOLVED'&&e.state==='SUCCEEDED'),false);
+});
+
+test('G8: a different provider run, job or intent cannot close the original reconciliation',async()=>{
+ for(const override of [
+  {providerRunId:'run-other'},
+  {executionJobId:'job-other'},
+  {intentId:'intent-other'},
+  {providerId:'different-provider'},
+  {capability:'billing.charge'},
+  {evidenceRef:'evidence:unrelated'},
+  {evidenceSource:'CLIENT_DECLARED'},
+ ]){
+  const store=createInMemoryReconciliationStore();
+  const svc=createReconciliationService({store,resolvers:{
+   zapier:async()=>({status:'succeeded',evidenceRefs:['evidence:verified-result'],
+    verification:{verified:true,providerId:'zapier',capability:'integration.saas',
+     executionJobId:'job-1',intentId:'intent-1',providerRunId:'run-1',
+     evidenceSource:'PROVIDER_RUN_READBACK',evidenceRef:'evidence:verified-result',...override}})
+  }});
+  await svc.enqueue(unknown());
+  const result=await svc.reconcileOne();
+  assert.equal(result.status,'MANUAL_REVIEW',JSON.stringify(override));
+  assert.deepEqual(store.get('recon-1').evidenceRefs,['evidence:dispatch']);
+ }
+});
+
+test('G8: verified terminal provider failure is bound to same immutable job and carries no private error text',async()=>{
+ const store=createInMemoryReconciliationStore();
+ const svc=createReconciliationService({store,resolvers:{
+  zapier:async()=>({status:'failed',errorType:'DESTINATION_REJECTED',
+   errorMessage:'Bearer sensitive material',
+   evidenceRefs:['evidence:provider-readback-failed'],
+   verification:{verified:true,providerId:'zapier',capability:'integration.saas',
+    executionJobId:'job-1',intentId:'intent-1',providerRunId:'run-1',
+    evidenceSource:'PROVIDER_RUN_READBACK',evidenceRef:'evidence:provider-readback-failed'}})
+ }});
+ await svc.enqueue(unknown());
+ const r=await svc.reconcileOne();
+ assert.equal(r.status,'FAILED');
+ const row=store.get('recon-1');
+ assert.deepEqual(row.evidenceRefs,['evidence:dispatch','evidence:provider-readback-failed']);
+ assert.equal(JSON.stringify(row).includes('Bearer sensitive'),false);
+});
+
+test('G8: unknown resolver outcome remains retryable and never starts a second execution',async()=>{
+ const store=createInMemoryReconciliationStore(),calls=[];
+ const svc=createReconciliationService({store,resolvers:{
+  zapier:async record=>{calls.push(record);return {status:'pending',retryAfterSeconds:30,evidenceRefs:[]};}
+ },now:()=>new Date('2026-10-15T10:00:00.000Z')});
+ await svc.enqueue(unknown());
+ const result=await svc.reconcileOne();
+ assert.equal(result.status,'DEFERRED');
+ assert.equal(calls.length,1);
+ assert.equal(calls[0].executionJobId,'job-1');
+ assert.equal(store.get('recon-1').state,'PENDING');
+ assert.equal(store.get('recon-1').nextAttemptAt,'2026-10-15T10:00:30.000Z');
 });

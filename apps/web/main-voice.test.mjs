@@ -185,3 +185,45 @@ test('JARVIS X preview status is explicit and cannot imply autonomous agent disp
  const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.ok(script.includes('&mode=jarvis-x'),'supervised adaptive requests must select the governed read-only preview');
 });
+
+test('G5 observed business claims must carry matching signed VYNDI source identity, bounded count and receipt time',()=>{
+ const signed={sourceSystem:'VYNDI_OS',status:'OBSERVED',readOnly:true,actionAuthorized:false,
+  answer:'Authorized VYNDI OS source: 2 stock records observed; other rows may exist.',
+  sourceAuthority:'getAuthoritativeInventory',recordsObserved:2,
+  sourceWindow:'BOUNDED_SELECTED_ROWS',dataCompleteness:'BOUNDED_SOURCE_WINDOW',
+  observedAt:'2026-10-15T08:30:00.000Z'};
+ const value=formatReadOnlyResult('INSIGHT',signed);
+ assert.match(value.answer,/SOURCE \[1\] VYNDI OS/);
+ assert.match(value.answer,/getAuthoritativeInventory/);
+ assert.match(value.answer,/2 selected/);
+ assert.match(value.answer,/not a complete business total/i);
+ for(const bad of [
+  {...signed,sourceAuthority:'invented-engineering-approval'},
+  {...signed,recordsObserved:9000},
+  {...signed,recordsObserved:-1},
+  {...signed,sourceWindow:'ALL_ENTERPRISE_RECORDS'},
+  {...signed,observedAt:'not-a-time'},
+  {...signed,actionAuthorized:true},
+  {...signed,sourceAuthority:undefined},
+ ])assert.throws(()=>formatReadOnlyResult('INSIGHT',bad),/VOICE_INSIGHT_UNVERIFIED/);
+});
+test('G5 timing is measured at answer display without pretending voice or independent cohort acceptance',async()=>{
+ const {createG5ResponseTiming,formatG5ResponseTiming}=await import('./lib/g5-response-timing.mjs');
+ const tracker=createG5ResponseTiming();
+ for(let i=0;i<19;i++)tracker.record(1000+i*100,'OBSERVED');
+ const s=tracker.summary();
+ assert.equal(s.successCount,19);
+ assert.equal(s.displayP95Ms,2700);
+ assert.equal(s.g5Accepted,false);
+ assert.match(formatG5ResponseTiming(s),/19 observations/i);
+ assert.match(formatG5ResponseTiming(s),/not voice\/device p95/i);
+ tracker.record(4000,'HOLD');
+ assert.equal(tracker.summary().successCount,19);
+ assert.equal(tracker.summary().holdCount,1);
+ assert.equal(tracker.summary().g5Accepted,false);
+ const {readFile}=await import('node:fs/promises');
+ const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.match(script,/performance\.now\(\)/);
+ assert.match(script,/g5Timing\.record/);
+ assert.match(script,/formatG5ResponseTiming/);
+});

@@ -80,3 +80,14 @@ test('G5 BOM question separates supplier preparation from actual approved produc
  assert.match(x.answer,/purchase orders/i);
  assert.match(x.answer,/not.*production release|cannot.*production release/i);
 });
+
+
+test('G5 phonetic Toray prepreg transcription is answered as material validation, not job-card availability',()=>{
+ const x=buildEngineeringFinding({
+  question:'Has the proposed Torah pre-break being validated for production',
+  vedmStatus:status,engineeringData:{changeOrders:[],baselines:[]},
+  knowledgeRegister:register,sourceRefs:[]});
+ assert.match(x.answer,/TORAY \/ PREPREG VALIDATION/);
+ assert.match(x.answer,/MATERIAL-01/);
+ assert.doesNotMatch(x.answer,/4 production job cards/);
+});

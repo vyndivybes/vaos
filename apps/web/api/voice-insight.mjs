@@ -35,7 +35,7 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader,
    return res.status(200).json({data:{
     schemaVersion:'VAOS_GOVERNANCE_EXPLANATION_V1',
     status:'OBSERVED',sourceSystem:'VAOS_POLICY',readOnly:true,actionAuthorized:false,
-    answer:'No. JARVIS cannot independently approve or pay a supplier, issue a purchase order, or release an unqualified production build. It may prepare evidence, analyze source records and draft proposals using the existing authorized employees. Actual payments, procurement commitments and engineering/production release require their distinct governed approvals and released engineering inputs. A founder question in Ask VAOS does not authorize any transaction.',
+    answer:'No. JARVIS cannot approve supplier payments, pay a supplier, issue a purchase order, or authorize production release by itself. It may prepare evidence, analyze source records and draft proposals using the existing authorized employees. Actual payments, procurement commitments and engineering/production release require their distinct governed approvals and released engineering inputs. A founder question in Ask VAOS does not authorize any transaction.',
    }});
   }
   if(intent.domain==='missions'){

@@ -62,3 +62,21 @@ test('unverified source shapes fail closed and never expose engineering free-tex
   engineeringData:{changeOrders:[{id:'secret',internal_note:'token '+('x'.repeat(100))}],baselines:[]},
   knowledgeRegister:register,sourceRefs:[],vibpeAvailable:true}),/ENGINEERING_DATA_UNVERIFIED/);
 });
+
+
+test('G5 Toray validation question answers from controlling material gate, not production job-card counts',()=>{
+ const x=buildEngineeringFinding({question:'Has the proposed Toray carbon prepreg been validated for final production use?',
+  vedmStatus:status,engineeringData:{changeOrders:[],baselines:[]},knowledgeRegister:register,sourceRefs:[]});
+ assert.match(x.answer,/Toray|prepreg/);
+ assert.match(x.answer,/MATERIAL-01/i);
+ assert.match(x.answer,/not (?:yet )?established|not released|unverified/i);
+ assert.doesNotMatch(x.answer,/production job cards observed/i);
+});
+test('G5 BOM question separates supplier preparation from actual approved production buying',()=>{
+ const x=buildEngineeringFinding({question:'Can we start procurement without a released manufacturing BOM? Explain the limits.',
+  vedmStatus:status,engineeringData:{changeOrders:[],baselines:[]},knowledgeRegister:register,sourceRefs:[]});
+ assert.match(x.answer,/RFQ|quotation/i);
+ assert.match(x.answer,/approved|released/i);
+ assert.match(x.answer,/purchase orders/i);
+ assert.match(x.answer,/not.*production release|cannot.*production release/i);
+});

@@ -316,7 +316,7 @@ function init(){
     a.textContent=ref.repository+' · '+ref.path+(Number.isInteger(ref.line)?' : '+ref.line:'');sources.append(a);
    }
    const diagnostic=typeof data?.diagnosticCode==='string'&&/^[A-Z][A-Z_]{4,55}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
-   const measured=g5Timing.record(Math.max(0,performance.now()-requestedAt),
+   const measured=g5Timing.record(Math.min(300000,Math.max(0,performance.now()-requestedAt)),
      normalized.status==='OBSERVED'?'OBSERVED':'HOLD');
    setStatus((investigate
     ?formatAdaptiveStatus(data)
@@ -330,7 +330,7 @@ function init(){
    lastAnswer=expired?expiredText:'I could not retrieve a verified business answer. No records were changed.';
    spokenAnswer=lastAnswer;
    answer.textContent=lastAnswer;
-   const measured=g5Timing.record(Math.max(0,performance.now()-requestedAt),'ERROR');
+   const measured=g5Timing.record(Math.min(300000,Math.max(0,performance.now()-requestedAt)),'ERROR');
    setStatus((expired?'Request timed out. Try again or check source connections.':
     'Read-only lookup unavailable.')+' · '+formatG5ResponseTiming(measured));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;

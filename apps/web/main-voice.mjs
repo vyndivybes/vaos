@@ -34,6 +34,18 @@ export function classifyDashboardQuestion(value){
 /** Explicit hands-free opt-in supports read-only business questions directly.
  * Other speech (including background conversations) never submits a request.
  */
+/** G5: simple factual questions use one signed departmental read. Cross-source
+ * advice and canonical AI-workforce questions keep the existing adaptive path.
+ * This saves the founder's AI budget and avoids substituting model summaries
+ * for a directly available inventory, sales or finance observation.
+ */
+export function shouldUseAdaptiveAnswer(intent,selected){
+ if(selected!==true||!intent||intent.kind==='DENY'||intent.kind==='STARTUP')return false;
+ if(intent.kind==='ADVISORY'||['group','missions'].includes(intent.domain))return true;
+ return typeof intent.question==='string'
+  &&/\b(?:digital|ai|artificial intelligence)\s+(?:employees?|agents?|workforce)\b|\b(?:orchestrator|knowledge agent)\b/i.test(intent.question);
+}
+
 export function isDirectBusinessQuestion(value){
  const text=typeof value==='string'?value.trim():'';
  if(!/^(?:what|how|which|where|when|who|show|list|tell me|give me|do we|are there|is there|summarize|report)\b/i.test(text))return false;
@@ -122,14 +134,14 @@ export function formatReadOnlyResult(kind,data){
   if(data.sourceSystem==='VYNDI_OS'&&data.status==='OBSERVED'){
    // A signed selected-window observation is not a certified enterprise total.
    if(!SIGNED_VYNDI_SOURCE_AUTHORITIES.has(data.sourceAuthority)
-      ||!Number.isSafeInteger(data.recordsObserved)||data.recordsObserved<0||data.recordsObserved>100
+      ||!Number.isSafeInteger(data.recordsObserved)||data.recordsObserved<0||data.recordsObserved>200
       ||data.sourceWindow!=='BOUNDED_SELECTED_ROWS'
       ||data.dataCompleteness!=='BOUNDED_SOURCE_WINDOW'
       ||typeof data.observedAt!=='string'||!G5_ISO_UTC.test(data.observedAt)
       ||!Number.isFinite(Date.parse(data.observedAt)))
     throw Error('VOICE_INSIGHT_UNVERIFIED');
    const provenance='SOURCE [1] VYNDI OS · '+data.sourceAuthority+
-    ' · '+data.recordsObserved+' selected records, up to 100 per read · observed '+data.observedAt+
+    ' · '+data.recordsObserved+' selected rows (up to 100 per source collection) · observed '+data.observedAt+
     '. This is not a complete business total or an independently qualified financial or engineering release.';
    return {status:'OBSERVED',answer:(data.answer.slice(0,2600)+'\n\n'+provenance).slice(0,2900),
     spokenAnswer:data.answer.slice(0,900),sources:[],language:['en','ta','ml','hi'].includes(data.language)?data.language:'en'};
@@ -273,7 +285,7 @@ function init(){
   let speaking=false;
   try{
    const startup=intent.kind==='STARTUP';
-   const investigate=!startup&&adaptive?.checked===true;
+   const investigate=shouldUseAdaptiveAnswer(intent,adaptive?.checked);
    const route=startup?'/api/prelaunch-workforce':investigate?'/api/adaptive-intelligence?q='+encodeURIComponent(intent.question)+'&eval=v3-readonly&mode=jarvis-x'
     :intent.kind==='EVIDENCE'
     ?'/api/federated-knowledge?q='+encodeURIComponent(intent.question)

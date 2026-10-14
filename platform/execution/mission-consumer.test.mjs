@@ -309,3 +309,40 @@ test('duplicate packages, malformed dependencies and invalid authority cannot ru
  const f=fixture();(await f.service.snapshot()).workPackages[0].authority=null;
  assert.equal((await createMissionConsumer({service:f.service}).consume('mission-1')).submitted,0);
 });
+
+
+test('a write acknowledgement without durable readback cannot submit a handoff',async()=>{
+ const f=fixture();
+ f.service.recordWorkEvidence=async()=>({evidenceId:'missing-record'});
+ await assert.rejects(()=>createMissionConsumer({service:f.service}).consume('mission-1'),/MISSION_EVIDENCE_READBACK_MISMATCH/);
+ assert.equal(f.handoff.status,'ACCEPTED');
+ assert.deepEqual(f.events.map(e=>e.outcome),['ACCEPT']);
+});
+test('wrong persisted owner cannot submit or verify a report',async()=>{
+ const f=fixture(),record=f.service.recordWorkEvidence;
+ f.service.recordWorkEvidence=async input=>{
+  const saved=await record(input);f.reports.get(saved.evidenceId).author_agent_id='finance';return saved;
+ };
+ await assert.rejects(()=>createMissionConsumer({service:f.service}).consume('mission-1'),/MISSION_EVIDENCE_READBACK_MISMATCH/);
+ assert.equal(f.handoff.status,'ACCEPTED');
+ const clean=fixture(),consumer=createMissionConsumer({service:clean.service});
+ await consumer.consume('mission-1');
+ clean.reports.values().next().value.author_agent_id='finance';
+ assert.equal((await consumer.review('mission-1')).returned,1);
+ assert.equal(clean.handoff.status,'RETURNED');
+});
+test('a readback outage retains the accepted handoff for restart recovery',async()=>{
+ const f=fixture(),get=f.service.getWorkEvidence;
+ let outage=true;
+ f.service.getWorkEvidence=async id=>{
+  if(!id.startsWith('handoff-version:')&&outage)throw Error('READBACK_OFFLINE');
+  return get(id);
+ };
+ const consumer=createMissionConsumer({service:f.service});
+ await assert.rejects(()=>consumer.consume('mission-1'),/READBACK_OFFLINE/);
+ assert.equal(f.reports.size,1);assert.equal(f.handoff.status,'ACCEPTED');
+ outage=false;
+ assert.equal((await consumer.consume('mission-1')).submitted,1);
+ assert.equal(f.reports.size,1);
+ assert.equal((await consumer.review('mission-1')).verified,1);
+});

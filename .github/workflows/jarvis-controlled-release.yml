@@ -6,6 +6,7 @@ on:
       - 'apps/web/api/adaptive-intelligence.mjs'
       - 'apps/web/lib/adaptive-intelligence.mjs'
       - 'apps/web/main-voice.mjs'
+      - 'platform/execution/mission-consumer.mjs'
       - 'apps/web/api/jarvis-data-agent.mjs'
       - 'apps/web/api/jarvis-data-agent.test.mjs'
       - 'apps/web/lib/data-agent-report.mjs'

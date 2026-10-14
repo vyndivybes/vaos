@@ -25,7 +25,7 @@ export function buildFounderMissionAnswer(question,source){
    ||!Number.isFinite(Date.parse(latest.verifiedAt||''))))
   throw Error('MISSION_SUMMARY_UNVERIFIED');
  let answer='',status='OBSERVED';
- const recovery=/\b(?:interrupt|recover|recovery|restart|resume|saved report)\b/i.test(question);
+ const recovery=/\b(?:interrupt\w*|recover\w*|restart\w*|resum\w*|saved reports?)\b/i.test(question);
  const latestQuestion=/\b(?:latest|last|most recent|completed)\b/i.test(question)
    &&/\b(?:mission|department|evidence|handoff)\b/i.test(question);
  if(recovery){
@@ -38,7 +38,7 @@ export function buildFounderMissionAnswer(question,source){
  }else if(latestQuestion){
   if(latest){
    const found=source.missions.find(m=>m.id===latest.missionId);
-   answer='Latest independently verified departmental handoff in the persisted ledger: mission '+latest.missionId+
+   answer='Latest verified handoff for a department in the persisted ledger: mission '+latest.missionId+
     ', action '+latest.actionType+', assigned employee '+latest.ownerAgentId+
     ', immutable saved evidence '+latest.evidenceId+', reviewed '+latest.verifiedAt+'. '+
     'This verifies the named handoff only, not necessarily that the entire mission is closed.'+

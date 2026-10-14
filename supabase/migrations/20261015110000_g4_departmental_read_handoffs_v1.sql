@@ -1,5 +1,4 @@
--- G4 departmental read execution (Step 3); no new tables, role bypass, or effectful jobs.
--- Preserve the server-key-gated mission evidence RPC and separate verifier.
+-- G4 scoped departmental safe observations: existing private, service-key-gated reports only.
 create or replace function public.vaos_record_handoff_work_evidence(
   p_server_key text,
   p_handoff_id text,
@@ -34,16 +33,12 @@ begin
   if not found then raise exception 'HANDOFF_EVIDENCE_WORK_PACKAGE_NOT_FOUND'; end if;
   if v_work.action_type <> v_handoff.requested_job
      or v_work.human_approval_required
-     or (
-       (v_work.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION')
-        and (v_work.authority <> 5 or v_work.execution_mode <> 'ANALYSE'))
-       or (v_work.action_type not in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION') and v_work.authority > 2)
-     )
+     or ( (v_work.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION') and (v_work.authority <> 5 or v_work.execution_mode <> 'ANALYSE')) or (v_work.action_type not in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION') and v_work.authority > 2) )
      or v_work.execution_mode = 'GOVERNED_EXECUTION'
      or v_work.action_type not in (
        'PROJECT.TRACK_DEPENDENCY','KNOWLEDGE.DETECT_GAP','RELEASE.CHECK_OPEN_ITEMS','RISK.IDENTIFY','PROJECT.DETECT_DELAY','ORCHESTRATOR.INTAKE_MISSION',
                       'ORCHESTRATOR.MONITOR_MISSION','ORCHESTRATOR.CONSOLIDATE_RESULT',
-       'ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS','COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION'
+       'COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION','ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS'
      ) then
     raise exception 'HANDOFF_EVIDENCE_ACTION_NOT_PERMITTED';
   end if;
@@ -65,14 +60,11 @@ begin
     raise exception 'HANDOFF_EVIDENCE_REPORT_INVALID';
   end if;
 
-
-  -- A high numeric catalog authority never grants a write: the eight
-  -- named actions are independently gated signed VYNDI READ contracts.
   if v_work.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION') then
     if p_report->>'scope' <> 'BOUNDED_VYNDI_READ_RECEIPT_ONLY'
        or p_report->>'sourceSystem' <> 'VYNDI_OS'
        or p_report->>'sourceAuthority' <> case v_work.action_type
-       when 'COMMERCIAL.OBSERVE_PIPELINE' then 'listSalesOrders'
+         when 'COMMERCIAL.OBSERVE_PIPELINE' then 'listSalesOrders'
        when 'PROCUREMENT.OBSERVE_SHORTAGE' then 'getConfiguredDemandShortages'
        when 'INVENTORY.OBSERVE_STOCK' then 'getAuthoritativeInventory'
        when 'PRODUCTION.OBSERVE_WIP' then 'getProductionJobCards'
@@ -86,83 +78,11 @@ begin
        or p_report->>'sourceRevisionVerified' <> 'false'
        or p_report->>'sourceCompletenessVerified' <> 'false'
        or jsonb_typeof(p_report->'recordsObserved') <> 'number'
-       or (p_report->>'recordsObserved') !~ '^[0-9]{1,3}
-  v_evidence_id:='vaos-evidence:'||substr(md5(v_handoff.id||':'||p_expected_version::text),1,24);
-
-  select * into v_existing from vaos_private.handoff_work_evidence
-    where handoff_id=p_handoff_id and handoff_version=p_expected_version;
-  if found then
-    if v_existing.report_sha256 <> v_hash then
-      raise exception 'MISSION_EVIDENCE_IDEMPOTENCY_CONFLICT';
-    end if;
-    return jsonb_build_object('outcome','REPLAY','evidenceId',v_existing.evidence_id);
-  end if;
-
-  insert into vaos_private.handoff_work_evidence
-    (evidence_id,handoff_id,handoff_version,author_agent_id,action_type,report,report_sha256)
-  values (v_evidence_id,p_handoff_id,p_expected_version,p_by_agent_id,v_work.action_type,p_report,v_hash);
-  return jsonb_build_object('outcome','RECORDED','evidenceId',v_evidence_id);
-end;
-$$;
-
+       or (p_report->>'recordsObserved') !~ '^[0-9]{1,3}$'
        or (p_report->>'recordsObserved')::integer not between 0 and 100
-       or p_report->>'requestNonce' !~ '^[a-f0-9]{32}
-  v_evidence_id:='vaos-evidence:'||substr(md5(v_handoff.id||':'||p_expected_version::text),1,24);
-
-  select * into v_existing from vaos_private.handoff_work_evidence
-    where handoff_id=p_handoff_id and handoff_version=p_expected_version;
-  if found then
-    if v_existing.report_sha256 <> v_hash then
-      raise exception 'MISSION_EVIDENCE_IDEMPOTENCY_CONFLICT';
-    end if;
-    return jsonb_build_object('outcome','REPLAY','evidenceId',v_existing.evidence_id);
-  end if;
-
-  insert into vaos_private.handoff_work_evidence
-    (evidence_id,handoff_id,handoff_version,author_agent_id,action_type,report,report_sha256)
-  values (v_evidence_id,p_handoff_id,p_expected_version,p_by_agent_id,v_work.action_type,p_report,v_hash);
-  return jsonb_build_object('outcome','RECORDED','evidenceId',v_evidence_id);
-end;
-$$;
-
-       or p_report->>'requestBodySha256' !~ '^[a-f0-9]{64}
-  v_evidence_id:='vaos-evidence:'||substr(md5(v_handoff.id||':'||p_expected_version::text),1,24);
-
-  select * into v_existing from vaos_private.handoff_work_evidence
-    where handoff_id=p_handoff_id and handoff_version=p_expected_version;
-  if found then
-    if v_existing.report_sha256 <> v_hash then
-      raise exception 'MISSION_EVIDENCE_IDEMPOTENCY_CONFLICT';
-    end if;
-    return jsonb_build_object('outcome','REPLAY','evidenceId',v_existing.evidence_id);
-  end if;
-
-  insert into vaos_private.handoff_work_evidence
-    (evidence_id,handoff_id,handoff_version,author_agent_id,action_type,report,report_sha256)
-  values (v_evidence_id,p_handoff_id,p_expected_version,p_by_agent_id,v_work.action_type,p_report,v_hash);
-  return jsonb_build_object('outcome','RECORDED','evidenceId',v_evidence_id);
-end;
-$$;
-
-       or p_report->>'gatewayReceivedAt' !~ '^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z
-  v_evidence_id:='vaos-evidence:'||substr(md5(v_handoff.id||':'||p_expected_version::text),1,24);
-
-  select * into v_existing from vaos_private.handoff_work_evidence
-    where handoff_id=p_handoff_id and handoff_version=p_expected_version;
-  if found then
-    if v_existing.report_sha256 <> v_hash then
-      raise exception 'MISSION_EVIDENCE_IDEMPOTENCY_CONFLICT';
-    end if;
-    return jsonb_build_object('outcome','REPLAY','evidenceId',v_existing.evidence_id);
-  end if;
-
-  insert into vaos_private.handoff_work_evidence
-    (evidence_id,handoff_id,handoff_version,author_agent_id,action_type,report,report_sha256)
-  values (v_evidence_id,p_handoff_id,p_expected_version,p_by_agent_id,v_work.action_type,p_report,v_hash);
-  return jsonb_build_object('outcome','RECORDED','evidenceId',v_evidence_id);
-end;
-$$;
-
+       or (p_report->>'requestNonce') !~ '^[a-f0-9]{32}$'
+       or (p_report->>'requestBodySha256') !~ '^[a-f0-9]{64}$'
+       or (p_report->>'gatewayReceivedAt') !~ '^20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{3}Z$'
        or jsonb_array_length(p_report->'findings') <> 1
        or p_report->'findings'->>0 <> 'BOUNDED_SELECTED_RECORDS:' || (p_report->>'recordsObserved')
        or (p_report - array[
@@ -232,14 +152,10 @@ begin
                 'PROJECT.TRACK_DEPENDENCY','KNOWLEDGE.DETECT_GAP',
                 'RELEASE.CHECK_OPEN_ITEMS','RISK.IDENTIFY','PROJECT.DETECT_DELAY','ORCHESTRATOR.INTAKE_MISSION',
                       'ORCHESTRATOR.MONITOR_MISSION','ORCHESTRATOR.CONSOLIDATE_RESULT',
-                      'ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS','COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION'
+                'COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION','ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS'
               )
               and wp.human_approval_required=false
-              and (
-                wp.authority<=2
-                or (wp.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION')
-                    and wp.authority=5 and wp.execution_mode='ANALYSE')
-              )
+              and (wp.authority<=2 or (wp.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION') and wp.authority=5 and wp.execution_mode='ANALYSE'))
               and wp.action_type=h.requested_job
               and d.status='ACTIVE'
               and d.qualification_level>=wp.minimum_qualification_level
@@ -259,12 +175,10 @@ begin
                       'PROJECT.TRACK_DEPENDENCY','KNOWLEDGE.DETECT_GAP',
                       'RELEASE.CHECK_OPEN_ITEMS','RISK.IDENTIFY','PROJECT.DETECT_DELAY','ORCHESTRATOR.INTAKE_MISSION',
                       'ORCHESTRATOR.MONITOR_MISSION','ORCHESTRATOR.CONSOLIDATE_RESULT',
-                      'ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS','COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION'
+                'COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION','ENGINEERING.ASSESS_REQUIREMENT','QA.AUDIT_EVIDENCE','SECURITY.ASSESS_ACCESS'
                     )
                     or remaining.human_approval_required=true
-                    or (remaining.authority>2
-                        and not (remaining.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION')
-                                 and remaining.authority=5 and remaining.execution_mode='ANALYSE'))
+                    or (remaining.authority>2 and not (remaining.action_type in ('COMMERCIAL.OBSERVE_PIPELINE','PROCUREMENT.OBSERVE_SHORTAGE','INVENTORY.OBSERVE_STOCK','PRODUCTION.OBSERVE_WIP','MAINTENANCE.OBSERVE_ASSET','FINANCE.OBSERVE_LEDGER','PEOPLE.OBSERVE_WORKFORCE','ENGINEERING.OBSERVE_CONFIGURATION') and remaining.authority=5 and remaining.execution_mode='ANALYSE'))
                     or remaining.execution_mode not in ('ANALYSE','PREPARE')
                   )
               )
@@ -290,8 +204,6 @@ begin
 end;
 $$;
 
--- The existing actor trigger previously had ELSE 99 for operational employees.
--- Extend only the eight registered qualification floors, preserving maker/checker.
 CREATE OR REPLACE FUNCTION vaos_private.assert_current_handoff_actor()
  RETURNS trigger
  LANGUAGE plpgsql
@@ -371,7 +283,6 @@ begin
 end;
 $function$
 ;
-
 revoke all on function public.vaos_record_handoff_work_evidence(text,text,integer,text,jsonb) from public,anon,authenticated;
 grant execute on function public.vaos_record_handoff_work_evidence(text,text,integer,text,jsonb) to service_role;
 revoke all on function public.vaos_list_runnable_missions(text,integer) from public,anon,authenticated;

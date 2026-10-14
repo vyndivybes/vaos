@@ -392,7 +392,7 @@ test('a qualified signed read is persisted, read back and independently receipt-
  f.handoff.to_agent_id='inventory';
  f.handoff.requested_job='INVENTORY.OBSERVE_STOCK';
  Object.assign((await f.service.snapshot()).workPackages[0],{
-  action_type:'INVENTORY.OBSERVE_STOCK',owner_agent_id:'inventory',authority:4,
+  action_type:'INVENTORY.OBSERVE_STOCK',owner_agent_id:'inventory',authority:5,
   execution_mode:'ANALYSE',
  });
  const {getVyndiBridgeRoute}=await import('../../packages/contracts/vyndi-write-bridge.mjs');
@@ -421,7 +421,7 @@ test('unsigned or unavailable domain reads leave the handoff unverified and repo
  const f=fixture();
  f.handoff.to_agent_id='finance';f.handoff.requested_job='FINANCE.OBSERVE_LEDGER';
  Object.assign((await f.service.snapshot()).workPackages[0],{
-  action_type:'FINANCE.OBSERVE_LEDGER',owner_agent_id:'finance',authority:4,execution_mode:'ANALYSE',
+  action_type:'FINANCE.OBSERVE_LEDGER',owner_agent_id:'finance',authority:5,execution_mode:'ANALYSE',
  });
  const consumer=createMissionConsumer({service:f.service,readDepartment:async()=>{throw Error('SENSITIVE_INTERNAL');}});
  const result=await consumer.consume('mission-1');

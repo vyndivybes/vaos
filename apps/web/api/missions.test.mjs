@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createSessionToken, SESSION_COOKIE } from '../lib/auth.mjs';
-import { createMissionsHandler } from './missions.mjs';
+import { createMissionsHandler, planFounderInstruction } from './missions.mjs';
+import { routeJob } from '../../../platform/runtime/vaos-eight-operating-model.mjs';
 import { DEFAULT_API_HANDLERS } from '../cloudflare-worker.mjs';
 
 function response() {
@@ -14,15 +15,17 @@ function response() {
   return { res, result };
 }
 
-function req(method, { body, url = 'https://vaos.example/api/missions', authenticated = true } = {}) {
+function req(method, { body, url = 'https://vaos.example/api/missions', authenticated = true, email = 'kaaviyam1519@gmail.com', origin = 'https://vaos.example' } = {}) {
   return {
     method,
     url,
     body,
     headers: {
-      cookie: authenticated ? `${SESSION_COOKIE}=${createSessionToken('kaaviyam1519@gmail.com')}` : '',
+      cookie: authenticated ? `${SESSION_COOKIE}=${createSessionToken(email)}` : '',
+      origin,
+      'content-type': 'application/json',
     },
-    env: {},
+    env: { VAOS_FOUNDER_INBOX_CONTROL: 'record-only-v1' },
   };
 }
 
@@ -166,4 +169,117 @@ test('authenticated RUN_SAFE uses bounded consumer and independent review, witho
   } }), no.res);
   assert.equal(no.result.code, 422);
   assert.equal(called.length, 2);
+});
+
+
+const founder = 'shyamsundhar1982@gmail.com';
+const sourceId = '52a8a9bd-3706-4d05-8941-045bfb64c661';
+
+test('founder startup instruction routes recorded evidence into all fifteen departmental job families, with Orchestrator coordinating', async () => {
+  const instruction = 'Prepare Vāyú Shastr company startup and launch. Coordinate all sixteen employees.';
+  const callLog = [];
+  let assigned = 0;
+  let planned;
+  const handler = createMissionsHandler({
+    getInboxStore: () => ({
+      async list(input) {
+        assert.deepEqual(input, { agentId: 'orchestrator', actorEmail: founder });
+        return { messages: [{ messageId: sourceId, recipientAgentId: 'orchestrator',
+          kind: 'INSTRUCTION', status: 'RECORDED_NOT_ROUTED', instruction }] };
+      },
+    }),
+    getService: () => ({
+      async planMission(input) {
+        planned = input; callLog.push('PLAN');
+        return { outcome: 'CREATED', mission: { id: input.missionId } };
+      },
+      async dispatchMission(id, options) {
+        assert.equal(id, planned.missionId);
+        assert.deepEqual(options, { maxAssignments: 8 });
+        callLog.push('DISPATCH');
+        const count = Math.min(8, 15 - assigned);
+        assigned += count;
+        return { outcome: count ? 'DISPATCHED' : 'NO_READY_WORK', count };
+      },
+      async snapshot(id) {
+        assert.equal(id, planned.missionId);
+        return { mission: { id, status: 'ACTIVE' },
+          workPackages: Array.from({ length: 15 }, (_, i) => ({ id: 'wp-' + i })),
+          handoffs: Array.from({ length: assigned }, (_, i) => ({ id: 'h-' + i })) };
+      },
+    }),
+  });
+  const result = response();
+  await handler(req('POST', { email: founder,
+    body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }), result.res);
+  assert.equal(result.result.code, 200);
+  assert.equal(result.result.body.data.missionId, 'founder-52a8a9bd37064d058941045bfb64c661');
+  assert.equal(result.result.body.data.assignedWorkPackages, 15);
+  assert.equal(result.result.body.data.businessEffectsExecuted, false);
+  assert.deepEqual(callLog, ['PLAN', 'DISPATCH', 'DISPATCH']);
+  const roles = new Set(planned.requestedJobs.map(job => routeJob(job).ownerAgentId));
+  assert.equal(planned.requestedJobs.length, 15);
+  assert.equal(roles.size, 15);
+  assert.equal(roles.has('orchestrator'), false);
+  assert.equal(planned.objective, instruction);
+  for (const job of planned.requestedJobs) {
+    const route = routeJob(job);
+    assert.equal(route.humanApprovalRequired, false);
+    assert.ok(['ANALYSE', 'PREPARE'].includes(route.executionMode));
+  }
+});
+
+test('founder mission selection stays read-only and deterministic for targeted requests', () => {
+  const mission = planFounderInstruction(sourceId, 'Review supplier procurement and stock availability');
+  assert.equal(mission.missionId, 'founder-52a8a9bd37064d058941045bfb64c661');
+  assert.ok(mission.requestedJobs.includes('PROCUREMENT.OBSERVE_SHORTAGE'));
+  assert.ok(mission.requestedJobs.includes('INVENTORY.OBSERVE_STOCK'));
+  assert.ok(mission.requestedJobs.includes('PROJECT.TRACK_DEPENDENCY'));
+  assert.ok(!mission.requestedJobs.includes('PROCUREMENT.CREATE_PO'));
+  assert.ok(!mission.requestedJobs.includes('INVENTORY.ISSUE_MATERIAL'));
+  assert.deepEqual(planFounderInstruction(sourceId, mission.objective), mission);
+});
+
+test('founder routing rejects unrecorded instructions, spoofed input and non-founder users before mission creation', async () => {
+  const calls = [];
+  const handler = createMissionsHandler({
+    getInboxStore: () => ({ async list() { calls.push('READ'); return { messages: [] }; } }),
+    getService: () => ({ async planMission() { calls.push('PLAN'); } }),
+  });
+  for (const [options, expected] of [
+    [{ body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }, 403],
+    [{ email: founder, origin: 'https://evil.example', body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }, 403],
+    [{ email: founder, body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId, requestedJobs: ['FINANCE.PREPARE_PAYMENT'] } }, 422],
+    [{ email: founder, body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }, 409],
+  ]) {
+    const r = response();
+    await handler(req('POST', options), r.res);
+    assert.equal(r.result.code, expected);
+  }
+  assert.deepEqual(calls, ['READ']);
+});
+
+test('replayed founder mission reports persisted assignments without duplicating handoffs', async () => {
+  const calls = [];
+  const handler = createMissionsHandler({
+    getInboxStore: () => ({ async list() {
+      return { messages: [{ messageId: sourceId, recipientAgentId: 'orchestrator',
+        kind: 'INSTRUCTION', status: 'RECORDED_NOT_ROUTED',
+        instruction: 'Review engineering configuration records' }] };
+    } }),
+    getService: () => ({
+      async planMission() { calls.push('PLAN'); return { outcome: 'REPLAY' }; },
+      async dispatchMission() { calls.push('DISPATCH'); return { outcome: 'NO_READY_WORK', count: 0 }; },
+      async snapshot(id) { return { mission: { id, status: 'ACTIVE' },
+        workPackages: [{ id: 'wp-1' }, { id: 'wp-2' }, { id: 'wp-3' }],
+        handoffs: [{ id: 'h-1' }, { id: 'h-2' }] }; },
+    }),
+  });
+  const r = response();
+  await handler(req('POST', { email: founder,
+    body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }), r.res);
+  assert.equal(r.result.code, 200);
+  assert.equal(r.result.body.data.assignedWorkPackages, 2);
+  assert.equal(r.result.body.data.status, 'PARTIALLY_ASSIGNED');
+  assert.deepEqual(calls, ['PLAN', 'DISPATCH']);
 });

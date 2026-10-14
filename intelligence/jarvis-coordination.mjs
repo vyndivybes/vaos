@@ -6,6 +6,11 @@ const ROUTES=Object.freeze({
  PRODUCTION:['production','qa'], ENGINEERING:['engineering-configuration','vibpe']
 });
 export const COORDINATION_DOMAINS=Object.freeze(Object.keys(ROUTES));
+export function isDigitalWorkforceQuestion(question) {
+ return typeof question==='string'&&
+  /\b(?:digital\s+(?:employees?|workforce|agents?)|VAOS\s+(?:employees?|workforce|agents?)|orchestrator|knowledge\s+agent)\b/i.test(question)&&
+  /\b(?:assessments?|qualification|qualified|competence|commissioning|registered|active|roster|coverage|pass)\b/i.test(question);
+}
 // This projection reads recorded qualifications only. It never grants authority.
 export function planJarvisCoordination(snapshot, {now=Date.now()}={}) {
  const rows=snapshot?.workforce?.digitalEmployees;

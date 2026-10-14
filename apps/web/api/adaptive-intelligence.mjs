@@ -12,6 +12,8 @@ import {selectEvidenceGapRead,independentlyCheckDraft} from '../lib/adaptive-inv
 import {summarizeAdaptiveDiagnostics} from '../lib/adaptive-upgrade-readiness.mjs';
 import {assessV3CandidateMode} from '../lib/adaptive-v3-activation.mjs';
 import {createJarvisXPreview} from '../lib/jarvis-x-decision-room.mjs';
+import {getDurableControlService} from '../lib/durable-control-provider.mjs';
+import {isDigitalWorkforceQuestion,planJarvisCoordination} from '../../../intelligence/jarvis-coordination.mjs';
 import {planAdaptiveReads,validateAdaptiveDraft,synthesizeAdaptiveBrief,
  fallbackAdaptivePlan,formatAdaptiveEvidence,permittedTechnicalSources,
  buildAdaptiveFallback} from '../lib/adaptive-intelligence.mjs';
@@ -61,6 +63,7 @@ export function createAdaptiveIntelligenceHandler({
  getReader=makeCommercialReader,getEngineering=governedEngineering,getGraph=readPersistentGraph,
  fetchImpl=globalThis.fetch,claim=claimVoiceAiDailyBudget,
  plan=planAdaptiveReads,synthesize=synthesizeAdaptiveBrief,now=()=>Date.now(),
+ getWorkforceSnapshot=env=>getDurableControlService(env).snapshot(),
 }={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
@@ -77,6 +80,32 @@ export function createAdaptiveIntelligenceHandler({
    return res.status(422).json(apiError('ADAPTIVE_QUESTION_REJECTED','Read-only non-secret question required'));
   if(analysisMode!==''&&!(analysisMode==='jarvis-x'&&evaluationRequest==='v3-readonly'))
    return res.status(422).json(apiError('JARVIS_X_MODE_DENIED','Founder supervised read-only mode required'));
+
+  // Digital qualifications belong to the persisted VAOS register. HR personnel
+  // counts and engineering release records cannot answer these questions.
+  if(isDigitalWorkforceQuestion(question)){
+   const startedAt=now();
+   try{
+    const coordination=planJarvisCoordination(await getWorkforceSnapshot(req.env),{now:now()});
+    const coverage=coordination.assessmentCoverage;
+    const missing=coverage.missingOrInvalidPassEmployeeIds;
+    const answer='RECORDED ASSESSMENT COVERAGE — '+coverage.latestRecordedPassEmployees+' of 16 canonical digital employees meet the latest recorded PASS assessment and role-floor checks.'+
+     '\n\nMISSING OR INVALID EVIDENCE — '+(missing.length?missing.join(', '):'None in the latest recorded assessment projection.')+
+     '\n\nEVIDENCE — [1] VAOS_PERSISTED_WORKFORCE_REGISTER, the same authenticated snapshot used by /api/jarvis-coordination.'+
+     '\n\nSOURCE LIMITS — This counts distinct employees with valid latest recorded claims, not historical assessment rows or human personnel. ACTIVE status alone cannot establish qualification. Independent competence, runtime liveness and operational commissioning are not established by this projection. No agent dispatched or business action taken.';
+    return res.status(200).json({data:{
+     sourceSystem:'VAOS_ADAPTIVE',sourceAuthority:coordination.source,
+     status:missing.length?'HOLD':'OBSERVED',answer,spokenAnswer:answer.split('\n\nEVIDENCE')[0],
+     assessmentCoverage:coverage,observedAt:coordination.observedAt,
+     sourceCoverage:{observed:1,requested:1},sources:[],
+     planningMode:'RULE_FALLBACK',reasoningMode:'DETERMINISTIC_EVIDENCE',modelCalls:0,executionCount:1,
+     diagnostics:summarizeAdaptiveDiagnostics({elapsedMs:now()-startedAt,planningMode:'RULE_FALLBACK',
+      reasoningMode:'DETERMINISTIC_EVIDENCE',modelCalls:0,fallbackReason:'NONE',observed:1,requested:1,verificationStatus:'NOT_MODEL_VERIFIED'}),
+     actionAuthorized:false,automationExecuted:false,readOnly:true,advisoryOnly:true,
+     productionWritesAuthorized:false,qualificationCertified:false,
+    }});
+   }catch{return res.status(503).json(apiError('WORKFORCE_EVIDENCE_HOLD','Authoritative digital workforce evidence unavailable'));}
+  }
 
   const graphQuery=analysisMode==='jarvis-x'?resolveGraphQuestion(question):null;
   if(graphQuery){

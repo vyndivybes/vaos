@@ -2,6 +2,54 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {validateAdaptivePlan,planAdaptiveReads,formatAdaptiveEvidence,buildAdaptiveFallback} from './adaptive-intelligence.mjs';
 import {createAdaptiveIntelligenceHandler} from '../api/adaptive-intelligence.mjs';
+import {VAOS_WORKFORCE_AGENT_IDS,VAOS_WORKFORCE_QUALIFICATION_FLOOR} from '../../../platform/runtime/vaos-eight-operating-model.mjs';
+
+const workforceSnapshot=()=>({workforce:{digitalEmployees:VAOS_WORKFORCE_AGENT_IDS.map(id=>({
+ id,status:'ACTIVE',qualificationLevel:VAOS_WORKFORCE_QUALIFICATION_FLOOR[id],
+ latestAssessment:id==='orchestrator'?null:{status:'PASS',targetLevel:VAOS_WORKFORCE_QUALIFICATION_FLOOR[id],assessedAt:'2026-10-08T00:00:00Z'},
+ evidenceRefs:['PRIVATE-REF'],owner:'private@example.test',
+}))}});
+
+test('digital employee qualification reads the canonical register once without HR, engineering or model planning',async()=>{
+ let reads=0;
+ const h=createAdaptiveIntelligenceHandler({getWorkforceSnapshot:async()=>{reads++;return workforceSnapshot()},
+  now:()=>Date.parse('2026-10-14T00:00:00Z'),
+  getReader:()=>{throw Error('HR must not be read')},getEngineering:()=>{throw Error('engineering must not be read')},
+  claim:()=>{throw Error('model budget must not be used')},plan:()=>{throw Error('model must not be used')}});
+ for(const question of [
+  'Which digital employees are missing a recorded qualification assessment? Give the source and do not infer qualification from ACTIVE status.',
+  'Does Orchestrator have a recorded assessment?',
+  'How many VAOS digital employees have valid qualification evidence?',
+ ]){
+  const {state,res}=collect();await h(req(question),res);
+  assert.equal(state.status,200);const d=state.payload.data;
+  assert.equal(d.status,'HOLD');assert.match(d.answer,/15 of 16/);assert.match(d.answer,/orchestrator/);
+  assert.equal(d.sourceAuthority,'VAOS_PERSISTED_WORKFORCE_REGISTER');
+  assert.equal(d.modelCalls,0);assert.equal(d.executionCount,1);assert.equal(d.actionAuthorized,false);
+  assert.doesNotMatch(JSON.stringify(d),/PRIVATE-REF|private@example|30 HR/);
+ }
+ assert.equal(reads,3);
+});
+
+test('missing digital workforce source fails closed and cannot fall back to human personnel',async()=>{
+ let reads=0;
+ const h=createAdaptiveIntelligenceHandler({getWorkforceSnapshot:async()=>{reads++;throw Error('PRIVATE-SOURCE-ERROR')},
+  getReader:()=>{throw Error('must not read HR')},claim:()=>{throw Error('must not call model')}});
+ const {state,res}=collect();await h(req('Which VAOS agents have qualification assessments?'),res);
+ assert.equal(state.status,503);assert.equal(reads,1);
+ assert.equal(state.payload.error.code,'WORKFORCE_EVIDENCE_HOLD');
+ assert.doesNotMatch(JSON.stringify(state.payload),/PRIVATE-SOURCE-ERROR/);
+});
+
+test('digital workforce source still requires founder identity and cannot accept an incomplete roster',async()=>{
+ let reads=0;
+ const h=createAdaptiveIntelligenceHandler({getWorkforceSnapshot:async()=>{reads++;return {workforce:{digitalEmployees:[]}}}});
+ const q=req('Which digital employees are qualified?');
+ const unauthorized=collect();await h({...q,headers:{}},unauthorized.res);assert.equal(unauthorized.state.status,401);
+ const checker=collect();await h({...q,headers:{cookie:SESSION_COOKIE+'='+createSessionToken('kaaviyam1519@gmail.com')}},checker.res);
+ assert.equal(checker.state.status,403);assert.equal(reads,0);
+ const founder=collect();await h(q,founder.res);assert.equal(founder.state.status,503);assert.equal(reads,1);
+});
 import {createSessionToken,SESSION_COOKIE} from './auth.mjs';
 
 test('model selects multiple READ_ONLY evidence providers for previously unseen operational questions',async()=>{

@@ -45,15 +45,16 @@ test('install shell never caches private messages or claims commands were sent',
 
 
 test('Founder Command creates and assigns recorded instructions through the existing missions API', async () => {
- const [html, script] = await Promise.all([
+ const [html, script, flow] = await Promise.all([
   readFile(new URL('./founder-console.html', import.meta.url), 'utf8'),
   readFile(new URL('./founder-console.mjs', import.meta.url), 'utf8'),
+  readFile(new URL('./lib/founder-mission-flow.mjs', import.meta.url), 'utf8'),
  ]);
  assert.match(html, /Create and assign mission/);
  assert.match(script, /commandKind\.value==='INSTRUCTION'/);
  assert.match(script, /agentSelect\.value='orchestrator'/);
- assert.match(script, /operation:'ROUTE_FOUNDER_INSTRUCTION'/);
- assert.match(script, /businessEffectsExecuted!==false/);
+ assert.match(flow, /operation:'ROUTE_FOUNDER_INSTRUCTION'/);
+ assert.match(flow, /mission\.businessEffectsExecuted!==false/);
  assert.doesNotMatch(script, /\/api\/missions.*RUN_SAFE/);
 });
 
@@ -62,8 +63,27 @@ test('Founder mission lookup displays persisted employee evidence and recovery f
  const {readFile}=await import('node:fs/promises');
  const script=await readFile(new URL('./founder-console.mjs',import.meta.url),'utf8');
  assert.match(script,/view=results/);
- assert.match(script,/RECOVERABLE|recoverable/);
- assert.match(script,/VAOS_FOUNDER_MISSION_RESULTS_V1/);
+ assert.match(script,/loadFounderMission\(id/);
+ const flow=await readFile(new URL('./lib/founder-mission-flow.mjs',import.meta.url),'utf8');
+ assert.match(flow,/VAOS_FOUNDER_MISSION_RESULTS_V1/);
  assert.match(script,/formatMissionSnapshotSpokenPreview\(record\.snapshot,id\)/);
  assert.doesNotMatch(script,/\/api\/new-mission-results-screen/);
+});
+
+
+test('G4 Step 5 issues one founder mission and reads its results in the existing command form',async()=>{
+ const [html,script,flow]=await Promise.all([
+  readFile(new URL('./founder-console.html',import.meta.url),'utf8'),
+  readFile(new URL('./founder-console.mjs',import.meta.url),'utf8'),
+  readFile(new URL('./lib/founder-mission-flow.mjs',import.meta.url),'utf8'),
+ ]);
+ assert.match(html,/id="founder-command-submit"/);
+ assert.match(script,/await issueFounderInstruction\(\)/);
+ assert.match(script,/await loadFounderMission\(id\)/);
+ assert.match(script,/window\.history\.replaceState/);
+ assert.match(script,/const resumed=new URL\(window\.location\.href\)\.searchParams\.get\('missionId'\)/);
+ assert.match(script,/document\.visibilityState!=='visible'/);
+ assert.match(script,/60_000/);
+ assert.match(flow,/createFounderMission/);
+ assert.doesNotMatch(script,/\/api\/missions.*RUN_SAFE/);
 });

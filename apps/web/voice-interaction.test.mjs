@@ -196,6 +196,19 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
   assert.equal(third.length,3);
   assert.match(decodeURIComponent(third[2]),/latest completed departmental mission/);
   assert.doesNotMatch(decodeURIComponent(third[2]),/q=And the latest result/);
+
+  // Unlike playback-only Stop, stopping while hands-free listening is enabled
+  // must discard the short-lived conversation for privacy and consent.
+  await nodes['vaos-wake-toggle'].click();
+  await nodes['vaos-voice-stop'].click();
+  assert.match(nodes['vaos-voice-status'].textContent,/Conversation context cleared/);
+  nodes['vaos-voice-question'].value='And the blockers?';
+  await nodes['vaos-voice-ask'].click();
+  const fourth=requests.filter(x=>x.startsWith('/api/voice-insight?'));
+  assert.equal(fourth.length,4);
+  assert.match(decodeURIComponent(fourth[3]),/q=And the blockers/);
+  assert.doesNotMatch(decodeURIComponent(fourth[3]),/Which assigned missions remain unfinished and what blockers/);
+
  }finally{
   Object.assign(globalThis,saved);
  }

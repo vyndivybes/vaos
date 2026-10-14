@@ -214,7 +214,7 @@ function init(){
  const conversation=createG6Conversation();
  const setStatus=message=>{
   note.textContent=message;
-  root.dataset.voiceState=/\blistening|speech detected/i.test(message)?'listening'
+  if(root.dataset)root.dataset.voiceState=/\blistening|speech detected/i.test(message)?'listening'
    :/\bspeaking|speech playback/i.test(message)?'speaking'
    :/\bretriev|\bchecking|\brequesting|\bthinking/i.test(message)?'working':'ready';
  };

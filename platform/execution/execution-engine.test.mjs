@@ -218,3 +218,82 @@ test('engine persists only sanitized machine-readable provider failure metadata'
   assert.equal(JSON.stringify(saved).includes('super-secret'), false);
   assert.equal(JSON.stringify(saved).includes('provider.example'), false);
 });
+
+
+function scopedL5Job(){
+ return {id:'l5-job-1',intentId:'l5-intent-1',actionType:'PRODUCTION.OBSERVE_WIP',
+  leaseToken:'scoped-lease',payload:{monitoringScope:'PRODUCTION_L5_READ_ONLY_V1',missionId:'VAOS-CARBON-FRAME-S-20261010'}};
+}
+function signedL5Observation(job){
+ const resourceId=job.actionType+':'+job.id;
+ const shared={sourceContentSha256:'f'.repeat(64),independentlyReRead:true,observedRows:0};
+ return {adapterId:'vyndi.read-bridge.v1',
+  effect:{effectType:'VYNDI.DOMAIN_OBSERVED',resourceType:'VYNDI_READ_SNAPSHOT',resourceId,
+   state:'OBSERVED',sourceAuthority:'getProductionJobCards',...shared},
+  verification:{verified:true,resourceType:'VYNDI_READ_SNAPSHOT',resourceId,expectedState:'OBSERVED',
+   actionType:job.actionType,sourceAuthority:'getProductionJobCards',
+   evidenceSource:'vyndi:/api/vaos/bridge',nonce:'fresh-local-nonce',bodySha256:'e'.repeat(64),...shared}};
+}
+test('G9: exact scoped L5 engine returns a bounded source receipt only after completed durable readback',async()=>{
+ const job=scopedL5Job(),store=makeStore();
+ store.claimProductionObservation=async ({idempotencyKey})=>{
+  assert.equal(idempotencyKey,'vaos-production-l5:2026-10-15T08:00:00.000Z');
+  return job;
+ };
+ const registry={get:action=>action===job.actionType?{
+  execute:async claimed=>signedL5Observation(claimed)
+ }:null};
+ const engine=createExecutionEngine({store,registry});
+ const result=await engine.processProductionObservation({idempotencyKey:'vaos-production-l5:2026-10-15T08:00:00.000Z'});
+ assert.equal(result.status,'SUCCEEDED');
+ assert.equal(result.jobId,job.id);
+ assert.deepEqual(result.observationReceipt,{
+  schemaVersion:'VAOS_L5_SCOPED_OBSERVATION_RECEIPT_V1',
+  idempotencyKey:'vaos-production-l5:2026-10-15T08:00:00.000Z',
+  jobId:job.id,intentId:job.intentId,actionType:job.actionType,
+  adapterId:'vyndi.read-bridge.v1',sourceAuthority:'getProductionJobCards',
+  sourceContentSha256:'f'.repeat(64),independentlyReRead:true,observedRows:0,
+  verified:true,businessWrites:false,
+ });
+ assert.equal(store.completed.length,1);
+ assert.equal(store.failed.length,0);
+});
+
+test('G9: altered scoped readback prevents durable completion despite verified true',async()=>{
+ const variants=[
+  observation=>{delete observation.verification.sourceContentSha256;},
+  observation=>{observation.verification.sourceContentSha256='0'.repeat(64);},
+  observation=>{observation.verification.resourceId='PRODUCTION.OBSERVE_WIP:other';},
+  observation=>{observation.verification.evidenceSource='client-upload';},
+  observation=>{observation.effect.sourceAuthority='invented';},
+  observation=>{observation.verification.independentlyReRead=false;},
+  observation=>{observation.effect.observedRows=4;},
+  observation=>{observation.verification.nonce='';},
+ ];
+ for(const alter of variants){
+  const job=scopedL5Job(),store=makeStore();
+  store.claimProductionObservation=async()=>job;
+  store.failExecution=async(job,error)=>{store.failed.push({job,error});return {outcome:'DEAD_LETTER'};};
+  const engine=createExecutionEngine({store,registry:{get:()=>({
+   execute:async()=>{const observation=signedL5Observation(job);alter(observation);return observation;}
+  })}});
+  const result=await engine.processProductionObservation({idempotencyKey:'vaos-production-l5:2026-10-15T08:00:00.000Z'});
+  assert.equal(result.status,'DEAD_LETTER');
+  assert.equal(store.completed.length,0);
+  assert.equal(store.failed[0].error.code,'PRODUCTION_OBSERVATION_VERIFICATION_UNBOUND');
+  assert.equal(store.failed[0].error.retryable,false);
+  assert.equal(result.observationReceipt,undefined);
+ }
+});
+
+test('G9: a database completion conflict cannot return a successful scoped receipt',async()=>{
+ const job=scopedL5Job(),store=makeStore();
+ store.claimProductionObservation=async()=>job;
+ store.completeExecution=async()=>({outcome:'CONFLICT',jobId:job.id});
+ const engine=createExecutionEngine({store,registry:{get:()=>({
+  execute:async()=>signedL5Observation(job)
+ })}});
+ const result=await engine.processProductionObservation({idempotencyKey:'vaos-production-l5:2026-10-15T08:00:00.000Z'});
+ assert.equal(result.status,'CONFLICT');
+ assert.equal(result.observationReceipt,undefined);
+});

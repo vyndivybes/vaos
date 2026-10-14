@@ -49,15 +49,36 @@ export async function runProductionReadOnlyObservation({
       actor:'vaos-scheduled-production-observer',
     });
     if(proposed?.status==='EXECUTED') {
-      return {status:'ALREADY_OBSERVED',actionType:PRODUCTION_OBSERVATION_ACTION,hour:hourlyStamp.toISOString()};
+      // Previously recorded by the durable intent ledger. Do not report this
+      // as a fresh independent signed source read from this invocation.
+      return {status:'ALREADY_OBSERVED',actionType:PRODUCTION_OBSERVATION_ACTION,
+        hour:hourlyStamp.toISOString(),businessWrites:false,
+        freshReadbackVerified:false,evidence:'PERSISTED_INTENT_STATUS_ONLY'};
     }
     if(proposed?.status!=='AUTHORIZED') return HOLD('PRODUCTION_MONITOR_POLICY_NOT_AUTHORIZED');
     if(mode()!=='read-only-v1') return HOLD('PRODUCTION_MONITOR_STOPPED');
     const result=await executionEngine.processProductionObservation({idempotencyKey});
     if(!['SUCCEEDED','REPLAY'].includes(result?.status)) return HOLD('PRODUCTION_MONITOR_EXECUTION_NOT_VERIFIED');
+    const receipt=result?.observationReceipt;
+    const valid=receipt?.schemaVersion==='VAOS_L5_SCOPED_OBSERVATION_RECEIPT_V1'
+      &&typeof result.jobId==='string'&&result.jobId.length>0
+      &&receipt.jobId===result.jobId
+      &&typeof receipt.intentId==='string'&&receipt.intentId.length>0
+      &&receipt.idempotencyKey===idempotencyKey
+      &&receipt.actionType===PRODUCTION_OBSERVATION_ACTION
+      &&receipt.adapterId==='vyndi.read-bridge.v1'
+      &&receipt.sourceAuthority==='getProductionJobCards'
+      &&/^[a-f0-9]{64}$/.test(receipt.sourceContentSha256||'')
+      &&receipt.independentlyReRead===true
+      &&Number.isInteger(receipt.observedRows)&&receipt.observedRows>=0
+      &&receipt.verified===true
+      &&receipt.businessWrites===false;
+    if(!valid)return HOLD('PRODUCTION_MONITOR_EXECUTION_NOT_VERIFIED');
     return {status:'PASS',actionType:PRODUCTION_OBSERVATION_ACTION,
-      hour:hourlyStamp.toISOString(),executionJobId:result.jobId||null,
-      evidence:'VAOS_DURABLE_EXECUTION_VERIFICATION',businessWrites:false};
+      hour:hourlyStamp.toISOString(),executionJobId:receipt.jobId,
+      intentId:receipt.intentId,sourceContentSha256:receipt.sourceContentSha256,
+      observedRows:receipt.observedRows,evidence:'TWO_SIGNED_SOURCE_READS',
+      businessWrites:false};
   } catch {
     // Intent/queue outcome can be unknown after a transport failure;
     // the same hourly key is safe to reconcile but never blind-write.

@@ -9,11 +9,20 @@ const contract={ id:'production-controller-contract',autonomousActions:['PRODUCT
   prohibitedActions:['EVIDENCE.DELETE'], approvalRequiredActions:['PRODUCTION.RELEASE_JOB'] };
 const snapshot = {workforce:{digitalEmployees:[production,qa],responsibilityContracts:[contract]}};
 const now = () => new Date('2026-10-10T16:31:00.000Z');
-function harness({mode='read-only-v1',state=snapshot,intentStatus='AUTHORIZED',executeStatus='SUCCEEDED'}={}) {
+const verifiedReceipt=Object.freeze({
+ schemaVersion:'VAOS_L5_SCOPED_OBSERVATION_RECEIPT_V1',
+ idempotencyKey:'vaos-production-l5:2026-10-10T16:00:00.000Z',
+ actionType:'PRODUCTION.OBSERVE_WIP',jobId:'job-1',intentId:'intent-1',
+ adapterId:'vyndi.read-bridge.v1',sourceAuthority:'getProductionJobCards',
+ sourceContentSha256:'a'.repeat(64),independentlyReRead:true,observedRows:2,
+ verified:true,businessWrites:false,
+});
+function harness({mode='read-only-v1',state=snapshot,intentStatus='AUTHORIZED',
+ executeStatus='SUCCEEDED',receipt=verifiedReceipt}={}) {
  const calls=[];
  const controlService={snapshot:async()=>{calls.push('snapshot');return state},
   proposeIntent:async input=>{calls.push({propose:input});return {status:intentStatus}}};
- const executionEngine={processProductionObservation:async input=>{calls.push({execute:input});return {status:executeStatus,jobId:'job-1'}}};
+ const executionEngine={processProductionObservation:async input=>{calls.push({execute:input});return {status:executeStatus,jobId:'job-1',observationReceipt:receipt}}};
  return {calls,run:()=>runProductionReadOnlyObservation({controlService,executionEngine,mode:()=>mode,now,
   missionId:'VAOS-CARBON-FRAME-S-20261010'})};
 }
@@ -53,4 +62,50 @@ test('kill switch is rechecked after intent authorization',async()=>{
   mode:()=>++check===1?'read-only-v1':'disabled',now,
  });
  assert.equal(result.status,'HOLD');assert.equal(executions,0);
+});
+
+
+test('G9: a scoped L5 PASS includes an exact hourly readback receipt instead of a generic success claim',async()=>{
+ const h=harness();
+ const r=await h.run();
+ assert.equal(r.status,'PASS');
+ assert.equal(r.executionJobId,'job-1');
+ assert.equal(r.intentId,'intent-1');
+ assert.equal(r.evidence,'TWO_SIGNED_SOURCE_READS');
+ assert.equal(r.sourceContentSha256,'a'.repeat(64));
+ assert.equal(r.businessWrites,false);
+ assert.equal(r.actionType,'PRODUCTION.OBSERVE_WIP');
+});
+
+test('G9: a success flag without exact authorized source evidence is held, never described as autonomous completion',async()=>{
+ const invalidReceipts=[
+  null,{}, 
+  {...verifiedReceipt,verified:false},
+  {...verifiedReceipt,jobId:'some-other-job'},
+  {...verifiedReceipt,intentId:''},
+  {...verifiedReceipt,idempotencyKey:'vaos-production-l5:2026-10-10T15:00:00.000Z'},
+  {...verifiedReceipt,sourceAuthority:'user-submitted'},
+  {...verifiedReceipt,actionType:'PRODUCTION.RELEASE_JOB'},
+  {...verifiedReceipt,adapterId:'unknown'},
+  {...verifiedReceipt,independentlyReRead:false},
+  {...verifiedReceipt,businessWrites:true},
+  {...verifiedReceipt,observedRows:-1},
+  {...verifiedReceipt,sourceContentSha256:'not-a-source-hash'},
+ ];
+ for(const receipt of invalidReceipts){
+  const h=harness({receipt});
+  const result=await h.run();
+  assert.equal(result.status,'HOLD',JSON.stringify(receipt));
+  assert.equal(result.reason,'PRODUCTION_MONITOR_EXECUTION_NOT_VERIFIED',JSON.stringify(receipt));
+  assert.equal(result.executionJobId,undefined);
+ }
+});
+
+test('G9: a previously executed hourly intent is a recorded state, not a newly proven signed source read',async()=>{
+ const h=harness({intentStatus:'EXECUTED'});
+ const result=await h.run();
+ assert.equal(result.status,'ALREADY_OBSERVED');
+ assert.equal(result.businessWrites,false);
+ assert.equal(result.freshReadbackVerified,false);
+ assert.equal(h.calls.filter(x=>x.execute).length,0);
 });

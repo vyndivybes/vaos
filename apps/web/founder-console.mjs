@@ -1,5 +1,6 @@
 import {AGENTS,prepareFounderCommand,safeAgentSnapshot} from './founder-command.mjs';
 import {formatMissionSnapshotSpokenPreview} from './lib/voice-pilot.mjs';
+import {createFounderMission,formatFounderMissionResults} from './lib/founder-mission-flow.mjs';
 const $=id=>document.getElementById(id),shell=$('founder-shell'),message=$('command-message'),agentSelect=$('agent');
 let preparedText='';let pendingMessageId=null;let prepared=null;
 for(const agent of AGENTS){const option=document.createElement('option');option.value=agent.id;option.textContent=agent.name;agentSelect.append(option);}
@@ -9,7 +10,8 @@ function syncInstructionRecipient(){
  const missionInstruction=commandKind.value==='INSTRUCTION';
  if(missionInstruction)agentSelect.value='orchestrator';
  agentSelect.disabled=missionInstruction;
- $('record-draft').textContent=missionInstruction?'Create and assign mission':'Record in VAOS inbox';
+ $('record-draft').textContent='Record in VAOS inbox';
+ $('founder-command-submit').textContent=missionInstruction?'Create and assign mission':'Prepare command draft';
  preparedText='';pendingMessageId=null;prepared=null;
  $('draft-panel').hidden=true;
 }
@@ -31,21 +33,70 @@ async function authenticate(){
   const r=await fetch('/api/session',{credentials:'same-origin',cache:'no-store'});
   if(!r.ok){window.location.replace('/login');return;}
   shell.hidden=false;$('auth-message').hidden=true;await refresh();
+  // Mission ID is only a locator: all evidence must be read again under session auth.
+  const resumed=new URL(window.location.href).searchParams.get('missionId');
+  if(resumed&&/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(resumed)){
+   $('mission-id').value=resumed;
+   await loadFounderMission(resumed);
+  }
  }catch{$('auth-message').textContent='Session unavailable. Sign in from workspace.';}
 }
 agentSelect.addEventListener('change',()=>{$('draft-panel').hidden=true;preparedText='';pendingMessageId=null;prepared=null;refresh();loadHistory();});
 $('refresh').addEventListener('click',refresh);
-$('command-form').addEventListener('submit',event=>{
+$('command-form').addEventListener('submit',async event=>{
  event.preventDefault();
  try{
-  const d=prepareFounderCommand({agentId:agentSelect.value,kind:$('command-kind').value,instruction:$('instruction').value});
+  const d=prepareFounderCommand({agentId:agentSelect.value,kind:commandKind.value,instruction:$('instruction').value});
+  if(d.kind==='INSTRUCTION'){
+   // Explicit submission is sufficient for the permitted mission-only action.
+   // Keep the original message ID on retry, even when inbox recording succeeded
+   // but assignment response was interrupted. A changed instruction gets a new ID.
+   if(!prepared||prepared.kind!==d.kind||prepared.instruction!==d.instruction
+      ||prepared.recipientAgentId!==d.recipientAgentId){
+    prepared=d;pendingMessageId=crypto.randomUUID();
+   }
+   await issueFounderInstruction();
+   return;
+  }
   prepared=d;pendingMessageId=crypto.randomUUID();
   const a=AGENTS.find(a=>a.id===d.recipientAgentId);
-  preparedText='Recipient: '+a.name+' ('+d.recipientAgentId+')\nType: '+d.kind+'\nStatus: DRAFT_NOT_SENT\n\n'+d.instruction+'\n\nRequires governed submission. No authority granted.';
+  preparedText='Recipient: '+a.name+' ('+d.recipientAgentId+')\nType: '+d.kind+
+   '\nStatus: DRAFT_NOT_SENT\n\n'+d.instruction+
+   '\n\nRequires governed submission. No authority granted.';
   $('draft-output').textContent=preparedText;$('draft-panel').hidden=false;
-  message.textContent=d.kind==='INSTRUCTION'?'Instruction ready for Orchestrator routing. Confirm to create and assign the mission.':'Draft prepared locally. It has NOT been sent to an agent.';
- }catch{message.textContent='Invalid draft. Enter a specific instruction (5–2000 characters).';}
+  message.textContent='Draft prepared locally. It has NOT been sent to an agent.';
+ }catch{
+  message.textContent='Invalid instruction. Enter a specific request (5–2000 characters).';
+ }
 });
+
+async function issueFounderInstruction(){
+ const submit=$('founder-command-submit');
+ submit.disabled=true;
+ message.textContent='Recording founder instruction and assigning permitted departmental work…';
+ try{
+  const mission=await createFounderMission({
+   command:prepared,messageId:pendingMessageId,request:fetch,
+  });
+  const id=mission.missionId;
+  // Recording and planning succeeded. Never re-submit this instruction merely
+  // because subsequent GET readback or history rendering is unavailable.
+  prepared=null;pendingMessageId=null;preparedText='';
+  $('instruction').value='';$('draft-panel').hidden=true;
+  $('mission-id').value=id;
+  invalidateMissionVoiceReadback();
+  const url=new URL(window.location.href);
+  url.searchParams.set('missionId',id);
+  window.history.replaceState(null,'',url);
+  message.textContent='Mission assigned: '+mission.assignedWorkPackages+'/'+
+   mission.totalWorkPackages+' eligible departments. Results below update from saved evidence.';
+  await loadFounderMission(id);
+  await loadHistory();
+ }catch{
+  message.textContent='Mission routing not confirmed. Submit the same unchanged instruction to retry safely; the recorded request ID is retained.';
+ }finally{submit.disabled=false;}
+}
+
 async function loadHistory(){
  const out=$('recorded-history');out.replaceChildren();
  const select=$('report-request');select.replaceChildren();
@@ -107,48 +158,28 @@ $('founder-ai-draft').addEventListener('click',async()=>{
  finally{$('founder-ai-draft').disabled=false;}
 });
 $('record-draft').addEventListener('click',async()=>{
- if(!prepared||!pendingMessageId){message.textContent='Prepare a draft first.';return;}
- // A changed form must never send an older draft without another explicit confirmation.
+ // Reports and override proposals remain separately recorded without routing.
+ if(!prepared||!pendingMessageId||prepared.kind==='INSTRUCTION'){
+  message.textContent='Use Create and assign mission for direct founder instructions.';return;
+ }
  if(agentSelect.value!==prepared.recipientAgentId||$('instruction').value.trim()!==prepared.instruction
-    ||$('command-kind').value!==prepared.kind){
+    ||commandKind.value!==prepared.kind){
   message.textContent='Form changed. Prepare the draft again before recording.';return;
  }
  $('record-draft').disabled=true;
- let recorded=false;
  try{
   const r=await fetch('/api/founder-inbox',{method:'POST',credentials:'same-origin',
    headers:{'Content-Type':'application/json'},body:JSON.stringify({
     messageId:pendingMessageId,agentId:prepared.recipientAgentId,
-    kind:prepared.kind,instruction:prepared.instruction
+    kind:prepared.kind,instruction:prepared.instruction,
    })});
   const payload=await r.json();
   if(!r.ok||payload?.data?.message?.status!=='RECORDED_NOT_ROUTED')throw Error();
-  recorded=true;
-  if(prepared.kind==='INSTRUCTION'&&prepared.recipientAgentId==='orchestrator'){
-   const routed=await fetch('/api/missions',{method:'POST',credentials:'same-origin',
-    headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({operation:'ROUTE_FOUNDER_INSTRUCTION',messageId:pendingMessageId})});
-   const result=(await routed.json())?.data;
-   if(!routed.ok||!result||result.sourceMessageId!==pendingMessageId||
-      !/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(result.missionId)||
-      !Number.isInteger(result.assignedWorkPackages)||!Number.isInteger(result.totalWorkPackages)||
-      result.businessEffectsExecuted!==false)throw Error('MISSION_ROUTING_UNCONFIRMED');
-   $('mission-id').value=result.missionId;
-   $('mission-summary').textContent='Mission '+result.missionId+
-     '\nAssigned: '+result.assignedWorkPackages+'/'+result.totalWorkPackages+
-     '\nStatus: '+result.status+
-     '\nAssignments are recorded; departmental execution is separate.';
-   message.textContent='Mission '+result.missionId+' — '+result.assignedWorkPackages+
-     '/'+result.totalWorkPackages+' assignments recorded. Open Mission Status for details.';
-  }else{
-   message.textContent='Recorded in founder inbox. No execution or agent routing occurred.';
-  }
-  pendingMessageId=null;prepared=null;$('draft-panel').hidden=true;
+  pendingMessageId=null;prepared=null;preparedText='';$('draft-panel').hidden=true;
+  message.textContent='Recorded in founder inbox; report or override was not executed.';
   await loadHistory();
  }catch{
-  message.textContent=recorded
-   ?'Instruction recorded, but mission assignment is unconfirmed. Retry the same prepared instruction; no duplicate mission will be created.'
-   :'Recording not confirmed. Retry the same prepared instruction and ID.';
+  message.textContent='Recording unconfirmed. Retry the unchanged draft and recorded ID.';
  }finally{$('record-draft').disabled=false;}
 });
 $('copy-draft').addEventListener('click',async()=>{
@@ -163,48 +194,37 @@ function invalidateMissionVoiceReadback(){
 }
 $('mission-id').addEventListener('input',invalidateMissionVoiceReadback);
 $('voice-readonly-question').addEventListener('input',invalidateMissionVoiceReadback);
-$('mission-form').addEventListener('submit',async event=>{
- event.preventDefault();const id=$('mission-id').value.trim(),out=$('mission-summary');
+async function loadFounderMission(id,{quiet=false}={}){
+ const out=$('mission-summary');
  const serial=++missionReadSequence;
  delete out.dataset.voiceReadback;
- if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(id)){out.textContent='Enter a valid existing mission ID.';return;}
- out.textContent='Reading authoritative mission snapshot…';
+ if(!/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(id)){
+  if(!quiet)out.textContent='Enter a valid existing mission ID.';return false;
+ }
+ if(!quiet)out.textContent='Reading saved departmental results…';
  try{
   const response=await fetch('/api/missions?missionId='+encodeURIComponent(id)+'&view=results',
-    {credentials:'same-origin',cache:'no-store'});
-  if(!response.ok)throw new Error('MISSION_UNAVAILABLE');
+   {credentials:'same-origin',cache:'no-store'});
+  if(!response.ok)throw Error('MISSION_UNAVAILABLE');
   const record=(await response.json())?.data;
-  if(serial!==missionReadSequence||$('mission-id').value.trim()!==id)return;
-  if(record?.schemaVersion!=='VAOS_FOUNDER_MISSION_RESULTS_V1'
-     ||record.missionId!==id||record.readOnly!==true||record.actionAuthorized!==false
-     ||!Array.isArray(record.jobs)||record.summary?.total!==record.jobs.length
-     ||record.snapshot?.mission?.id!==id)throw new Error('MISSION_RESULTS_INVALID');
-  const s=record.summary;
-  const rows=record.jobs.map(item=>{
-   const state=item.ownerAgentId+' · '+item.actionType+' — '+item.resultStatus;
-   if(!item.result)return state;
-   const result=item.result;
-   const source=result.sourceSystem==='VYNDI_OS'
-    ?' | '+result.observedRecords+' selected records from '+result.sourceAuthority
-    :' | '+result.scope;
-   const evidence=' | saved evidence '+result.evidenceId;
-   const findings=result.findings?.length
-    ?'\n   '+result.findings.slice(0,5).join(' · ')+(result.findingsTruncated?' [additional saved findings]':'')
-    :'';
-   return state+source+evidence+findings;
-  });
-  out.textContent='Mission: '+id+'\nStatus: '+record.missionStatus+
-   '\nVerified: '+s.verified+'/'+s.total+
-   ' | Submitted: '+s.awaitingReview+
-   ' | Recorded, recoverable: '+s.recoverable+
-   ' | Retry eligible: '+s.acceptedRetry+
-   ' | Assigned, not started: '+s.assignedNotStarted+
-   ' | Blocked/unassigned: '+s.unsupportedOrBlocked+
-   '\n\nDepartmental results (persisted, read-only)\n'+rows.join('\n')+
-   '\n\nReceipts are bounded observations, not company-wide totals or engineering releases.';
+  if(serial!==missionReadSequence||$('mission-id').value.trim()!==id)return false;
+  out.textContent=formatFounderMissionResults(record,id);
   try{out.dataset.voiceReadback=formatMissionSnapshotSpokenPreview(record.snapshot,id);}
   catch{delete out.dataset.voiceReadback;}
- }catch{if(serial===missionReadSequence)out.textContent='Mission unavailable. No completion or verification inferred.';}
+  const url=new URL(window.location.href);
+  url.searchParams.set('missionId',id);
+  window.history.replaceState(null,'',url);
+  return true;
+ }catch{
+  if(serial===missionReadSequence){
+   out.textContent='Saved mission results unavailable. No departmental completion inferred.';
+  }
+  return false;
+ }
+}
+$('mission-form').addEventListener('submit',async event=>{
+ event.preventDefault();
+ await loadFounderMission($('mission-id').value.trim());
 });
 
 let conversationThreadId=null;
@@ -298,3 +318,11 @@ $('send-conversation').addEventListener('click',async()=>{
 });
 
 authenticate();
+// Only refresh evidence for the currently selected mission while this tab is
+// visible. Uses the existing founder-only GET; no new queue, writes or monitoring.
+setInterval(()=>{
+ if(document.visibilityState!=='visible')return;
+ const id=$('mission-id').value.trim();
+ if(!id||id!==new URL(window.location.href).searchParams.get('missionId'))return;
+ void loadFounderMission(id,{quiet:true});
+},60_000);

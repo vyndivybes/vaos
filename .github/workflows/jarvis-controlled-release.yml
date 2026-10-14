@@ -20,6 +20,8 @@ on:
       - 'apps/web/jarvis-data-agent.css'
       - 'apps/web/founder-console.html'
       - 'apps/web/founder-console.mjs'
+      - 'apps/web/lib/founder-mission-flow.mjs'
+      - 'apps/web/lib/founder-mission-flow.test.mjs'
       - 'apps/web/api/missions.mjs'
       - 'apps/web/lib/founder-mission-results.mjs'
       - 'apps/web/lib/founder-mission-results.test.mjs'

@@ -1,0 +1,1011 @@
+{
+  "schemaVersion": "VAOS_ISOLATED_ROLE_EXERCISES_V1",
+  "observedAt": "2026-10-14T08:42:29.356Z",
+  "sourceBaselineCommit": "574c43cac982c82c19a108a32d2f8659148e43dd",
+  "sourceHashes": {
+    "platform/qualification/workforce-role-training.mjs": "e2e8484c652761ba8e2af9f699c84e88d19e7794e18945bb09ca6572886df5a3",
+    "platform/qualification/workforce-training-store.mjs": "e3c270840ae6a454001c9d0807e86c9f20b6b97a2c94ae64222717afa2072bb8",
+    "platform/qualification/workforce-training-fixtures.mjs": "a21e23710c53c53665355ab3c0f9145d47e476e05c179e0fa1ff6d70baf2285e",
+    "platform/qualification/workforce-role-training.test.mjs": "d4a55d5f50b661d6b221e3f42227f3a110f8d564b0a1969fd19fb642faf85484",
+    "scripts/qualification/workforce-role-exercises.mjs": "615491d15dad5e0a4b41f3ab6fdd72b3ce4b8a15d40f3457aa28bea939235024"
+  },
+  "environment": "LOCAL_ISOLATED_SYNTHETIC",
+  "synthetic": true,
+  "networkUsed": false,
+  "persistence": "Single-writer local files; not PostgreSQL recovery or authenticated hosted acceptance",
+  "employeeCount": 16,
+  "exerciseCount": 64,
+  "employees": [
+    {
+      "employeeId": "orchestrator",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-ORCHESTRATOR-GOOD",
+          "sourceHash": "1ef9dc2e79cf79ff280d638b132f12619b13f837663422e5476419c07a14955e",
+          "outputHash": "b37143863ded774430bffed6cf1372a310142b30fc87a23219321ad7b7482171",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "OWNER_MISSING",
+            "PREREQUISITE_MISSING"
+          ],
+          "observed": [
+            "OWNER_MISSING",
+            "PREREQUISITE_MISSING"
+          ],
+          "sourceRef": "TRAINING-ORCHESTRATOR-BAD",
+          "sourceHash": "85b7c15f12e0f0749b0ac30ea0fdc292aaa9429d2497486f7d9a79da31dc09ce",
+          "outputHash": "2f8510cbaa9dfa58ef74c6e1a1ebde2ede2d9389fea85bf5b3db6bd929471ed9",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "owner-only",
+          "expected": [
+            "OWNER_MISSING"
+          ],
+          "observed": [
+            "OWNER_MISSING"
+          ],
+          "sourceRef": "TRAINING-ORCHESTRATOR-OWNER-ONLY",
+          "sourceHash": "2fb1050d4ca90ec5cfda92e0dcf914c3cf57d0129805834d62324df89de68c06",
+          "outputHash": "8a8074bcdf6f7019c625557eefe9d615fb118d8de72fd464b4186ee09d65c084",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "prerequisite-only",
+          "expected": [
+            "PREREQUISITE_MISSING"
+          ],
+          "observed": [
+            "PREREQUISITE_MISSING"
+          ],
+          "sourceRef": "TRAINING-ORCHESTRATOR-PREREQUISITE-ONLY",
+          "sourceHash": "8c6e07e3b413166ac43ec6aca4666b979b00b1e64decc11d280a6017f8de5b34",
+          "outputHash": "48fcf732c76b1ca35dc7fab70b9a7b5ed5c4d3485f61b86ca4fc5267c18a9b20",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "project",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PROJECT-GOOD",
+          "sourceHash": "9e7fc3b0a53c28213db3b776679f60f7b7970650d0974d2b2469e1d67d0bfaa2",
+          "outputHash": "f7a78ceb9c40a02244538fde78f851770bfc6823d1c4796e895d79e7c619cb49",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "TASK_OVERDUE"
+          ],
+          "observed": [
+            "TASK_OVERDUE"
+          ],
+          "sourceRef": "TRAINING-PROJECT-BAD",
+          "sourceHash": "e83dbe5c9b7c8ffd891604867ba23806e097b9c790546110b3c50a6dbac9529b",
+          "outputHash": "dd284187bc8615f7b21e13ff252dd5fc607554ac82a5e8b0f9c0a459f6de0312",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "at-deadline",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PROJECT-AT-DEADLINE",
+          "sourceHash": "cb852daf268d0e2a09533f7917c2a4027bf91f8275fc368e849b71057a4bc62b",
+          "outputHash": "e9d11a4102fd176a829191df1f559341df27795d516b21d27066743751b1c61b",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "completed-late",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PROJECT-COMPLETED-LATE",
+          "sourceHash": "1e1bab2f72dbf494e792b5473c429af39e680d51c4648ac94d98ff8738417b38",
+          "outputHash": "3dc79d7f3c438ecc6712780fd1322fd4d60e0645abafef279079dab17cb543b5",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "vibpe",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-VIBPE-GOOD",
+          "sourceHash": "8a12e6fb86ed7933901236c77a3d13a79d5346b833f51fff28278f138800988c",
+          "outputHash": "48c15bbc70db247e61f1d5af989b7fb80b6929e2a019a557be28a63ae9285364",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "CONFIGURATION_MISMATCH",
+            "ALLOWABLES_UNVALIDATED"
+          ],
+          "observed": [
+            "CONFIGURATION_MISMATCH",
+            "ALLOWABLES_UNVALIDATED"
+          ],
+          "sourceRef": "TRAINING-VIBPE-BAD",
+          "sourceHash": "d6fe14b6158cad4320730eb76a6cda14a9350193e06a10736997cf88c0230208",
+          "outputHash": "f11fa764f10a1efe0d0b7e1636280749fe44ddda47597de3d7226b9a5ac3ad3b",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "configuration-only",
+          "expected": [
+            "CONFIGURATION_MISMATCH"
+          ],
+          "observed": [
+            "CONFIGURATION_MISMATCH"
+          ],
+          "sourceRef": "TRAINING-VIBPE-CONFIGURATION-ONLY",
+          "sourceHash": "9cb0f10bfd0901ae869d2b4d9c62417997cbb108a20285cae8cfcd9fd2ed9891",
+          "outputHash": "93de7b63bba63842de0ab2237372fa4b54489038c692adddc717fd09b9922590",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "allowables-only",
+          "expected": [
+            "ALLOWABLES_UNVALIDATED"
+          ],
+          "observed": [
+            "ALLOWABLES_UNVALIDATED"
+          ],
+          "sourceRef": "TRAINING-VIBPE-ALLOWABLES-ONLY",
+          "sourceHash": "d96f26fad725aad32fef16020b5702fda9a85b34ca9eb1ef74d3271e9a696028",
+          "outputHash": "b0c2ee5bdee2bf5ffd75cc9b75d05ecdd384be19e8dbce44f9f658dc778f31d6",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "qa",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-QA-GOOD",
+          "sourceHash": "60084fa4c037e3938a4497090c2c8df3ccbc99122e777894100cd990b252312f",
+          "outputHash": "4adc37b80d3913d8a612b1934666e68f432b4b09fd914a154d20066c4658bd6e",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "DEFECT_PRESENT",
+            "RETEST_REQUIRED"
+          ],
+          "observed": [
+            "DEFECT_PRESENT",
+            "RETEST_REQUIRED"
+          ],
+          "sourceRef": "TRAINING-QA-BAD",
+          "sourceHash": "3330a7e370c8ebf8646a498c3f73bf5a9c61d7fa5044b60c5fb0fce144465632",
+          "outputHash": "4a9d8a3f6adc6a1f22758a7adf980e95cec250107c85f3fa7ee1cfbff38c4894",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "reviewed-defect",
+          "expected": [
+            "DEFECT_PRESENT"
+          ],
+          "observed": [
+            "DEFECT_PRESENT"
+          ],
+          "sourceRef": "TRAINING-QA-REVIEWED-DEFECT",
+          "sourceHash": "11c8ce7dd096cdecb946114bab3225d6eab55fa0a5269e086941529de82207bd",
+          "outputHash": "fdd2056ba3cffbd465f0591dabffa651d8bc415f305c66c86e538d01ec3be675",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "no-defect-no-retest",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-QA-NO-DEFECT-NO-RETEST",
+          "sourceHash": "2c83dc298f5911e6278ed201ef56b0812233089b466f0baaae9160c682ce1986",
+          "outputHash": "4c6d40b0daa07addca2b0ce8a08521235b88f353888489ad6e9569b2ed5975f3",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "risk",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-RISK-GOOD",
+          "sourceHash": "a82ac55c84a2293c63bc46040fe49df5db38602177693c7c98057780c339ad86",
+          "outputHash": "41395542884b2d31a1e66deb43d28cf111e22b1af4ba4daeafc8bbfe23d8c3a2",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "BLOCKER_OBSERVED",
+            "RISK_SCORE_UNQUALIFIED"
+          ],
+          "observed": [
+            "BLOCKER_OBSERVED",
+            "RISK_SCORE_UNQUALIFIED"
+          ],
+          "sourceRef": "TRAINING-RISK-BAD",
+          "sourceHash": "d63216585b0fbeac20b87ce3fadbc52d3caf14536c4494d58ddcd6e69faec6fb",
+          "outputHash": "de8198291450c7a7d0e2ac1db2527851829c30aa6be1132d4e1a1b5dad833f60",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "blocker-only",
+          "expected": [
+            "BLOCKER_OBSERVED"
+          ],
+          "observed": [
+            "BLOCKER_OBSERVED"
+          ],
+          "sourceRef": "TRAINING-RISK-BLOCKER-ONLY",
+          "sourceHash": "b0e7ad842aed1c502298d834fbc5a5d8e7a81c5d867b542e704c7256cae8ab5e",
+          "outputHash": "b6de221581040420281a48f31aa7eece5ea2f5a30e0420ca7fb27d4afaf3a313",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "unscored-only",
+          "expected": [
+            "RISK_SCORE_UNQUALIFIED"
+          ],
+          "observed": [
+            "RISK_SCORE_UNQUALIFIED"
+          ],
+          "sourceRef": "TRAINING-RISK-UNSCORED-ONLY",
+          "sourceHash": "121d2c38dfa5e17d195b9323f89d6ca797587f3a564976c52f05e1792f54550e",
+          "outputHash": "b8f03363b488270ce040de5228219f7a68c43ba17ad984fe238c7edd6adbfde0",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "security",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-SECURITY-GOOD",
+          "sourceHash": "a847e617c4b05b516df549c8712cb5e9e27e1e0359ff15a57077aecc0f034f56",
+          "outputHash": "a39e5fcfc45d8870b525b0be934d8fc2620c8973e373e003eb1a29cf2ac2c483",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "ROLE_ACCESS_DENIED",
+            "SESSION_INVALID"
+          ],
+          "observed": [
+            "ROLE_ACCESS_DENIED",
+            "SESSION_INVALID"
+          ],
+          "sourceRef": "TRAINING-SECURITY-BAD",
+          "sourceHash": "5f3a4bf7182790898c3810390b744319129b63f9fd5e5f138d57e1938852d3a6",
+          "outputHash": "eb87b982a062d101505a8118453b88e2529e513e021ca5bd2a240520acacf08c",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "role-only",
+          "expected": [
+            "ROLE_ACCESS_DENIED"
+          ],
+          "observed": [
+            "ROLE_ACCESS_DENIED"
+          ],
+          "sourceRef": "TRAINING-SECURITY-ROLE-ONLY",
+          "sourceHash": "1282aab7ae032307a53f48308babf18e2ba95611ab5c52ec27663c012fbdd45b",
+          "outputHash": "2a415f0a1eda98c60fbd52f5ab394c4475ca55a4ee25a363332dc163a7007e06",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "session-only",
+          "expected": [
+            "SESSION_INVALID"
+          ],
+          "observed": [
+            "SESSION_INVALID"
+          ],
+          "sourceRef": "TRAINING-SECURITY-SESSION-ONLY",
+          "sourceHash": "f8067084b4f83c293d30ede7975da407f1e43b6f015b62af93222825cc981005",
+          "outputHash": "b7213f6224049f88f6c8b5bbc3641bb80362d9615427042d3437fd7e7046e2e2",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "knowledge",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-KNOWLEDGE-GOOD",
+          "sourceHash": "97d58dca7a373b5fdf420b416d20c2d19cc2c5c31c251f88ba11dc72b95ec72d",
+          "outputHash": "7f9e34e9d64b6a7058d3c2b336c930ff6f6bcd93a5415ca4f958e790352bae01",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "SOURCE_MISSING",
+            "SOURCE_CONTRADICTION"
+          ],
+          "observed": [
+            "SOURCE_MISSING",
+            "SOURCE_CONTRADICTION"
+          ],
+          "sourceRef": "TRAINING-KNOWLEDGE-BAD",
+          "sourceHash": "ab9efde06884c2dc31343d4f5e168bf347e395f23f6e92c3754bd0c8e4f7927b",
+          "outputHash": "077de2ae4285c01ab11809e8991953dca4cc664d65a4b39aa15e5a83fe5dad55",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "source-only",
+          "expected": [
+            "SOURCE_MISSING"
+          ],
+          "observed": [
+            "SOURCE_MISSING"
+          ],
+          "sourceRef": "TRAINING-KNOWLEDGE-SOURCE-ONLY",
+          "sourceHash": "d139ca31ac04e8584e9bd5ed91bbb60a3e0baafe395bda72b4f138bdaaca5519",
+          "outputHash": "02968bddb2cb0a0633f05fa2efbe0e67ac8ac02aade4124dc2cc28d637b2fc63",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "contradiction-only",
+          "expected": [
+            "SOURCE_CONTRADICTION"
+          ],
+          "observed": [
+            "SOURCE_CONTRADICTION"
+          ],
+          "sourceRef": "TRAINING-KNOWLEDGE-CONTRADICTION-ONLY",
+          "sourceHash": "75fbde962d4578f2e5f4bb83ad6292b9f70868710da7656dc8c3018ccaafa5a2",
+          "outputHash": "2c8e8ffd174b1024562ad7d709d39eb2b9fa24c636f17bb5d6fa073c1d3fa11b",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "release",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-RELEASE-GOOD",
+          "sourceHash": "5e9a7fb847a89fadb7d26762ccabd731933966c69059c64ec102d83dc452f891",
+          "outputHash": "810960eec29016daeeea8495c416cf77d2ea8bb71fac3b8d6c15bb0fb9ea988e",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "RELEASE_APPROVAL_MISSING",
+            "RELEASE_EVIDENCE_INCOMPLETE"
+          ],
+          "observed": [
+            "RELEASE_APPROVAL_MISSING",
+            "RELEASE_EVIDENCE_INCOMPLETE"
+          ],
+          "sourceRef": "TRAINING-RELEASE-BAD",
+          "sourceHash": "275d2ce3e31cf2fa44c762277f9d1a6ead97bd184ac1b6e97b6fafe4f54fb681",
+          "outputHash": "0474c43c11f5c43883f783f0d6665aca721be62680313987b854c152e9428e40",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "approval-only",
+          "expected": [
+            "RELEASE_APPROVAL_MISSING"
+          ],
+          "observed": [
+            "RELEASE_APPROVAL_MISSING"
+          ],
+          "sourceRef": "TRAINING-RELEASE-APPROVAL-ONLY",
+          "sourceHash": "4ef4725f793cda395f2d364aa3db43c112ba2de5712242b01d90e0ee9805189d",
+          "outputHash": "c530b58683eb59f6fe4f51f281259206b8b2dfdb4bcd24a5caf124fbeef94d23",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "evidence-only",
+          "expected": [
+            "RELEASE_EVIDENCE_INCOMPLETE"
+          ],
+          "observed": [
+            "RELEASE_EVIDENCE_INCOMPLETE"
+          ],
+          "sourceRef": "TRAINING-RELEASE-EVIDENCE-ONLY",
+          "sourceHash": "147001ac4005fb9e04801beda0ddd9fd6d6322b11b5f7881ce93daf6861a5489",
+          "outputHash": "d4d9e4dceffb031dc027ec87f1e3bcc81be534e1f81d4471e0df7e1f08e21cb4",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "commercial",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-COMMERCIAL-GOOD",
+          "sourceHash": "d56cd807cb61e590068387fafb704960d0d2cb280d231d565f5a707f96d53b2b",
+          "outputHash": "0b64805b36497a80443114c5918309bcb41205f19c8bc3f246ade67b7c9e2623",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "COMMITMENT_UNAPPROVED"
+          ],
+          "observed": [
+            "COMMITMENT_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-COMMERCIAL-BAD",
+          "sourceHash": "3c695fa5fd0c630724d49ece496737101048fa031b29399db5cfdb5f6a327945",
+          "outputHash": "849193cf220c1ffa94575577ed7da170f27cb8875b8e43593668f444c0a856cc",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "zero-order",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-COMMERCIAL-ZERO-ORDER",
+          "sourceHash": "ea07fb11f685ff5fe54cc20fd06467c79505e754d36bca3f2708a516e765bdd3",
+          "outputHash": "5a7802d52271e2363edfb4b23ebedefcd011081f88d551a607c200d625af15fe",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "zero-unapproved",
+          "expected": [
+            "COMMITMENT_UNAPPROVED"
+          ],
+          "observed": [
+            "COMMITMENT_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-COMMERCIAL-ZERO-UNAPPROVED",
+          "sourceHash": "b9bab7655fccb5984d67122406bcc7691cfbacb00a738668df241ef95f3e4154",
+          "outputHash": "d868b2fb85603b344c44c726f8d26594558151e0b14d16c59d1a4e307d778dc4",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "procurement",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PROCUREMENT-GOOD",
+          "sourceHash": "8105dd5ba6cc8bf8fae3f8a3e996a3de70e2cb29cd323555785dba41a6906375",
+          "outputHash": "8f95e6e833a0afae8a63cc89c0af60e4f77ec5cacd0913ce8da26af2c9a79352",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "UNIT_MISSING",
+            "SHORTAGE_OBSERVED"
+          ],
+          "observed": [
+            "UNIT_MISSING",
+            "SHORTAGE_OBSERVED"
+          ],
+          "sourceRef": "TRAINING-PROCUREMENT-BAD",
+          "sourceHash": "5822961b74e2115d7be44c370ae5714ebad2a57b303197954cf220472c4c101b",
+          "outputHash": "89323e8fc9bcb39bfaf71ac4057015682298297a9e6896b935bee42bc40cb16e",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "stock-surplus",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PROCUREMENT-STOCK-SURPLUS",
+          "sourceHash": "be35a233d923c8d929af683ce8b656dc1ec8bcf03894f281934626e551e99864",
+          "outputHash": "63f735f460725d1cfa9347adc26225ebca66071bfa8f7e89ab8fddc63cc35a90",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "shortage-only",
+          "expected": [
+            "SHORTAGE_OBSERVED"
+          ],
+          "observed": [
+            "SHORTAGE_OBSERVED"
+          ],
+          "sourceRef": "TRAINING-PROCUREMENT-SHORTAGE-ONLY",
+          "sourceHash": "48a2347e5b757d17094737e267f21821c53309ba3a0e7230a265bd818971483c",
+          "outputHash": "d2a51eca816229f5a621f0ef04c69f30b305034c1557fe15aee3957def6428ac",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "inventory",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-INVENTORY-GOOD",
+          "sourceHash": "4804208eaf8a8746b3cd97ddf2292f2cfa7273e478be869622c35b2293374a14",
+          "outputHash": "486e3619e396211f563de70626a5ea37bfeb1fb69cd995beaf5baba11c3caba9",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "NEGATIVE_STOCK",
+            "LOT_TRACE_MISSING"
+          ],
+          "observed": [
+            "NEGATIVE_STOCK",
+            "LOT_TRACE_MISSING"
+          ],
+          "sourceRef": "TRAINING-INVENTORY-BAD",
+          "sourceHash": "c702d477e8caf3f3e87c3e5d8688a67f9304982f0e63e6bcdecbfb0ec615bb35",
+          "outputHash": "e7c31816b66a97d70d76118510071a6a51001258d3efdf915c475953321b87a3",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "zero-balance",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-INVENTORY-ZERO-BALANCE",
+          "sourceHash": "eff842a8a40b9bcb5be8dfbf5b01b30a5cfad34fe29e647feec50e34ce4678ff",
+          "outputHash": "47c6b31418ce715673df7591849907cf9e8482e338e458b5a6ad959cee0b4bd8",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "negative-only",
+          "expected": [
+            "NEGATIVE_STOCK"
+          ],
+          "observed": [
+            "NEGATIVE_STOCK"
+          ],
+          "sourceRef": "TRAINING-INVENTORY-NEGATIVE-ONLY",
+          "sourceHash": "38ae75438edbb5a94133a05dcb0103a47a9f67aac848ed6d5ab65e06b1a05840",
+          "outputHash": "041688f2d95860af28f4e06fb04222e72f1a8074c39eef58fdbd29c2c821f26a",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "production",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PRODUCTION-GOOD",
+          "sourceHash": "cbbeb8aabb8b68ce2d95fc1ea853f656a8a25ea32f491216d433bc325b080627",
+          "outputHash": "ff32d3c7e5bf7ebe8841e42860e869f241a0da2c0b959923a92583c9ea545ffd",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "CONFIGURATION_MISMATCH",
+            "QUALITY_HOLD"
+          ],
+          "observed": [
+            "CONFIGURATION_MISMATCH",
+            "QUALITY_HOLD"
+          ],
+          "sourceRef": "TRAINING-PRODUCTION-BAD",
+          "sourceHash": "2f71cf1d03bc21d4d23cdd598549b0e96f7a3dbf7786e27f4e30e822ad25a1a2",
+          "outputHash": "0d751faeebce0ce584cec86418ecce75182b38ec6f3ec9caf07ec65701ce0621",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "configuration-only",
+          "expected": [
+            "CONFIGURATION_MISMATCH"
+          ],
+          "observed": [
+            "CONFIGURATION_MISMATCH"
+          ],
+          "sourceRef": "TRAINING-PRODUCTION-CONFIGURATION-ONLY",
+          "sourceHash": "242e8b9c8089ff580a6d2ec808d81e091c8248b0006ef4fe8abb8629231d6ef4",
+          "outputHash": "464a0c9ccc30b8a4dc0fffa65e7d8b93d2c79eb95aaea0e69b7e2d8d54e52e4d",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "quality-only",
+          "expected": [
+            "QUALITY_HOLD"
+          ],
+          "observed": [
+            "QUALITY_HOLD"
+          ],
+          "sourceRef": "TRAINING-PRODUCTION-QUALITY-ONLY",
+          "sourceHash": "5eba5baf5a1dae038362ce6840d27ea03adb66ad06d84bfa0788e12c7789b4da",
+          "outputHash": "b5cfa8bd0482e1f417b6fc2188b3a66dabc3ef61d892a75a85d20a519feea79e",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "maintenance",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-MAINTENANCE-GOOD",
+          "sourceHash": "cdfca1321faa669dd59663e03c6e548db206d438eb4d3f70514a86fa398b3da5",
+          "outputHash": "6585404ccfac43c97b5f88db2212205729e63ec259c63e02ebf954d37ac6e57a",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "MAINTENANCE_OVERDUE",
+            "RETURN_PROOF_MISSING"
+          ],
+          "observed": [
+            "MAINTENANCE_OVERDUE",
+            "RETURN_PROOF_MISSING"
+          ],
+          "sourceRef": "TRAINING-MAINTENANCE-BAD",
+          "sourceHash": "c74b121c5c0a1686456d658b8f10a50cfeb57201794b6715271c65e429902b38",
+          "outputHash": "4e79f55b600e9284cdca5b660658dac626ae7ca15e92dc24bbdd4b81e81c2048",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "at-deadline",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-MAINTENANCE-AT-DEADLINE",
+          "sourceHash": "f6d56df5ad8de72fb0866b9d7de56c1be0a8b9c89ffcdece897bd4df1695ebfc",
+          "outputHash": "f3a9371e2a7d4f58107b0df670de1f6f97e1118ef4916b55c64c550347dfafc0",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "return-only",
+          "expected": [
+            "RETURN_PROOF_MISSING"
+          ],
+          "observed": [
+            "RETURN_PROOF_MISSING"
+          ],
+          "sourceRef": "TRAINING-MAINTENANCE-RETURN-ONLY",
+          "sourceHash": "3fb7f3b9d6bd4719e717eac6c5242f9fe375b0290ffef709d6639ced955e8e44",
+          "outputHash": "e9ca6339cd3aad57e0ad4ced00411fa36339afed2f436b1cef4f45396913b9b8",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "finance",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-FINANCE-GOOD",
+          "sourceHash": "c417cc44c69ef05e4efff0552f87a45573fa205aad51ab902535242c7f9e5532",
+          "outputHash": "e3d63642abe0be57528e04fee96896585932a9a4f5a726a6cb9ae7213699e4d0",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "LEDGER_UNBALANCED",
+            "PAYMENT_APPROVAL_MISSING"
+          ],
+          "observed": [
+            "LEDGER_UNBALANCED",
+            "PAYMENT_APPROVAL_MISSING"
+          ],
+          "sourceRef": "TRAINING-FINANCE-BAD",
+          "sourceHash": "aa292de8bc93d9ef53ee0e5a9c7cba418e2fff2afd3140fc1d773ee092cc1779",
+          "outputHash": "d66409cf517ce4d5ad3b1a0236f1bab1b23c926071200c0dc1b1a7b34a639c4c",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "zero-balanced",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-FINANCE-ZERO-BALANCED",
+          "sourceHash": "ecd480f2b6a19a2525d11a65d04e58d37efa5f2b8453dd49e2d28e11db7e6de2",
+          "outputHash": "f28658069cc1f03992666246549994f3ac25483a1197ecab75bd9a38f1cdc7d8",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "unbalanced-only",
+          "expected": [
+            "LEDGER_UNBALANCED"
+          ],
+          "observed": [
+            "LEDGER_UNBALANCED"
+          ],
+          "sourceRef": "TRAINING-FINANCE-UNBALANCED-ONLY",
+          "sourceHash": "eb5f25996d4960cd1d00b26edd76e24cb208f458877f36b268c3afe969aa7afa",
+          "outputHash": "c977554fe1d835fa39774ee3e6621fc0181cb6940ce06c7f9df6708f84ced690",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "people",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-PEOPLE-GOOD",
+          "sourceHash": "66e46b47543cad84fac0eb0d5e0c05eaf6fbd5fb5b7a3ed3980e50d8520ef8bf",
+          "outputHash": "5e9002f2f01ff0eb96acccf9c9614d0de5aa4fac31692f50ef201564d0360f2b",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "ATTENDANCE_SOURCE_MISSING",
+            "PAYROLL_UNAPPROVED"
+          ],
+          "observed": [
+            "ATTENDANCE_SOURCE_MISSING",
+            "PAYROLL_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-PEOPLE-BAD",
+          "sourceHash": "7ec7ee8027aa6d429fb5cb87a064e6fd57d993e66d181d36f84c21d4be1fb651",
+          "outputHash": "dbe5d38b5d5921d434f60d1894dd68d787663922e267985131c2cdb9ba4f96a0",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "attendance-only",
+          "expected": [
+            "ATTENDANCE_SOURCE_MISSING"
+          ],
+          "observed": [
+            "ATTENDANCE_SOURCE_MISSING"
+          ],
+          "sourceRef": "TRAINING-PEOPLE-ATTENDANCE-ONLY",
+          "sourceHash": "3a7bc76652921dd5d0e860729a22a4719fcca4c95061c3de0e82bd13d33b73cb",
+          "outputHash": "ffeb6acc498f7a1462bc4bf170698207127e4ff1ae05e5155816f4be515fbdd0",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "payroll-only",
+          "expected": [
+            "PAYROLL_UNAPPROVED"
+          ],
+          "observed": [
+            "PAYROLL_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-PEOPLE-PAYROLL-ONLY",
+          "sourceHash": "cca254b422842ca244c3917c5aa5b51c163defc6bd7d44aa71caa5487b902df6",
+          "outputHash": "f10d991d85fbfe3a9244eb84238120dbf4f7d9753b85e235e2c0fcab8d9429f2",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    },
+    {
+      "employeeId": "engineering-configuration",
+      "localDeterministicExercises": "PASS",
+      "results": [
+        {
+          "variant": "good",
+          "expected": [],
+          "observed": [],
+          "sourceRef": "TRAINING-ENGINEERING-CONFIGURATION-GOOD",
+          "sourceHash": "6f3af6b8652d862e1aa051755011724eb1c942a82f9da26ce6a7a34e9320a0ea",
+          "outputHash": "8455d088fc804fbd5ee9c1c1e1606155425902c7542d5f722232a88e68148495",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "bad",
+          "expected": [
+            "BOM_REVISION_MISMATCH",
+            "EFFECTIVITY_UNAPPROVED"
+          ],
+          "observed": [
+            "BOM_REVISION_MISMATCH",
+            "EFFECTIVITY_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-ENGINEERING-CONFIGURATION-BAD",
+          "sourceHash": "5caba327a82483c77b0d4f45ff81130ed3fab96d76275538cd9e774a7a106948",
+          "outputHash": "40baebb627b50300554e7736996d04ddfd9e780043ae271effff002a4066edba",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "revision-only",
+          "expected": [
+            "BOM_REVISION_MISMATCH"
+          ],
+          "observed": [
+            "BOM_REVISION_MISMATCH"
+          ],
+          "sourceRef": "TRAINING-ENGINEERING-CONFIGURATION-REVISION-ONLY",
+          "sourceHash": "93cf43e1afd55fdec145bdf8560ec36a517ee4eadfdb627378df26b2418e94d1",
+          "outputHash": "0851000bfb7afe75d39e363873d1104ec278174fb3f10ac1e7e3c20625ca7ed6",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        },
+        {
+          "variant": "effectivity-only",
+          "expected": [
+            "EFFECTIVITY_UNAPPROVED"
+          ],
+          "observed": [
+            "EFFECTIVITY_UNAPPROVED"
+          ],
+          "sourceRef": "TRAINING-ENGINEERING-CONFIGURATION-EFFECTIVITY-ONLY",
+          "sourceHash": "98681d5945456afc62bc6e7d14a6ab1ed5e63aed9c8a056f10b6bf65cab7256a",
+          "outputHash": "2481fa9112c6b597a9e88ff1a491d813c4741db4c836b4dfae9e3b1ce7b4427c",
+          "goldenAnswerCheck": "PASS",
+          "localRestartReadback": "PASS"
+        }
+      ],
+      "independentReview": "NOT_OBSERVED",
+      "hostedIntegration": "NOT_EXERCISED",
+      "productionExecutorQualified": false,
+      "trainingQualificationGranted": false
+    }
+  ],
+  "qualificationGranted": false,
+  "productionWrites": false,
+  "evidenceHash": "39fb04fa1d4551741634ab0c8c7af94f2eb4b3047e7e418e7e90375a34696185"
+}

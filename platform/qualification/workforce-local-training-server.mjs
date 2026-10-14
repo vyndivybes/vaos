@@ -2,7 +2,7 @@
 import {createServer} from 'node:http';
 import login from '../../apps/web/api/login.mjs';
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../../apps/web/lib/auth.mjs';
-import {ROLE_EXERCISES,teachingRecord,TRAINING_OBSERVED_AT} from './workforce-training-fixtures.mjs';
+import {ROLE_EXERCISES,roleTrainingCases,TRAINING_OBSERVED_AT} from './workforce-training-fixtures.mjs';
 import {evaluateTrainingRecord,evidenceHash} from './workforce-role-training.mjs';
 const founder='shyamsundhar1982@gmail.com';
 export async function startLocalTrainingServer(db){
@@ -34,9 +34,9 @@ export async function startLocalTrainingServer(db){
     if(req.headers['x-vaos-training']!=='synthetic-only')return reply(403,{error:'TRAINING_HEADER_REQUIRED'});
     const body=await readBody();
     if(!body||Object.keys(body).sort().join(',')!=='employeeId,eventId,variant'
-      ||!Object.hasOwn(ROLE_EXERCISES,body.employeeId)||!['good','bad'].includes(body.variant)
+      ||!Object.hasOwn(ROLE_EXERCISES,body.employeeId)||!roleTrainingCases(body.employeeId).some(x=>x.name===body.variant)
       ||typeof body.eventId!=='string'||!/^TRAINING-[A-Z0-9-]+$/.test(body.eventId))return reply(422,{error:'TRAINING_INPUT_INVALID'});
-    const record=teachingRecord(body.employeeId,body.variant);
+    const record=roleTrainingCases(body.employeeId).find(x=>x.name===body.variant).record;
     const inputHash=evidenceHash(body);
     const result=await db.transaction(async tx=>{
      const prior=(await tx.query('SELECT input_hash,output FROM local_role_training WHERE event_id=$1',[body.eventId])).rows[0];

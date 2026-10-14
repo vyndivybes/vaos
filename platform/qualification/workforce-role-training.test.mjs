@@ -47,3 +47,21 @@ test('unknown role, malformed time, unsafe event path and invalid numeric source
  const dir=mkdtempSync(join(tmpdir(),'vaos-training-'));
  try{assert.throws(()=>createTrainingStore(dir).run({employeeId:'finance',record,eventId:'../production',actor:'training-supervisor',observedAt}),/EVENT_INVALID/);}finally{rmSync(dir,{recursive:true,force:true});}
 });
+
+test('whitespace references are missing evidence, never a clean training result',()=>{
+ const options={environment:'LOCAL_ISOLATED_SYNTHETIC',observedAt};
+ for(const [id,patch,expected] of [
+  ['orchestrator',{owner:' ',prerequisite:'\t'},['OWNER_MISSING','PREREQUISITE_MISSING']],
+  ['knowledge',{sourceRef:' '},['SOURCE_MISSING']],
+  ['procurement',{unit:' '},['UNIT_MISSING']],
+  ['inventory',{lot:' '},['LOT_TRACE_MISSING']],
+  ['people',{attendanceRef:' '},['ATTENDANCE_SOURCE_MISSING']],
+ ])assert.deepEqual(evaluateTrainingRecord(id,{...teachingRecord(id,'good'),...patch},options).findings,expected);
+});
+test('negative stock movements and unsafe monetary integers fail closed',()=>{
+ const options={environment:'LOCAL_ISOLATED_SYNTHETIC',observedAt};
+ for(const patch of [{receipts:-1},{issues:-1},{opening:Number.MAX_VALUE,receipts:Number.MAX_VALUE}])
+  assert.throws(()=>evaluateTrainingRecord('inventory',{...teachingRecord('inventory','good'),...patch},options),/SOURCE_INVALID/);
+ for(const patch of [{debitPaise:Number.MAX_SAFE_INTEGER+1},{creditPaise:Number.MAX_SAFE_INTEGER+1}])
+  assert.throws(()=>evaluateTrainingRecord('finance',{...teachingRecord('finance','good'),...patch},options),/SOURCE_INVALID/);
+});

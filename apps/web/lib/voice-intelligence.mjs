@@ -6,7 +6,7 @@ import {GROUP_DIVISIONS} from './group-portfolio.mjs';
 const sensitive=/\b(secret|token|password|credentials|api key|private key)\b/i;
 const criticalWrites=/\b(approve|reject|execute|delete|transfer|dispatch|submit|authorize|authorise|activate|deactivate|override|merge|deploy|issue|write|post invoice|pay supplier)\b/i;
 const imperative=/^(?:please[ ,]+)?(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b|\b(?:can you|could you|please|i authorize you to|i want you to)[ ,]+(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b/i;
-const banned={test:q=>sensitive.test(q)||criticalWrites.test(q)||imperative.test(q)};
+const banned={test:q=>sensitive.test(q)||criticalWrites.test(q)||imperative.test(q)||/^\s*(?:please\s+)?release\s+(?:production|the build|the frameset)(?:\s+now)?[.!?]?\s*$/i.test(q)};
 
 // Read-only explanations about governed authority are NOT approval requests.
 // Do not let a question-word disguise an instruction to perform an action.
@@ -18,9 +18,14 @@ export function isGovernanceExplanation(question){
   &&/\b(?:explain|limit(?:ation)?s?|authorit(?:y|ies)|permissions?|allowed|permitted|by yourself|without a bom|without an approved bom)\b/i.test(q)
   &&!/\b(?:do it|now|go ahead|please approve|please pay|actually approve|proceed with payment|execute the payment|i authorize|make the payment)\b/i.test(q);
 }
+// Browser speech recognition can render "Toray prepreg" as "Torah pre-break".
+// The paired phonetic terms are a bounded engineering alias, never a general
+// match for "Torah" or an authorization to make production changes.
+const PREPREG_SPEECH_ALIAS=/\b(?:toray|torah)\s+pre[-\s]?(?:preg|break|brake)\b/i;
 export function isEngineeringAuthorityQuestion(question){
  return typeof question==='string'&&(
-  /\b(?:toray|prepreg|carbon (?:fiber|fibre|composite)|vedm|frameset|laminate|tsai.wu|hashin|engineering validation|engineering readiness|geometry revision)\b/i.test(question)
+  PREPREG_SPEECH_ALIAS.test(question)
+  ||/\b(?:toray|prepreg|carbon (?:fiber|fibre|composite)|vedm|frameset|laminate|tsai.wu|hashin|engineering validation|engineering readiness|geometry revision)\b/i.test(question)
   ||/\b(?:manufacturing|production|released|approved)\s+(?:bom|bill of materials)\b/i.test(question)
   ||/\b(?:procurement|purchase|production)\b.{0,75}\b(?:without|before)\b.{0,45}\b(?:bom|engineering release)\b/i.test(question)
   ||/\b(?:bom|bill of materials)\b.{0,65}\b(?:procurement|release|manufactur)/i.test(question)

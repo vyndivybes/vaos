@@ -106,7 +106,7 @@ test('decision brief is short, card-safe and available as separate spoken execut
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const voice=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.ok(html.includes('/main-voice.mjs?v=20261013-jarvis-x-review-v1'));
+ assert.match(html,/main-voice\.mjs\?v=202610\d{2}-[a-z0-9-]+/);;
  assert.ok(voice.includes('player.speak(spokenAnswer||lastAnswer)'));
  assert.doesNotMatch(voice,/innerHTML\\s*=/);
 });
@@ -116,7 +116,7 @@ test('adaptive intelligence is user-visible, read-only, and never trusts unverif
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const js=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.match(html,/id="vaos-voice-adaptive" type="checkbox" checked/);
- assert.match(html,/main-voice\.mjs\?v=20261013-jarvis-x-review-v1/);
+ assert.match(html,/main-voice\.mjs\?v=202610\d{2}-[a-z0-9-]+/);
  assert.match(js,/\/api\/adaptive-intelligence\?q=/);
  const sha='a'.repeat(40);
  const safe='https://github.com/vayu-shastr/adv-vibpe/blob/'+sha+'/docs/KP.md';
@@ -288,4 +288,19 @@ test('G5 two-week question creates a specific bounded prelaunch action plan with
  assert.match(result.answer,/incorporation/i);
  assert.match(result.answer,/Toray/i);
  assert.match(result.answer,/no employee was dispatched/i);
+});
+
+
+test('G5 screenshot questions bypass adaptive HOLD and reach authoritative read-only endpoints',()=>{
+ const samples=[
+  ['Has the proposed Torah pre-break being validated for production','engineering'],
+  ['Which assigned Mission remain unfinished and why','missions'],
+  ['Can you approve a supplier payment yourself explain your limits','governance'],
+ ];
+ for(const [question,domain] of samples){
+  const intent=classifyDashboardQuestion(question);
+  assert.equal(intent.kind,'INSIGHT',question);
+  assert.equal(intent.domain,domain,question);
+  assert.equal(shouldUseAdaptiveAnswer(intent,true),false,question);
+ }
 });

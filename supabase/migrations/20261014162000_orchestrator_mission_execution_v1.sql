@@ -294,18 +294,7 @@ declare
   v_locator text[];
 begin
   perform vaos_private.assert_server_key(p_server_key);
-  v_locator := regexp_match(p_evidence_id, '^handoff-version:(.+):([0-9]+)
-  return jsonb_build_object(
-    'id',v_evidence.evidence_id,
-    'handoff_id',v_evidence.handoff_id,
-    'author_agent_id',v_evidence.author_agent_id,
-    'report',v_evidence.report,
-    'reportSha256',v_evidence.report_sha256
-  );
-end;
-$$;
-
-);
+  v_locator := regexp_match(p_evidence_id, '^handoff-version:(.+):([0-9]+)$');
   if v_locator is not null then
     select * into v_evidence from vaos_private.handoff_work_evidence
       where handoff_id=v_locator[1] and handoff_version=v_locator[2]::integer;

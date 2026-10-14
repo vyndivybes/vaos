@@ -61,9 +61,10 @@ export const VOICE_DOMAIN_ACTIONS=Object.freeze({
 export function resolveVoiceIntent(question){
  const q=typeof question==='string'?question.trim():'';
  if(q.length<5||q.length>300||sensitive.test(q))return {domain:'unsupported',reason:'BLOCKED_OR_UNBOUNDED'};
+ if(isEngineeringAuthorityQuestion(q)&&(!banned.test(q)||isGovernanceExplanation(q)))
+  return {domain:'engineering',reason:'CONTROLLED_ENGINEERING_AUTHORITY'};
  if(isGovernanceExplanation(q))return {domain:'governance',reason:'READ_ONLY_AUTHORITY_EXPLANATION'};
  if(banned.test(q))return {domain:'unsupported',reason:'BLOCKED_OR_UNBOUNDED'};
- if(isEngineeringAuthorityQuestion(q))return {domain:'engineering',reason:'CONTROLLED_ENGINEERING_AUTHORITY'};
  if(isMissionRecoveryQuestion(q))return {domain:'missions',reason:'MISSION_RECOVERY_EXPLANATION'};
  const native=[
   ['finance',/வரவு|செலவு|நிதி|பணம்|വരുമാനം|ചെലവ്|ധനം|वित्त|खर्च|पैसा|राजस्व/],

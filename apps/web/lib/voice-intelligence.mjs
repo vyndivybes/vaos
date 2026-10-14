@@ -6,7 +6,7 @@ import {GROUP_DIVISIONS} from './group-portfolio.mjs';
 const sensitive=/\b(secret|token|password|credentials|api key|private key)\b/i;
 const criticalWrites=/\b(approve|reject|execute|delete|transfer|dispatch|submit|authorize|authorise|activate|deactivate|override|merge|deploy|issue|write|post invoice|pay supplier)\b/i;
 const imperative=/^(?:please[ ,]+)?(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b|\b(?:can you|could you|please|i authorize you to|i want you to)[ ,]+(?:create|change|edit|update|modify|post|purchase|pay|send|remove)\b/i;
-const banned={test:q=>sensitive.test(q)||criticalWrites.test(q)||imperative.test(q)};
+const banned={test:q=>sensitive.test(q)||criticalWrites.test(q)||imperative.test(q)\n ||/^\\s*(?:please\\s+)?release\\s+(?:production|the build|the frameset)(?:\\s+now)?[.!?]?\\s*$/i.test(q)};
 
 // Read-only explanations about governed authority are NOT approval requests.
 // Do not let a question-word disguise an instruction to perform an action.

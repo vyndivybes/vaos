@@ -236,3 +236,29 @@ test('G5 keeps basic factual questions on signed read sources',()=>{
  assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('How is the weather?'),true),true);
  assert.equal(shouldUseAdaptiveAnswer(classifyDashboardQuestion('Why are suppliers delaying production and increasing costs?'),true),true);
 });
+
+
+test('G5 regression: governed explanations and engineering release questions cannot be lost to generic fact counters',()=>{
+ for(const question of [
+  'Has the proposed Toray carbon prepreg been validated for final production use?',
+  'Can we start procurement without a released manufacturing BOM? Explain the limits.',
+  'What engineering validation remains before the carbon frameset can be released?',
+ ]){
+  const intent=classifyDashboardQuestion(question);
+  assert.equal(intent.domain,'engineering');
+  assert.equal(shouldUseAdaptiveAnswer(intent,true),false);
+ }
+ for(const question of [
+  'Can you tell me which assigned missions remain unfinished and why?',
+  'What happened in the latest completed departmental mission?',
+  'If a departmental task is interrupted after saving its report how is the result recovered?'
+ ]){
+  const intent=classifyDashboardQuestion(question);
+  assert.equal(intent.domain,'missions');
+  assert.equal(shouldUseAdaptiveAnswer(intent,true),false);
+ }
+ const permitted=classifyDashboardQuestion('Can you approve a supplier payment or release production by yourself? Explain your authorization limits.');
+ assert.equal(permitted.kind,'INSIGHT');
+ assert.equal(permitted.domain,'governance');
+ assert.equal(classifyDashboardQuestion('Approve the payment now').kind,'DENY');
+});

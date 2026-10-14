@@ -101,3 +101,21 @@ test('disabled microphone shows an actionable diagnosis without requesting mic a
  assert.doesNotMatch(source,/getUserMedia\(\{audio:true/);
 });
 
+
+
+test('G6 app wires prior successful read into the existing question flow, never stores transcripts, and clears on explicit Stop',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const app=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ const source=await readFile(new URL('./lib/g6-conversation.mjs',import.meta.url),'utf8');
+ assert.match(app,/createG6Conversation/);
+ assert.match(app,/conversation\.resolve\(input\.value\)/);
+ assert.match(app,/conversation\.remember\(intent,normalized\.status/);
+ assert.match(app,/conversation\.clear\(\)/);
+ assert.match(app,/canFollowUp/);
+ assert.match(app,/classifyG6Interruption/);
+ assert.match(app,/player\.cancel\(\)/);
+ assert.match(app,/localSpeech\?\.status!=='LOCAL_READY'/);
+ assert.match(source,/MAX_FOLLOWUPS=3/);
+ assert.match(source,/TTL_MS=300000/);
+ assert.doesNotMatch(source,/sessionStorage|localStorage|indexedDB|\/api\/.*POST|fetch\(/);
+});

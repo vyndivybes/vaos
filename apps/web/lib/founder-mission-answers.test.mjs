@@ -50,3 +50,11 @@ test('unavailable or invalid historical summary cannot become a completed-missio
  assert.equal(data.status,'HOLD');
  assert.match(data.answer,/no verified.*handoff/i);
 });
+
+test('G5 persisted HOLD missions are valid pending missions',()=>{
+ const sample={...source,missions:source.missions.map((m,i)=>i===0?{...m,status:'HOLD'}:m)};
+ const answer=buildFounderMissionAnswer('Which assigned missions are unfinished and why?',sample);
+ assert.equal(answer.status,'OBSERVED');
+ assert.match(answer.answer,/mission-a \(HOLD/);
+ assert.match(answer.answer,/1 blocked/);
+});

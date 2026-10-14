@@ -13,12 +13,13 @@ test('scheduler discovers bounded active missions and runs maker then independen
     maxMissions: 2,
     maxHandoffs: 3,
     createConsumer: () => ({
-      async consume(id, opts) { steps.push(['consume', id, opts.maxHandoffs]); return { submitted: 1, unsupported: 0 }; },
+      async consume(id, opts) { steps.push(['consume', id, opts.maxHandoffs]); return { submitted: 1, unsupported: 0, returned: 1 }; },
       async review(id, opts) { steps.push(['review', id, opts.maxHandoffs]); return { verified: 1, returned: 0 }; },
     }),
   });
   assert.equal(result.processed, 2);
   assert.equal(result.verified, 2);
+  assert.equal(result.returned, 2);
   assert.deepEqual(steps.slice(0,4), [
     ['list', 2], ['consume', 'm-1', 3], ['review', 'm-1', 3], ['dispatch', 'm-1', 3],
   ]);

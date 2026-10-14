@@ -1,5 +1,6 @@
 import {AGENTS,prepareFounderCommand,safeAgentSnapshot} from './founder-command.mjs';
 import {formatMissionSnapshotSpokenPreview} from './lib/voice-pilot.mjs';
+import {createFounderMission,formatFounderMissionResults} from './lib/founder-mission-flow.mjs';
 const $=id=>document.getElementById(id),shell=$('founder-shell'),message=$('command-message'),agentSelect=$('agent');
 let preparedText='';let pendingMessageId=null;let prepared=null;
 for(const agent of AGENTS){const option=document.createElement('option');option.value=agent.id;option.textContent=agent.name;agentSelect.append(option);}
@@ -9,7 +10,8 @@ function syncInstructionRecipient(){
  const missionInstruction=commandKind.value==='INSTRUCTION';
  if(missionInstruction)agentSelect.value='orchestrator';
  agentSelect.disabled=missionInstruction;
- $('record-draft').textContent=missionInstruction?'Create and assign mission':'Record in VAOS inbox';
+ $('record-draft').textContent='Record in VAOS inbox';
+ $('founder-command-submit').textContent=missionInstruction?'Create and assign mission':'Prepare command draft';
  preparedText='';pendingMessageId=null;prepared=null;
  $('draft-panel').hidden=true;
 }
@@ -35,17 +37,60 @@ async function authenticate(){
 }
 agentSelect.addEventListener('change',()=>{$('draft-panel').hidden=true;preparedText='';pendingMessageId=null;prepared=null;refresh();loadHistory();});
 $('refresh').addEventListener('click',refresh);
-$('command-form').addEventListener('submit',event=>{
+$('command-form').addEventListener('submit',async event=>{
  event.preventDefault();
  try{
-  const d=prepareFounderCommand({agentId:agentSelect.value,kind:$('command-kind').value,instruction:$('instruction').value});
+  const d=prepareFounderCommand({agentId:agentSelect.value,kind:commandKind.value,instruction:$('instruction').value});
+  if(d.kind==='INSTRUCTION'){
+   // Explicit submission is sufficient for the permitted mission-only action.
+   // Keep the original message ID on retry, even when inbox recording succeeded
+   // but assignment response was interrupted. A changed instruction gets a new ID.
+   if(!prepared||prepared.kind!==d.kind||prepared.instruction!==d.instruction
+      ||prepared.recipientAgentId!==d.recipientAgentId){
+    prepared=d;pendingMessageId=crypto.randomUUID();
+   }
+   await issueFounderInstruction();
+   return;
+  }
   prepared=d;pendingMessageId=crypto.randomUUID();
   const a=AGENTS.find(a=>a.id===d.recipientAgentId);
-  preparedText='Recipient: '+a.name+' ('+d.recipientAgentId+')\nType: '+d.kind+'\nStatus: DRAFT_NOT_SENT\n\n'+d.instruction+'\n\nRequires governed submission. No authority granted.';
+  preparedText='Recipient: '+a.name+' ('+d.recipientAgentId+')\nType: '+d.kind+
+   '\nStatus: DRAFT_NOT_SENT\n\n'+d.instruction+
+   '\n\nRequires governed submission. No authority granted.';
   $('draft-output').textContent=preparedText;$('draft-panel').hidden=false;
-  message.textContent=d.kind==='INSTRUCTION'?'Instruction ready for Orchestrator routing. Confirm to create and assign the mission.':'Draft prepared locally. It has NOT been sent to an agent.';
- }catch{message.textContent='Invalid draft. Enter a specific instruction (5–2000 characters).';}
+  message.textContent='Draft prepared locally. It has NOT been sent to an agent.';
+ }catch{
+  message.textContent='Invalid instruction. Enter a specific request (5–2000 characters).';
+ }
 });
+
+async function issueFounderInstruction(){
+ const submit=$('founder-command-submit');
+ submit.disabled=true;
+ message.textContent='Recording founder instruction and assigning permitted departmental work…';
+ try{
+  const mission=await createFounderMission({
+   command:prepared,messageId:pendingMessageId,request:fetch,
+  });
+  const id=mission.missionId;
+  // Recording and planning succeeded. Never re-submit this instruction merely
+  // because subsequent GET readback or history rendering is unavailable.
+  prepared=null;pendingMessageId=null;preparedText='';
+  $('instruction').value='';$('draft-panel').hidden=true;
+  $('mission-id').value=id;
+  invalidateMissionVoiceReadback();
+  const url=new URL(window.location.href);
+  url.searchParams.set('missionId',id);
+  window.history.replaceState(null,'',url);
+  message.textContent='Mission assigned: '+mission.assignedWorkPackages+'/'+
+   mission.totalWorkPackages+' eligible departments. Results below update from saved evidence.';
+  await loadFounderMission(id);
+  await loadHistory();
+ }catch{
+  message.textContent='Mission routing not confirmed. Submit the same unchanged instruction to retry safely; the recorded request ID is retained.';
+ }finally{submit.disabled=false;}
+}
+
 async function loadHistory(){
  const out=$('recorded-history');out.replaceChildren();
  const select=$('report-request');select.replaceChildren();

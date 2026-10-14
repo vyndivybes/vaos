@@ -41,7 +41,8 @@ test('existing G3.1E crosswalk reveals actual observed revision, unit and proven
  const text=JSON.stringify(result);
  for(const raw of ['SECRET-SKU-A','PRIVATE-ORDER-A','BOM-OLD','PRIVATE-JOB','PRIVATE-BASE'])
   assert.ok(!text.includes(raw),raw);
- assert.ok(!/proven (root )?cause/i.test(text));
+ assert.match(result.summary,/not proven causes/i);
+ assert.equal(result.causalProofEstablished,false);
 });
 test('missing or malformed linked observations result in HOLD, not an empty green pass',()=>{
  for(const sample of [

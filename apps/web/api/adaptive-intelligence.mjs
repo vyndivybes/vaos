@@ -96,6 +96,25 @@ export function createAdaptiveIntelligenceHandler({
    }});
   }
 
+  // Startup preparation is useful even before business ledgers contain records.
+  // These are founder planning instructions, never claims about uploaded files.
+  if(/\b(?:start|launch|set up|setup)\b.{0,60}\b(?:company|business|vayu|vāyū)\b|\b(?:company|business)\b.{0,40}\b(?:startup|start-up|launch)\b/i.test(question)){
+   const nextActions=[
+    {owner:'knowledge',support:'orchestrator',task:'Organise the existing incorporation/CA documents into a present-and-missing index; keep filing status unconfirmed until a filing record exists.'},
+    {owner:'finance',support:'project',task:'Prepare the opening budget and startup action list from supplied funds, quotations and commitments; leave unknown amounts blank.'},
+    {owner:'commercial',support:'procurement',task:'Prepare the first customer pipeline and supplier comparison from supplied contacts and quotations; keep outreach as drafts.'},
+   ];
+   const answer='I can support your company startup now with the existing planning and document tools.\n\nNEXT ACTIONS\n'+
+    nextActions.map((x,i)=>(i+1)+'. '+x.task+' Responsible role: '+x.owner+'.').join('\n')+
+    '\n\nStart with the incorporation documents already prepared. Share the pack or its document index here so we can organise the next concrete step. No additional independent-review programme is needed for these preparation tasks.'+
+    '\n\nThis is a startup work plan. It does not claim documents were read, employees were dispatched or filings were completed.';
+   return res.status(200).json({data:{status:'PREPARED',sourceSystem:'VAOS_ADAPTIVE',
+    answer,spokenAnswer:'I can help you start the company. First organise the incorporation pack, then prepare the opening budget, customer pipeline and supplier comparison.',
+    nextActions,planningMode:'STARTUP_PREPARATION',reasoningMode:'PREPARED_PLAN',
+    sources:[],evidence:[],sourceCoverage:{observed:0,requested:0},modelCalls:0,executionCount:0,
+    actionAuthorized:false,automationExecuted:false,readOnly:true,advisoryOnly:true}});
+  }
+
   // Digital qualifications belong to the persisted VAOS register. HR personnel
   // counts and engineering release records cannot answer these questions.
   if(isDigitalWorkforceQuestion(question)){

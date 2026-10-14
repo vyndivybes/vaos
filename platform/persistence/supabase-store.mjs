@@ -75,6 +75,7 @@ export function createSupabaseControlStore({
     getWorkEvidence(evidenceId) {
       return invoke('getOperatingWorkEvidence', { evidenceId });
     },
+    founderMissionAnswerSummary() { return invoke('founderMissionAnswerSummary'); },
     listRunnableMissions({ limit = 8 } = {}) {
       return invoke('listRunnableMissions', { limit });
     },

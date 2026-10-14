@@ -69,12 +69,16 @@ export function buildDataAgentReport({question,observations,investigation=null,n
  const details=sources.map(s=>s.status==='OBSERVED'
   ?s.domain+': '+metrics.find(m=>m.sourceIndex===s.index).value+' selected records ['+s.index+']'
   :s.domain+': unavailable (HOLD)').join('; ');
- const answer=(status==='HOLD'?'No qualified live business observations were available. '
-  :'Current bounded observations: ')+details+
-  '. No business record was changed. These are selected record counts, not company-wide totals or a validated forecast.'+
-  (investigation?'\n\nRELATIONSHIP INVESTIGATION — '+investigation.summary+
-  (investigation.findings?.length?'\n'+investigation.findings.slice(0,3).map(x=>
-   x.observedCount+' selected rows: '+x.title+'.').join(' '):''):'');
+ const answer=investigation
+  ?'FOUNDER BRIEF · PRELAUNCH\n'+investigation.decisionBrief.headline+
+   '\nInterpretation: '+investigation.decisionBrief.explanation+
+   '\nNext preparation step: '+investigation.decisionBrief.nextStep+
+   '\n\n'+investigation.summary+
+   '\n\nGateway sample receipts: '+details+
+   '. These are selected record counts, not verified totals, confirmed production incidents, or forecasts. No record changed.'
+  :(status==='HOLD'?'No qualified live business observations were available. '
+   :'Current bounded observations: ')+details+
+   '. No business record was changed. These are selected record counts, not company-wide totals or a validated forecast.';
  return {schemaVersion:'VAOS_DATA_AGENT_V1',status,question,answer,observedAt:receiptAt,
   ...(investigation?{investigation}:{}),
   sources,metrics,chart:{title:'Observed source records (different units)',kind:'bars',

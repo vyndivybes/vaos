@@ -61,6 +61,43 @@ const REVIEW_PRIORITY=Object.freeze({
 });
 const PRIORITY_ORDER=['RECONCILE_SOURCE_CONFLICT','COMPLETE_RELEASE_TRACE',
  'COMPLETE_RECORD_LINKS','CHECK_SOURCE_COVERAGE'];
+const PREPARATION_STEPS=Object.freeze({
+ OBSERVED_JOB_BOM_REVISION_CONFLICT:[
+  'Review the procurement shortage line and linked production job-card BOM revision in their existing departmental records.',
+  'Compare both revisions against the VEDM proposal and the actual approved, effective engineering release; do not assume a proposed revision is released.',
+  'If a real conflict remains, use the existing controlled engineering or production change process before scheduling a build.'
+ ],
+ OBSERVED_SKU_UNIT_RELATION_UNRECONCILED:[
+  'Check the stock and shortage SKU entries in their existing departments and record their stated units.',
+  'Locate the approved unit definition or conversion and any stock reservation before comparing quantities.',
+  'Reconcile the configuration in the existing purchasing/inventory process; no automatic stock movement is authorized.'
+ ],
+ RELEASED_ENGINEERING_BASELINES_WITHOUT_BOM:[
+  'Review the engineering baseline records labelled released and the linked BOM-revision fields in VYNDI OS.',
+  'Compare the candidate design with VEDM proposed engineering data, but do not assume a VEDM proposal is an approved production BOM.',
+  'If approval or effectivity is not evidenced, retain the baseline as draft/prelaunch rather than inventing a release; use the existing controlled revision process when actual approval exists.'
+ ],
+ PRODUCTION_RELEASE_APPROVAL_TIMESTAMP_UNOBSERVED:[
+  'Review the existing job-card approval and release audit records in VYNDI OS.',
+  'Check whether the job card is only a prelaunch example, a draft or an actually released record.',
+  'Reconcile the approval evidence through the existing production revision process without fabricating an approval date.'
+ ],
+ CROSS_SOURCE_COMPARAND_FIELDS_MISSING:[
+  'Inspect the selected shortage-line references in procurement.',
+  'Find the original SKU, unit, sales-order and BOM links in the current VYNDI OS authority records.',
+  'Complete only supported links through existing editing controls; do not invent missing reference values.'
+ ],
+ INVENTORY_SKU_NOT_IN_SAMPLE:[
+  'Search the authoritative inventory view beyond the first selected rows.',
+  'Check SKU aliases, reservations and on-hand balance using the existing inventory authority.',
+  'Do not conclude stock is absent or place a purchase order from this bounded sample alone.'
+ ],
+ LINKED_JOB_CARD_NOT_IN_SAMPLE:[
+  'Search for the linked sales order in the complete job-card list, not only the first selected rows.',
+  'Reconcile observed sales-order links with the source production job-card revision.',
+  'Keep the relationship unresolved when a job card cannot be established; do not create a replacement automatically.'
+ ]
+});
 const normalized=v=>typeof v==='string'&&v.trim()?v.trim().toUpperCase():null;
 const ref=(domain,collection,position)=>({domain,collection,position});
 /** Anonymous, request-local source positions only. Positions are NOT IDs or
@@ -128,24 +165,29 @@ function makeDecisionBrief(values,status){
   headline:'Source records are incomplete',
   explanation:'JARVIS cannot compare the required four departments. This is not proof of a live production delay.',
   nextStep:'Restore the missing signed read-only source view, then compare the existing records. Do not create substitute transactions.',
-  liveImpactConfirmed:false
+  liveImpactConfirmed:false,recordWritePermitted:false,
+  preparationSteps:['Restore the existing signed source view.',
+   'Reopen the same founder question after the source is available; no business record is changed.']
  };
  if(!values.length)return {
   phase:'PRELAUNCH',priority:'NO_OBSERVED_DISCREPANCY',
   headline:'No linked difference found in the selected records',
   explanation:'No discrepancy was detected in this bounded sample. This is not proof of a live production delay or that the company is fully ready.',
   nextStep:'Continue preparing approved engineering configurations and authoritative production records before launch.',
-  liveImpactConfirmed:false
+  liveImpactConfirmed:false,recordWritePermitted:false,
+  preparationSteps:['Use the existing engineering and departmental planning records to prepare the project.',
+   'Do not treat an empty bounded observation as proof of final readiness.']
  };
  const first=values[0];
  return {
   phase:'PRELAUNCH',priority:first.reviewPriority,
   headline:first.title,
-  explanation:'Review the recorded '+first.classification.toLowerCase().replaceAll('_',' ')+
+  explanation:'Review the '+first.classification.toLowerCase().replaceAll('_',' ')+
    ' first. The observed '+first.observedCount+
    ' sampled rows are not proof of a live production delay; record origin and real-world impact are unverified.',
   nextStep:first.action,sourceDomains:first.sourceDomains,
-  liveImpactConfirmed:false
+  preparationSteps:PREPARATION_STEPS[first.code]||[first.action],
+  liveImpactConfirmed:false,recordWritePermitted:false
  };
 }
 

@@ -83,8 +83,11 @@ export function formatReadOnlyResult(kind,data){
      &&data.spokenAnswer.length<=450?data.spokenAnswer:data.answer.slice(0,320)};
  }
  if(kind==='ADAPTIVE'){
+  const prepared=data?.status==='PREPARED'&&data?.planningMode==='STARTUP_PREPARATION'
+   &&data?.reasoningMode==='PREPARED_PLAN'&&data?.executionCount===0
+   &&data?.automationExecuted===false&&data?.sourceCoverage?.observed===0;
   if(data?.readOnly!==true||data?.advisoryOnly!==true||data?.actionAuthorized!==false
-    ||data?.sourceSystem!=='VAOS_ADAPTIVE'||!['OBSERVED','HOLD'].includes(data.status)
+    ||data?.sourceSystem!=='VAOS_ADAPTIVE'||(!['OBSERVED','HOLD'].includes(data.status)&&!prepared)
     ||typeof data.answer!=='string'||data.answer.length<30||data.answer.length>6500)
    throw Error('ADAPTIVE_EVIDENCE_INVALID');
   const refs=Array.isArray(data.sources)?data.sources.filter(x=>x&&typeof x.url==='string'

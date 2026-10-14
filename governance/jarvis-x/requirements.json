@@ -105,7 +105,12 @@
       "workstream": "orchestration",
       "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Interrupted-work recovery without duplicated effects or lost audit lineage"
+      "acceptance": "Interrupted-work recovery without duplicated effects or lost audit lineage",
+      "implementation": [
+        "platform/execution/mission-consumer.mjs",
+        "platform/execution/mission-scheduler.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "12",
@@ -224,17 +229,26 @@
       "id": "25",
       "name": "Streaming speech recognition",
       "workstream": "voice",
-      "coverage": "pending",
+      "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Incremental speech with measured latency privacy and usage limits"
+      "acceptance": "Incremental speech with measured latency privacy and usage limits",
+      "implementation": [
+        "apps/web/lib/local-speech.mjs",
+        "apps/web/main-voice.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "26",
       "name": "Voice activity detection",
       "workstream": "voice",
-      "coverage": "pending",
+      "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Speech onset/offset accuracy measured on representative audio"
+      "acceptance": "Speech onset/offset accuracy measured on representative audio",
+      "implementation": [
+        "apps/web/lib/local-speech.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "27",
@@ -242,15 +256,24 @@
       "workstream": "voice",
       "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Spoken interruption cancels playback and prevents duplicated requests"
+      "acceptance": "Spoken interruption cancels playback and prevents duplicated requests",
+      "implementation": [
+        "apps/web/main-voice.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "28",
       "name": "On-device wake-word detection",
       "workstream": "voice",
-      "coverage": "pending",
+      "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Local wake detection with verified no continuous cloud audio export"
+      "acceptance": "Local wake detection with verified no continuous cloud audio export",
+      "implementation": [
+        "apps/web/lib/local-speech.mjs",
+        "apps/web/lib/hey-vaos.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "29",
@@ -266,23 +289,38 @@
       "workstream": "voice",
       "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Tamil Malayalam Hindi and English recognition/readback independently accepted"
+      "acceptance": "Tamil Malayalam Hindi and English recognition/readback independently accepted",
+      "implementation": [
+        "apps/web/lib/voice-intelligence.mjs",
+        "apps/web/api/voice-insight.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "31",
       "name": "Multimodal document understanding",
       "workstream": "perception",
-      "coverage": "pending",
+      "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Authorized image/table/drawing extraction with claim-level evidence"
+      "acceptance": "Authorized image/table/drawing extraction with claim-level evidence",
+      "implementation": [
+        "apps/web/api/jarvis-multimodal.mjs",
+        "apps/web/jarvis-multimodal.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "32",
       "name": "3D engineering visualization",
       "workstream": "perception",
-      "coverage": "pending",
+      "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Controlled CAD/FEA geometry and deviations rendered against exact revisions"
+      "acceptance": "Controlled CAD/FEA geometry and deviations rendered against exact revisions",
+      "implementation": [
+        "apps/web/lib/engineering-mesh.mjs",
+        "apps/web/engineering-viewer.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "L1",
@@ -378,7 +416,12 @@
       "workstream": "reliability",
       "coverage": "foundation",
       "productionAccepted": false,
-      "acceptance": "Actual encrypted backup restored into isolated Postgres with reconciliation"
+      "acceptance": "Actual encrypted backup restored into isolated Postgres with reconciliation",
+      "implementation": [
+        "scripts/prelaunch-recovery.mjs",
+        "apps/web/api/prelaunch-recovery.mjs"
+      ],
+      "prelaunchIncrement": "docs/jarvis-prelaunch-finish-20261014.md"
     },
     {
       "id": "R9",
@@ -398,3 +441,4 @@
     }
   ]
 }
+

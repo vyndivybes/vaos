@@ -12,6 +12,7 @@ lib/*
 !lib/hey-vaos.mjs
 !lib/voice-intelligence.mjs
 !lib/g5-response-timing.mjs
+!lib/g6-conversation.mjs
 !lib/business-advice.mjs
 !lib/voice-readback.mjs
 !lib/adaptive-read-planner.mjs

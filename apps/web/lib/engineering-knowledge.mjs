@@ -69,7 +69,8 @@ export function buildEngineeringFinding({
  const kp=typeof knowledgeRegister==='string'?wanted.filter(x=>new RegExp('\\b'+x+'\\b').test(knowledgeRegister)):[];
  const relevant=authority.records.filter(x=>/controlling|not released|superseded/i.test(x.status)).slice(0,5);
  const state=relevant.map(x=>x.object+': '+x.status).join('; ');
- const prepregQuestion=/\b(?:toray|prepreg|resin system|t700s|t800s)\b/i.test(question||'')
+ const prepregQuestion=(/\b(?:toray|prepreg|resin system|t700s|t800s)\b/i.test(question||'')
+  ||/\b(?:toray|torah)\s+pre[-\s]?(?:preg|break|brake)\b/i.test(question||''))
   &&/\b(?:validat|qualified|approved|production|material|final)\w*/i.test(question||'');
  const bomQuestion=/\b(?:bom|bill of materials)\b/i.test(question||'')
   &&/\b(?:procure|purchas|buy|orders?|start|releas)/i.test(question||'');

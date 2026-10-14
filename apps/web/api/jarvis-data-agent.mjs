@@ -4,6 +4,7 @@ import {makeCommercialReader} from './voice-commercial.mjs';
 import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 import {VOICE_DOMAIN_ACTIONS} from '../lib/voice-intelligence.mjs';
 import {observeAdviceDomain} from '../lib/business-advice.mjs';
+import {buildDataAgentInvestigation} from '../lib/data-agent-investigation.mjs';
 import {buildWorkforceAnalytics} from '../../../intelligence/workforce-analytics.mjs';
 import {createSupabaseControlStore} from '../../../platform/persistence/supabase-store.mjs';
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
@@ -63,11 +64,17 @@ export function createJarvisDataAgentHandler({
     if(result?.actionType!==actionType||result?.sourceAuthority!==contract.authority)
      throw Error('DATA_AGENT_AUTHORITY_MISMATCH');
     const observation=observeAdviceDomain(domain,result.data);
-    return {domain,status:'OBSERVED',authority:contract.authority,count:observation.recordsObserved};
+    // Raw rows are used only inside this server request to correlate approved gateway snapshots.
+    // They never appear in the report, HTTP response or model input.
+    return {domain,status:'OBSERVED',authority:contract.authority,
+      count:observation.recordsObserved,...(selection.investigate?{data:result.data}:{})};
    }catch{return {domain,status:'HOLD'};}
   }));
   try{
-   return res.status(200).json({data:buildDataAgentReport({question:q,observations,now:now()})});
+   const investigation=selection.investigate?
+    buildDataAgentInvestigation({question:q,observations}):null;
+   return res.status(200).json({data:buildDataAgentReport({question:q,observations,
+    investigation,now:now()})});
   }catch{return res.status(503).json(apiError('DATA_AGENT_SOURCE_INVALID','Trusted source format invalid'));}
  };
 }

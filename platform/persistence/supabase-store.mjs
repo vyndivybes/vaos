@@ -28,6 +28,8 @@ export function createSupabaseControlStore({
   }
 
   return Object.freeze({
+    prelaunchOutput(input) { return invoke('prelaunchOutput', input); },
+    prelaunchRecovery(actorEmail) { return invoke('prelaunchRecovery', {actorEmail}); },
     founderWorkforceOverview(actorEmail) { return invoke('founderWorkforceOverview', { actorEmail }); },
     async snapshot() {
       const [snapshot, digitalThreadLinks] = await Promise.all([

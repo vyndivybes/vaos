@@ -3,6 +3,9 @@ import {apiError} from '../lib/api-contracts.mjs';
 import {makeCommercialReader} from './voice-commercial.mjs';
 import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 import {resolveVoiceIntent,VOICE_DOMAIN_ACTIONS,interpretVoiceRecords,formatVoiceAnswer} from '../lib/voice-intelligence.mjs';
+import {translateAdvisory} from './business-advisor.mjs';
+import {claimVoiceAiDailyBudget} from '../lib/voice-ai-focus.mjs';
+import {ADVISORY_LANGUAGES} from '../lib/business-advice.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const CONTROL='founder-readonly-browser-v1';
@@ -16,8 +19,8 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader}={}){
   if(!session)return res.status(401).json(apiError('UNAUTHENTICATED','Founder session required'));
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder identity required'));
   if(req.env?.VAOS_VOICE_CONTROL!==CONTROL)return res.status(409).json(apiError('VOICE_DISABLED','Read-only voice not commissioned'));
-  let question='';try{question=new URL(req.url).searchParams.get('q')||'';}catch{}
-  if(!QUERY.test(question)||/[\x00-\x1f\x7f]/.test(question))
+  let question='',language='en';try{const params=new URL(req.url).searchParams;question=params.get('q')||'';language=params.get('lang')||'en';}catch{}
+  if(!QUERY.test(question)||/[\x00-\x1f\x7f]/.test(question)||!Object.hasOwn(ADVISORY_LANGUAGES,language))
    return res.status(422).json(apiError('VOICE_QUERY_INVALID','Read-only question must contain 5–300 characters'));
   const intent=resolveVoiceIntent(question);
   if(intent.reason==='BLOCKED_OR_UNBOUNDED')
@@ -38,7 +41,15 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader}={}){
    if(result?.actionType!==action||result?.sourceAuthority!==contract.authority)
     throw Error('VOICE_AUTHORITY_MISMATCH');
    const counted=interpretVoiceRecords(intent.domain,result.data,{limit:100});
-   return res.status(200).json({data:{...formatVoiceAnswer(intent,counted),
+   const answer=formatVoiceAnswer(intent,counted);
+   if(language!=='en'){
+    answer.language='en';answer.translationQualified=false;
+    if(req.env?.VAOS_ARTIFACTS&&typeof req.env?.AI?.run==='function')try{
+     const budget=await claimVoiceAiDailyBudget(req.env.VAOS_ARTIFACTS);
+     if(budget?.allowed===true){answer.answer=await translateAdvisory(req.env.AI,answer.answer,language);answer.language=language;answer.translationQualified=true;}
+    }catch{/* Preserve the original English source-backed answer on failure. */}
+   }
+   return res.status(200).json({data:{...answer,
     readOnly:true,actionAuthorized:false,sourceSystem:'VYNDI_OS',
     observedAt:new Date().toISOString(),dataCompleteness:'BOUNDED_SOURCE_WINDOW'}});
   }catch(error){

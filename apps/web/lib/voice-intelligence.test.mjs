@@ -98,3 +98,19 @@ test('known demo and proposed records must never be presented as certified compa
  const shortage=interpretVoiceRecords('procurement',{records:[{id:'shortage-1'}]});
  assert.match(shortage.answer,/not confirmed shortages for approved builds/i);
 });
+
+
+test('G5 actual signed-in screenshot transcripts route read-only questions despite speech-to-text slips',()=>{
+ const examples=[
+  ['Has the proposed Torah pre-break being validated for production','engineering'],
+  ['Has the proposed Toray pre break been validated for production','engineering'],
+  ['Which assigned Mission remain unfinished and why','missions'],
+  ['Can you approve a supplier payment yourself explain your limits','governance'],
+ ];
+ for(const [question,domain] of examples)
+  assert.equal(resolveVoiceIntent(question).domain,domain,question);
+ // The phonetic pair must not misclassify unrelated queries or grant approval.
+ assert.notEqual(resolveVoiceIntent('What is the Torah passage about the break?').domain,'engineering');
+ assert.equal(resolveVoiceIntent('Approve a supplier payment now').reason,'BLOCKED_OR_UNBOUNDED');
+ assert.equal(resolveVoiceIntent('Please release production now').reason,'BLOCKED_OR_UNBOUNDED');
+});

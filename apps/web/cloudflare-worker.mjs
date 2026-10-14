@@ -59,6 +59,7 @@ import federatedKnowledge from './api/federated-knowledge.mjs';
 import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
+import { readMissionDepartment } from './lib/mission-department-reader.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 import {runSlackFounderAgent} from '../../platform/execution/slack-founder-agent.mjs';
 import {handleSlackEvent} from './api/slack-events.mjs';
@@ -228,6 +229,7 @@ export default {
       service: getEightAgentOperatingService(env),
       maxMissions: 4,
       maxHandoffs: 4,
+      readDepartment: input => readMissionDepartment({ ...input, env }),
     })).then((summary) => {
       console.log('VAOS_SAFE_MISSION_SWEEP', JSON.stringify(summary));
     });

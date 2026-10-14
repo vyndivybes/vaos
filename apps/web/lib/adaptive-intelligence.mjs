@@ -4,8 +4,18 @@
 import {FOUNDER_AI_MODEL} from './founder-ai-draft.mjs';
 import {buildCoachingInstructions,suggestCoachedNextCheck} from './adaptive-coaching.mjs';
 export const ADAPTIVE_TOOLS=Object.freeze(['COMMERCIAL','FINANCE','PROCUREMENT','INVENTORY','PRODUCTION','PEOPLE','ENGINEERING']);
-// No weather observation source exists in this audited read-only tool set.
-export const isWeatherQuestion=question=>typeof question==='string'&&/\bweather\b/i.test(question);
+// No live meteorological observations exist in the audited business/engineering tool set.
+// Hold equivalent live-condition questions before model planning or domain reads;
+// do not confuse an engineering curing temperature or business forecast with weather.
+export function isWeatherQuestion(question){
+ if(typeof question!=='string')return false;
+ if(/\bweather\b/i.test(question))return true;
+ if(/\b(?:rain|rains|raining|rainfall|snow|snows|snowing|snowfall|humidity|precipitation|sunny|cloudy|windy|storm|storms)\b/i.test(question))return true;
+ if(/\b(?:current|currently|right now|now|today|tonight|tomorrow|outdoor|outside)\b/i.test(question)
+   &&/\b(?:temperature|temperatures|heat index|wind speed|wind speeds)\b/i.test(question)
+   &&!/\b(?:curing|cure|autoclave|lamination|melting|glass transition)\b/i.test(question))return true;
+ return false;
+}
 const ALLOWED=new Set(ADAPTIVE_TOOLS);
 const UNSAFE=/\b(approve(?:d)?|authoriz(?:ed|e)|pay(?:ment)?|transfer funds|send money|delete|deploy|execute|dispatch|post invoice|certif(?:ied|y)|guarantee(?:d)?|release (?:the )?design|secrets?|password|token|credentials?|api key)\b/i;
 const SOURCE=/^https:\/\/github\.com\/vayu-shastr\/(?:veloxis-engineering-design-manual|adv-vibpe)\/blob\/[a-f0-9]{40}\/[A-Za-z0-9_./-]+$/i;

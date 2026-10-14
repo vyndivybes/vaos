@@ -52,7 +52,7 @@ export async function runScheduledMissionSweep({
       processed += 1;
       submitted += consumed.submitted || 0;
       verified += reviewed.verified || 0;
-      returned += reviewed.returned || 0;
+      returned += (consumed.returned || 0) + (reviewed.returned || 0);
     } catch (error) {
       failures.push({
         missionId,

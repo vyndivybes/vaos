@@ -25,8 +25,8 @@ function fixture() {
       assert.equal(input.handoffId, handoff.id);
       assert.equal(input.expectedVersion, handoff.version);
       const mapping = { ACCEPT: 'ACCEPTED', SUBMIT: 'SUBMITTED', VERIFY: 'COMPLETED', REJECT_VERIFICATION: 'RETURNED' };
-      if (input.outcome === 'ACCEPT' || input.outcome === 'SUBMIT') assert.equal(input.byAgentId, 'project');
-      if (input.outcome === 'VERIFY' || input.outcome === 'REJECT_VERIFICATION') assert.equal(input.byAgentId, 'orchestrator');
+      if (input.outcome === 'ACCEPT' || input.outcome === 'SUBMIT') assert.equal(input.byAgentId, handoff.to_agent_id);
+      if (input.outcome === 'VERIFY' || input.outcome === 'REJECT_VERIFICATION') assert.equal(input.byAgentId, handoff.to_agent_id === 'orchestrator' ? (handoff.requested_job === 'ORCHESTRATOR.CONSOLIDATE_RESULT' ? 'knowledge' : 'project') : 'orchestrator');
       handoff.version += 1;
       handoff.status = mapping[input.outcome];
       handoff.evidence_refs = [...new Set([...handoff.evidence_refs, ...(input.evidenceRefs || [])])];
@@ -36,21 +36,24 @@ function fixture() {
     },
     async recordWorkEvidence(input) {
       assert.equal(input.handoffId, handoff.id);
-      assert.equal(input.byAgentId, 'project');
+      assert.equal(input.byAgentId, handoff.to_agent_id);
       assert.equal(input.expectedVersion, handoff.version);
       assert.equal(input.report.kind, 'READ_ONLY_MISSION_AUDIT');
       const evidenceId = 'ev:mission-1:hand-1';
-      reports.set(evidenceId, { id: evidenceId, report: input.report, handoff_id: handoff.id });
+      reports.set(evidenceId, { id: evidenceId, report: input.report, handoff_id: handoff.id, author_agent_id: handoff.to_agent_id, handoff_version: input.expectedVersion });
       return { evidenceId };
     },
-    async getWorkEvidence(evidenceId) { return reports.get(evidenceId); },
+    async getWorkEvidence(evidenceId) {
+      if (evidenceId.startsWith('handoff-version:')) return [...reports.values()].find(r => evidenceId === `handoff-version:${r.handoff_id}:${r.handoff_version}`);
+      return reports.get(evidenceId);
+    },
   };
   return { service, handoff, events, reports };
 }
 
 test('only approved deterministic read-only job types are supported', () => {
   assert.deepEqual([...SAFE_MISSION_JOBS].sort(), [
-    'KNOWLEDGE.DETECT_GAP', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY',
+    'KNOWLEDGE.DETECT_GAP', 'ORCHESTRATOR.CONSOLIDATE_RESULT', 'ORCHESTRATOR.INTAKE_MISSION', 'ORCHESTRATOR.MONITOR_MISSION', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY',
   ]);
 });
 
@@ -231,4 +234,78 @@ test('project delay refuses approval-required, elevated authority or effectful e
   const result = await createMissionConsumer({ service:f.service }).consume('mission-1');
   assert.equal(result.unsupported,1);
   assert.equal(f.handoff.status,'PENDING');
+});
+
+for (const actionType of ['ORCHESTRATOR.INTAKE_MISSION','ORCHESTRATOR.MONITOR_MISSION','ORCHESTRATOR.CONSOLIDATE_RESULT']) {
+ test(actionType+' executes through durable evidence and a separate checker', async () => {
+  const f=fixture();
+  f.handoff.requested_job=actionType;
+  f.handoff.to_agent_id='orchestrator';
+  const snapshot=await f.service.snapshot();
+  Object.assign(snapshot.workPackages[0],{action_type:actionType,owner_agent_id:'orchestrator',authority:actionType==='ORCHESTRATOR.CONSOLIDATE_RESULT'?2:1});
+  const consumer=createMissionConsumer({service:f.service});
+  assert.equal((await consumer.consume('mission-1')).submitted,1);
+  assert.equal((await consumer.review('mission-1')).verified,1);
+  assert.equal(f.handoff.status,'COMPLETED');
+  assert.equal(f.reports.values().next().value.report.scope,'PERSISTED_MISSION_PLAN_ONLY');
+  assert.notEqual(f.events.at(-1).byAgentId,'orchestrator');
+ });
+}
+
+test('Orchestrator preserves routing defects and missing prerequisites in its report',()=>{
+ const report=calculateReadOnlyMissionAudit('ORCHESTRATOR.INTAKE_MISSION',[
+  {id:'own',status:'IN_PROGRESS',depends_on:[]},
+  {id:'task',status:'READY',action_type:'PROJECT.TRACK_DEPENDENCY',owner_agent_id:'finance',depends_on:['absent']},
+ ],'own');
+ assert.deepEqual(report.findings,['PREREQUISITE:task:absent:MISSING','ROUTING_OWNER_MISMATCH:task']);
+});
+
+test('restart after recording resumes without a duplicate report',async()=>{
+ const f=fixture(),consumer=createMissionConsumer({service:f.service});
+ const transition=f.service.transitionHandoff;
+ let interrupt=true,recordCalls=0;
+ const record=f.service.recordWorkEvidence;
+ f.service.recordWorkEvidence=async input=>{recordCalls++;return record(input);};
+ f.service.transitionHandoff=async input=>{
+  if(input.outcome==='SUBMIT'&&interrupt){interrupt=false;throw Error('INTERRUPTED');}
+  return transition(input);
+ };
+ await assert.rejects(()=>consumer.consume('mission-1'),/INTERRUPTED/);
+ assert.equal(f.handoff.status,'ACCEPTED');
+ assert.equal((await consumer.consume('mission-1')).submitted,1);
+ assert.equal(recordCalls,1);
+ assert.deepEqual(f.events.map(e=>e.outcome),['ACCEPT','SUBMIT']);
+ assert.equal((await consumer.review('mission-1')).verified,1);
+});
+
+test('source changes after interrupted recording retain evidence and return correction',async()=>{
+ const f=fixture(),consumer=createMissionConsumer({service:f.service});
+ const transition=f.service.transitionHandoff;
+ f.service.transitionHandoff=async input=>{
+  if(input.outcome==='SUBMIT')throw Error('INTERRUPTED');
+  if(input.outcome==='RETURN_FOR_CORRECTION'){
+   f.handoff.status='RETURNED';f.events.push(input);return {handoff:f.handoff};
+  }
+  return transition(input);
+ };
+ await assert.rejects(()=>consumer.consume('mission-1'),/INTERRUPTED/);
+ (await f.service.snapshot()).workPackages[1].depends_on=['missing'];
+ assert.equal((await consumer.consume('mission-1')).returned,1);
+ assert.equal(f.reports.size,1);
+ assert.equal(f.handoff.status,'RETURNED');
+});
+
+test('a failed recovery read cannot be treated as absence and create new evidence',async()=>{
+ const f=fixture();
+ f.service.getWorkEvidence=async()=>{throw Error('DATABASE_UNAVAILABLE');};
+ await assert.rejects(()=>createMissionConsumer({service:f.service}).consume('mission-1'),/DATABASE_UNAVAILABLE/);
+ assert.equal(f.reports.size,0);
+ assert.equal(f.handoff.status,'ACCEPTED');
+});
+
+test('duplicate packages, malformed dependencies and invalid authority cannot run',async()=>{
+ assert.throws(()=>calculateReadOnlyMissionAudit('PROJECT.TRACK_DEPENDENCY',[{id:'x',status:'READY'},{id:'x',status:'READY'}],'x'),/DUPLICATE/);
+ assert.throws(()=>calculateReadOnlyMissionAudit('PROJECT.TRACK_DEPENDENCY',[{id:'x',status:'READY',depends_on:'bad'}],'x'),/DEPENDENCIES_INVALID/);
+ const f=fixture();(await f.service.snapshot()).workPackages[0].authority=null;
+ assert.equal((await createMissionConsumer({service:f.service}).consume('mission-1')).submitted,0);
 });

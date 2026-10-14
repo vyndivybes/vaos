@@ -10,6 +10,9 @@ export const SAFE_MISSION_JOBS = Object.freeze([
   'RELEASE.CHECK_OPEN_ITEMS',
   'RISK.IDENTIFY',
   'PROJECT.DETECT_DELAY',
+  'ORCHESTRATOR.INTAKE_MISSION',
+  'ORCHESTRATOR.MONITOR_MISSION',
+  'ORCHESTRATOR.CONSOLIDATE_RESULT',
 ]);
 
 const SAFE = new Set(SAFE_MISSION_JOBS);
@@ -31,13 +34,24 @@ function compare(a, b) {
 
 function normalizedPackages(items) {
   if (!Array.isArray(items)) throw new Error('MISSION_WORK_PACKAGES_INVALID');
-  return items.map((item) => ({
+  const ids = new Set();
+  return items.map((item) => {
+    if (ids.has(item?.id)) throw new Error('MISSION_WORK_PACKAGE_DUPLICATE');
+    ids.add(item?.id);
+    const dependencies = prop(item, 'depends_on', 'dependsOn');
+    if (dependencies !== undefined && (!Array.isArray(dependencies) || dependencies.some(id => typeof id !== 'string' || !id.trim()))) {
+      throw new Error('MISSION_DEPENDENCIES_INVALID');
+    }
+    return ({
     id: requiredString(item?.id, 'MISSION_WORK_PACKAGE_ID_REQUIRED'),
     status: requiredString(item?.status, 'MISSION_WORK_PACKAGE_STATUS_REQUIRED'),
     dependsOn: prop(item, 'depends_on', 'dependsOn') || [],
     createdAt: prop(item, 'created_at', 'createdAt') ?? null,
     slaHours: prop(item, 'sla_hours', 'slaHours') ?? null,
-  }));
+    actionType: prop(item, 'action_type', 'actionType') ?? null,
+    ownerAgentId: prop(item, 'owner_agent_id', 'ownerAgentId') ?? null,
+  });
+  });
 }
 
 function parseObservedAt(value) {
@@ -65,7 +79,20 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId, 
   }))).sort((a, b) => compare(a.child, b.child) || compare(a.dependency, b.dependency));
 
   let findings;
-  if (actionType === 'PROJECT.TRACK_DEPENDENCY') {
+  if (actionType.startsWith('ORCHESTRATOR.')) {
+    // Inspect the persisted plan only. Consolidation does not certify the
+    // departmental output, dispatch another job, or close the mission.
+    findings = external.flatMap(item => {
+      const result = [];
+      let route;
+      try { route = routeJob(item.actionType); } catch { result.push(`ROUTING_ACTION_UNKNOWN:${item.id}`); }
+      if (route && route.ownerAgentId !== item.ownerAgentId) result.push(`ROUTING_OWNER_MISMATCH:${item.id}`);
+      if (actionType !== 'ORCHESTRATOR.INTAKE_MISSION') result.push(`WORK_STATE:${item.id}:${item.status}`);
+      return result;
+    });
+    findings.push(...dependencies.filter(entry => entry.state !== 'COMPLETED').map(entry =>
+      `PREREQUISITE:${entry.child}:${entry.dependency}:${entry.state}`));
+  } else if (actionType === 'PROJECT.TRACK_DEPENDENCY') {
     findings = dependencies.filter((entry) => entry.state !== 'COMPLETED').map((entry) =>
       `${entry.child} -> ${entry.dependency}: ${entry.state}`);
   } else if (actionType === 'KNOWLEDGE.DETECT_GAP') {
@@ -110,6 +137,7 @@ export function calculateReadOnlyMissionAudit(actionType, items, workPackageId, 
     dependencyCount: dependencies.length,
     findings: findings.sort(compare),
     referencedWorkPackages: workPackages.length,
+    ...(actionType.startsWith('ORCHESTRATOR.') ? { scope: 'PERSISTED_MISSION_PLAN_ONLY' } : {}),
     ...(actionType === 'PROJECT.DETECT_DELAY' ? {
       scope: 'MISSION_CATALOG_SLA_ONLY',
       observedAt,
@@ -162,7 +190,8 @@ function safeJobValidated(handoff, item) {
     && !route.humanApprovalRequired
     && !packageHumanApproval(item)
     && route.authority <= 2
-    && Number(item.authority) <= 2
+    && Number.isInteger(item.authority)
+    && item.authority >= 0 && item.authority <= 2
     && ['ANALYSE', 'PREPARE'].includes(route.executionMode)
     && mode === route.executionMode;
 }
@@ -201,7 +230,7 @@ export function createMissionConsumer({ service } = {}) {
       const id = requiredString(missionId, 'MISSION_ID_REQUIRED');
       const limit = maxCount(maxHandoffs);
       const initial = requiredSnapshot(await service.snapshot(id), id);
-      let submitted = 0, unsupported = 0, attempted = 0;
+      let submitted = 0, unsupported = 0, attempted = 0, returned = 0;
       const used = [];
       for (const handoff of initial.handoffs) {
         if (attempted >= limit) break;
@@ -225,8 +254,25 @@ export function createMissionConsumer({ service } = {}) {
 
         // Use the current authoritative snapshot after ACCEPT.
         const refreshed = requiredSnapshot(await service.snapshot(id), id);
-        const report = calculateReadOnlyMissionAudit(handoffAction(handoff), refreshed.workPackages, handoffWorkPackage(handoff));
-        const recorded = await service.recordWorkEvidence({
+        const current = refreshed.handoffs.find(item => item.id === handoff.id);
+        const currentWp = refreshed.workPackages.find(item => item.id === handoffWorkPackage(handoff));
+        if (!current || current.status !== 'ACCEPTED' || current.version !== version || !safeJobValidated(current, currentWp)) {
+          throw new Error('MISSION_HANDOFF_CHANGED');
+        }
+        // A worker may restart after immutable recording but before SUBMIT.
+        // Retrieve that exact version instead of creating a conflicting report.
+        const prior = await service.getWorkEvidence(`handoff-version:${handoff.id}:${version}`);
+        if (prior && (prior.handoff_id !== handoff.id || prior.author_agent_id !== handoffOwner(handoff)
+          || !verifyReadOnlyMissionAudit(prior.report, refreshed.workPackages, handoffWorkPackage(handoff)))) {
+          await service.transitionHandoff({
+            handoffId: handoff.id, expectedVersion: version, byAgentId: handoffOwner(handoff),
+            outcome: 'RETURN_FOR_CORRECTION', reason: 'Recorded source changed before submission', evidenceRefs: [evidenceRef(prior.id)],
+          });
+          returned += 1;
+          continue;
+        }
+        const report = prior?.report ?? calculateReadOnlyMissionAudit(handoffAction(handoff), refreshed.workPackages, handoffWorkPackage(handoff));
+        const recorded = prior ? { evidenceId: prior.id } : await service.recordWorkEvidence({
           handoffId: handoff.id,
           expectedVersion: version,
           byAgentId: handoffOwner(handoff),
@@ -240,7 +286,7 @@ export function createMissionConsumer({ service } = {}) {
         used.push(handoff.id);
         submitted += 1;
       }
-      return { missionId: id, submitted, unsupported, handoffs: used };
+      return { missionId: id, submitted, unsupported, returned, handoffs: used };
     },
 
     async review(missionId, { maxHandoffs = 4 } = {}) {

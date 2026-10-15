@@ -309,7 +309,7 @@ test('OAuth token request uses fail-closed manual redirect handling',async()=>{
    assert.equal(url,'https://oauth2.googleapis.com/token');
    assert.equal(init.method,'POST');
    assert.equal(init.redirect,'manual');
-   assert.match(init.headers['content-type'],/application\\/x-www-form-urlencoded/);
+   assert.equal(init.headers['content-type'],'application/x-www-form-urlencoded');
    assert.equal(init.body.includes('client_secret='),true);
    return new Response(null,{status:302,headers:{Location:'https://untrusted.example/redirect'}});
   }

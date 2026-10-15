@@ -32,3 +32,5 @@ cloudflare-worker.mjs
 !lib/local-speech.mjs
 !lib/engineering-mesh.mjs
 
+
+!lib/founder-google-intents.mjs

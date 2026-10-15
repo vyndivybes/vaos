@@ -1,3 +1,4 @@
+import {featureControl} from '../../apps/web/lib/feature-flags.mjs';
 import {readZapierQualificationEvidence} from './zapier-evidence.mjs';
 import {googleWorkspaceReadiness,readGoogleWorkspaceBrief} from '../../apps/web/api/google-workspace.mjs';
 import {readSlackIncidentStatus} from './slack-incident-observer.mjs';
@@ -58,7 +59,7 @@ function integrationStatus(env){
     ['Dify',typeof env.DIFY_API_KEY==='string'],
     ['Stirling',typeof env.STIRLING_API_BASE==='string'],
     ['Zapier',typeof env.ZAPIER_CATCH_HOOK_URL==='string'],
-    ['LangGraph',env.VAOS_LANGGRAPH_CONTROL==='read-only-v1'],
+    ['LangGraph',featureControl(env,'VAOS_LANGGRAPH_CONTROL')==='read-only-v1'],
   ];
   return 'VAOS integration bindings: '+items.map(([n,on])=>n+' '+(on?'connected':'not connected')).join('; ')+
     '. These indicate configured bindings or flags, not independently verified health, automatic production routing or business-write authority.';
@@ -67,7 +68,7 @@ function freeTierStatus(env){
   const slackDirect=typeof env?.SLACK_BOT_TOKEN==='string' &&
     env.SLACK_BOT_TOKEN.startsWith('xoxb-') &&
     env.VAOS_SLACK_EVENTS_CONTROL==='founder-readonly-v1';
-  const hourly=env?.VAOS_SLACK_AGENT_CONTROL==='founder-readonly-v1';
+  const hourly=featureControl(env,'VAOS_SLACK_AGENT_CONTROL')==='founder-readonly-v1';
   const durable=typeof env?.VAOS_ARTIFACTS?.get==='function';
   return 'VAOS free-first integration status (read-only): '+
     'native Slack DM '+(slackDirect?'enabled':'not activated')+
@@ -139,7 +140,7 @@ async function slackApi(env,method,payload,fetchImpl){
   return data;
 }
 export async function probeSlackFounderAgent({env,fetchImpl=fetch}={}){
-  if(env?.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return {status:'DISABLED',readable:false,founderVisible:false,actionAuthorized:false};
+  if(featureControl(env,'VAOS_SLACK_AGENT_CONTROL')!=='founder-readonly-v1')return {status:'DISABLED',readable:false,founderVisible:false,actionAuthorized:false};
   try{
     const history=await slackApi(env,'conversations.history',{channel:CHANNEL,limit:'20'},fetchImpl);
     const founderVisible=(Array.isArray(history.messages)?history.messages:[]).some(m=>m?.type==='message'&&!m.subtype&&m.user===FOUNDER_SLACK_USER);
@@ -156,7 +157,7 @@ async function setCursor(env,lastTs){
   await env.VAOS_ARTIFACTS.put(CURSOR,JSON.stringify({lastTs,updatedAt:new Date().toISOString()}),{httpMetadata:{contentType:'application/json'}});
 }
 export async function runSlackFounderAgent({env,fetchImpl=fetch,bootstrapLatest=true,answerFn=answerFounderSlackQuestion}={}){
-  if(env?.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return {status:'DISABLED',processed:0};
+  if(featureControl(env,'VAOS_SLACK_AGENT_CONTROL')!=='founder-readonly-v1')return {status:'DISABLED',processed:0};
   if(!env?.VAOS_ARTIFACTS?.get||!env?.VAOS_ARTIFACTS?.put)throw new Error('SLACK_CURSOR_STORE_UNAVAILABLE');
   const last=await getCursor(env);
   const history=await slackApi(env,'conversations.history',{channel:CHANNEL,limit:'20',...(last?{oldest:last}:{})},fetchImpl);

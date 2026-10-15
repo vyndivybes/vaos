@@ -19,7 +19,7 @@
     "SUPABASE_URL": "https://jjzycduoujbmiegqfiud.supabase.co",
     "ACTIVEPIECES_SYNTHETIC_QUALIFY": "approved-20261009",
     "STIRLING_SYNTHETIC_QUALIFY": "approved-20261010",
-    "VAOS_SLACK_AGENT_CONTROL": "founder-readonly-v1"
+    "VAOS_FEATURE_FLAGS": "{\"VAOS_FEDERATED_KNOWLEDGE_CONTROL\":\"founder-readonly-v1\",\"VAOS_LANGGRAPH_CONTROL\":\"read-only-v1\",\"VAOS_PRODUCTION_OBSERVER_CONTROL\":\"read-only-v1\",\"VAOS_SLACK_AGENT_CONTROL\":\"founder-readonly-v1\"}"
   },
   "assets": {
     "directory": "./apps/web",

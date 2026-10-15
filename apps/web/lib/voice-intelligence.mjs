@@ -70,6 +70,11 @@ export function resolveVoiceIntent(question){
   return {domain:'engineering',reason:'CONTROLLED_ENGINEERING_AUTHORITY'};
  if(isGovernanceExplanation(q))return {domain:'governance',reason:'READ_ONLY_AUTHORITY_EXPLANATION'};
  if(banned.test(q))return {domain:'unsupported',reason:'BLOCKED_OR_UNBOUNDED'};
+ // Exact social turns have no business source and must not trigger a lookup.
+ // Anchoring prevents a greeting from swallowing a following business request.
+ if(/^(?:(?:hey|hello|hi|good morning|good afternoon|good evening)[\s,!.-]+)?(?:jarvis|vaos)[.!?\s]*$/i.test(q)
+   ||/^(?:hello|good morning|good afternoon|good evening)[.!?\s]*$/i.test(q))
+  return {domain:'conversation',reason:'GREETING'};
  if(isMissionRecoveryQuestion(q))return {domain:'missions',reason:'MISSION_RECOVERY_EXPLANATION'};
  const native=[
   ['finance',/வரவு|செலவு|நிதி|பணம்|വരുമാനം|ചെലവ്|ധനം|वित्त|खर्च|पैसा|राजस्व/],

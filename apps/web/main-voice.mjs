@@ -22,7 +22,9 @@ const SIGNED_VYNDI_SOURCE_AUTHORITIES=new Set([
 const G5_ISO_UTC=/^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 export function sanitizeVoiceTranscript(value){
  if(typeof value!=='string')return null;
- const s=value.trim().replace(/^(hey|hello|hi)\s+vaos\s*[,.:!?-]?\s*/i,'').trim();
+ const original=value.trim();
+ const remainder=original.replace(/^(hey|hello|hi)\s+(?:vaos|jarvis)\b\s*[,.:!?-]?\s*/i,'').trim();
+ const s=remainder||original;
  return s.length>=5&&s.length<=300&&!/[\x00-\x1f\x7f]/.test(s)?s:null;
 }
 export function classifyDashboardQuestion(value){
@@ -46,6 +48,7 @@ export function classifyDashboardQuestion(value){
  */
 export function shouldUseAdaptiveAnswer(intent,selected){
  if(selected!==true||!intent||intent.kind==='DENY'||intent.kind==='STARTUP')return false;
+ if(intent.domain==='conversation')return false;
  if(['governance','missions'].includes(intent.domain)||intent.domain==='engineering')return false;
  if(intent.kind==='ADVISORY'||intent.domain==='group')return true;
  if(/\b(?:weather|rain|temperature|snow|humidity|storm)\b/i.test(intent.question||''))return true;
@@ -132,6 +135,13 @@ export function formatReadOnlyResult(kind,data){
   return {status:data.status,answer:data.answer.slice(0,6300),sources:refs,language:'en',
    spokenAnswer:typeof data.spokenAnswer==='string'&&data.spokenAnswer.length>=20
     &&data.spokenAnswer.length<=450?data.spokenAnswer:data.answer.slice(0,320)};
+ }
+ if(kind==='INSIGHT'&&data?.sourceSystem==='VAOS_CONVERSATION'){
+  if(data.schemaVersion!=='VAOS_CONVERSATION_V1'||data.status!=='READY'
+    ||data.readOnly!==true||data.actionAuthorized!==false||data.modelInvoked!==false
+    ||typeof data.answer!=='string'||data.answer.length<8||data.answer.length>400)
+   throw Error('VOICE_CONVERSATION_INVALID');
+  return {status:'READY',answer:data.answer,sources:[],language:'en'};
  }
  if(kind==='INSIGHT'&&data?.sourceSystem==='VAOS_POLICY'){
   if(data?.schemaVersion!=='VAOS_GOVERNANCE_EXPLANATION_V1'
@@ -480,6 +490,8 @@ function init(){
     a.textContent=ref.repository+' · '+ref.path+(Number.isInteger(ref.line)?' : '+ref.line:'');sources.append(a);
    }
    const diagnostic=typeof data?.diagnosticCode==='string'&&/^[A-Z][A-Z_]{4,55}$/.test(data.diagnosticCode)?' ['+data.diagnosticCode+']':'';
+   if(normalized.status==='READY')setStatus('JARVIS is ready. Ask a company question.');
+   else {
    const measured=g5Timing.record(Math.min(300000,Math.max(0,performance.now()-requestedAt)),
      normalized.status==='OBSERVED'?'OBSERVED':'HOLD');
    setStatus((investigate
@@ -487,6 +499,7 @@ function init(){
     :normalized.status==='OBSERVED'?'Read-only evidence retrieved. No changes performed.':'HOLD: relevant evidence not independently established.'+diagnostic)
     +(resolved.usedContext?' · G6 follow-up: fresh read-only source':'')
     +' · '+formatG5ResponseTiming(measured));
+   }
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
   }catch(error){
    if(controller!==abort)return;

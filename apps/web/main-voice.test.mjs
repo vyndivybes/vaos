@@ -1,5 +1,20 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {classifyDashboardQuestion,sanitizeVoiceTranscript,isDirectBusinessQuestion,voiceCapabilityReady,formatReadOnlyResult,splitDecisionBrief,formatAdaptiveStatus,shouldUseAdaptiveAnswer} from './main-voice.mjs';
+test('workspace keeps a bare JARVIS greeting and does not send it to adaptive inference',()=>{
+ for(const text of ['Hey Jarvis','Hey VAOS','Hello Jarvis!']){
+  const intent=classifyDashboardQuestion(text);
+  assert.equal(intent.domain,'conversation',text);
+  assert.equal(shouldUseAdaptiveAnswer(intent,true),false);
+ }
+ assert.equal(classifyDashboardQuestion('Hey Jarvis, show inventory').domain,'inventory');
+ assert.equal(classifyDashboardQuestion('Hey Jarvis, approve supplier payment').kind,'DENY');
+ const data={schemaVersion:'VAOS_CONVERSATION_V1',sourceSystem:'VAOS_CONVERSATION',
+  status:'READY',readOnly:true,actionAuthorized:false,modelInvoked:false,answer:'Hello, I am JARVIS. What would you like to look into?'};
+ assert.equal(formatReadOnlyResult('INSIGHT',data).status,'READY');
+ assert.throws(()=>formatReadOnlyResult('INSIGHT',{...data,actionAuthorized:true}));
+ assert.throws(()=>formatReadOnlyResult('INSIGHT',{...data,modelInvoked:true}));
+});
+
 test('voice bot is read-only and blocks operational write or approval commands',()=>{
  for(const s of ['approve PO 123','delete all records','transfer salary','pay supplier','dispatch an agent','post invoice','execute mission','create an order','update a customer'])
   assert.equal(classifyDashboardQuestion(s).kind,'DENY',s);

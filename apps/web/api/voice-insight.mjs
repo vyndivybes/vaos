@@ -29,6 +29,12 @@ export function createVoiceInsightHandler({getReader=makeCommercialReader,
   if(intent.reason==='BLOCKED_OR_UNBOUNDED')
    return res.status(422).json(apiError('VOICE_WRITE_DENIED','No write or sensitive request permitted'));
 
+  if(intent.domain==='conversation')return res.status(200).json({data:{
+   schemaVersion:'VAOS_CONVERSATION_V1',sourceSystem:'VAOS_CONVERSATION',
+   status:'READY',readOnly:true,actionAuthorized:false,modelInvoked:false,
+   answer:"Hello, I'm JARVIS. What would you like to look into? You can ask about sales, inventory, production, finance, people, engineering or a specific mission.",
+  }});
+
   // This is an explanation of existing governance, not a request to authorize
   // a transaction. It cannot call the payment, procurement or production adapters.
   if(intent.domain==='governance'){

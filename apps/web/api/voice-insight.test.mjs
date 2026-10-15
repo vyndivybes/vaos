@@ -19,6 +19,20 @@ test('voice intelligence registered; no unauthorized signed reads without founde
  }
  assert.equal(calls,0);
 });
+test('Hey Jarvis returns a fixed welcome without business reads or inference',async()=>{
+ let calls=0;
+ const h=createVoiceInsightHandler({getReader:()=>{calls++;throw Error('no reads');},
+  getMissionSummary:()=>{calls++;throw Error('no mission lookup');}});
+ const {state,res}=response();await h(req('Hey Jarvis'),res);
+ assert.equal(state.code,200);
+ assert.equal(state.body.data.sourceSystem,'VAOS_CONVERSATION');
+ assert.equal(state.body.data.status,'READY');
+ assert.equal(state.body.data.actionAuthorized,false);
+ assert.equal(state.body.data.modelInvoked,false);
+ assert.match(state.body.data.answer,/Hello.*JARVIS/);
+ assert.equal(calls,0);
+});
+
 test('sales, HR, finance and material-shortage questions call only their signed read contract',async()=>{
  for(const [q,action,data] of [
   ['How are sales orders?','COMMERCIAL.OBSERVE_PIPELINE',{records:[{status:'confirmed',units:2}]}],

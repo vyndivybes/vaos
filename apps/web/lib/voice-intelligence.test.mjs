@@ -1,5 +1,11 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {resolveVoiceIntent,interpretVoiceRecords,formatVoiceAnswer} from './voice-intelligence.mjs';
+test('greetings are conversation, while greeting-prefixed business and unsafe requests retain their routing',()=>{
+ for(const q of ['Hey Jarvis','Hello JARVIS!','Hey VAOS','Good morning, Jarvis'])
+  assert.equal(resolveVoiceIntent(q).domain,'conversation',q);
+ assert.equal(resolveVoiceIntent('Hey Jarvis, show inventory').domain,'inventory');
+ assert.equal(resolveVoiceIntent('Hey Jarvis, approve supplier payment').domain,'unsupported');
+});
 const examples=[
  ['How are our sales orders?', 'commercial'],
  ['What is our customer order pipeline?','commercial'],

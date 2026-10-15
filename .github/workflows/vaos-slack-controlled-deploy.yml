@@ -9,6 +9,7 @@ on:
       - 'apps/web/lib/feature-flags.mjs'
       - 'apps/web/api/federated-knowledge.mjs'
       - 'apps/web/api/langgraph.mjs'
+      - 'apps/web/api/google-workspace.mjs'
       - 'platform/execution/slack-founder-agent.mjs'
       - 'apps/web/cloudflare-worker.mjs'
       - 'wrangler.jsonc'

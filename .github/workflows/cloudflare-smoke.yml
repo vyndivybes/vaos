@@ -45,6 +45,12 @@ jobs:
       - name: Check Founder and Workforce chart regression
         run: node --test apps/web/founder-cockpit.test.mjs apps/web/workforce-analytics.test.mjs apps/web/lib/dashboard-charts.test.mjs
 
+      - name: Verify Insight Studio visual data contracts
+        run: node --test apps/web/lib/insight-studio.test.mjs apps/web/jarvis-insight-studio.test.mjs apps/web/api/jarvis-data-agent.test.mjs
+
+      - name: Syntax-check Insight Studio
+        run: node --check apps/web/jarvis-data-agent.mjs && node --check apps/web/lib/insight-studio.mjs
+
       - name: Syntax-check Cloudflare entrypoints
         run: node --check apps/web/cloudflare-worker.mjs && node --check apps/web/lib/cloudflare-adapter.mjs && node --check apps/web/api/zapier-webhook.mjs
 

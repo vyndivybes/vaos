@@ -211,6 +211,13 @@ function init(){
  let localSpeech=null,interruption=null;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
  const g5Timing=createG5ResponseTiming();
+ // The paired local speech tool supplies a draft only. The user still presses
+ // Ask, and the existing classifier and read-only routes retain authority.
+ root.addEventListener?.('vaos-transcript',event=>{
+  const transcript=sanitizeVoiceTranscript(event.detail?.text);
+  if(!transcript||busy)return;
+  input.value=transcript;voiceRequestPending=true;
+ });
  const conversation=createG6Conversation();
  const setStatus=message=>{
   note.textContent=message;

@@ -14,9 +14,9 @@ const expectedEmployees=new Set([
   'maintenance','finance','people','engineering-configuration','project',
 ]);
 
-test('bridge preserves all 23 operational capabilities and adds exactly one read-only project schedule route',()=>{
-  assert.equal(VYNDI_BRIDGE_ROUTES.length,24);
-  assert.equal(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.actionType)).size,24);
+test('bridge retains original routes plus signed read-only project and finance statement actions',()=>{
+  assert.equal(VYNDI_BRIDGE_ROUTES.length,25);
+  assert.equal(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.actionType)).size,25);
   assert.deepEqual(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.employeeId)),expectedEmployees);
   for(const route of VYNDI_BRIDGE_ROUTES){
     assert.ok(route.verificationRefs.length>0,route.actionType);
@@ -28,16 +28,16 @@ test('bridge preserves all 23 operational capabilities and adds exactly one read
   }
 });
 
-test('read commissioning adds a ninth read-only project route while keeping all fifteen mutations disabled',()=>{
+test('read commissioning has ten controlled read routes and keeps all fifteen mutations disabled',()=>{
   const readiness=getVyndiBridgeReadiness();
   assert.equal(readiness.executionEnabled,true);
-  assert.equal(readiness.routeCount,24);
-  assert.equal(readiness.readReady,9);
+  assert.equal(readiness.routeCount,25);
+  assert.equal(readiness.readReady,10);
   assert.equal(readiness.writePrepared,15);
   assert.deepEqual(readiness.gaps,[]);
   const reads=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.READ);
   const writes=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION);
-  assert.equal(reads.length,9);
+  assert.equal(reads.length,10);
   assert.ok(reads.every(r=>r.state===VYNDI_BRIDGE_ROUTE_STATE.READ_READY && r.executionEnabled===true));
   assert.equal(writes.length,15);
   assert.ok(writes.every(r=>r.executionEnabled===false));

@@ -3,6 +3,7 @@ import {convertDocumentToStudyText,validateDocumentUpload} from '../lib/multimod
 import {selectDocumentEvidence,validateMultimodalAdvisory,validateClientDocumentSource} from '../lib/g7-source-evidence.mjs';
 import {reviewSpecialistExcerpt} from '../lib/jarvis-specialist-review.mjs';
 import {analyzeVideoSense} from '../lib/video-sense.mjs';
+import {featureControl} from '../lib/feature-flags.mjs';
 const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
 const decodedBytes=value=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
 function frameContext(value){
@@ -32,7 +33,7 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
   const session=getSession(req);
   if(!session)return reply(res,401,{error:{code:'UNAUTHENTICATED'}});
   if(session.email!=='shyamsundhar1982@gmail.com')return reply(res,403,{error:{code:'FOUNDER_ONLY'}});
-  const enabled=req.env?.VAOS_MULTIMODAL_CONTROL===ENABLED;
+  const enabled=featureControl(req.env,'VAOS_MULTIMODAL_CONTROL')===ENABLED;
   if(req.method==='GET')return reply(res,200,{data:{enabled,specialistsEnabled:true,documentFormats:['pdf','docx','pptx'],imageFormat:'JPEG/PNG/WebP',videoSense:enabled?'SPARSE_TIMESTAMPED_FRAMES':'DISABLED',visionModel:enabled?MODEL:null,writeAuthorized:false,noPersistence:true,productionCertified:false,notice:enabled?'Limited read-only input analysis, unverified until independently accepted.':'Independent multimodal pilot is disabled on this deployment.'}});
   let origin;try{origin=new URL(req.url).origin}catch{return reply(res,403,{error:{code:'ORIGIN_DENIED'}})}
   if(req.headers?.origin!==origin)return reply(res,403,{error:{code:'ORIGIN_DENIED'}});

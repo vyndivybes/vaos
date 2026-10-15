@@ -225,14 +225,16 @@ export async function readFounderGmail(env,q,{fetchImpl=fetch,now=()=>Date.now()
   const messages=await Promise.all((matches.messages||[]).slice(0,8).map(async item=>{
    if(!/^[A-Za-z0-9_-]{5,100}$/.test(item?.id||''))throw Error('MAIL_ID_INVALID');
    const detail=await googleGet(base+'/'+encodeURIComponent(item.id)+
-    '?'+new URLSearchParams({format:'metadata',metadataHeaders:['From','Subject','Date','To']}).toString(),token,fetchImpl);
+    '?'+new URLSearchParams({format:'full'}).toString(),token,fetchImpl);
    if(detail.id!==item.id||!Array.isArray(detail.payload?.headers))throw Error('MAIL_SCHEMA_INVALID');
    const header=name=>String(detail.payload.headers.find(x=>String(x.name).toLowerCase()===name)?.value||'').slice(0,220);
+   const plain=detail.payload.parts?.find(x=>x?.mimeType==='text/plain'&&x.body?.data)?.body?.data||detail.payload?.body?.data;
+   let body='';try{if(plain)body=new TextDecoder().decode(decode64(plain)).slice(0,1600)}catch{}
    return {id:item.id,from:header('from'),subject:header('subject'),date:header('date'),
-    snippet:String(detail.snippet||'').slice(0,400)};
+    snippet:String(detail.snippet||'').slice(0,400),body};
   }));
   return {status:'PASS',actionAuthorized:false,source:'GMAIL',query:q.trim(),messages,
-   answer:messages.length?messages.map(m=>m.date+' · '+m.from+' · '+m.subject+' · '+m.snippet).join('\\n').slice(0,4000)
+   answer:messages.length?messages.map(m=>m.date+' · '+m.from+' · '+m.subject+' · '+(m.body||m.snippet)).join('\\n').slice(0,4000)
     :'No matching messages found in the connected Gmail account.'};
  }catch(e){return hold(e.message==='GOOGLE_SCOPE_RECONNECT_REQUIRED'?e.message:'GMAIL_SOURCE_UNVERIFIED')}
 }

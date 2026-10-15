@@ -195,7 +195,7 @@ export async function readGoogleWorkspaceBrief(env,{fetchImpl=fetch,now=()=>Date
  }catch{return hold('GOOGLE_SOURCE_UNVERIFIED')}
 }
 
-const validIso=s=>typeof s==='string' && /^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?(?:Z|[+-]\\d{2}:\\d{2})$/.test(s)&&Number.isFinite(Date.parse(s));
+const validIso=s=>typeof s==='string' && /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(s)&&Number.isFinite(Date.parse(s));
 async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),required=[]}={}){
  if(!googleWorkspaceReadiness(env).ready)throw Error('GOOGLE_OAUTH_UNAVAILABLE');
  const blob=await env.VAOS_ARTIFACTS.get(RECORD);
@@ -213,7 +213,7 @@ async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),r
 }
 export async function readFounderGmail(env,q,{fetchImpl=fetch,now=()=>Date.now()}={}){
  const mailScope='https://www.googleapis.com/auth/gmail.readonly';
- if(typeof q!=='string'||q.trim().length<2||q.length>120||/[\\x00-\\x1f]/.test(q))
+ if(typeof q!=='string'||q.trim().length<2||q.length>120||/[\x00-\x1f]/.test(q))
   return hold('MAIL_QUERY_INVALID');
  try{
   const token=await founderGoogleCredential(env,{fetchImpl,now,required:[mailScope]});

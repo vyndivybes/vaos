@@ -5,6 +5,7 @@ import {createWorkforceAnalyticsHandler} from './workforce-analytics.mjs';
 import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 import {buildWorkforceAnalytics} from '../../../intelligence/workforce-analytics.mjs';
 import {buildWorkforceCommissioningBoard} from '../../../intelligence/workforce-commissioning-board.mjs';
+import {evaluateEmployeeEvidencePriorities} from '../../../intelligence/workforce-evidence-priorities.mjs';
 
 const sample={schemaVersion:'VAOS_WORKFORCE_OVERVIEW_V1',observedAt:'2026-10-13T10:00:00Z',readOnly:true,employees:[]};
 function req(method='GET',email='shyamsundhar1982@gmail.com',query=''){
@@ -27,6 +28,7 @@ test('route exists and only signed-in founder may inspect the workforce',async()
  const calculated=buildWorkforceAnalytics(sample);
  assert.equal(calculated.employees.length,16);
  assert.equal(buildWorkforceCommissioningBoard(calculated).schemaVersion,'VAOS_WORKFORCE_EXECUTION_BOARD_V1');
+ assert.equal(evaluateEmployeeEvidencePriorities({employees:calculated.employees,actionAuthorized:false}).length,16);
  const {res,state}=response();await handler(req(),res);
  assert.equal(state.status,200);assert.equal(state.body.data.employees.length,16);
  assert.equal(state.headers['Cache-Control'],'no-store');assert.equal(state.body.data.actionAuthorized,false);

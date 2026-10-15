@@ -270,7 +270,9 @@ export default {
       // Shadow assesses only stored workforce readiness; no jobs or VYNDI.
       if(!['read-only-v1','shadow-v1'].includes(env.VAOS_PRODUCTION_OBSERVER_CONTROL))return;
       const result=await runProductionReadOnlyObservation({
-        controlService:getDurableControlService(env),executionEngine:getExecutionEngine(env),
+        controlService:getDurableControlService(env),
+        executionEngine:env.VAOS_PRODUCTION_OBSERVER_CONTROL==='read-only-v1'
+          ?getExecutionEngine(env):undefined,
         mode:()=>env.VAOS_PRODUCTION_OBSERVER_CONTROL,
       });
       console.log('VAOS_PRODUCTION_L5_OBSERVATION',JSON.stringify(result));

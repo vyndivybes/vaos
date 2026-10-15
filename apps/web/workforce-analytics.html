@@ -6,6 +6,18 @@
 <title>VAOS · Workforce Analytics</title></head><body>
 <header class="wa-header"><div><small>VĀYŪ SHASTR · VAOS</small><h1>Workforce Analytics</h1><p>Founder Command · 16 digital employees · evidence-backed read-only reporting</p></div><a href="/founder-console.html">← Founder Command</a></header>
 <main class="wa-main">
+<section class="wa-panel" aria-labelledby="wa-business-title">
+ <div class="wa-heading"><div><span class="wa-kicker">FOUNDER · COMPANY OPERATING INTELLIGENCE</span>
+ <h2 id="wa-business-title">Business analytics by department</h2>
+ <p>Sales, Finance, HR, Production, Procurement, Inventory, Engineering and Maintenance. Each department opens its responsible AI employee and canonical business records.</p></div>
+ <button id="wa-business-refresh" type="button">Refresh all departments</button></div>
+ <p id="wa-business-status" role="status" aria-live="polite">Awaiting authenticated departmental evidence.</p>
+ <div id="wa-business-departments" class="wa-period-grid" aria-label="Business department records and drill-down"></div>
+ <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>
+ <p>Revenue requires posted or otherwise qualified sales actuals; gross profit is revenue minus attributable cost of goods sold; operating profit also deducts qualified operating expenses. Working capital requires qualified current assets and current liabilities. Cash runway requires qualified cash and burn rate. Stock turnover, production yield, purchase variance, receivables ageing and payroll require their respective canonical transaction records. None can be calculated from mere counts of status records, employee activity or unapproved engineering BOMs. Missing and incomplete figures must remain unavailable, never zero.</p>
+ </details>
+</section>
+
 <section class="wa-panel wa-actual-report" aria-labelledby="wa-actual-title">
  <div class="wa-heading">
   <div><span class="wa-kicker">FOUNDER · RECORDED OUTPUT AND AUDIT</span>
@@ -140,4 +152,4 @@
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
  </section>
  <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
-</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script></body></html>
+</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script></body></html>

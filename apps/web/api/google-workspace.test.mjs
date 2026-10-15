@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief} from './google-workspace.mjs';
+import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief,readFounderGmail,createFounderCalendarReminder} from './google-workspace.mjs';
 
 const ORIGIN='https://vaos.vayushastr.workers.dev';
 const ctx={email:'shyamsundhar1982@gmail.com'};
@@ -64,7 +64,7 @@ test('read-only briefing never permits actions or posts data to external Slack',
 test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits metadata-only reads',async()=>{
  const s=setup();
  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
- const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly'].join(' ');
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/calendar.events'].join(' ');
  let n=0;
  const fetchImpl=async(url,init)=>{
   n++;s.calls.push({url,method:init.method});
@@ -90,6 +90,7 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  assert.equal(consent.origin,'https://accounts.google.com');
  assert.equal(consent.searchParams.get('code_challenge_method'),'S256');
  assert.equal(consent.searchParams.get('access_type'),'offline');
+ assert.match(consent.searchParams.get('scope'),/gmail.readonly/);
  const state=consent.searchParams.get('state');
  assert.ok(s.storage.has('runtime/google-workspace/oauth-pending/'+state+'.json'));
  const cookie=start.headers.get('set-cookie').split(';')[0];
@@ -98,7 +99,7 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  }),getResponse(),s.env);
  assert.equal(callback.status,200);
  const body=await callback.json();
- assert.equal(body.status,'CONNECTED_READONLY');
+ assert.equal(body.status,'CONNECTED');
  assert.equal(n,2);
  const saved=s.storage.get('runtime/google-workspace/founder-token.v1.json');
  assert.ok(saved);assert.equal(saved.includes('refresh-token-valid-2026'),false);
@@ -115,7 +116,7 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
 test('OAuth callback refuses a different Google identity and never persists credentials',async()=>{
  const s=setup();
  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
- const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly'].join(' ');
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/calendar.events'].join(' ');
  const fetchImpl=async(url)=>{
   if(url.endsWith('/token'))return new Response(JSON.stringify({
    token_type:'Bearer',access_token:'access-token-valid-2026',refresh_token:'refresh-token-valid-2026',expires_in:3600,scope
@@ -130,4 +131,49 @@ test('OAuth callback refuses a different Google identity and never persists cred
  }),getResponse(),s.env);
  assert.equal(cb.status,403);
  assert.equal(s.storage.has('runtime/google-workspace/founder-token.v1.json'),false);
+});
+
+test('consented founder can read Toray Gmail and save a bounded calendar reminder with confirmed event ID',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly',
+  'https://www.googleapis.com/auth/drive.metadata.readonly',
+  'https://www.googleapis.com/auth/gmail.readonly',
+  'https://www.googleapis.com/auth/calendar.events'].join(' ');
+ const calls=[];
+ const fetchImpl=async(url,init)=>{
+  calls.push({url,method:init.method});
+  if(url==='https://oauth2.googleapis.com/token')return Response.json({
+   token_type:'Bearer',access_token:'access-token',refresh_token:'refresh-token',expires_in:3600,scope});
+  if(url==='https://openidconnect.googleapis.com/v1/userinfo')
+   return Response.json({email:'shyamsundhar1982@gmail.com',email_verified:true});
+  if(url.includes('/gmail/v1/users/me/messages/')){
+   return Response.json({id:'mailid123',snippet:'Materials status',
+    payload:{headers:[{name:'From',value:'Toray technical team'},
+      {name:'Subject',value:'Composite material review'},{name:'Date',value:'15 Oct 2026'}]}});
+  }
+  if(url.includes('/gmail/v1/users/me/messages?'))
+   return Response.json({messages:[{id:'mailid123'}],resultSizeEstimate:1});
+  if(url.endsWith('/calendars/primary/events')&&init.method==='POST'){
+   return new Response(JSON.stringify({...JSON.parse(init.body),status:'confirmed'}),{status:201});
+  }
+  throw Error('UNEXPECTED_GOOGLE_REQUEST');
+ };
+ const now=()=>Date.parse('2026-10-15T06:00:00.000Z');
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl,now});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=authorized_code_2026',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ assert.equal(cb.status,200);
+ const mail=await readFounderGmail(s.env,'from:Toray',{fetchImpl,now});
+ assert.equal(mail.status,'PASS');assert.equal(mail.messages.length,1);
+ assert.match(mail.messages[0].subject,/Composite material/);
+ const event=await createFounderCalendarReminder(s.env,{
+  title:'Follow up with TANSAM',start:'2026-10-19T09:00:00+05:30',
+  end:'2026-10-19T09:30:00+05:30',requestId:'a'.repeat(32)
+ },{fetchImpl,now});
+ assert.equal(event.saved,true);assert.equal(event.status,'PASS');
+ assert.equal(event.id,'vaos'+'a'.repeat(32));
+ assert.equal(calls.filter(x=>x.method==='POST'&&x.url.endsWith('/calendars/primary/events')).length,1);
 });

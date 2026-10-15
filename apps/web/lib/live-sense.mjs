@@ -107,8 +107,8 @@ export function createQuestionDictation({RecognitionClass,onText=()=>{},onStatus
     if(!result||result.length<4||result.length>1000||/[\x00-\x1f\x7f]/.test(result)){
      onStatus('No usable final spoken question. Nothing submitted.');return;
     }
-    onText(result);
-    onStatus('Question transcribed. Review it, then explicitly choose Analyze.');
+    const handled=onText(result)===true;
+    if(!handled)onStatus('Question transcribed. Review it, then explicitly choose Analyze.');
    };
    r.onerror=()=>{
     if(active!==r)return;

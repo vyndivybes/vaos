@@ -156,3 +156,28 @@ footer{color:#65777f}
 .wa-vyndi-report .wa-period-item{padding:11px 13px}
 .wa-vyndi-report .wa-period-item p{font-size:13px}
 @media(max-width:790px){.wa-vyndi-layout{grid-template-columns:1fr}.wa-vyndi-header{flex-direction:column}}
+
+
+/* VAOS enterprise BI: accessible visual first, detail tables on demand. */
+.wa-business-intelligence{border:1px solid #e5e5e1;border-top:4px solid #b59b71;border-radius:20px;
+ background:#fff;padding:clamp(16px,2.2vw,28px);margin:18px 0 26px;
+ box-shadow:0 8px 24px rgba(52,67,75,.04)}
+.wa-business-intelligence h3{font-size:clamp(22px,2vw,30px);color:#34434b;margin:4px 0 10px}
+.wa-business-intelligence h4{font-size:19px;color:#34434b}
+.wa-business-intelligence .wa-vyndi-header{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+.wa-bi-departments{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin:19px 0}
+.wa-bi-dept{background:#faf9f6;border:1px solid #e5e5e1;color:#34434b;text-align:left;
+ border-radius:14px;padding:14px 16px;min-height:85px;display:flex;flex-direction:column;gap:8px}
+.wa-bi-dept:hover{background:#f2efea;border-color:#b59b71;color:#34434b}
+.wa-bi-dept strong{font-size:15px}
+.wa-bi-dept span{font-size:13px;line-height:1.5;color:#60757f}
+.wa-bi-dept.wa-bi-unavailable{border-style:dashed}
+.wa-bi-visual{background:#f9f8f5;border:1px solid #e5e5e1;border-radius:18px;padding:19px;margin:20px 0}
+.wa-bi-visual .wa-viz-bars{min-height:140px}
+.wa-business-intelligence td:last-child{max-width:670px;min-width:300px;white-space:normal;overflow-wrap:anywhere}
+.wa-business-intelligence .wa-bar-row{margin:12px 0 16px}
+.wa-business-intelligence .wa-bar-label{font-weight:600;color:#485d65}
+.wa-business-intelligence #wa-bi-more{margin:12px 0}
+.wa-business-intelligence button:focus-visible{outline:3px solid #8297a5;outline-offset:3px}
+@media(max-width:700px){.wa-business-intelligence{padding:14px;border-radius:16px}.wa-bi-departments{grid-template-columns:repeat(2,minmax(0,1fr))}.wa-bi-dept{padding:10px}}
+@media(max-width:470px){.wa-bi-departments{grid-template-columns:1fr}}

@@ -132,3 +132,16 @@ test('approved demand plan and actuals render with vintage and close references,
  assert.ok(nodes.some(n=>String(n.textContent).includes('Only one eligible closed period.')));
  assert.ok(nodes.some(n=>n.textContent==='Closed period demand only.'));
 });
+
+
+test('specialist source pagination requests its own ledger rather than using the primary ledger row count',async()=>{
+ let request;const p=packet();p.departments[0].sources=[{sourceTable:'vyndi_legal_register',status:'OBSERVED',periodEventCount:40,
+  records:[],detailPage:{offset:0,limit:5,hasMore:true}}];
+ const {context,get}=await setup(async url=>{
+  request=new URL(url,'https://vaos.local');const out=packet(0,'risk');out.departments[0].sources=[{
+   sourceTable:'vyndi_legal_register',status:'OBSERVED',periodEventCount:40,records:[],detailPage:{offset:5,limit:30,hasMore:true}}];
+  return {ok:true,status:200,json:async()=>({data:out})};
+ });context.render(p);
+ const button=descendants(get('wa-enterprise-grid')).find(n=>n['aria-label']==='risk vyndi_legal_register: Next source rows');
+ await button.handlers.click();assert.equal(request.searchParams.get('source'),'vyndi_legal_register');assert.equal(request.searchParams.get('offset'),'5');
+});

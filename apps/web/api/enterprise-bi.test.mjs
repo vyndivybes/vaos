@@ -50,3 +50,15 @@ test('invalid or tampered signed bridge response fails closed',async()=>{
   bridgeFactory:()=>({execute:async()=>({data:{readOnly:true,departments:[]}})})});
  const r=res();await handler(req(),r);assert.equal(r.statusCode,503);
 });
+
+
+test('specialist pagination scope is bounded and forwarded inside the signed request',async()=>{
+ let job;const handler=createEnterpriseBiHandler({sessionVerifier:founder,getStore:()=>({}),
+  bridgeFactory:()=>({execute:async x=>{job=x;return {data:{schemaVersion:'VYNDI_ENTERPRISE_BI_V1',readOnly:true,
+   period:{from:'2026-10-01',to:'2026-10-15'},scope:'qa',departments:[]}};}})});
+ const r=res();await handler(req(query+'&employee=qa&source=vyndi_quality_capas&offset=30'),r);
+ assert.equal(r.statusCode,200);assert.equal(job.payload.sourceTable,'vyndi_quality_capas');assert.equal(job.payload.offset,30);
+ for(const suffix of ['&source=vyndi_quality_capas','&employee=qa&source=drop%20table','&employee=qa&employee=finance']){
+  const bad=res();await handler(req(query+suffix),bad);assert.equal(bad.statusCode,422);
+ }
+});

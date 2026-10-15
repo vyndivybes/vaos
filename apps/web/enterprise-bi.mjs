@@ -39,6 +39,9 @@ function sourceDetails(record,host){
   ' sources observed. Sources overlap; do not add them as employee output.'));
  for(const source of sources){
   const details=el('details',undefined,'wa-accordion');
+  const expansionKey=record.employeeId+':'+source.sourceTable;
+  details.open=expandedSources.has(expansionKey);
+  details.addEventListener('toggle',()=>{if(details.open)expandedSources.add(expansionKey);else expandedSources.delete(expansionKey);});
   details.append(el('summary',source.sourceTable+' · '+source.status));
   if(source.status!=='OBSERVED'){details.append(el('p','Unavailable. Counts, records and forecasts unknown.'));host.append(details);continue;}
   details.append(el('p','Dated source rows: '+source.periodEventCount+' · Undated current rows: '+source.undatedCount+
@@ -61,7 +64,13 @@ function sourceDetails(record,host){
    body.append(tr);
   }
   table.append(body);wrap.append(table);details.append(wrap);
-  if(source.detailPage?.hasMore)details.append(el('p','More rows exist. Select View employee for the larger departmental preview and use the department record controls to page.'));
+  const offset=source.detailPage?.offset??0,limit=source.detailPage?.limit??30;
+  for(const [label,next,disabled] of [['Previous source rows',Math.max(0,offset-limit),offset===0],
+   ['Next source rows',offset+limit,!source.detailPage?.hasMore||offset+limit>5000]]){
+   const button=el('button',label);button.type='button';button.disabled=disabled||loadingPages.has(record.employeeId);
+   button.setAttribute('aria-label',record.employeeId+' '+source.sourceTable+': '+label);
+   button.addEventListener('click',()=>{expandedSources.add(expansionKey);return loadPage(record.employeeId,next,source.sourceTable);});details.append(button);
+  }
   host.append(details);
  }
  host.append(el('p','Business plan vs actual: '+(record.planVsActual?.reason||'Comparable baseline unavailable.')),
@@ -127,6 +136,8 @@ function render(data){
    const currentChart=el('div',undefined,'wa-viz-bars');
    chart(currentChart,record.currentStatusDistribution);card.append(currentChart);
    const context=el('details',undefined,'wa-accordion');
+   context.open=expandedSources.has(id+':context');
+   context.addEventListener('toggle',()=>{if(context.open)expandedSources.add(id+':context');else expandedSources.delete(id+':context');});
    context.append(el('summary','Period activity & source context'));
    context.append(el('strong',count===null?'Count unavailable':count+' dated source records'));
    context.append(el('p',(Number.isSafeInteger(record.flaggedStatusCount)?record.flaggedStatusCount:'Unknown')+
@@ -189,12 +200,13 @@ function render(data){
   });actions.append(open);card.append(actions);host.append(card);
  }
 }
-async function loadPage(employeeId,offset){
+async function loadPage(employeeId,offset,sourceTable=null){
  if(!packet||loadingPages.has(employeeId))return;
  const seq=ticket,{from,to}=packet.period;
  loadingPages.add(employeeId);render(packet);
  try{
-  const result=await fetch('/api/enterprise-bi?'+new URLSearchParams({from,to,employee:employeeId,limit:'30',offset:String(offset)}),
+  const result=await fetch('/api/enterprise-bi?'+new URLSearchParams({from,to,employee:employeeId,limit:'30',offset:String(offset),
+    ...(sourceTable?{source:sourceTable}:{})}),
    {credentials:'same-origin',cache:'no-store'});
   if(seq!==ticket)return;
   if(result.status===401){location.assign('/login');return;}
@@ -203,8 +215,9 @@ async function loadPage(employeeId,offset){
   if(seq!==ticket)return;
   const record=data?.departments?.find(x=>x.employeeId===employeeId);
   if(data?.schemaVersion!=='VYNDI_ENTERPRISE_BI_V1'||data.readOnly!==true||data.scope!==employeeId||
-    data.period?.from!==from||data.period?.to!==to||record?.status!=='OBSERVED'||
-    record.detailPage?.offset!==offset)throw Error('UNQUALIFIED_PAGE');
+    data.period?.from!==from||data.period?.to!==to||!record||
+    (sourceTable?record.sources?.find(x=>x.sourceTable===sourceTable)?.status:record.status)!=='OBSERVED'||
+    (sourceTable?record.sources?.find(x=>x.sourceTable===sourceTable)?.detailPage:record.detailPage)?.offset!==offset)throw Error('UNQUALIFIED_PAGE');
   packet={...packet,departments:packet.departments.map(x=>x.employeeId===employeeId?record:x)};
  }catch{
   if(seq===ticket)$('wa-enterprise-status').textContent='Source page unavailable. Previously observed rows are retained; retry with the record controls.';

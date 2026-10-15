@@ -377,12 +377,12 @@ function init(){
   const requestCameFromVoice=voiceRequestPending;
   voiceRequestPending=false;
   const resolved=conversation.resolve(input.value);
-  const googleIntent=resolveFounderGoogleIntent(pendingReminderTitle?'Remind me to '+pendingReminderTitle+' '+resolved.question:resolved.question);
+  const googleIntent=resolveFounderGoogleIntent(pendingReminderTitle&&!resolveFounderGoogleIntent(resolved.question)?'Remind me to '+pendingReminderTitle+' '+resolved.question:resolved.question);
   if(googleIntent){
    const wanted=resolveFounderGoogleIntent(resolved.question);
    const action=wanted||googleIntent;
    if(action.kind==='NEED_TIME'||action.kind==='NEED_TITLE'){
-    if(action.kind==='NEED_TIME')pendingReminderTitle=(pendingReminderTitle||resolved.question.replace(/^(?:please\\s+)?(?:remind me to|schedule)\\s*/i,'')).slice(0,110);
+    if(action.kind==='NEED_TIME')pendingReminderTitle=(pendingReminderTitle||resolved.question.replace(/^(?:please\s+)?(?:remind me to|schedule)\s*/i,'')).slice(0,110);
     answer.textContent=action.message;lastAnswer=action.message;spokenAnswer=action.message;setStatus('Calendar details required.');
     if(voiceEnabled&&speakToggle?.checked)speakAnswer();else wake?.resume();state();return;
    }
@@ -405,7 +405,7 @@ function init(){
       ?'Saved to your Google Calendar: '+data.summary+' at '+new Date(data.start).toLocaleString()+'. '+data.reminder+'.'
       :'I could not confirm this calendar event was saved. '+(data.reason||'Google Calendar unavailable')+'.';
     }else if(data.status==='PASS'&&Array.isArray(data.messages)){
-     lastAnswer=data.messages.length?data.messages.map(m=>'From '+m.from+'. '+m.subject+'. '+m.snippet).join('\\n').slice(0,3600)
+     lastAnswer=data.messages.length?data.messages.map(m=>'From '+m.from+'. '+m.subject+'. '+(m.body||m.snippet)).join('\\n').slice(0,3600)
       :'No messages matched your Gmail search.';
     }else lastAnswer='I could not verify Gmail results. '+(data.reason||'Google Workspace unavailable')+'.';
     if(data.reason==='GOOGLE_SCOPE_RECONNECT_REQUIRED'||data.reason==='GOOGLE_FOUNDER_CONSENT_REQUIRED'){

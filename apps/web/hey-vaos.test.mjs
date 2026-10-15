@@ -117,3 +117,32 @@ test('recognition in opted-in hands-free mode sends exactly one direct business 
  assert.equal(x.state().paused,false);
  x.disable();
 });
+
+
+test('wake-only Hey Jarvis cues an acknowledgement, pauses output feedback, and accepts the next question',()=>{
+ const seen=[],listeners=[],statuses=[];
+ class Recognition{
+  constructor(){listeners.push(this)}
+  start(){}
+  abort(){this.onend?.();}
+ }
+ let wake;
+ wake=createWakeListener({
+  RecognitionClass:Recognition,isVisible:()=>true,validateQuestion:validate,
+  onPrompt:()=>{seen.push('cue');wake.pause({preserveQuestion:true});},
+  onConfirm:question=>seen.push('submit:'+question),
+  onStatus:message=>statuses.push(message),
+  schedule:()=>({}),clear:()=>{}
+ });
+ wake.enable();
+ listeners[0].onresult({results:[{isFinal:true,0:{transcript:'Hey Jarvis'}}]});
+ assert.equal(seen[0],'cue');
+ assert.equal(wake.state().paused,true);
+ assert.equal(wake.state().mode,'QUESTION','question window must survive the spoken acknowledgement');
+ assert.equal(wake.resume({preserveQuestion:true}),true);
+ assert.equal(listeners.length,2);
+ listeners[1].onresult({results:[{isFinal:true,0:{transcript:'What is our production status?'}}]});
+ assert.deepEqual(seen,['cue','submit:What is our production status?']);
+ assert.equal(wake.state().paused,true,'wake listener pauses before business request');
+ wake.disable();
+});

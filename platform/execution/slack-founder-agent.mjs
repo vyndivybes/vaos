@@ -43,10 +43,10 @@ export function classifyFounderSlackQuestion(text){
   if(/\b(finance|financial|ledger|bookkeeping|bank reconciliation|tax)\b/.test(q))return 'FINANCE';
   if(/\b(procurement|purchase|purchasing|supplier|shortages?)\b/.test(q))return 'PROCUREMENT';
   if(/\b(inventory|stock|warehouse)\b/.test(q))return 'INVENTORY';
-  if(/\b(production|manufacturing|work in progress|wip)\b/.test(q))return 'PRODUCTION';
+  if(/\b(production|manufacturing|work in progress|wip|job\s*cards?|jobcards?|work orders?|shop orders?)\b/.test(q))return 'PRODUCTION';
   if(/\b(project|schedule|milestone|timeline)\b/.test(q))return 'PROJECT';
   if(/\b(maintenance|asset|repair)\b/.test(q))return 'MAINTENANCE';
-  if(/\b(people|workforce|staff|employee|payroll)\b/.test(q))return 'PEOPLE';
+  if(/\b(hr|human resources?|people|workforce|staff|employees?|personnel|payroll|recruitment|recruiting|hiring|headcount|attendance)\b/.test(q))return 'PEOPLE';
   if(/\b(configuration|engineering change|eco status)\b/.test(q))return 'CONFIGURATION';
   if(/\b(sales|revenue|orders?|customers?|pipeline|quotation|invoice|receivable)\b/.test(q))return 'COMMERCIAL';
   return 'ENGINEERING';

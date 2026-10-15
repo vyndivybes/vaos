@@ -166,3 +166,39 @@ test('live UI footer tolerates encoded newline and attribution formatting variat
   assert.equal(r.actionAuthorized,false);
  }
 });
+
+test('founder Slack maps HR records and job-card status to responsible department, not engineering',()=>{
+ const cases={
+  'HR RECORDS':'PEOPLE',
+  'show HR records':'PEOPLE',
+  'Human resources status':'PEOPLE',
+  'employee attendance':'PEOPLE',
+  'staff recruitment status':'PEOPLE',
+  'payroll status':'PEOPLE',
+  'JOB CARD STATUS':'PRODUCTION',
+  'Jobcard status':'PRODUCTION',
+  'job cards pending':'PRODUCTION',
+  'Show production job cards':'PRODUCTION',
+  'open work orders in manufacturing':'PRODUCTION',
+ };
+ for(const [q,route] of Object.entries(cases))
+  assert.equal(classifyFounderSlackQuestion(q),route,q);
+ for(const [q,route] of Object.entries({
+  'github CI status':'GITHUB_CI',
+  'engineering change records':'CONFIGURATION',
+  'show current inventory stock':'INVENTORY',
+  'what are the carbon frame risks?':'ENGINEERING'
+ }))
+  assert.equal(classifyFounderSlackQuestion(q),route,q);
+});
+
+test('Slack departmental questions never fall back to engineering or expose unverified HR or jobcard data',async()=>{
+ const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
+ for(const [question,route] of [['HR RECORDS','PEOPLE'],['JOB CARD STATUS','PRODUCTION']]){
+  const result=await answerFounderSlackQuestion(question,{});
+  assert.equal(result.route,route);
+  assert.equal(result.actionAuthorized,false);
+  assert.match(result.answer,new RegExp('VAOS '+route+' read-only observation: HOLD'));
+  assert.doesNotMatch(result.answer,/qualified engineering evidence|no engineering conclusion|employee names|approved job cards/i);
+ }
+});

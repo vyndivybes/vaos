@@ -118,3 +118,65 @@
 @media(prefers-reduced-motion:reduce){
  .data-agent-panel *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+
+/* VAOS X Phase 3: source-bound graphical Insight Studio */
+.data-agent-panel .data-agent-quick-questions{
+ display:flex;flex-wrap:wrap;gap:9px;margin:16px 0 18px;
+}
+.data-agent-panel .data-agent-quick-questions button{
+ background:#f5f4f0;border:1px solid #e1ded8;border-radius:999px;
+ color:#455963;padding:9px 15px;font-size:14px;font-weight:650;
+}
+.data-agent-panel .data-agent-quick-questions button:hover{
+ background:#eee9df;border-color:#b59b71;
+}
+.data-agent-panel .data-agent-visuals{
+ margin:22px 0;padding:clamp(14px,2.2vw,25px);border:1px solid #e5e5e1;
+ border-radius:22px;background:#f8f7f4;
+}
+.data-agent-panel .data-agent-visual-intro{
+ display:flex;justify-content:space-between;align-items:end;gap:16px;margin:0 0 18px;
+}
+.data-agent-panel .data-agent-visual-intro h3{font-size:clamp(22px,2vw,29px);margin:2px 0}
+.data-agent-panel .data-agent-visual-intro p{
+ font-size:13px;color:#677980;margin:0;max-width:45ch
+}
+.data-agent-panel .data-agent-insight-summary{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:18px;
+}
+.data-agent-panel .data-agent-stat{
+ display:flex;flex-direction:column;gap:8px;background:#fff;border:1px solid #e5e5e1;
+ border-radius:15px;padding:17px;min-width:0;box-shadow:0 6px 18px rgba(52,67,75,.035)
+}
+.data-agent-panel .data-agent-stat small{color:#6b7d83;font-size:13px;line-height:1.4}
+.data-agent-panel .data-agent-stat strong{
+ font-size:clamp(17px,1.9vw,25px);line-height:1.24;letter-spacing:-.025em;
+ overflow-wrap:anywhere;color:#34434b
+}
+.data-agent-panel .data-agent-visual-controls{
+ display:flex;flex-wrap:wrap;align-items:center;gap:10px 12px;
+ background:#fff;border:1px solid #e5e5e1;border-radius:14px;padding:13px 16px;
+}
+.data-agent-panel .data-agent-visual-controls label{margin:0;font-size:13px;color:#536b75}
+.data-agent-panel .data-agent-visual-controls select{
+ flex:1 1 190px;min-height:44px;max-width:350px;
+}
+.data-agent-panel .data-agent-chart-note{font-size:13px;color:#697b81;line-height:1.6;margin:13px 2px}
+.data-agent-panel #data-agent-chart{min-height:270px}
+.data-agent-panel .data-agent-employee-records,
+.data-agent-panel .data-agent-source-records{
+ border:1px solid #e5e5e1;border-radius:16px;background:#fff;padding:15px 18px;margin:14px 0;
+}
+.data-agent-panel :is(.data-agent-employee-records,.data-agent-source-records)>summary{
+ cursor:pointer;font-size:16px;color:#34434b;font-weight:700;min-height:32px;
+}
+.data-agent-panel :is(.data-agent-employee-records,.data-agent-source-records)[open]>summary{margin-bottom:16px}
+@media(max-width:780px){
+ .data-agent-panel .data-agent-insight-summary{grid-template-columns:1fr}
+ .data-agent-panel .data-agent-visual-intro{flex-direction:column;align-items:flex-start}
+ .data-agent-panel .data-agent-visual-controls{flex-direction:column;align-items:stretch}
+ .data-agent-panel .data-agent-visual-controls select{width:100%;max-width:none;flex-basis:auto}
+ .data-agent-panel .data-agent-stat{padding:14px}
+ .data-agent-panel .data-agent-visuals{padding:14px;border-radius:16px}
+}

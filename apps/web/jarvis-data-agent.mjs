@@ -1,4 +1,5 @@
 import {chartSvg} from './lib/dashboard-charts.mjs';
+import {buildInsightViews,resolveInsightChartKind,insightSummary} from './lib/insight-studio.mjs';
 const $=id=>document.getElementById(id);
 const form=$('data-agent-form');
 if(form){
@@ -17,30 +18,59 @@ if(form){
  const briefSteps=$('data-agent-brief-steps');
  const technical=$('data-agent-technical');
  const people=$('data-agent-employees'),limitations=$('data-agent-limitations');
- let latest=null;
+ const overview=$('data-agent-insight-summary'),chartNote=$('data-agent-chart-note');
+ let latest=null,views=[];
  const add=(parent,value,tag='li')=>{
   const e=document.createElement(tag);e.textContent=value;parent.append(e);return e;
  };
  function render(){
   if(!latest)return;
-  const selected=focus.value==='investigation'&&latest.investigation?
-   latest.investigation.chart:latest.chart;
-  graph.innerHTML=chartSvg(selected?.rows||[],selector.value,
-   selected?.title||'Observed source counts');
+  const view=views.find(x=>x.id===focus.value)||views[0];
+  if(!view){
+   graph.textContent='No observed numeric counts are available. Unknown is not zero.';
+   chartNote.textContent='Source evidence unavailable for visual comparison.';
+   return;
+  }
+  const chartKind=resolveInsightChartKind(view,selector.value);
+  chartNote.textContent=view.note+(selector.value==='donut'&&!view.additive?
+   ' Donut disabled for non-additive counts. Displaying bars instead.':'');
+  graph.innerHTML=chartSvg(view.rows,chartKind,view.title);
+ }
+ function populateViews(data){
+  views=buildInsightViews(data);focus.replaceChildren();
+  for(const view of views){
+   const option=document.createElement('option');option.value=view.id;
+   option.textContent=view.label;focus.append(option);
+  }
+  if(!views.length){
+   const option=document.createElement('option');option.value='none';
+   option.textContent='No supported graphical observations';focus.append(option);
+  }
+  focus.value=views.some(v=>v.id==='investigation')?'investigation':views[0]?.id||'none';
+  overview.replaceChildren();
+  for(const [label,value] of insightSummary(data)){
+   const item=document.createElement('div');item.className='data-agent-stat';
+   add(item,label,'small');add(item,value,'strong');overview.append(item);
+  }
+  render();
  }
  selector.addEventListener('change',render);
  focus.addEventListener('change',render);
+ document.querySelectorAll('[data-data-agent-question]').forEach(button=>{
+  button.addEventListener('click',()=>{question.value=button.dataset.dataAgentQuestion||'';question.focus();});
+ });
  form.addEventListener('submit',async event=>{
   event.preventDefault();
   const q=question.value.trim();
   if(q.length<5||q.length>300){
    status.textContent='Enter a specific question (5–300 characters).';return;
   }
-  status.textContent='Reading authorized sources…';latest=null;
+  status.textContent='Reading authorized sources…';latest=null;views=[];
+  overview.replaceChildren();chartNote.textContent='Reading permitted source evidence…';
   answer.textContent='';evidence.replaceChildren();graph.replaceChildren();
   people.replaceChildren();limitations.replaceChildren();findings.replaceChildren();
   investigation.hidden=true;brief.hidden=true;briefSteps.replaceChildren();
-  technical.open=true;focus.value='sources';
+  technical.open=true;focus.replaceChildren();
   const submit=form.querySelector('button[type=submit]');submit.disabled=true;
   try{
    const response=await fetch('/api/jarvis-data-agent?q='+encodeURIComponent(q),{
@@ -84,7 +114,6 @@ if(form){
      technical.open=false;
     }
     findingStatus.textContent=result.summary;
-    focus.value='investigation';
     if(!result.findings?.length){
      const p=document.createElement('p');
      p.textContent=result.status==='SOURCE_HOLD'
@@ -147,8 +176,10 @@ if(form){
     }
     table.append(tbody);people.append(table);
    }
-   render();
+   populateViews(x);
   }catch{
+   latest=null;views=[];overview.replaceChildren();graph.replaceChildren();
+   chartNote.textContent='No qualified analytical view is available.';
    status.textContent='Qualified data-agent response unavailable. No data inferred or modified.';
   }finally{submit.disabled=false;}
  });

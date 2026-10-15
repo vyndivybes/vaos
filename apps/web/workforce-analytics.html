@@ -25,6 +25,34 @@
  </div>
  <p id="wa-period-status" class="wa-period-note" role="status" aria-live="polite">Reading authenticated historical evidence…</p>
  <div id="wa-period-kpis" class="wa-stats" aria-live="polite"></div>
+ <section class="wa-vyndi-report" aria-labelledby="wa-vyndi-title">
+  <div class="wa-vyndi-header">
+   <div><span class="wa-kicker">VYNDI OS · CANONICAL DEPARTMENT DATA</span>
+    <h3 id="wa-vyndi-title">Departmental business records</h3>
+    <p>Source-backed sales, operations, engineering and administration evidence. Select a departmental employee above; the same reporting period applies.</p></div>
+   <button id="wa-vyndi-refresh" type="button">Refresh VYNDI records</button>
+  </div>
+  <p id="wa-vyndi-status" role="status" aria-live="polite">Choose an employee to view their authoritative departmental records.</p>
+  <div id="wa-vyndi-summary" class="wa-stats" aria-live="polite"></div>
+  <div class="wa-vyndi-layout">
+    <section class="wa-period-card" aria-labelledby="wa-vyndi-chart-title">
+      <h4 id="wa-vyndi-chart-title">Observed business statuses</h4>
+      <p>Status distribution of dated source rows in the selected period, not an AI productivity measure.</p>
+      <div id="wa-vyndi-chart" class="wa-viz-bars" role="region" aria-label="Departmental recorded status chart"></div>
+    </section>
+    <section class="wa-period-card" aria-labelledby="wa-vyndi-coverage-title">
+      <h4 id="wa-vyndi-coverage-title">Authority and completeness</h4>
+      <div id="wa-vyndi-coverage" class="wa-period-list"></div>
+    </section>
+  </div>
+  <details class="wa-accordion" open>
+   <summary>View source business records as a table</summary>
+   <div class="wa-scroll"><table><caption>Governed VYNDI OS source snapshot · no inferred transactions</caption>
+    <thead><tr><th>Source</th><th>Record date</th><th>Identity</th><th>Status</th><th>Available fields</th></tr></thead>
+    <tbody id="wa-vyndi-records"></tbody></table></div>
+  </details>
+  <p class="wa-period-note">Forecasts and audit judgments remain separate from business-record snapshots. A record with no transaction date is a current observation, not a period completion.</p>
+ </section>
  <div class="wa-period-grid">
   <section class="wa-period-card" aria-labelledby="wa-period-work-title">
    <h3 id="wa-period-work-title">Recorded work and assignments</h3>
@@ -112,4 +140,4 @@
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
  </section>
  <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
-</main><script type="module" src="/workforce-analytics.mjs"></script></body></html>
+</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script></body></html>

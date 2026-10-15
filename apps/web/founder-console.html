@@ -25,6 +25,11 @@
  <p>Ask a read-only question across finance, procurement, inventory, production, sales or the 16 digital employees.
  This uses existing authorized data gateways and produces charts with source references. No new subscription, arbitrary SQL, model-made quantities or business writes.</p>
  <p class="data-agent-prelaunch-note">Prelaunch preparation view. Source records are not automatically identified as proposed, demo, or actual production. No observed discrepancy proves that production is delayed.</p>
+ <div class="data-agent-quick-questions" aria-label="Example data questions">
+  <button type="button" data-data-agent-question="Analyse company finance, sales, procurement and production observations">Company overview</button>
+  <button type="button" data-data-agent-question="Show 16 AI employees performance">Workforce analysis</button>
+  <button type="button" data-data-agent-question="Investigate production blockers and engineering release evidence">Production dependencies</button>
+ </div>
  <form id="data-agent-form">
  <label for="data-agent-question">Your business question</label>
  <textarea id="data-agent-question" minlength="5" maxlength="300" rows="3" required
@@ -32,6 +37,28 @@
  <button type="submit">Analyse live source records</button>
  </form>
  <p id="data-agent-status" role="status" aria-live="polite">No data requested.</p>
+ <section id="data-agent-visuals" class="data-agent-visuals" aria-label="JARVIS Insight Studio visual analysis">
+  <div class="data-agent-visual-intro">
+   <div><p class="founder-hint">INSIGHT STUDIO · SOURCE-BOUND ANALYTICS</p><h3>Visual intelligence</h3></div>
+   <p>Interactive views generated only from observed data. Unavailable values remain unknown.</p>
+  </div>
+  <div id="data-agent-insight-summary" class="data-agent-insight-summary" aria-live="polite">
+   <p>Ask a question to populate verified source coverage and analytical views.</p>
+  </div>
+  <div class="mission-form data-agent-visual-controls">
+   <label for="data-agent-chart-focus">Explore evidence</label>
+   <select id="data-agent-chart-focus"><option value="sources">Analyse a question to select a view</option></select>
+   <label for="data-agent-chart-kind">Visualisation</label>
+   <select id="data-agent-chart-kind">
+    <option value="auto">Auto-select</option>
+    <option value="bars">Horizontal bars</option>
+    <option value="columns">Columns</option>
+    <option value="donut">Donut (additive states only)</option>
+   </select>
+  </div>
+  <p id="data-agent-chart-note" class="data-agent-chart-note" role="status">Charts will show bounded source evidence, not unsupported business totals.</p>
+  <div id="data-agent-chart" role="region" aria-label="Observed evidence chart"></div>
+ </section>
  <section id="data-agent-founder-brief" class="data-agent-founder-brief" aria-labelledby="data-agent-brief-heading" hidden>
    <p id="data-agent-brief-stage" class="data-agent-stage"></p>
    <p id="data-agent-brief-priority" class="data-agent-brief-priority"></p>
@@ -45,26 +72,23 @@
   <summary>Technical source observations and retrieval details</summary>
   <pre id="data-agent-answer" aria-label="JARVIS evidence-based answer"></pre>
  </details>
- <div class="mission-form">
- <label for="data-agent-chart-focus">Display metric</label>
- <select id="data-agent-chart-focus">
-  <option value="sources">Observed departmental records</option>
-  <option value="investigation">Cross-source discrepancies</option>
- </select>
- <label for="data-agent-chart-kind">Chart style</label>
- <select id="data-agent-chart-kind"><option value="bars">Horizontal bars</option><option value="columns">Columns</option><option value="donut">Donut</option></select>
- </div>
- <div id="data-agent-chart" role="region" aria-label="Observed evidence chart"></div>
+
  <details id="data-agent-investigation" class="data-agent-investigation" hidden open>
  <summary>Source-linked preparation findings</summary>
  <p id="data-agent-investigation-status" role="status" aria-live="polite"></p>
  <div id="data-agent-investigation-findings"></div>
  </details>
- <div id="data-agent-employees"></div>
- <h3>Data provenance</h3>
- <ul id="data-agent-sources"></ul>
- <h3>Interpretation limits</h3>
- <ul id="data-agent-limitations"><li>Live analysis has not yet been requested. A source sample is not a certified total or forecast.</li></ul>
+ <details class="data-agent-employee-records">
+  <summary>Explore individual employee source records</summary>
+  <div id="data-agent-employees"></div>
+ </details>
+ <details class="data-agent-source-records">
+  <summary>Source provenance and interpretation limits</summary>
+  <h3>Data provenance</h3>
+  <ul id="data-agent-sources"></ul>
+  <h3>Interpretation limits</h3>
+  <ul id="data-agent-limitations"><li>Live analysis has not yet been requested. A source sample is not a certified total or forecast.</li></ul>
+ </details>
  </section>
 
  <section class="founder-panel g3-intelligence" id="g3-intelligence-panel" aria-labelledby="g3-title">

@@ -77,6 +77,6 @@ test('source-intelligence UI offers explicit camera, microphone and speech contr
  assert.match(ui,/visibilitychange/);
  assert.match(ui,/pagehide/);
  assert.match(html,/one selected camera frame/i);
- assert.match(html,/\\.live-camera\\[hidden\\]\\{display:none\\}/,'hide local camera when stopped');
+ assert.ok(html.includes('.live-camera[hidden]{display:none}'),'hide local camera when stopped');
  assert.doesNotMatch(ui,/\bgetDisplayMedia\s*\(/,'no covert screen capture');
 });

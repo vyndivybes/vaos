@@ -261,6 +261,44 @@ async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),r
 }
 
 /** Private founder-only event detail read. Never include attendees or OAuth tokens. */
+export function calendarApiFailureReason(status,reason){
+ if(status===401)return 'GOOGLE_CALENDAR_TOKEN_REJECTED';
+ if(status===403){
+  if(['accessNotConfigured','SERVICE_DISABLED'].includes(reason))return 'GOOGLE_CALENDAR_API_DISABLED';
+  if(['insufficientPermissions','ACCESS_TOKEN_SCOPE_INSUFFICIENT'].includes(reason))
+   return 'GOOGLE_CALENDAR_PERMISSION_DENIED';
+  return 'GOOGLE_CALENDAR_ACCESS_DENIED';
+ }
+ if(status===400)return 'GOOGLE_CALENDAR_REQUEST_INVALID';
+ if(status===404)return 'GOOGLE_PRIMARY_CALENDAR_UNAVAILABLE';
+ if(status===429)return 'GOOGLE_CALENDAR_RATE_LIMITED';
+ if(status>=300&&status<400)return 'GOOGLE_CALENDAR_REDIRECT_REJECTED';
+ if(status>=500&&status<=599)return 'GOOGLE_CALENDAR_PROVIDER_UNAVAILABLE';
+ return 'GOOGLE_CALENDAR_RESPONSE_UNVERIFIED';
+}
+async function googleCalendarGet(url,token,fetchImpl){
+ let response;
+ try{
+  response=await fetchImpl(url,{method:'GET',headers:{Authorization:'Bearer '+token},
+   redirect:'manual',signal:AbortSignal.timeout(8000)});
+ }catch(e){
+  if(e?.name==='TimeoutError'||e?.name==='AbortError')throw Error('GOOGLE_CALENDAR_REQUEST_TIMEOUT');
+  throw Error('GOOGLE_CALENDAR_NETWORK_FAILED');
+ }
+ if(response.status!==200){
+  let upstream;
+  if(response.status===403){
+   try{
+    const error=await response.json();
+    upstream=error?.error?.errors?.[0]?.reason||error?.error?.details?.[0]?.reason;
+   }catch{}
+  }
+  throw Error(calendarApiFailureReason(response.status,upstream));
+ }
+ try{return await response.json();}
+ catch{throw Error('GOOGLE_CALENDAR_RESPONSE_INVALID')}
+}
+
 export async function readFounderCalendarEvents(env,{fetchImpl=fetch,now=()=>Date.now()}={}){
  try{
   const token=await founderGoogleCredential(env,{fetchImpl,now,

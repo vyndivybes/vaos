@@ -3,9 +3,9 @@
 <meta name="theme-color" content="#101318"/><meta name="description" content="VAOS governed founder command drafting and agent monitoring"/>
 <link rel="manifest" href="/manifest.webmanifest"/><link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp"/>
 <link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/><link rel="stylesheet" href="/operations-refresh.css"/><link rel="stylesheet" href="/jarvis-data-agent.css"/><link rel="stylesheet" href="/jarvis-qualification.css?v=20261013-g31e-v1"/>
-<title>VAOS · Founder Command</title><link rel="stylesheet" href="/premium.css?v=20261015"/></head><body class="va-premium founder-body">
-<header class="founder-header"><a href="/workspace" class="founder-back">← Workspace</a><div><small>VĀYŪ SHASTR</small><strong>Founder Command</strong></div><span class="founder-mode">Governed mission operations</span></header>
-<nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
+<title>VAOS · Founder Command</title><link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/vaos-interface.css"/></head><body class="va-premium founder-body"><header class="va-app-header"><a class="va-app-brand" href="/workspace"><span>V</span>VAOS<small>VĀYŪ SHASTR</small></a><nav class="va-product-nav" aria-label="Main navigation"><a href="/workspace">Overview</a><a href="/workforce-analytics">Intelligence</a><a href="/mission-status.html">Missions</a><a href="/founder-console.html">Command</a><details class="va-tools-menu"><summary>Tools</summary><div><a href="/agent-supervision.html">Agent monitoring</a><a href="/skills.html">JARVIS skills</a><a href="/prelaunch-workspace.html">Company startup</a><a href="/engineering-viewer.html">Engineering viewer</a><a href="/jarvis-multimodal.html">File intelligence</a><a href="/founder-console.html#g3-intelligence-panel">JARVIS qualification</a><a href="/slack-qualification.html">Slack qualification</a></div></details></nav></header>
+
+<details class="va-page-links"><summary>Related workspaces</summary><nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
   <a href="/workspace">Dashboard &amp; voice</a>
   <a href="/mission-status.html" >Mission tracking</a>
   <a href="/agent-supervision.html" >Agent monitoring</a>
@@ -15,11 +15,10 @@
   <a href="#data-agent-panel">JARVIS Data Agent</a>
   <a href="#g3-intelligence-panel">JARVIS X qualification</a>
   <a href="/jarvis-multimodal.html">JARVIS file intelligence (preview)</a>
-</nav><main class="founder-shell" id="founder-shell" hidden>
- <section class="va-ops-explain"><h2>What is Founder Command for?</h2><p>Issue a founder instruction to assign eligible AI employees and execute one bounded safe pass immediately. Saved departmental results appear below; unfinished work continues through the existing scheduler. Report requests and override proposals remain separately governed. Day-to-day questions belong in <a href="/workspace">Ask VAOS on the main dashboard</a>; payments, purchases and production releases retain their independent controls.</p></section>
- <section class="founder-panel"><h2>Workforce Analytics &amp; Individual Audit Oversight</h2><p>View all 16 AI employees, their recorded work distribution, independently verified closures, adaptive role KPIs, departmental audit scope, progress evidence and forecast qualification holds.</p><p><a href="/workforce-analytics.html" class="founder-back">Open Workforce Analytics &amp; Individual Audit Dashboards →</a></p></section>
-
- <section class="founder-panel data-agent-panel" id="data-agent-panel" aria-labelledby="data-agent-title">
+</nav></details><main class="founder-shell" id="founder-shell" hidden>
+ <details class="va-ops-explain"><summary>About this workspace</summary><p>Issue a founder instruction to assign eligible AI employees and execute one bounded safe pass immediately. Saved departmental results appear below; unfinished work continues through the existing scheduler. Report requests and override proposals remain separately governed. Day-to-day questions belong in <a href="/workspace">Ask VAOS on the main dashboard</a>; payments, purchases and production releases retain their independent controls.</p></details>
+<section class="va-command-intro"><p class="premium-eyebrow">JARVIS / GOVERNED OPERATIONS</p><h1>Founder command.</h1><p>Assign a mission, explore business evidence or inspect qualification.</p><a href="/workforce-analytics">Open employee analytics ↗</a></section><nav class="va-command-tabs" aria-label="Command workspaces"><button type="button" data-command-tab="instruct" aria-pressed="true">Missions &amp; reports</button><button type="button" data-command-tab="analysis" aria-pressed="false">Data analysis</button><button type="button" data-command-tab="qualification" aria-pressed="false">Qualification</button></nav>
+<div data-command-view="analysis" hidden> <section class="founder-panel data-agent-panel" id="data-agent-panel" aria-labelledby="data-agent-title">
  <p class="founder-hint">JARVIS · Native data intelligence</p>
  <h2 id="data-agent-title">Ask JARVIS about business data</h2>
  <p>Ask a read-only question across finance, procurement, inventory, production, sales or the 16 digital employees.
@@ -91,7 +90,7 @@
  </details>
  </section>
 
- <section class="founder-panel g3-intelligence" id="g3-intelligence-panel" aria-labelledby="g3-title">
+</div><div data-command-view="qualification" hidden> <section class="founder-panel g3-intelligence" id="g3-intelligence-panel" aria-labelledby="g3-title">
   <header class="g3-intro">
    <div><p class="founder-hint">JARVIS X · G3.1D / G3.1E</p>
     <h2 id="g3-title">Intelligence &amp; Qualification</h2>
@@ -132,7 +131,7 @@
   <div class="g3-links"><a href="/workforce-analytics.html">16-employee audits ↗</a><a href="/mission-status.html">Mission evidence ↗</a><a href="/workspace">VAOS Command Centre ↗</a></div>
  </section>
 
- <section class="founder-heading"><p>VAOS · DIGITAL WORKFORCE</p><h1>Direct agent command</h1><span>Give JARVIS an instruction to create and assign a tracked mission automatically. Reports and override proposals remain separately recorded without execution.</span></section>
+</div><div data-command-view="instruct"> <section class="founder-heading"><p>VAOS · DIGITAL WORKFORCE</p><h2>Give your team an instruction</h2><span>Give JARVIS an instruction to create and assign a tracked mission automatically. Reports and override proposals remain separately recorded without execution.</span></section>
  <div class="founder-layout"><aside class="founder-panel"><h2>Mission coordinator</h2><label for="agent">Employee for reports and override proposals</label><select id="agent"></select><p class="founder-hint">A roster entry does not prove an agent is qualified or running.</p><button id="refresh" type="button" class="secondary">Refresh agent status</button><p id="agent-status" aria-live="polite">Status not yet checked</p></aside>
  <section class="founder-panel"><h2>Founder instruction</h2><form id="command-form"><label for="command-kind">Request type</label><select id="command-kind"><option value="INSTRUCTION">Direct instruction</option><option value="REPORT_REQUEST">Request report</option><option value="OVERRIDE_PROPOSAL">Founder override proposal (not applied)</option></select><label for="instruction">Instruction</label><textarea id="instruction" maxlength="2000" rows="7" required minlength="5" placeholder="State the objective, scope, required evidence and deadline."></textarea><button id="founder-command-submit" type="submit">Create and assign mission</button></form><div id="draft-panel" class="founder-draft" hidden><h3>Prepared · NOT SENT</h3><pre id="draft-output"></pre><button id="copy-draft" type="button" class="secondary">Copy draft</button><button id="record-draft" type="button">Record in VAOS inbox</button></div><p id="command-message" role="status" aria-live="polite"></p></section></div>
  <section class="founder-panel"><h2>Recorded messages for selected employee</h2><button type="button" id="refresh-history" class="secondary">Refresh recorded messages</button><div id="recorded-history" aria-live="polite">No records loaded. Recorded messages are not agent replies.</div></section><section class="founder-panel"><h2>Read-only report preview</h2>
@@ -141,7 +140,7 @@
 <label for="report-mission-id">Mission ID</label><input id="report-mission-id" maxlength="96" placeholder="Existing mission ID" autocomplete="off"/>
 <button id="prepare-report" type="button" class="secondary">Prepare evidence report</button>
 <pre id="report-preview" class="mission-summary" aria-live="polite">No report generated.</pre>
-</section><section class="founder-panel"><h2>Stage 4 · Governed AI draft (pilot)</h2>
+</section><details class="va-advanced-tools"><summary>Read-only conversation &amp; voice pilots</summary><section class="founder-panel"><h2>Stage 4 · Governed AI draft (pilot)</h2>
 <p>Using the selected recorded report request and mission ID above, request an unverified AI wording draft grounded in VAOS evidence. No tools or business writes. Disabled until independently commissioned.</p>
 <button id="founder-ai-draft" type="button" class="secondary">Generate read-only AI draft</button>
 <pre id="founder-ai-response" class="mission-summary" aria-live="polite">Stage 4 conversation pilot not yet commissioned.</pre>
@@ -219,6 +218,6 @@ Replies are unverified AI drafts grounded in independent mission evidence. No in
 <p class="founder-hint">Audio test only: the speaker test is not a project report. To hear a real existing mission's status, use Mission evidence lookup and then Speak current mission snapshot. No records are created.</p>
 <p id="voice-pilot-status" role="status" aria-live="polite">Voice qualification not checked.</p>
 <p id="voice-audio-diagnostics" class="founder-hint" role="status" aria-live="polite">Sound diagnostic not run. These controls never send instructions or access mission data.</p>
-</section><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
-</main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/jarvis-data-agent.mjs"></script><script type="module" src="/jarvis-qualification.mjs?v=20261013-g31e-v1"></script><script type="module" src="/voice-pilot-browser.mjs"></script></body></html>
+</section></details><section class="founder-panel"><h2>Mission evidence lookup</h2><form id="mission-form" class="mission-form"><label for="mission-id">Mission ID</label><input id="mission-id" placeholder="Enter an existing mission ID" maxlength="96" autocomplete="off"/><button type="submit" class="secondary">Read mission snapshot</button></form><pre id="mission-summary" class="mission-summary" aria-live="polite"></pre><p>Live sending, voice, push notifications and founder-authorized overrides require separately commissioned services.</p><p><a class="founder-back" href="/mission-status.html">Open full mission status and evidence →</a></p></section>
+</div></main><p id="auth-message" class="founder-auth" role="status">Checking VAOS session…</p><script type="module" src="/founder-console.mjs"></script><script type="module" src="/jarvis-data-agent.mjs"></script><script type="module" src="/jarvis-qualification.mjs?v=20261013-g31e-v1"></script><script type="module" src="/voice-pilot-browser.mjs"></script><script type="module" src="/vaos-interface.mjs"></script></body></html>
 

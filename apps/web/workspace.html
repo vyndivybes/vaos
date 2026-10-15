@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/workspace.css" />
   <link rel="stylesheet" href="/workspace-saas.css?v=20261013-jarvis-x-review-v1" />
   <link rel="stylesheet" href="/founder-cockpit.css?v=20261015" />
-<link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/motion-intelligence.css"/></head>
+<link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/vaos-interface.css"/></head>
 <body class="va-premium workspace-body landscape-workspace founder-cockpit">
   <a class="fc-skip" href="#command-view">Skip to cockpit</a>
   <div class="control-shell metallic-gold-rim" id="control-shell" hidden>
@@ -27,7 +27,7 @@
           <em>VAOS Agentic AI Autonomous Ecosystem</em>
         </span>
       </div>
-      <div class="header-system">
+      <nav class="va-product-nav" aria-label="Main navigation"><a href="/workspace">Overview</a><a href="/workforce-analytics">Intelligence</a><a href="/mission-status.html">Missions</a><a href="/founder-console.html">Command</a><details class="va-tools-menu"><summary>Tools</summary><div><a href="/agent-supervision.html">Agent monitoring</a><a href="/skills.html">JARVIS skills</a><a href="/prelaunch-workspace.html">Company startup</a><a href="/engineering-viewer.html">Engineering viewer</a><a href="/jarvis-multimodal.html">File intelligence</a><a href="/founder-console.html#g3-intelligence-panel">JARVIS qualification</a><a href="/slack-qualification.html">Slack qualification</a></div></details></nav><div class="header-system">
         <span class="system-chip"><i></i><span id="environment-label">Development</span></span>
         <span class="system-version">Group intelligence · Governed agents</span>
       </div>
@@ -39,7 +39,7 @@
       </div>
     </header>
 
-    <aside class="control-sidebar" aria-label="VAOS modules">
+    <button class="va-module-toggle" type="button" aria-expanded="false" aria-controls="va-module-sidebar">Browse departments <span aria-hidden="true">☰</span></button><aside id="va-module-sidebar" class="control-sidebar" aria-label="VAOS modules">
       <section class="sidebar-brand-card">
         <span class="sidebar-logo-wrap" aria-hidden="true">
           <img src="/assets/vayu-shastr-original.webp" alt="" />
@@ -60,13 +60,6 @@
 
       <div class="sidebar-footer">
         <span class="sidebar-footer__note">Policy controlled · evidence backed</span>
-        <a href="/mission-status.html" class="sidebar-mission-link">Mission tracking ↗</a>
-        <a href="/agent-supervision.html" class="sidebar-mission-link">Agent monitoring ↗</a>
-        <a href="/skills.html" class="sidebar-mission-link">JARVIS skills ↗</a>
-        <a href="/founder-console.html" class="sidebar-mission-link">Founder command lab ↗</a>
-        <a href="/founder-console.html#g3-intelligence-panel" class="sidebar-mission-link">JARVIS X qualification ↗</a>
-        <a href="/jarvis-multimodal.html" class="sidebar-mission-link">JARVIS file intelligence (preview) ↗</a>
-        <a href="/workforce-analytics.html" class="sidebar-mission-link">16-employee analytics ↗</a>
         <button class="sidebar-signout" id="logout-button" type="button"><span>↪</span> Sign out</button>
       </div>
     </aside>
@@ -96,9 +89,7 @@
       <p class="command-status" id="command-status" aria-live="polite"></p>
 
       <section id="command-view" class="workspace-view">
-        <section id="founder-cockpit" class="fc-intro mi-workspace-hero">
-          <div class="mi-art" aria-hidden="true"><figure class="mi-frame mi-frame--one" data-chart-picture="primary"><figcaption>SOURCE INTELLIGENCE <span>01 / OBSERVED</span></figcaption><div class="mi-picture"><span>Awaiting source evidence</span></div></figure><figure class="mi-frame mi-frame--two" data-chart-picture="secondary"><figcaption>WORKFORCE EVIDENCE <span>02 / CONNECTED</span></figcaption><div class="mi-picture"><span>Awaiting source evidence</span></div></figure><div class="mi-stamp">V<span>CONNECTED<br>BY DESIGN</span></div></div><div class="mi-copy"><p class="va-eyebrow">VĀYŪ SHASTR / FOUNDER INTELLIGENCE</p><h2>See the signal.<br><em>Shape what’s next.</em></h2><p>Your people. Your business. A clearer perspective.</p><div class="mi-actions"><a href="/workforce-analytics.html" class="va-button va-button--primary">Explore intelligence ↗</a><button type="button" id="cockpit-refresh" class="va-button va-button--outline">Refresh sources</button></div></div><div class="mi-hero-foot"><a href="/prelaunch-workspace.html">Open startup brief ↗</a><a href="#cockpit-business">Explore your business ↓</a></div>
-        </section>
+        <section id="founder-cockpit" class="fc-intro"><div><p class="va-eyebrow">YOUR COMPANY / AT A GLANCE</p><h2>Your operating overview.</h2><p>People, connected sources and decisions that need your attention.</p></div><div class="va-dashboard-actions"><a href="/prelaunch-workspace.html" class="va-button va-button--outline">Startup brief ↗</a><button id="cockpit-refresh" type="button" class="va-button">Refresh sources</button></div></section>
         <div class="fc-metrics" aria-label="Company overview">
           <article><small>Company stage</small><strong>Pre-operations</strong><span>Operational baselines pending</span></article>
           <a href="/workforce-analytics.html"><small>Digital workforce</small><strong id="cockpit-employee-count">—</strong><span>Registered employees ↗</span></a>
@@ -169,7 +160,7 @@
         </section>
 
         <section class="fc-workforce" aria-labelledby="cockpit-workforce-title">
-          <div class="fc-section-head"><div><p class="va-eyebrow">YOUR DIGITAL TEAM</p><h2 id="cockpit-workforce-title">Your digital team.</h2></div><a href="/workforce-analytics.html">Full employee analytics ↗</a></div>
+          <div class="fc-section-head"><div><p class="va-eyebrow">YOUR DIGITAL TEAM</p><h2 id="cockpit-workforce-title">People &amp; source activity</h2></div><a href="/workforce-analytics.html">Full employee analytics ↗</a></div>
           <p id="cockpit-workforce-status" class="fc-source-note" role="status">Loading authenticated registry…</p>
           <div class="fc-team-layout">
             <div class="fc-team-charts" aria-label="Founder's visual intelligence overview">
@@ -196,7 +187,7 @@
           </div>
         </section>
         <section id="cockpit-business" class="fc-business" aria-labelledby="cockpit-business-title">
-          <div class="fc-section-head"><div><p class="va-eyebrow">COMPANY WORKSPACES</p><h2 id="cockpit-business-title">Every part, connected.</h2></div><button type="button" class="va-small-link" data-view="portfolio">Group overview →</button></div>
+          <div class="fc-section-head"><div><p class="va-eyebrow">COMPANY WORKSPACES</p><h2 id="cockpit-business-title">Business workspaces</h2></div><button type="button" class="va-small-link" data-view="portfolio">Group overview →</button></div>
           <p id="cockpit-source-status" class="fc-source-note" role="status">Source checks pending.</p>
           <div id="cockpit-domains" class="fc-domain-grid"></div>
         </section>
@@ -529,8 +520,8 @@
     </div>
   </dialog>
 
-  <script type="module" src="/motion-intelligence.mjs"></script>
+
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
   <script type="module" src="/main-voice.mjs?v=20261015-g6-ondevice-long-reply-v3"></script>
-</body>
+<script type="module" src="/vaos-interface.mjs"></script></body>
 </html>

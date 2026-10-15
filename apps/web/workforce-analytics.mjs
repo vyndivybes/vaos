@@ -367,6 +367,7 @@ async function refresh(){
    throw Error('WORKFORCE_OPERATIONAL_EVIDENCE_UNVERIFIED');
   latest=data;
   populatePeriodControls(data);
+  if(typeof CustomEvent!=='undefined')document.dispatchEvent?.(new CustomEvent('vaos:workforce-loaded'));
   renderOverview(data);
   renderEvidencePriorities(data);
    renderCommissioningBoard(data);

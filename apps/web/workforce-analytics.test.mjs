@@ -3,7 +3,8 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
 import {buildWorkforceAnalytics} from '../../intelligence/workforce-analytics.mjs';
-const source=await readFile(new URL('./workforce-analytics.mjs',import.meta.url),'utf8');
+import {workActivityReport,periodBounds} from './lib/workforce-period-report.mjs';
+const source=(await readFile(new URL('./workforce-analytics.mjs',import.meta.url),'utf8')).replace(/^import.*\n/gm,'');
 const html=await readFile(new URL('./workforce-analytics.html',import.meta.url),'utf8');
 class Element{
  constructor(tag){this.tag=tag;this.children=[];this.dataset={};this.style={};this.events={};this._text='';}
@@ -25,7 +26,7 @@ test('employee selection renders unknown evidence as holds and failed refresh re
  const nodes=new Map([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element('div')]));
  let fail=false;
  const document={getElementById:id=>{assert.ok(nodes.has(id),'HTML contains '+id);return nodes.get(id);},createElement:tag=>new Element(tag)};
- runInNewContext(source,{document,fetch:async()=>fail?{ok:false,status:503}:{ok:true,status:200,json:async()=>({data:buildWorkforceAnalytics(raw)})},location:{assign(){throw Error('Unexpected redirect');}},Date,URL,Math,Number,String,Object});
+ runInNewContext(source,{document,workActivityReport,periodBounds,fetch:async()=>fail?{ok:false,status:503}:{ok:true,status:200,json:async()=>({data:buildWorkforceAnalytics(raw)})},location:{assign(){throw Error('Unexpected redirect');}},Date,URL,Math,Number,String,Object});
  await flush();
  nodes.get('wa-select').events.change({target:{value:'qa'}});
  assert.match(nodes.get('wa-profile').textContent,/QA fixture/);
@@ -37,7 +38,7 @@ test('employee selection renders unknown evidence as holds and failed refresh re
  assert.match(nodes.get('wa-work').textContent,/<img src=x onerror=attack\(\)>/,'untrusted text rendered literally');
  fail=true;await nodes.get('wa-refresh').events.click();await flush();
  assert.match(nodes.get('wa-status').textContent,/source unavailable/);
- for(const id of ['wa-profile','wa-work','wa-forecast','wa-capa-cases','wa-audit-pages','wa-progress','wa-reports','wa-overview-work','wa-overview-heartbeat'])
+ for(const id of ['wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts','wa-period-kpis','wa-profile','wa-work','wa-forecast','wa-capa-cases','wa-audit-pages','wa-progress','wa-reports','wa-overview-work','wa-overview-heartbeat'])
   assert.equal(nodes.get(id).textContent,'',id+' must not retain stale metrics');
  assert.equal(nodes.get('wa-refresh').disabled,false);
 });
@@ -46,7 +47,7 @@ for(const [employee,expected] of [['qa','QA fixture'],['unknown-id','orchestrato
  test('employee deep link selects a recorded employee or safely falls back: '+employee,async()=>{
   const nodes=new Map([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element('div')]));
   const document={getElementById:id=>nodes.get(id),createElement:tag=>new Element(tag)};
-  runInNewContext(source,{document,fetch:async()=>({ok:true,status:200,json:async()=>({data:buildWorkforceAnalytics(raw)})}),location:{href:'https://vaos.example/workforce-analytics.html?employee='+employee,assign(){throw Error('Unexpected redirect');}},Date,URL,Math,Number,String,Object});
+  runInNewContext(source,{document,workActivityReport,periodBounds,fetch:async()=>({ok:true,status:200,json:async()=>({data:buildWorkforceAnalytics(raw)})}),location:{href:'https://vaos.example/workforce-analytics.html?employee='+employee,assign(){throw Error('Unexpected redirect');}},Date,URL,Math,Number,String,Object});
   await flush();
   assert.match(nodes.get('wa-profile').textContent,new RegExp(expected));
  });
@@ -56,4 +57,11 @@ test('visual overview precedes collapsed detail table without hiding governed ev
  assert.ok(html.indexOf('id="wa-overview-work"')<html.indexOf('id="wa-roster"'));
  assert.ok(html.indexOf('aria-labelledby="employee-title"')<html.indexOf('aria-labelledby="wa-commissioning-title"'));
  assert.match(html,/<details class="wa-accordion wa-records-disclosure"><summary>Search all employee records/);
+});
+
+test('actual period reporting provides date, employee, audit and forecast controls',()=>{
+ for(const id of ['wa-period-presets','wa-period-from','wa-period-to','wa-period-employee',
+  'wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.ok(html.indexOf('id="wa-actual-title"')<html.indexOf('id="workforce-title"'));
 });

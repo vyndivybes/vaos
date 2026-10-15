@@ -28,7 +28,7 @@ test('period changes show dated records but retain undated snapshots distinctly'
 test('rejects forged source authority, malformed date and incomplete source shape',()=>{
  assert.throws(()=>buildDepartmentSourceReport({employeeId:'finance',source:supply({ledger:[],journals:[]}),from:'2026-10-01',to:'2026-10-15'}),/AUTHORITY/);
  assert.throws(()=>buildDepartmentSourceReport({employeeId:'commercial',source:supply({records:[]}),from:'bad',to:'2026-10-15'}),/PERIOD/);
- assert.throws(()=>buildDepartmentSourceReport({employeeId:'production',source:supply({records:[]},'getProductionJobCards','PRODUCTION.OBSERVE_WIP'),from:'2026-10-01',to:'2026-10-15'}),/SOURCE_SHAPE/);
+ assert.throws(()=>buildDepartmentSourceReport({employeeId:'production',source:supply({},'getProductionJobCards','PRODUCTION.OBSERVE_WIP'),from:'2026-10-01',to:'2026-10-15'}),/SOURCE_SHAPE/);
 });
 test('inventory snapshot with no date is not misrepresented as historical work',()=>{
  const r=buildDepartmentSourceReport({employeeId:'inventory',from:'2026-10-01',to:'2026-10-15',source:supply({records:[{sku:'A',physical_quantity:12,available_to_promise:10}]},'getAuthoritativeInventory','INVENTORY.OBSERVE_STOCK')});

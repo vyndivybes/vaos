@@ -64,6 +64,8 @@ export function createVyndiReadBridgeClient({
           limit: Number.isInteger(job.payload?.limit) ? job.payload.limit : 50,
           ...(job.actionType === 'PROJECT.OBSERVE_SCHEDULE'
             ? { projectId: job.payload?.projectId } : {}),
+          ...(job.actionType === 'FINANCE.OBSERVE_STATEMENTS'
+            ? { fromDate: job.payload?.fromDate, toDate: job.payload?.toDate } : {}),
         },
       });
       const timestamp = String(now());

@@ -102,7 +102,7 @@ function renderEmployeeCharts(emp){
  const total=series.reduce((a,x)=>a+x.value,0);
  if(total===0){root.textContent='No work packages recorded in these categories. Other operational activity is not inferred.';return;}
  const maximum=Math.max(1,...series.map(x=>x.value));
- const colors=['#edc06e','#54beb5','#83b0ef','#b899df','#d48e9a','#d9a066','#a1b98c'];
+ const colors=['#b59b71','#8297a5','#83a596','#b6a7b7','#c89c80','#adbac7','#9bb9b6'];
  if(selectedChartKind==='bars'){for(const x of series)bar(root,x.label,x.value,maximum);return;}
  if(selectedChartKind==='donut'){
   const pieces=[];let a=0;

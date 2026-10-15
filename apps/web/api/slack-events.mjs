@@ -2,6 +2,7 @@ import {runZapierOneShot} from '../../../platform/execution/zapier-slack-one-sho
 // Signed Slack Events API ingress. Only founder read-only observations are permitted.
 // Subscription configuration and production enablement are separate live approval gates.
 import {answerFounderSlackQuestion} from '../../../platform/execution/slack-founder-agent.mjs';
+import {saveFounderSlackContext} from '../../../platform/execution/slack-founder-operations.mjs';
 
 const TEAM='T0C0T8YQLLT';
 const FOUNDER='U0C0XHRUFGE';
@@ -88,20 +89,26 @@ async function processEvent(entry,env,{answerFn,fetchImpl,now}){
     kind:entry.kind,actionAuthorized:false};
   try{
     // Public channel never discloses read-side business evidence.
-    const answer=entry.kind==='mention'
-      ? 'VAOS founder channel ingress is active. Use my direct message for private read-only business questions.'
+    const result=entry.kind==='mention'
+      ? {answer:'VAOS founder channel ingress is active. Use my direct message for private read-only business questions.'}
       : entry.kind==='dm' && entry.text.trim().toLowerCase().startsWith('vaos zapier synthetic verification once')
-        ? (await runZapierOneShot(env,{send:fetchImpl,now}))?.answer
-        : (await answerFn(entry.text,env))?.answer;
+        ? {answer:(await runZapierOneShot(env,{send:fetchImpl,now}))?.answer}
+        : await answerFn(entry.text,env,{kind:entry.kind,channel:entry.channel,
+           eventId:entry.eventId,threadTs:entry.threadTs});
+    const answer=result?.answer;
     if(typeof answer!=='string'||!answer.trim())throw Error('SLACK_ANSWER_UNAVAILABLE');
     const ts=await slackPost(env,entry,answer,fetchImpl);
+    if(entry.kind==='dm'&&result?.contextToSave){
+      await saveFounderSlackContext(env,{kind:'dm',channel:entry.channel},
+       {...result.contextToSave,at:now()});
+    }
     await env.VAOS_ARTIFACTS.put(key,JSON.stringify({...base,state:'SENT',replyTs:ts,
       processedAt:new Date(now()).toISOString()}),{httpMetadata:{contentType:'application/json'}});
   }catch{
     // Unknown provider delivery outcomes are HOLD, never blindly retried.
     try{await env.VAOS_ARTIFACTS.put(key,JSON.stringify({...base,state:'HOLD',
       reason:'SLACK_REPLY_NOT_QUALIFIED',processedAt:new Date(now()).toISOString()}),
-    {httpMetadata:{contentType:'application/json'}});}catch{}
+      {httpMetadata:{contentType:'application/json'}});}catch{}
   }
 }
 export async function handleSlackEvent(request,env,ctx,{

@@ -14,6 +14,9 @@ on:
       - 'apps/web/main-voice.mjs'
       - 'apps/web/workspace.html'
       - 'platform/execution/slack-founder-agent.mjs'
+      - 'platform/execution/slack-founder-operations.mjs'
+      - 'platform/execution/founder-business-brief.mjs'
+      - 'apps/web/api/slack-events.mjs'
       - 'apps/web/cloudflare-worker.mjs'
       - 'wrangler.jsonc'
 permissions:
@@ -42,6 +45,6 @@ jobs:
       - name: Install pinned repository dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Verify secured Slack ingress and Worker compatibility
-        run: node --test apps/web/lib/feature-flags.test.mjs apps/web/api/slack-events.test.mjs apps/web/cloudflare-worker.test.mjs platform/execution/slack-founder-agent.test.mjs platform/execution/github-slack-ci.test.mjs platform/execution/slack-incident-observer.test.mjs apps/web/api/google-workspace.test.mjs apps/web/lib/founder-google-intents.test.mjs apps/web/main-voice.test.mjs apps/web/voice-interaction.test.mjs platform/execution/google-founder-daily-brief.test.mjs platform/execution/zapier-evidence.test.mjs platform/execution/zapier-slack-one-shot.test.mjs
+        run: node --test apps/web/lib/feature-flags.test.mjs apps/web/api/slack-events.test.mjs apps/web/cloudflare-worker.test.mjs platform/execution/slack-founder-agent.test.mjs platform/execution/slack-founder-operations.test.mjs platform/execution/slack-department-brief.test.mjs platform/execution/github-slack-ci.test.mjs platform/execution/slack-incident-observer.test.mjs apps/web/api/google-workspace.test.mjs apps/web/lib/founder-google-intents.test.mjs apps/web/main-voice.test.mjs apps/web/voice-interaction.test.mjs platform/execution/google-founder-daily-brief.test.mjs platform/execution/zapier-evidence.test.mjs platform/execution/zapier-slack-one-shot.test.mjs
       - name: Deploy code with existing variables and secrets preserved
         run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc

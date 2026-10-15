@@ -16,7 +16,48 @@ const ACTION_BY_ROUTE=Object.freeze({
 const EXECUTIVE_ROUTES=Object.freeze(['PROJECT','PROCUREMENT','PRODUCTION','FINANCE']);
 function sourceError(){const e=new Error('BUSINESS_SOURCE_UNVERIFIED');e.code='BUSINESS_SOURCE_UNVERIFIED';e.retryable=false;return e;}
 
-export async function readFounderBusinessDomain(route,env,{createReader=makeCommercialReader}={}){
+// Only validated, bounded operational fields may be exposed in a signed founder DM.
+// Raw HR/supplier identifiers, contact details, free-text descriptions and notes
+// never pass through to Slack. Unknown schemas are not silently treated as zero.
+export function summarizeFounderPrivateDepartment(route,data,topic=''){
+ if(route==='PROCUREMENT'&&topic==='SUPPLIER_DETAILS')
+  return 'Supplier directory/details are not available from this bridge. The configured Procurement read covers material shortages, not supplier master/contact records.';
+ const rows=Array.isArray(data)?data:Array.isArray(data?.records)?data.records:null;
+ if(!rows||rows.length>50||rows.some(r=>!r||typeof r!=='object'||Array.isArray(r)))
+  return 'VYNDI OS '+route+' data was read, but the detailed record schema is not qualified for a Slack summary. No quantities or records have been inferred.';
+ const complete=data?.complete===true||data?.pagination?.hasMore===false;
+ const extent=complete?'complete reported result':'possibly partial result';
+ const statusCounts=new Map();
+ for(const row of rows){
+  const status=typeof row.status==='string'&&/^[a-zA-Z_ -]{1,32}$/.test(row.status)?row.status.toLowerCase():null;
+  if(status)statusCounts.set(status,(statusCounts.get(status)||0)+1);
+ }
+ const groups=[...statusCounts].slice(0,8).map(([key,count])=>count+' '+key).join(', ');
+ if(route==='PEOPLE')
+  return 'People/HR: '+rows.length+' records in '+extent+
+   (groups?'; recorded states: '+groups:'; personnel states were not qualified')+
+   '. Employee names, payroll and personal information remain withheld. This is an operational snapshot, not an HR audit.';
+ if(route==='PRODUCTION'){
+  const details=rows.slice(0,5).map(row=>{
+   const id=[row.jobCardNumber,row.jobCardId,row.id].find(v=>typeof v==='string'&&/^[A-Za-z0-9_-]{2,50}$/.test(v));
+   const status=typeof row.status==='string'&&/^[a-zA-Z_ -]{1,32}$/.test(row.status)?row.status:'status unverified';
+   const q=Number.isInteger(row.quantity)&&row.quantity>=0&&row.quantity<=100000?row.quantity:null;
+   const model=typeof row.model==='string'&&/^[a-zA-Z0-9 _-]{2,50}$/.test(row.model)?row.model:null;
+   const size=typeof row.size==='string'&&/^(XS|S|M|L|XL)$/i.test(row.size)?row.size:null;
+   return (id||'unnumbered job')+' — '+status+(q===null?'':' — qty '+q)+
+    (model?' — '+model:'')+(size?' '+size:'');
+  });
+  return 'Production: '+rows.length+' job cards in '+extent+
+   (groups?'; states: '+groups:'')+
+   (details.length?'. Listed: '+details.join('; '):'. No job cards in the reported result.')+
+   '. No production release or inventory movement was authorized.';
+ }
+ return 'VAOS '+route+': '+rows.length+' verified-schema records in '+extent+
+  (groups?'; states: '+groups:'')+
+  '. Sensitive record details remain in VYNDI OS. No action was authorized.';
+}
+
+export async function readFounderBusinessDomain(route,env,{createReader=makeCommercialReader,privateDM=false,topic=''}={}){
   const actionType=ACTION_BY_ROUTE[route];
   if(!actionType)throw sourceError();
   const registered=getVyndiBridgeRoute(actionType);
@@ -29,6 +70,10 @@ export async function readFounderBusinessDomain(route,env,{createReader=makeComm
   });
   if(result?.actionType!==actionType||result?.sourceAuthority!==registered.authority
     ||!result.data||typeof result.data!=='object')throw sourceError();
+  if(privateDM===true){
+    return Object.freeze({route,status:'PASS',actionAuthorized:false,
+      answer:summarizeFounderPrivateDepartment(route,result.data,topic)});
+  }
   // #vaos-ops is a public workspace channel. No source records, financial values,
   // PII, supplier names, or raw model output may be sent there.
   return Object.freeze({

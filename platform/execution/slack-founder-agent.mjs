@@ -8,6 +8,8 @@ import {invokeCloudflareHandler} from '../../apps/web/lib/cloudflare-adapter.mjs
 import voiceCommercial from '../../apps/web/api/voice-commercial.mjs';
 import voiceEvidenceAi from '../../apps/web/api/voice-evidence-ai.mjs';
 import {readFounderBusinessDomain,readFounderExecutiveBrief} from './founder-business-brief.mjs';
+import {parseFounderProductionRequest,prepareFounderProductionIntake,readFounderProductionIntake,
+ readFounderSlackContext,isSlackContextFollowUp} from './slack-founder-operations.mjs';
 
 const CHANNEL='C0C90LK78KA';
 const FOUNDER_SLACK_USER='U0C0XHRUFGE';
@@ -31,7 +33,8 @@ function cleanText(value){
   return text;
 }
 export function classifyFounderSlackQuestion(text){
-  const q=text.toLowerCase();
+  const q=text.toLowerCase().replace(/\bststus\b/g,'status').replace(/\bordcer\b/g,'order').replace(/\borcer\b/g,'order');
+  if(parseFounderProductionRequest(q))return 'PRODUCTION_INTAKE';
   if(/^(hi|hello|hey|good morning|good evening|good afternoon)[!. ]*$/.test(q))return 'GREETING';
   if(/\b(free tier|free plan|no-cost|free integrations|free alternatives|zero-cost|free zapier)\b/.test(q))return 'FREE_TIER';
   if(/\b(zapier.*(qualification|test|evidence|verified|run)|zap qualification)\b/.test(q))return 'ZAPIER_EVIDENCE';
@@ -92,9 +95,30 @@ async function internalJson(handler,{method='GET',body}={},env){
   let payload=null;try{payload=await response.json()}catch{}
   return {status:response.status,payload};
 }
-export async function answerFounderSlackQuestion(text,env){
+export async function answerFounderSlackQuestion(text,env,context={}){
   const q=cleanText(text);if(!q)throw new Error('SLACK_QUESTION_INVALID');
-  const route=classifyFounderSlackQuestion(q);
+  const intake=parseFounderProductionRequest(q);
+  if(intake){
+    const outcome=await prepareFounderProductionIntake(intake,env,context);
+    return {route:'PRODUCTION',...outcome,
+      contextToSave:outcome.requestId?{route:'PRODUCTION',requestId:outcome.requestId}:null,
+      actionAuthorized:false};
+  }
+  const mutationCommand=/\b(?:inform|notify|tell|create|raise|release|approve|change|update)\b/i.test(q)&&
+   /\b(?:production|demand|job\s*card|jobcard|sales\s*order)\b/i.test(q);
+  if(mutationCommand)return {route:'PRODUCTION',actionAuthorized:false,
+   answer:'Production instruction needs a complete proposed quantity, model, and frame size. No production order, demand revision, job card or notification was created.'};
+  const previous=isSlackContextFollowUp(q)?await readFounderSlackContext(env,context):null;
+  if(previous?.requestId){
+    const last=await readFounderProductionIntake(env,previous.requestId);
+    if(last)return {route:previous.route,actionAuthorized:false,
+     contextToSave:previous,
+     answer:'Production intake '+last.requestId+': '+last.status+
+      '. Requested '+last.quantity+' '+(last.model||'unspecified model')+
+      (last.size?' size '+last.size:'')+
+      '. Confirmed sales order: NOT VERIFIED. Production order and job card: NOT CREATED. Department notification: NOT SENT.'};
+  }
+  const route=previous?.route||classifyFounderSlackQuestion(q);
   if(route==='FREE_TIER')return {route,answer:freeTierStatus(env),actionAuthorized:false};
   if(route==='GREETING')return {route,answer:'VAOS is online. Ask me about sales status, engineering risks, project evidence, or integration status. Read-only governance remains active.',actionAuthorized:false};
   if(route==='ZAPIER_EVIDENCE'){const r=await readZapierQualificationEvidence(env);return {route,answer:r.answer,actionAuthorized:false};}
@@ -108,8 +132,11 @@ export async function answerFounderSlackQuestion(text,env){
   }
   if(['PROJECT','PROCUREMENT','INVENTORY','PRODUCTION','FINANCE','PEOPLE','MAINTENANCE','CONFIGURATION'].includes(route)){
     try{
-      const result=await readFounderBusinessDomain(route,env);
-      return {route,answer:result.answer,actionAuthorized:false};
+      const isPrivate=context?.kind==='dm';
+      const topic=/\bsupplier(?:s)?\s+(?:details|directory|contact|list)\b/i.test(q)?'SUPPLIER_DETAILS':'';
+      const result=await readFounderBusinessDomain(route,env,{privateDM:isPrivate,topic});
+      return {route,answer:result.answer,actionAuthorized:false,
+       contextToSave:isPrivate?{route}:null};
     }catch{
       return {route,answer:'VAOS '+route+' read-only observation: HOLD. The signed source read could not be independently validated. No records or sensitive information were disclosed and no action was authorized.',actionAuthorized:false};
     }

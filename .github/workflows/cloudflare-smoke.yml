@@ -51,6 +51,9 @@ jobs:
       - name: Syntax-check Insight Studio
         run: node --check apps/web/jarvis-data-agent.mjs && node --check apps/web/lib/insight-studio.mjs
 
+      - name: Verify Founder Command browser asset dependency closure
+        run: node --test apps/web/browser-asset-closure.test.mjs
+
       - name: Syntax-check Cloudflare entrypoints
         run: node --check apps/web/cloudflare-worker.mjs && node --check apps/web/lib/cloudflare-adapter.mjs && node --check apps/web/api/zapier-webhook.mjs
 

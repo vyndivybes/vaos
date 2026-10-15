@@ -1,3 +1,5 @@
+import {createCameraSession,createQuestionDictation} from './lib/live-sense.mjs';
+import {createVoiceReadback} from './lib/voice-readback.mjs';
 const $=id=>document.getElementById(id);
 let enabled=false,specialistsEnabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null,sourceGeneration=0;
 async function fileHash(source){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await source.arrayBuffer())),v=>v.toString(16).padStart(2,'0')).join('');}
@@ -6,6 +8,97 @@ async function request(operation,payload){
  const r=await fetch('/api/jarvis-multimodal',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({operation,confirm:true,...payload})});
  const j=await r.json();if(!r.ok)throw Error(j.error?.message||j.error?.code||'Operation unavailable');return j.data;
 }
+// ADA-inspired interaction, adapted without its Electron/Python backend.
+const cameraPreview=$('camera-preview');
+const camera=createCameraSession({
+ mediaDevices:typeof navigator!=='undefined'?navigator.mediaDevices:null,
+ video:cameraPreview,
+ onStatus:message=>{$('status').textContent=message;}
+});
+const dictation=createQuestionDictation({
+ RecognitionClass:window.SpeechRecognition||window.webkitSpeechRecognition,
+ onText:text=>{$('question').value=text;},
+ onStatus:message=>{$('status').textContent=message;}
+});
+const voiceReadback=createVoiceReadback({
+ synthesis:window.speechSynthesis,
+ UtteranceClass:window.SpeechSynthesisUtterance,
+ language:()=> 'en-US',
+ onState:mode=>{if(mode==='SPEAKING')$('status').textContent='JARVIS is speaking the displayed advisory explanation.';},
+ onError:code=>{$('status').textContent='Browser audio unavailable ('+code+'). The written answer remains visible.';},
+ onFinished:mode=>{if(mode==='FINISHED')$('status').textContent='Spoken explanation completed.';}
+});
+let cameraGeneration=0;
+function stopCamera(){
+ cameraGeneration++;
+ camera.stop();
+ cameraPreview.hidden=true;
+ $('camera-start').disabled=!enabled;
+ $('camera-capture').disabled=true;
+ $('camera-stop').disabled=true;
+}
+$('camera-start').addEventListener('click',async()=>{
+ if(!enabled){$('status').textContent='Multimodal pilot is not enabled for this session.';return;}
+ if(window.isSecureContext===false){$('status').textContent='Camera needs HTTPS or a secure local browser context.';return;}
+ const button=$('camera-start');button.disabled=true;
+ try{
+  const visible=await camera.start();
+  if(!visible||document.visibilityState==='hidden'){stopCamera();return;}
+  cameraPreview.hidden=false;
+  $('camera-stop').disabled=false;
+  $('camera-capture').disabled=false;
+ }catch(error){
+  stopCamera();
+  $('status').textContent='Camera could not start. Check browser camera permission and close other camera apps.';
+ }
+});
+$('camera-stop').addEventListener('click',()=>{
+ stopCamera();dictation.stop();voiceReadback.cancel();
+});
+$('camera-capture').addEventListener('click',async()=>{
+ if(!enabled||!camera.active())return;
+ const button=$('camera-capture');button.disabled=true;
+ const token=cameraGeneration;
+ try{
+  // A deliberate founder confirmation is required for every isolated snapshot.
+  if(!confirm('Send ONE camera snapshot to Workers AI for read-only interpretation? No video stream or microphone audio is sent.'))return;
+  const image=camera.capture();
+  const expectedHash=await imageDataHash(image);
+  if(token!==cameraGeneration||!camera.active()||document.visibilityState==='hidden')return;
+  const question=$('question').value.trim()||'Describe what is visible in this selected camera frame without guessing.';
+  const data=await request('ANALYZE_IMAGE',{image,question});
+  if(token!==cameraGeneration||!camera.active()||document.visibilityState==='hidden')return;
+  if(data.actionAuthorized!==false||data.stored!==false||data.provenance?.imageSha256!==expectedHash)
+   throw Error('Camera snapshot provenance invalid. Explanation withheld.');
+  $('result').textContent='Selected camera snapshot — not continuous video monitoring.\n\n'+data.answer+
+   '\n\nFrame SHA-256: '+expectedHash+'. No business records changed.';
+  $('result-panel').hidden=false;
+  $('vedm-panel').hidden=false;
+  $('status').textContent='JARVIS inspected one consented camera frame. Camera preview is still local. Press Stop camera to close it.';
+ }catch(error){if(token===cameraGeneration)$('status').textContent=String(error.message||'Snapshot unavailable');}
+ finally{button.disabled=!enabled||!camera.active();}
+});
+$('dictate-question').addEventListener('click',()=>{
+ if(dictation.active()){dictation.stop();$('status').textContent='Question dictation cancelled.';}
+ else if(!dictation.start())$('status').textContent='Speech recognition unavailable. Type the question instead.';
+});
+$('speak-result').addEventListener('click',()=>{
+ if($('result-panel').hidden||!$('result').textContent.trim()){
+  $('status').textContent='No explanation is available to read aloud.';return;
+ }
+ const spoken=$('result').textContent.slice(0,4800);
+ if(!voiceReadback.speak(spoken))$('status').textContent='Speech playback unavailable; read the displayed answer.';
+});
+$('stop-result-speech').addEventListener('click',()=>{
+ voiceReadback.cancel();$('status').textContent='JARVIS speech stopped.';
+});
+document.addEventListener('visibilitychange',()=>{
+ if(document.visibilityState==='hidden'){stopCamera();dictation.stop();voiceReadback.cancel();}
+});
+window.addEventListener('pagehide',()=>{
+ stopCamera();dictation.stop();voiceReadback.cancel();
+});
+
 async function init(){
  try{
  const r=await fetch('/api/jarvis-multimodal',{credentials:'same-origin'});const j=await r.json();
@@ -14,6 +107,7 @@ async function init(){
  specialistsEnabled=j.data.specialistsEnabled===true;
  $('status').textContent=enabled?'Founder multimodal pilot enabled (read-only preview).':specialistsEnabled?'Pasted Legal and Marketing reviews available. AI file conversion and image analysis remain disabled.':'Multimodal pilot is disabled on this deployment. Source panel remains visible but analysis is held.';
  $('analyze').disabled=!enabled;
+ $('camera-start').disabled=!enabled;
  $('review-legal-text').disabled=!specialistsEnabled;
  $('review-marketing-text').disabled=!specialistsEnabled;
  }catch(e){$('status').textContent=String(e.message);$('analyze').disabled=true;$('review-legal-text').disabled=true;$('review-marketing-text').disabled=true}
@@ -95,6 +189,7 @@ async function sampleLocalVideo(video,original,generation){
 }
 
 $('source-file').addEventListener('change',e=>{
+ stopCamera();dictation.stop();voiceReadback.cancel();
  sourceGeneration++;
  $('video-transcript').value='';
  $('video-transcript-panel').hidden=true;

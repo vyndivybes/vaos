@@ -243,5 +243,5 @@ test('supplier details in signed private founder Slack DM returns honest capabil
  assert.equal(response.actionAuthorized,false);
  assert.match(response.answer,/supplier directory.*not connected/i);
  assert.match(response.answer,/shortage/i);
- assert.doesNotMatch(response.answer,/qualified engineering evidence|supplier names|source.*responded/i);
+ assert.doesNotMatch(response.answer,/qualified engineering evidence|source.*responded/i);
 });

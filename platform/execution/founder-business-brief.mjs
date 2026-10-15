@@ -22,7 +22,8 @@ function sourceError(){const e=new Error('BUSINESS_SOURCE_UNVERIFIED');e.code='B
 export function summarizeFounderPrivateDepartment(route,data,topic=''){
  if(route==='PROCUREMENT'&&topic==='SUPPLIER_DETAILS')
   return 'Supplier directory/details are not available from this bridge. The configured Procurement read covers material shortages, not supplier master/contact records.';
- const rows=Array.isArray(data)?data:Array.isArray(data?.records)?data.records:null;
+ const rows=Array.isArray(data)?data:Array.isArray(data?.records)?data.records:
+  route==='PEOPLE'&&Array.isArray(data?.people)?data.people:null;
  if(!rows||rows.length>50||rows.some(r=>!r||typeof r!=='object'||Array.isArray(r)))
   return 'VYNDI OS '+route+' data was read, but the detailed record schema is not qualified for a Slack summary. No quantities or records have been inferred.';
  const complete=data?.complete===true||data?.pagination?.hasMore===false;
@@ -37,6 +38,19 @@ export function summarizeFounderPrivateDepartment(route,data,topic=''){
   return 'People/HR: '+rows.length+' records in '+extent+
    (groups?'; recorded states: '+groups:'; personnel states were not qualified')+
    '. Employee names, payroll and personal information remain withheld. This is an operational snapshot, not an HR audit.';
+ if(route==='PROCUREMENT'){
+  const shortages=rows.slice(0,5).map(r=>{
+   const sku=typeof r.sku==='string'&&/^[A-Za-z0-9_-]{2,50}$/.test(r.sku)?r.sku:null;
+   const raw=Number(r.shortage_quantity);
+   const quantity=r.shortage_quantity!==null&&r.shortage_quantity!==undefined&&Number.isFinite(raw)&&raw>0&&raw<1000000?raw:null;
+   const unit=typeof r.unit==='string'&&/^[a-zA-Z0-9%/_-]{1,12}$/.test(r.unit)?r.unit:'units';
+   if(!sku||quantity===null)return null;
+   return sku+' — '+quantity+' '+unit;
+  }).filter(Boolean);
+  return 'Procurement: '+rows.length+' shortage rows in '+extent+
+   (shortages.length?'. Listed: '+shortages.join('; '):'. Shortage values were not qualified')+
+   '. This is not a supplier master or purchase-order authority. No purchase was authorized.';
+ }
  if(route==='PRODUCTION'){
   const details=rows.slice(0,5).map(row=>{
    const id=[row.jobCardNumber,row.jobCardId,row.id].find(v=>typeof v==='string'&&/^[A-Za-z0-9_-]{2,50}$/.test(v));

@@ -190,6 +190,14 @@ body.va-premium.workspace-body .fc-metrics article strong{font-size:21px}
 body.va-premium.workspace-body .fc-metrics span{font-size:9px;color:#91a687}
 body.va-premium.workspace-body .va-voice-widget{background:radial-gradient(ellipse at 85% 0%,#35482d50,transparent 65%),#19261d;border:1px solid #b4d69c29;border-radius:18px;padding:30px;margin:0 0 40px;box-shadow:inset 0 1px #ffffff05}
 body.va-premium.workspace-body .va-voice-widget :is(h2,h3){color:var(--p-ink);font-size:29px;font-weight:500}
+body.va-premium.workspace-body :is(.va-voice-response,.va-wake-controls,.fc-chart-card,.fc-roster-disclosure,.pulse-card,.va-panel){background:var(--p-surface);border:1px solid var(--p-line);color:var(--p-ink);box-shadow:none;border-radius:12px}
+body.va-premium.workspace-body :is(#vaos-voice-answer,.va-voice-response strong){color:var(--p-ink)}
+body.va-premium.workspace-body #vaos-voice-language{background:#152019;border-color:var(--p-line);color:var(--p-ink)}
+body.va-premium.workspace-body .va-wake-indicator{background:#30432c;color:var(--p-accent)}
+body.va-premium.workspace-body .va-evidence-svg{background:#142018;border-color:var(--p-line)}
+body.va-premium.workspace-body .va-evidence-svg text{fill:var(--p-muted)}
+body.va-premium.workspace-body .va-agent-track{background:#30402e}
+body.va-premium.workspace-body .pulse-glyph{background:#2a3c29;color:var(--p-accent)}
 body.va-premium.workspace-body .va-voice-widget :is(p,label){color:var(--p-muted);font-size:11px}
 body.va-premium.workspace-body .va-voice-avatar{background:radial-gradient(circle at 35% 25%,#80a569,#2b452d 75%);border:1px solid #bfe2a349;color:var(--p-accent);box-shadow:0 8px 36px #0b140b55;width:57px;height:57px;border-radius:50%}
 body.va-premium.workspace-body .va-voice-badge{background:#2e402a;border:0;color:var(--p-accent);font-size:8px}

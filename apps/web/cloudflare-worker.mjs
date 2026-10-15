@@ -266,7 +266,9 @@ export default {
       throw new Error('VAOS_INFISICAL_WATCHDOG_FAILED');
     });
     const productionObservation=Promise.resolve().then(async()=>{
-      if(env.VAOS_PRODUCTION_OBSERVER_CONTROL!=='read-only-v1')return;
+      // Existing kill switch: absent/OFF skips the observer entirely.
+      // Shadow assesses only stored workforce readiness; no jobs or VYNDI.
+      if(!['read-only-v1','shadow-v1'].includes(env.VAOS_PRODUCTION_OBSERVER_CONTROL))return;
       const result=await runProductionReadOnlyObservation({
         controlService:getDurableControlService(env),executionEngine:getExecutionEngine(env),
         mode:()=>env.VAOS_PRODUCTION_OBSERVER_CONTROL,

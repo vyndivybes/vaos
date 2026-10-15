@@ -342,3 +342,71 @@ test('OAuth transport records safe error categories without exposing network exc
   assert.equal(JSON.stringify(json).includes(error.message),false);
  }
 });
+
+
+test('Google identity and Calendar requests do not use unsupported error redirect mode',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const scope='openid email https://www.googleapis.com/auth/calendar.events';
+ const requests=[];
+ const fetchImpl=async(url,init)=>{
+  requests.push({url,method:init?.method,redirect:init?.redirect});
+  if(init?.redirect==='error')throw TypeError('Cloudflare runtime forbids redirect error');
+  if(url==='https://oauth2.googleapis.com/token')return Response.json({
+   token_type:'Bearer',access_token:'access-token-2026',refresh_token:'refresh-token-2026',
+   expires_in:3600,scope
+  });
+  if(url==='https://openidconnect.googleapis.com/v1/userinfo')return Response.json({
+   email:'shyamsundhar1982@gmail.com',email_verified:true
+  });
+  if(url.startsWith('https://www.googleapis.com/calendar/v3/')&&init?.method==='GET')
+   return Response.json({items:[]});
+  if(url.endsWith('/calendars/primary/events')&&init?.method==='POST')
+   return new Response(JSON.stringify({...JSON.parse(init.body),status:'confirmed'}),{status:201});
+  throw Error('unexpected request');
+ };
+ const now=()=>Date.parse('2026-10-16T04:00:00.000Z');
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl,now});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ assert.equal(start.status,302);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const callback=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_authorized_code',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ assert.equal((await callback.json()).status,'CONNECTED');
+ const brief=await readGoogleWorkspaceBrief(s.env,{fetchImpl,now});
+ assert.equal(brief.status,'PASS');
+ assert.equal(brief.calendarEvents,0);
+ const saved=await createFounderCalendarReminder(s.env,{
+  title:'Calendar integration test event',
+  start:'2026-10-19T09:00:00+05:30',end:'2026-10-19T09:30:00+05:30',
+  requestId:'b'.repeat(32)
+ },{fetchImpl,now});
+ assert.equal(saved.status,'PASS');
+ const identity=requests.find(r=>r.url.includes('userinfo'));
+ const read=requests.find(r=>r.url.includes('/calendar/v3/')&&r.method==='GET');
+ const write=requests.find(r=>r.url.includes('/calendar/v3/')&&r.method==='POST');
+ assert.equal(identity.redirect,'manual');
+ assert.equal(read.redirect,'manual');
+ assert.equal(write.redirect,'manual');
+});
+
+test('Google identity redirect never follows or saves tokens',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const fetchImpl=async(url,init)=>{
+  if(url==='https://oauth2.googleapis.com/token')return Response.json({
+   token_type:'Bearer',access_token:'access-token-2026',refresh_token:'refresh-token-2026',
+   expires_in:3600,scope:'openid email https://www.googleapis.com/auth/calendar.events'
+  });
+  assert.equal(url,'https://openidconnect.googleapis.com/v1/userinfo');
+  assert.equal(init.redirect,'manual');
+  return new Response(null,{status:302,headers:{location:'https://untrusted.example'}});
+ };
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const callback=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_authorized_code',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ assert.equal((await callback.json()).reason,'OAUTH_IDENTITY_UNVERIFIED');
+ assert.equal(s.storage.has('runtime/google-workspace/founder-token.v1.json'),false);
+});

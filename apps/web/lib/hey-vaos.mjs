@@ -2,7 +2,7 @@
  * SpeechRecognition may send audio to the browser vendor. No activation
  * without founder voice qualification and explicit in-page user gesture.
  */
-const WAKE=/^(?:hey[ ,.!?]+)?(?:vaos|v[ .-]?a[ .-]?o[ .-]?s|vay[ .-]?os|vay[ .-]?us)(?=$|[ ,.!?:-])/i;
+const WAKE=/^(?:hey[ ,.!?]+)?(?:jarvis|vaos|v[ .-]?a[ .-]?o[ .-]?s|vay[ .-]?os|vay[ .-]?us)(?=$|[ ,.!?:-])/i;
 const COMMAND_CONFIRM=/^(?:confirm|yes confirm|confirm question)[.! ]*$/i;
 const COMMAND_CANCEL=/^(?:cancel|stop|never mind|no cancel)[.! ]*$/i;
 const initial=()=>({mode:'WAKE',pending:null});

@@ -3,6 +3,9 @@ import {parseWakePhrase,advanceWakeTurn,createWakeListener} from './lib/hey-vaos
 import {classifyDashboardQuestion} from './main-voice.mjs';
 const validate=q=>classifyDashboardQuestion(q).kind!=='DENY';
 test('only an anchored Hey VAOS / VAOS wake phrase triggers listening intent',()=>{
+ assert.deepEqual(parseWakePhrase('Hey Jarvis'),{wake:true,question:''});
+ assert.deepEqual(parseWakePhrase('Hey Jarvis, show inventory'),{wake:true,question:'show inventory'});
+ assert.equal(parseWakePhrase('Jarvison show inventory').wake,false);
  assert.deepEqual(parseWakePhrase('Hey VAOS'),{wake:true,question:''});
  assert.deepEqual(parseWakePhrase('hey vaos, what is our sales status?'),{wake:true,question:'what is our sales status?'});
  assert.deepEqual(parseWakePhrase('VAOS what is the project status'),{wake:true,question:'what is the project status'});

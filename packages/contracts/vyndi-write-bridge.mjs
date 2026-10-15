@@ -188,7 +188,14 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
     sourceFile:'src/lib/engineering-change-control-authority.ts',authority:'releaseEngineeringChangeOrder',
     verificationRefs:['vyndi_engineering_change_notices','vyndi_audit_events'],
     description:'High-assurance configuration release; maker-checker and VYNDI approval remain authoritative.'
-  }),
+  }),,
+  route({
+    actionType:'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI',employeeId:'orchestrator',effectClass:EFFECT.READ,
+    state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/vaos-enterprise-bi-read.ts',authority:'getEnterpriseBusinessIntelligence',
+    verificationRefs:['vyndi_audit_events','vyndi_program_tasks','vyndi_sales_orders','epr_production_job_cards'],
+    description:'Founder-scoped cross-department read of source-complete period aggregates, with status and missing-data boundaries.'
+  })
 ]);
 
 const BY_ACTION=new Map(VYNDI_BRIDGE_ROUTES.map(item=>[item.actionType,item]));

@@ -70,18 +70,23 @@ async function decryptRecord(doc,key){
  return record;
 }
 async function saveTokens(env,record){
- const encrypted=await encryptRecord(record,env.VAOS_GOOGLE_VAULT_KEY);
+ let encrypted;
+ try { encrypted=await encryptRecord(record,env.VAOS_GOOGLE_VAULT_KEY); }
+ catch { throw Error('OAUTH_VAULT_ENCRYPT_FAILED'); }
  try {
   await env.VAOS_ARTIFACTS.put(RECORD,JSON.stringify(encrypted),{
    httpMetadata:{contentType:'application/json'}});
  } catch { throw Error('OAUTH_VAULT_WRITE_FAILED'); }
 }
 async function postToken(fetchImpl,data){
- const r=await fetchImpl('https://oauth2.googleapis.com/token',{
-  method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},
-  body:new URLSearchParams(data).toString(),redirect:'error',
-  signal:AbortSignal.timeout(8000)
- });
+ let r;
+ try {
+  r=await fetchImpl('https://oauth2.googleapis.com/token',{
+   method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},
+   body:new URLSearchParams(data).toString(),redirect:'error',
+   signal:AbortSignal.timeout(12000)
+  });
+ } catch { throw Error('OAUTH_TOKEN_TRANSPORT_FAILED'); }
  if(r.status!==200){
   // Classify Google OAuth errors without returning Google's descriptions,
   // tokens, credentials or other upstream response details.
@@ -93,7 +98,9 @@ async function postToken(fetchImpl,data){
    throw Error('OAUTH_AUTHORIZATION_CODE_REJECTED');
   throw Error('GOOGLE_TOKEN_EXCHANGE_FAILED');
  }
- const value=await r.json();
+ let value;
+ try { value=await r.json(); }
+ catch { throw Error('OAUTH_TOKEN_RESPONSE_INVALID'); }
  if(value.token_type!=='Bearer'||typeof value.access_token!=='string'||value.access_token.length<8||
  !Number.isInteger(value.expires_in)||value.expires_in<60||value.expires_in>86400)
  throw Error('GOOGLE_TOKEN_RESPONSE_INVALID');
@@ -163,7 +170,9 @@ async function oauthCallback(req,env,fetchImpl,now){
     redirect:'error',signal:AbortSignal.timeout(8000)});
   } catch { throw Error('OAUTH_IDENTITY_FETCH_FAILED'); }
   if(identity.status!==200)return reply(503,hold('OAUTH_IDENTITY_UNVERIFIED'));
-  const person=await identity.json();
+  let person;
+  try { person=await identity.json(); }
+  catch { throw Error('OAUTH_IDENTITY_RESPONSE_INVALID'); }
   if(person?.email_verified!==true||String(person.email||'').toLowerCase()!==FOUNDER)
    return reply(403,hold('OAUTH_FOUNDER_IDENTITY_MISMATCH'));
   await saveTokens(env,{
@@ -177,7 +186,9 @@ async function oauthCallback(req,env,fetchImpl,now){
   const safe=new Set(['OAUTH_CLIENT_CREDENTIALS_REJECTED',
    'OAUTH_AUTHORIZATION_CODE_REJECTED','GOOGLE_TOKEN_EXCHANGE_FAILED',
    'GOOGLE_TOKEN_RESPONSE_INVALID','OAUTH_IDENTITY_FETCH_FAILED',
-   'GOOGLE_VAULT_UNAVAILABLE','OAUTH_VAULT_WRITE_FAILED']);
+   'GOOGLE_VAULT_UNAVAILABLE','OAUTH_VAULT_WRITE_FAILED',
+   'OAUTH_VAULT_ENCRYPT_FAILED','OAUTH_TOKEN_TRANSPORT_FAILED',
+   'OAUTH_IDENTITY_RESPONSE_INVALID']);
   return reply(503,hold(safe.has(code)?code:'OAUTH_EXCHANGE_UNVERIFIED'));
  }
 }

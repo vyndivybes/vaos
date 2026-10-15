@@ -76,7 +76,7 @@ test('current voice handoff module and wake listener use distinct cache-busted p
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  assert.match(html,/main-voice\.mjs\?v=202610\d{2}-[a-z0-9-]+/);
- assert.match(script,/hey-vaos\.mjs\?v=20261012-handsfree-unified/);
+ assert.match(script,/hey-vaos\.mjs\?v=20261016-audible-wake-v1/);
 });
 
 test('main voice offering distinguishes the two controls in accessible copy',async()=>{

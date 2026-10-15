@@ -130,3 +130,50 @@ test('G7: existing file page offers a separate read-only VEDM authority check wi
  assert.match(ui,/source\.sha|\.sha/);
  assert.doesNotMatch(ui,/\/api\/(?:approvals|executions|missions)\b/);
 });
+
+test('JARVIS specialist previews locate only supported excerpt terms with no score, legal approval or agent dispatch',async()=>{
+ const h=harness(),text='Agreement between supplier and buyer.\nPayment terms: net thirty days.\nConfidentiality applies to shared engineering plans.\nTermination by either party after thirty days.\nGoverning law: India.';
+ const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text))),x=>x.toString(16).padStart(2,'0')).join('');
+ const source={name:'supplier.pdf',fileSha256:'a'.repeat(64),excerptSha256:sha};
+ const r=await h.run('SPECIALIST_REVIEW',{domain:'LEGAL',text,source,confirm:true});
+ assert.equal(r.status,200);const d=r.body.data;
+ assert.equal(d.domain,'LEGAL');assert.equal(d.ownerAgentId,'risk');
+ assert.equal(d.score,null);assert.equal(d.legalAdviceProvided,false);
+ assert.equal(d.agentDispatched,false);assert.equal(d.stored,false);assert.equal(d.actionAuthorized,false);
+ assert.equal(d.provenance.excerptSha256,sha);
+ assert.equal(d.checks.find(c=>c.topic==='Payment / consideration').line,2);
+ assert.equal(d.checks.find(c=>c.topic==='Intellectual property').status,'NOT_LOCATED_IN_EXCERPT');
+ assert.equal(h.invocations.length,0,'no model call and no external API');
+});
+test('marketing copy review uses visible submitted text without invented campaign or SEO performance',async()=>{
+ const h=harness(),text='Our bicycle platform helps riders improve comfort. Shop now. Contact us for pricing and product options, and learn more about our service.';
+ const sha=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text))),x=>x.toString(16).padStart(2,'0')).join('');
+ const source={name:'launch.pdf',fileSha256:'b'.repeat(64),excerptSha256:sha};
+ const r=await h.run('SPECIALIST_REVIEW',{domain:'MARKETING',text,source,confirm:true});
+ assert.equal(r.status,200);const d=r.body.data;
+ assert.equal(d.ownerAgentId,'commercial');assert.equal(d.campaignPerformanceVerified,false);
+ assert.equal(d.forecastQualified,false);assert.equal(d.score,null);
+ assert.equal(d.checks.find(c=>c.topic==='Call to action').status,'TERM_LOCATED');
+ assert.equal(h.invocations.length,0);
+});
+test('specialist preview rejects false source hash, absent provenance, unsupported domains and unconsented requests',async()=>{
+ const h=harness(),text='This supplier contract specifies payment terms, confidentiality obligations and termination clauses. Its governing law is India.';
+ for(const payload of [
+  {domain:'LEGAL',text,source:null,confirm:true},
+  {domain:'LEGAL',text,source:{name:'sample.pdf',fileSha256:'a'.repeat(64),excerptSha256:'0'.repeat(64)},confirm:true},
+  {domain:'FINANCE',text,source:{name:'sample.pdf',fileSha256:'a'.repeat(64),excerptSha256:'0'.repeat(64)},confirm:true},
+ ]){
+  const r=await h.run('SPECIALIST_REVIEW',payload);assert.equal(r.status,422);
+ }
+ const noConsent=await h.run('SPECIALIST_REVIEW',{domain:'LEGAL',text,confirm:false});
+ assert.equal(noConsent.status,400);assert.equal(h.invocations.length,0);
+});
+test('existing JARVIS file-intelligence UI exposes both specialist previews with no business write requests',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const [html,ui]=await Promise.all([
+  readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8'),
+  readFile(new URL('../jarvis-multimodal.mjs',import.meta.url),'utf8')]);
+ assert.match(html,/id="review-legal"/);assert.match(html,/id="review-marketing"/);
+ assert.match(ui,/SPECIALIST_REVIEW/);assert.match(ui,/agentDispatched!==false/);
+ assert.doesNotMatch(ui,/\/api\/(?:approvals|executions|missions)\b/);
+});

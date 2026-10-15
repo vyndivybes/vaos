@@ -1,6 +1,7 @@
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {convertDocumentToStudyText,validateDocumentUpload} from '../lib/multimodal-contract.mjs';
 import {selectDocumentEvidence,validateMultimodalAdvisory,validateClientDocumentSource} from '../lib/g7-source-evidence.mjs';
+import {reviewSpecialistExcerpt} from '../lib/jarvis-specialist-review.mjs';
 const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
 const decodedBytes=value=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
 function frameContext(value){
@@ -47,6 +48,26 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
     const fileSha256=await digest(decodedBytes(b.base64)),excerptSha256=await digest(new TextEncoder().encode(data.text));
     return reply(res,200,{data:{status:'ready',name:data.name,text:data.text,truncated:data.truncated,stored:false,sourceAuthority:'USER_UPLOADED_UNVERIFIED',actionAuthorized:false,provenance:{fileSha256,excerptSha256,conversion:'BOUNDED_EXCERPT',revisionAuthority:'USER_UPLOAD_NOT_ENGINEERING_RELEASE'}}});
    }catch{return reply(res,422,{error:{code:'DOCUMENT_CONVERSION_FAILED'}})}
+  }
+  if(b.operation==='SPECIALIST_REVIEW'){
+   if(!['LEGAL','MARKETING'].includes(b.domain)||typeof b.text!=='string'
+      ||b.text.length<60||b.text.length>12000||!b.source)
+    return reply(res,422,{error:{code:'SPECIALIST_SOURCE_INVALID'}});
+   const excerptSha256=await digest(new TextEncoder().encode(b.text));
+   let source,review;
+   try {
+    source=validateClientDocumentSource(b.source,excerptSha256);
+    if(!source)throw Error('DOCUMENT_SOURCE_REQUIRED');
+    review=reviewSpecialistExcerpt({domain:b.domain,text:b.text});
+   }catch(error){
+    const code=['DOCUMENT_SOURCE_HASH_MISMATCH','DOCUMENT_SOURCE_INVALID','DOCUMENT_SOURCE_REQUIRED'].includes(error?.message)
+     ?error.message:'SPECIALIST_SOURCE_INVALID';
+    return reply(res,422,{error:{code}});
+   }
+   return reply(res,200,{data:{...review,provenance:{
+    ...source,excerptSha256,scope:'SUBMITTED_EXCERPT_ONLY',
+    revisionAuthority:'USER_UPLOAD_NOT_ENGINEERING_RELEASE'
+   }}});
   }
   if(b.operation==='ANSWER_DOCUMENT'){
    if(typeof b.text!=='string'||b.text.length<60||b.text.length>12000

@@ -202,3 +202,34 @@ test('Slack departmental questions never fall back to engineering or expose unve
   assert.doesNotMatch(result.answer,/qualified engineering evidence|no engineering conclusion|employee names|approved job cards/i);
  }
 });
+
+test('founder Slack typo variations and production intake keep domain intent intact',()=>{
+ assert.equal(classifyFounderSlackQuestion('JOB CARD STSTUS'),'PRODUCTION');
+ assert.equal(classifyFounderSlackQuestion('Job card status'),'PRODUCTION');
+ assert.equal(classifyFounderSlackQuestion('SUPPLIER DETAILS'),'PROCUREMENT');
+ assert.equal(classifyFounderSlackQuestion('OK INFORM THE PRODUCTION FOR 1 MORE CONFIRMED DEMAND ORCER FOR 1 CARBON VYNDI ALTITUDE S FRAME BICYCLE'),'PRODUCTION_INTAKE');
+ assert.equal(classifyFounderSlackQuestion('what are the carbon frame risks?'),'ENGINEERING');
+});
+
+test('signed founder direct message persists an intake, never claims released production',async()=>{
+ const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
+ const {readFounderProductionIntake,saveFounderSlackContext}=await import('./slack-founder-operations.mjs');
+ const m=new Map();
+ const env={VAOS_ARTIFACTS:{
+  async get(k){return m.has(k)?{text:async()=>m.get(k)}:null},
+  async put(k,v,options){if(options?.onlyIf?.get?.('If-None-Match')==='*'&&m.has(k))return null;m.set(k,v);return {etag:'x'}}
+ }};
+ const ctx={kind:'dm',channel:'D0FOUNDER123',eventId:'EvINTAKE20261016'};
+ const q='OK INFORM THE PRODUCTION FOR 1 MORE CONFIRMED DEMAND ORCER FOR 1 CARBON VYNDI ALTITUDE S FRAME BICYCLE';
+ const result=await answerFounderSlackQuestion(q,env,ctx);
+ assert.equal(result.route,'PRODUCTION');
+ assert.equal(result.status,'PENDING_SOURCE_VALIDATION');
+ assert.equal(result.actionAuthorized,false);
+ assert.match(result.answer,/job card.*not/i);
+ const saved=await readFounderProductionIntake(env,result.requestId);
+ assert.equal(saved?.productionOrderCreated,false);
+ await saveFounderSlackContext(env,ctx,{...result.contextToSave,at:Date.now()});
+ const followUp=await answerFounderSlackQuestion('and its status?',env,ctx);
+ assert.match(followUp.answer,/PENDING_SOURCE_VALIDATION/);
+ assert.equal(followUp.actionAuthorized,false);
+});

@@ -32,10 +32,15 @@ function render(data){
  const observed=data.departments.filter(x=>x.status==='OBSERVED');
  const unavailable=data.departments.length-observed.length;
  const sum=observed.reduce((a,x)=>a+(Number.isSafeInteger(x.periodEventCount)?x.periodEventCount:0),0);
+ const backlogObserved=observed.filter(x=>Number.isSafeInteger(x.currentSourceCount));
+ const currentRows=backlogObserved.reduce((a,x)=>a+x.currentSourceCount,0);
+ const attention=backlogObserved.reduce((a,x)=>a+(Number.isSafeInteger(x.currentAttentionCount)?x.currentAttentionCount:0),0);
  const stats=$('wa-enterprise-kpis');stats.replaceChildren();
  for(const [label,value] of [['Responding sources',observed.length+' / 16'],
   ['Uncommissioned / unavailable',unavailable],
-  ['Dated source records',sum]]){
+  ['Dated source records',sum],
+  ['Current source records (all dates)',backlogObserved.length?currentRows:'Not observed'],
+  ['Current pending / hold / draft flags',backlogObserved.length?attention:'Not observed']]){
   const card=el('div',undefined,'wa-stat');card.append(el('small',label),el('strong',value));stats.append(card);
  }
  for(const [id,name] of DEPARTMENTS){
@@ -50,7 +55,16 @@ function render(data){
    card.append(el('strong',count===null?'Count unavailable':count+' dated source records'));
    card.append(el('p',(Number.isSafeInteger(record.flaggedStatusCount)?record.flaggedStatusCount:'Unknown')+
     ' records with possible open/held/error statuses. Status classification is preliminary, not verified discrepancy closure.'));
+   card.append(el('p',(Number.isSafeInteger(record.currentAttentionCount)?record.currentAttentionCount:'Not observed')+
+    ' current pending/hold/draft-type status flags across '+(Number.isSafeInteger(record.currentSourceCount)?record.currentSourceCount:'unknown')+
+    ' source records (all dates). These are open backlogs, not in-period completions or audited defects.'));
+   card.append(el('h4','Activity recorded in selected period'));
    const bars=el('div',undefined,'wa-viz-bars');chart(bars,record.statusDistribution);card.append(bars);
+   card.append(el('h4','Current backlog and source status (all dates)'));
+   const backlog=el('div',undefined,'wa-viz-bars');
+   if(Array.isArray(record.currentStatusDistribution))chart(backlog,record.currentStatusDistribution);
+   else backlog.append(el('p','Current backlog not supplied by the authoritative source.'));
+   card.append(backlog);
    const details=el('details',undefined,'wa-accordion');
    details.append(el('summary','Inspect dated source rows ('+(record.records?.length??0)+' shown)'));
    const table=el('table');const head=el('thead');
@@ -96,7 +110,7 @@ async function refresh(){
   render(data);
   const available=data.departments.filter(x=>x.status==='OBSERVED').length;
   $('wa-enterprise-status').textContent=available+' of 16 source ledgers responded for '+from+' to '+to+
-   '. Source rows and flagged statuses do not establish AI output, audited completion, profitability or a reliable forecast.';
+   '. Period activity and all-time current backlog are separate; no source status alone establishes AI output, audited completion, profit or a reliable forecast.';
  }catch{
   if(seq!==ticket)return;
   packet=null;$('wa-enterprise-grid').replaceChildren();$('wa-enterprise-kpis').replaceChildren();

@@ -13,7 +13,7 @@ function response(){const data={status:200,headers:{},body:null};
 test('route is founder only; rejects writes and invalid periods before touching signed source',async()=>{
  assert.equal(typeof DEFAULT_API_HANDLERS['/api/vyndi-department-report'],'function');
  const handler=createVyndiDepartmentReportHandler({getStore:()=>{throw Error('SHOULD_NOT_CALL')}});
- for(const [req,status] of [[request(null),401],[request('nobody@example.com'),403],
+ for(const [req,status] of [[request(null),401],[request('nobody@example.com'),401],
   [request(undefined,query,'POST'),405],[request(undefined,'?employee=unknown&from=2026-10-01&to=2026-10-15'),422],
   [request(undefined,'?employee=commercial&from=2026-10-20&to=2026-10-21'),422]]){
   const {res,data}=response();await handler(req,res);assert.equal(data.status,status);

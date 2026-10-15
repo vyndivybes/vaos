@@ -34,6 +34,7 @@ import zapierWebhook from './api/zapier-webhook.mjs';
 import langgraph from './api/langgraph.mjs';
 import workforceAnalytics from './api/workforce-analytics.mjs';
 import vyndiDepartmentReport from './api/vyndi-department-report.mjs';
+import financeScorecard from './api/finance-scorecard.mjs';
 import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
 import founderChat from './api/founder-chat.mjs';
@@ -109,6 +110,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/langgraph': langgraph,
   '/api/workforce-analytics': workforceAnalytics,
   '/api/vyndi-department-report': vyndiDepartmentReport,
+  '/api/finance-scorecard': financeScorecard,
   '/api/founder-inbox': founderInbox,
   '/api/founder-agent-report': founderAgentReport,
   '/api/founder-chat': founderChat,

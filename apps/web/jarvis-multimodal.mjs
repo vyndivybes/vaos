@@ -44,6 +44,7 @@ function syncGuidedControls(){
  $('guided-visual-start').disabled=!enabled||!camera.active()||guided?.active()===true;
  $('guided-visual-stop').disabled=guided?.active()!==true;
  $('dictate-question').disabled=guided?.active()===true;
+ $('camera-capture').disabled=!enabled||!camera.active()||guided?.active()===true;
 }
 guided=createGuidedVisualConversation({
  isCameraActive:()=>camera.active(),

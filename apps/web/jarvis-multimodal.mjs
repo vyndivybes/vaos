@@ -84,6 +84,30 @@ $('ask-doc').addEventListener('click',async()=>{
  }
  catch(e){$('status').textContent=String(e.message)}
 });
+// Specialist reviews reuse the authenticated, consent-bound document workflow.
+for(const [buttonId,domain] of [['review-legal','LEGAL'],['review-marketing','MARKETING']]){
+ $(buttonId).addEventListener('click',async()=>{
+  if(!enabled||!converted||!documentSource)return;
+  const button=$(buttonId);button.disabled=true;
+  try {
+   const data=await request('SPECIALIST_REVIEW',{domain,text:converted,source:documentSource});
+   if(data.actionAuthorized!==false||data.agentDispatched!==false||
+      data.stored!==false||data.sourceAuthority!=='USER_UPLOADED_UNVERIFIED'||
+      !Array.isArray(data.checks))throw Error('Specialist report authority invalid');
+   $('result').textContent=(domain==='LEGAL'?'LEGAL KEYWORD INVENTORY':'MARKETING COPY SIGNALS')+
+    '\n'+data.locatedCount+' of '+data.checks.length+' topics had matching excerpt terms.'+
+    '\n\n'+data.checks.map(c=>c.topic+': '+c.status+
+      (Number.isInteger(c.line)?' (line '+c.line+')\n'+c.excerpt:'')).join('\n\n')+
+    '\n\n'+data.notice+
+    '\n\nSource SHA-256: '+data.provenance.excerptSha256+
+    '\nExisting department: '+data.ownerAgentId+' (not assigned).';
+   $('result-panel').hidden=false;
+   $('status').textContent='Preliminary '+domain.toLowerCase()+' keyword review. No AI agent dispatched, legal opinion, campaign score, source certification or business write.';
+  }catch(error){$('status').textContent=String(error.message||'Specialist review unavailable');}
+  finally{button.disabled=!enabled;}
+ });
+}
+
 $('compare-vedm').addEventListener('click',async()=>{
  if(!enabled||!file)return;
  const button=$('compare-vedm');button.disabled=true;

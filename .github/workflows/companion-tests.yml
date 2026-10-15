@@ -1,0 +1,30 @@
+name: companion-skills
+on:
+  pull_request:
+    paths: ['apps/companion/**', 'apps/web/skills*', 'scripts/sync-companion-assets.mjs', 'package*.json', '.github/workflows/companion-tests.yml']
+  push:
+    branches: [main]
+    paths: ['apps/companion/**', 'apps/web/skills*', 'scripts/sync-companion-assets.mjs', 'package*.json', '.github/workflows/companion-tests.yml']
+permissions:
+  contents: read
+jobs:
+  companion-runtime:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: python -m pip install python-docx==1.2.0
+      - name: Real documents, OCR, browser and boundary tests
+        env:
+          VAOS_RUNTIME_ACCEPTANCE: '1'
+          VAOS_UI_ACCEPTANCE: '1'
+          VAOS_COMPANION_PYTHON: python
+          VAOS_CHROME_PATH: /usr/bin/google-chrome
+        run: npm run test:companion

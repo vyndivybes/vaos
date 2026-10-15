@@ -148,7 +148,7 @@ function jsonError(status, code, message) {
 }
 
 function uncachedWorkspaceAsset(path, response) {
-  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html'].includes(path);
+  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
   const isWorkspaceStylesheet = path.endsWith('.css');
   if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;

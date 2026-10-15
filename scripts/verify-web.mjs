@@ -35,7 +35,7 @@ const cloudflareIdentityMigration = readFileSync(
 );
 assert.match(cloudflareIdentityMigration, /cloudflare-primary/);
 
-const ignoredRoots = new Set([".git", "node_modules", ".wrangler-dry-run"]);
+const ignoredRoots = new Set([".git", "node_modules", ".wrangler-dry-run", ".runtime", ".data"]);
 const textExtensions = /\.(?:mjs|js|json|jsonc|md|sql|yml|yaml|toml|txt)$/i;
 const providerFootprints = [];
 

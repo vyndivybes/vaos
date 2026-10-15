@@ -11,3 +11,7 @@ test-results/
 .DS_Store
 .vscode/
 .idea/
+apps/companion/.data/
+apps/companion/.runtime/
+**/__pycache__/
+eng.traineddata

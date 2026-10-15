@@ -7,6 +7,7 @@ const WORDS=new Set(['which','whose','about','where','when','have','been','will'
 const INJECTION=/(?:ignore\s+(?:all\s+)?(?:previous|above|prior|system|developer)\s+instructions|(?:system|developer)\s*:\s*|you\s+are\s+now\s+an?\s+|transfer\s+(?:the\s+)?(?:secrets?|credentials?|tokens?)|(?:send|upload|exfiltrate)\b[^\n]{0,80}\b(?:secret|password|token|credential|private key))/i;
 const UNSAFE_CLAIM=/(?:\b(?:is|are|was|were|has been|have been|now)\s+(?:fully\s+)?(?:approved|certified|production.ready|released|validated\s+for\s+production)\b|\b(?:production|payment|purchase|release)\s+(?:is\s+)?(?:approved|authorized|certified)\b|\b(?:permission granted|payment executed|purchase order issued|release is authorized|proceed with (?:manufacturing|production|payment))\b)/i;
 const SECRET=/\b(?:BEGIN (?:RSA|OPENSSH|EC) PRIVATE KEY|sk-[a-z0-9_-]{20,}|ghp_[a-z0-9]{20,})\b/i;
+import {sourceSnippet} from './source-snippet.mjs';
 export function hasUntrustedInstruction(text){
  return typeof text!=='string'||INJECTION.test(text)||SECRET.test(text);
 }
@@ -20,7 +21,9 @@ export function selectDocumentEvidence(text,question,{limit=5}={}){
  const candidates=text.split(/\r?\n/).map((line,index)=>{
   const normalized=line.replace(/[\x00-\x1f\x7f]/g,' ').trim();
   const matches=terms.filter(w=>normalized.toLowerCase().includes(w)).length;
-  return {line:index+1,text:normalized.slice(0,260),matches};
+  const firstMatch=terms.map(w=>normalized.toLowerCase().indexOf(w)).filter(i=>i>=0);
+  const offset=firstMatch.length?Math.min(...firstMatch):0;
+  return {line:index+1,text:sourceSnippet(normalized,offset,260),matches};
  }).filter(row=>row.text.length>=12&&!hasUntrustedInstruction(row.text));
  const chosen=candidates.filter(x=>general||x.matches>0)
   .sort((a,b)=>b.matches-a.matches||a.line-b.line).slice(0,limit);

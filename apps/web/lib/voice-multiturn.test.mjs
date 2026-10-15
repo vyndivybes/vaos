@@ -152,15 +152,16 @@ test('AI mode rejects missing or forged classifier response and does not fallbac
 
 test('cancel during AI classification disarms late reply, leaving no spoken result',async()=>{
  let finish,aborted,spoken=0;
+ let markStarted;const started=new Promise(resolve=>{markStarted=resolve;});
  const flow=createVoiceMultiTurnSession({
    fetchSnapshot:async()=>record,
-   classifyFocus:(_q,_prior,{signal})=>{aborted=signal;return new Promise(resolve=>{finish=resolve;});},
+   classifyFocus:(_q,_prior,{signal})=>{aborted=signal;markStarted();return new Promise(resolve=>{finish=resolve;});},
    speak:()=>{spoken++;return true;},
  });
  assert.equal(flow.open(MID,{ai:true}),true);
  assert.equal(flow.ask(),true);
  const pending=flow.accept(status);
- await Promise.resolve();await Promise.resolve();
+ await started;
  assert.equal(flow.cancel(),true);
  assert.equal(aborted?.aborted,true);
  finish({topics:['status'],modelInvoked:true,actionAuthorized:false});

@@ -21,6 +21,18 @@ const facts={missionId,missionStatus:'READY_FOR_CLOSURE',verifiedWorkPackages:1,
  totalWorkPackages:1,blockedWorkPackageIds:[],evidenceRefs:['ev-1']};
 const input={history,agentId:'project',missionId,messageId:currentId,
  instruction:history.turns[1].instruction};
+test('context scope mismatch is rejected before inference',async()=>{
+ let calls=0;
+ const base={ai:{run:async()=>{calls++;}},agentId:'project',instruction:input.instruction,
+  report,context:prepareConversationContext(input)};
+ for(const candidate of [
+  {...base,report:{...report,agentId:'orchestrator'}},
+  {...base,context:{...base.context,sequence:13}},
+  {...base,context:{...base.context,previousMessageId:currentId}}
+ ])await assert.rejects(runFounderContextDraft(candidate),/FOUNDER_CONTEXT_EVIDENCE_INVALID/);
+ assert.equal(calls,0);
+});
+
 test('scoped, sequential and independently recorded history yields bounded context',()=>{
  const c=prepareConversationContext(input);
  assert.equal(c.previousMessageId,priorId);

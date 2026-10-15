@@ -102,6 +102,8 @@ for(const [buttonId,domain] of [['review-legal','LEGAL'],['review-marketing','MA
     '\n\n'+data.checks.map(c=>c.topic+': '+c.status+
       (Number.isInteger(c.line)?' (line '+c.line+')\n'+c.excerpt:'')).join('\n\n')+
     '\n\n'+data.notice+
+    '\n\nRequired context:\n'+data.workflow.requiredInputs.join('\n')+
+    '\n\nReview steps:\n'+data.workflow.nextSteps.join('\n')+
     '\n\nSource SHA-256: '+data.provenance.excerptSha256+
     '\nExisting department: '+data.ownerAgentId+' (not assigned).';
    $('result-panel').hidden=false;
@@ -132,6 +134,8 @@ for(const [buttonId,domain] of [['review-legal-text','LEGAL'],['review-marketing
     '\n\n'+data.checks.map(c=>c.topic+': '+c.status+
       (Number.isInteger(c.line)?' (line '+c.line+')\n'+c.excerpt:'')).join('\n\n')+
     '\n\n'+data.notice+
+    '\n\nRequired context:\n'+data.workflow.requiredInputs.join('\n')+
+    '\n\nReview steps:\n'+data.workflow.nextSteps.join('\n')+
     '\n\nPasted excerpt SHA-256: '+data.provenance.excerptSha256+
     '\nDepartmental owner: '+data.ownerAgentId+' (not dispatched). No document authenticity verified.';
    $('result-panel').hidden=false;

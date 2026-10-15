@@ -29,10 +29,26 @@ function focusedReport(record,id,topics,turn,aiAssisted=false){
  if(full.length>3200)throw Error('VOICE_V3_REPORT_TOO_LONG');
  return full;
 }
-export function createVoiceMultiTurnSession({fetchSnapshot,speak,classifyFocus,onReport=()=>{},onState=()=>{},now=()=>Date.now()}={}) {
+export function createVoiceMultiTurnSession({fetchSnapshot,speak,classifyFocus,onReport=()=>{},onState=()=>{},now=()=>Date.now(),timeoutMs=15000}={}) {
  if(typeof fetchSnapshot!=='function'||typeof speak!=='function'||typeof now!=='function')
    throw Error('VOICE_V3_CALLBACKS_REQUIRED');
+ if(!Number.isInteger(timeoutMs)||timeoutMs<1||timeoutMs>30000)throw Error('VOICE_V3_TIMEOUT_INVALID');
  let session=null,active=null,phase='IDLE',nonce=0;
+ // Race cancellation even when a provider ignores AbortSignal. Always remove
+ // the listener and timer; the existing nonce guard discards late completions.
+ async function bounded(job,operation){
+   const signal=job.controller.signal;
+   let timer,onAbort;
+   const stopped=new Promise((_,reject)=>{
+     onAbort=()=>reject(Error('VOICE_V3_CANCELLED'));
+     signal.addEventListener('abort',onAbort,{once:true});
+     timer=setTimeout(()=>job.controller.abort(),timeoutMs);
+   });
+   try{
+     if(signal.aborted)throw Error('VOICE_V3_CANCELLED');
+     return await Promise.race([operation(),stopped]);
+   }finally{clearTimeout(timer);signal.removeEventListener('abort',onAbort);}
+ }
  function set(next,msg){phase=next;onState(next,msg);}
  function expired(){
    if(!session)return false;
@@ -69,14 +85,14 @@ export function createVoiceMultiTurnSession({fetchSnapshot,speak,classifyFocus,o
    job.state='READING';
    set('READING','Reading one fresh authenticated mission snapshot.');
    try{
-     const record=await fetchSnapshot(job.session.missionId,{signal:job.controller.signal});
+     const record=await bounded(job,()=>fetchSnapshot(job.session.missionId,{signal:job.controller.signal}));
      if(active!==job||job.token!==nonce||expired()||job.controller.signal.aborted)return false;
      // Validate the current authoritative snapshot BEFORE spending model quota.
      formatMissionSnapshotSpokenPreview(record,job.session.missionId);
      let topics=[topic];
      if(job.session.ai){
        const prior=job.session.turns.slice(-2).map(item=>item.topic);
-       const picked=await classifyFocus(transcript,prior,{signal:job.controller.signal});
+       const picked=await bounded(job,()=>classifyFocus(transcript,prior,{signal:job.controller.signal}));
        if(active!==job||job.token!==nonce||expired()||job.controller.signal.aborted)return false;
        const ALLOWED=new Set(['status','verification','blockers','evidence','closure']);
        if(!picked||picked.modelInvoked!==true||picked.actionAuthorized!==false

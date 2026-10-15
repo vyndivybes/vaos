@@ -297,3 +297,48 @@ test('OAuth callback identifies malformed Google identity without exposing body'
   cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
  assert.equal((await cb.json()).reason,'OAUTH_IDENTITY_RESPONSE_INVALID');
 });
+
+
+test('OAuth token request uses fail-closed manual redirect handling',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ let invoked=0;
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,
+  fetchImpl:async(url,init)=>{
+   invoked++;
+   assert.equal(url,'https://oauth2.googleapis.com/token');
+   assert.equal(init.method,'POST');
+   assert.equal(init.redirect,'manual');
+   assert.equal(init.headers['content-type'],'application/x-www-form-urlencoded');
+   assert.equal(init.body.includes('client_secret='),true);
+   return new Response(null,{status:302,headers:{Location:'https://untrusted.example/redirect'}});
+  }
+ });
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_oauth_code',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ assert.equal(invoked,1);
+ assert.equal((await cb.json()).reason,'OAUTH_TOKEN_REDIRECT_REJECTED');
+});
+
+test('OAuth transport records safe error categories without exposing network exception text',async()=>{
+ const cases=[
+  [{name:'TimeoutError',message:'sensitive timeout detail'},'OAUTH_TOKEN_TIMEOUT'],
+  [{name:'AbortError',message:'sensitive abort detail'},'OAUTH_TOKEN_TIMEOUT'],
+  [{name:'TypeError',message:'Invalid redirect mode'},'OAUTH_TOKEN_RUNTIME_REJECTED'],
+  [{name:'TypeError',message:'fetch failed'},'OAUTH_TOKEN_NETWORK_UNREACHABLE']
+ ];
+ for(const [error,expected] of cases){
+  const s=setup();
+  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl:async()=>{const err=new Error(error.message);err.name=error.name;throw err;}});
+  const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+  const state=new URL(start.headers.get('location')).searchParams.get('state');
+  const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_oauth_code',{
+   cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+  const json=await cb.json();
+  assert.equal(json.reason,expected);
+  assert.equal(JSON.stringify(json).includes(error.message),false);
+ }
+});

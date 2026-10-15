@@ -83,10 +83,23 @@ async function postToken(fetchImpl,data){
  try {
   r=await fetchImpl('https://oauth2.googleapis.com/token',{
    method:'POST',headers:{'content-type':'application/x-www-form-urlencoded'},
-   body:new URLSearchParams(data).toString(),redirect:'error',
+   body:new URLSearchParams(data).toString(),redirect:'manual',
    signal:AbortSignal.timeout(12000)
   });
- } catch { throw Error('OAUTH_TOKEN_TRANSPORT_FAILED'); }
+ } catch(error) {
+  // Expose only a predefined category. Never serialize the exception or
+  // request: the POST body contains authorization codes and client secrets.
+  const kind=String(error?.name||'');
+  const message=String(error?.message||'');
+  if(kind==='TimeoutError'||kind==='AbortError')
+   throw Error('OAUTH_TOKEN_TIMEOUT');
+  if(kind==='TypeError' && /(?:redirect|request|signal|abort|body|header|unsupported)/i.test(message))
+   throw Error('OAUTH_TOKEN_RUNTIME_REJECTED');
+  if(kind==='TypeError')throw Error('OAUTH_TOKEN_NETWORK_UNREACHABLE');
+  throw Error('OAUTH_TOKEN_TRANSPORT_FAILED');
+ }
+ // Never follow a token endpoint redirect or forward the client secret.
+ if(r.status>=300&&r.status<400)throw Error('OAUTH_TOKEN_REDIRECT_REJECTED');
  if(r.status!==200){
   // Classify Google OAuth errors without returning Google's descriptions,
   // tokens, credentials or other upstream response details.
@@ -188,6 +201,8 @@ async function oauthCallback(req,env,fetchImpl,now){
    'GOOGLE_TOKEN_RESPONSE_INVALID','OAUTH_IDENTITY_FETCH_FAILED',
    'GOOGLE_VAULT_UNAVAILABLE','OAUTH_VAULT_WRITE_FAILED',
    'OAUTH_VAULT_ENCRYPT_FAILED','OAUTH_TOKEN_TRANSPORT_FAILED',
+   'OAUTH_TOKEN_NETWORK_UNREACHABLE','OAUTH_TOKEN_RUNTIME_REJECTED',
+   'OAUTH_TOKEN_TIMEOUT','OAUTH_TOKEN_REDIRECT_REJECTED',
    'OAUTH_TOKEN_RESPONSE_INVALID',
    'OAUTH_IDENTITY_RESPONSE_INVALID']);
   return reply(503,hold(safe.has(code)?code:'OAUTH_EXCHANGE_UNVERIFIED'));

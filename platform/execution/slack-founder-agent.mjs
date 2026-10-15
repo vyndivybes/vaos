@@ -119,6 +119,9 @@ export async function answerFounderSlackQuestion(text,env,context={}){
       '. Confirmed sales order: NOT VERIFIED. Production order and job card: NOT CREATED. Department notification: NOT SENT.'};
   }
   const route=previous?.route||classifyFounderSlackQuestion(q);
+  if(route==='PROCUREMENT'&&/\bsuppliers?\s+(?:details|directory|contacts?|list)\b/i.test(q))
+    return {route,actionAuthorized:false,
+     answer:'The authoritative supplier directory is not connected to JARVIS Slack. The available VYNDI Procurement source covers configured material shortages only. I cannot provide verified supplier names or contacts from that source, and no procurement action was taken.'};
   if(route==='FREE_TIER')return {route,answer:freeTierStatus(env),actionAuthorized:false};
   if(route==='GREETING')return {route,answer:'VAOS is online. Ask me about sales status, engineering risks, project evidence, or integration status. Read-only governance remains active.',actionAuthorized:false};
   if(route==='ZAPIER_EVIDENCE'){const r=await readZapierQualificationEvidence(env);return {route,answer:r.answer,actionAuthorized:false};}

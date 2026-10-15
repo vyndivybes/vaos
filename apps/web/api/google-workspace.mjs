@@ -176,11 +176,12 @@ async function oauthCallback(req,env,fetchImpl,now){
   });
   if(!allowedScopes(tok.scope)||typeof tok.refresh_token!=='string'||tok.refresh_token.length<8)
    return reply(503,hold('OAUTH_SCOPES_OR_REFRESH_TOKEN_MISSING'));
+  // Manual redirect handling prevents a bearer token being forwarded.
   let identity;
   try {
    identity=await fetchImpl('https://openidconnect.googleapis.com/v1/userinfo',{
     method:'GET',headers:{Authorization:'Bearer '+tok.access_token},
-    redirect:'error',signal:AbortSignal.timeout(8000)});
+    redirect:'manual',signal:AbortSignal.timeout(8000)});
   } catch { throw Error('OAUTH_IDENTITY_FETCH_FAILED'); }
   if(identity.status!==200)return reply(503,hold('OAUTH_IDENTITY_UNVERIFIED'));
   let person;
@@ -210,7 +211,7 @@ async function oauthCallback(req,env,fetchImpl,now){
 }
 async function googleGet(url,token,fetchImpl){
  const r=await fetchImpl(url,{method:'GET',headers:{Authorization:'Bearer '+token},
-  redirect:'error',signal:AbortSignal.timeout(8000)});
+  redirect:'manual',signal:AbortSignal.timeout(8000)});
  if(r.status!==200)throw Error('GOOGLE_API_UNQUALIFIED');
  return r.json();
 }
@@ -301,7 +302,7 @@ export async function createFounderCalendarReminder(env,body,{fetchImpl=fetch,no
   const url='https://www.googleapis.com/calendar/v3/calendars/primary/events';
   const payload={id:eventId,summary:body.title.trim(),start:{dateTime:body.start},
    end:{dateTime:body.end},reminders:{useDefault:false,overrides:[{method:'popup',minutes:0}]}};
-  const result=await fetchImpl(url,{method:'POST',redirect:'error',
+  const result=await fetchImpl(url,{method:'POST',redirect:'manual',
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
    body:JSON.stringify(payload),signal:AbortSignal.timeout(8000)});
   let saved;

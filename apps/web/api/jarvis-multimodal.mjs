@@ -32,8 +32,7 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
   if(!session)return reply(res,401,{error:{code:'UNAUTHENTICATED'}});
   if(session.email!=='shyamsundhar1982@gmail.com')return reply(res,403,{error:{code:'FOUNDER_ONLY'}});
   const enabled=req.env?.VAOS_MULTIMODAL_CONTROL===ENABLED;
-  if(req.method==='GET')return reply(res,200,{data:{enabled,documentFormats:['pdf','docx','pptx'],imageFormat:'JPEG/PNG/WebP',visionModel:enabled?MODEL:null,writeAuthorized:false,noPersistence:true,productionCertified:false,notice:enabled?'Limited read-only input analysis, unverified until independently accepted.':'Independent multimodal pilot is disabled on this deployment.'}});
-  if(!enabled)return reply(res,409,{error:{code:'MULTIMODAL_DISABLED'}});
+  if(req.method==='GET')return reply(res,200,{data:{enabled,specialistsEnabled:true,documentFormats:['pdf','docx','pptx'],imageFormat:'JPEG/PNG/WebP',visionModel:enabled?MODEL:null,writeAuthorized:false,noPersistence:true,productionCertified:false,notice:enabled?'Limited read-only input analysis, unverified until independently accepted.':'Independent multimodal pilot is disabled on this deployment.'}});
   let origin;try{origin=new URL(req.url).origin}catch{return reply(res,403,{error:{code:'ORIGIN_DENIED'}})}
   if(req.headers?.origin!==origin)return reply(res,403,{error:{code:'ORIGIN_DENIED'}});
   if(!/^application\/json(?:\s*;|$)/i.test(req.headers?.['content-type']||''))return reply(res,415,{error:{code:'JSON_REQUIRED'}});
@@ -41,6 +40,7 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
   const b=req.body;
   if(b.confirm!==true)return reply(res,400,{error:{code:'EXPLICIT_CONSENT_REQUIRED'}});
   if(b.operation==='CONVERT_DOCUMENT'){
+   if(!enabled)return reply(res,409,{error:{code:'MULTIMODAL_DISABLED'}});
    const err=validateDocumentUpload(b);if(err)return reply(res,415,{error:{code:'DOCUMENT_REJECTED',message:err}});
    if(typeof req.env?.AI?.toMarkdown!=='function')return reply(res,503,{error:{code:'CONVERSION_UNAVAILABLE'}});
    try{
@@ -51,24 +51,27 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
   }
   if(b.operation==='SPECIALIST_REVIEW'){
    if(!['LEGAL','MARKETING'].includes(b.domain)||typeof b.text!=='string'
-      ||b.text.length<60||b.text.length>12000||!b.source)
+      ||b.text.length<60||b.text.length>12000)
     return reply(res,422,{error:{code:'SPECIALIST_SOURCE_INVALID'}});
    const excerptSha256=await digest(new TextEncoder().encode(b.text));
    let source,review;
    try {
-    source=validateClientDocumentSource(b.source,excerptSha256);
-    if(!source)throw Error('DOCUMENT_SOURCE_REQUIRED');
+    source=b.source===undefined||b.source===null?null:validateClientDocumentSource(b.source,excerptSha256);
     review=reviewSpecialistExcerpt({domain:b.domain,text:b.text});
    }catch(error){
     const code=['DOCUMENT_SOURCE_HASH_MISMATCH','DOCUMENT_SOURCE_INVALID','DOCUMENT_SOURCE_REQUIRED'].includes(error?.message)
      ?error.message:'SPECIALIST_SOURCE_INVALID';
     return reply(res,422,{error:{code}});
    }
-   return reply(res,200,{data:{...review,provenance:{
-    ...source,excerptSha256,scope:'SUBMITTED_EXCERPT_ONLY',
-    revisionAuthority:'USER_UPLOAD_NOT_ENGINEERING_RELEASE'
-   }}});
+   return reply(res,200,{data:{...review,
+    sourceAuthority:source?'USER_UPLOADED_UNVERIFIED':'USER_PASTED_UNVERIFIED',
+    provenance:{
+     ...(source||{documentSource:'PASTED_EXCERPT_ONLY',fileHashAuthority:'NO_FILE_PROVENANCE'}),
+     excerptSha256,scope:'SUBMITTED_EXCERPT_ONLY',
+     revisionAuthority:'USER_UPLOAD_NOT_ENGINEERING_RELEASE'
+    }}});
   }
+  if(!enabled)return reply(res,409,{error:{code:'MULTIMODAL_DISABLED'}});
   if(b.operation==='ANSWER_DOCUMENT'){
    if(typeof b.text!=='string'||b.text.length<60||b.text.length>12000
       ||typeof b.question!=='string'||b.question.length<5||b.question.length>1200)

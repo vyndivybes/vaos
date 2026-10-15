@@ -159,7 +159,6 @@ test('marketing copy review uses visible submitted text without invented campaig
 test('specialist preview rejects false source hash, absent provenance, unsupported domains and unconsented requests',async()=>{
  const h=harness(),text='This supplier contract specifies payment terms, confidentiality obligations and termination clauses. Its governing law is India.';
  for(const payload of [
-  {domain:'LEGAL',text,source:null,confirm:true},
   {domain:'LEGAL',text,source:{name:'sample.pdf',fileSha256:'a'.repeat(64),excerptSha256:'0'.repeat(64)},confirm:true},
   {domain:'FINANCE',text,source:{name:'sample.pdf',fileSha256:'a'.repeat(64),excerptSha256:'0'.repeat(64)},confirm:true},
  ]){
@@ -176,4 +175,53 @@ test('existing JARVIS file-intelligence UI exposes both specialist previews with
  assert.match(html,/id="review-legal"/);assert.match(html,/id="review-marketing"/);
  assert.match(ui,/SPECIALIST_REVIEW/);assert.match(ui,/agentDispatched!==false/);
  assert.doesNotMatch(ui,/\/api\/(?:approvals|executions|missions)\b/);
+});
+
+test('pasted Legal and Marketing previews work without additional multimodal binding',async()=>{
+ const h=harness({control:'off'});
+ const availability=await h.run();
+ assert.equal(availability.status,200);
+ assert.equal(availability.body.data.enabled,false);
+ assert.equal(availability.body.data.specialistsEnabled,true);
+ const text='Agreement between supplier and buyer with confidentiality, payment terms, governing law in India and an effective termination date.';
+ for(const domain of ['LEGAL','MARKETING']){
+  const r=await h.run('SPECIALIST_REVIEW',{domain,text,confirm:true});
+  assert.equal(r.status,200,domain);
+  assert.equal(r.body.data.domain,domain);
+  assert.equal(r.body.data.sourceAuthority,'USER_PASTED_UNVERIFIED');
+  assert.equal(r.body.data.provenance.fileHashAuthority,'NO_FILE_PROVENANCE');
+  assert.equal(r.body.data.agentDispatched,false);
+  assert.equal(r.body.data.actionAuthorized,false);
+  assert.equal(r.body.data.stored,false);
+  assert.equal(r.body.data.score,null);
+ }
+ assert.equal((await h.run('CONVERT_DOCUMENT',{name:'notes.pdf',base64:pdf,confirm:true})).status,409);
+ assert.equal((await h.run('ANALYZE_IMAGE',{image,question:'Describe this drawing',confirm:true})).status,409);
+ assert.equal(h.invocations.length,0);
+});
+test('specialist pasted review is founder-only and rejects unsupported operations, domains, consent and invalid source',async()=>{
+ const text='Agreement between supplier and buyer; payment terms, termination, IP and confidentiality are referenced in these source lines.';
+ const stranger=harness({email:'kaaviyam1519@gmail.com',control:'off'});
+ assert.equal((await stranger.run('SPECIALIST_REVIEW',{domain:'LEGAL',text,confirm:true})).status,403);
+ const anonymous=harness({email:'',control:'off'});
+ assert.equal((await anonymous.run('SPECIALIST_REVIEW',{domain:'LEGAL',text,confirm:true})).status,401);
+ const h=harness({control:'off'});
+ assert.equal((await h.run('SPECIALIST_REVIEW',{domain:'LEGAL',text,confirm:false})).status,400);
+ assert.equal((await h.run('SPECIALIST_REVIEW',{domain:'FINANCE',text,confirm:true})).status,422);
+ assert.equal((await h.run('SPECIALIST_REVIEW',{domain:'LEGAL',text:'too short',confirm:true})).status,422);
+ const invalidSource=await h.run('SPECIALIST_REVIEW',{domain:'LEGAL',text,
+  source:{name:'terms.pdf',fileSha256:'a'.repeat(64),excerptSha256:'0'.repeat(64)},confirm:true});
+ assert.equal(invalidSource.status,422);
+ assert.equal(invalidSource.body.error.code,'DOCUMENT_SOURCE_HASH_MISMATCH');
+});
+test('pasted Legal and Marketing entrypoints are independent of the multimodal conversion flag in JARVIS UI',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const [html,ui]=await Promise.all([
+  readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8'),
+  readFile(new URL('../jarvis-multimodal.mjs',import.meta.url),'utf8')]);
+ assert.match(html,/id="specialist-copy"/);
+ assert.match(html,/id="review-legal-text"/);
+ assert.match(html,/id="review-marketing-text"/);
+ assert.match(ui,/specialistsEnabled=j.data.specialistsEnabled===true/);
+ assert.match(ui,/request\('SPECIALIST_REVIEW',\{domain,text\}\)/);
 });

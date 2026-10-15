@@ -26,6 +26,14 @@ video{max-width:100%;max-height:360px}
 <label>What should JARVIS explain or inspect?<textarea id="question" maxlength="1000" placeholder="Explain the concept, identify unclear labels, or identify issues requiring source verification."></textarea></label>
 <button id="analyze" type="button" disabled>Analyze selected material (preview)</button>
 <p class="notice">Files up to 1 MB for document conversion; image bytes are resized before transmission. Videos remain on your device and only a paused frame can be submitted. Conversion is advisory, not document certification.</p></section>
+<section class="panel" id="specialist-text-panel">
+<h2>Legal and Marketing — text review</h2>
+<p class="sub">Paste an excerpt from a contract or marketing draft. JARVIS will identify text signals with source lines. No external model, website fetch, departmental dispatch or business write occurs. This is not legal advice or a compliance or campaign-performance audit.</p>
+<label>Text to review<textarea id="specialist-copy" maxlength="12000" placeholder="Paste 60–12,000 characters of contract clauses or marketing copy here."></textarea></label>
+<div style="display:flex;gap:12px;flex-wrap:wrap">
+<button type="button" id="review-legal-text" disabled>Review contract excerpt</button>
+<button type="button" id="review-marketing-text" disabled>Review marketing excerpt</button>
+</div><p class="notice">The original document's authenticity cannot be established from pasted text. File conversion and AI image interpretation remain separately controlled.</p></section>
 <section class="panel" id="doc-panel" hidden><h2>Extracted document text</h2><p class="sub">Check completeness against the source. AI may omit complex tables, images, equations or scanned handwriting.</p><pre id="document-text"></pre><button id="ask-doc" type="button">Ask JARVIS about this excerpt</button>
 <div class="actions" aria-label="Specialist read-only reviews" style="display:flex;flex-wrap:wrap;gap:12px;margin-top:16px">
 <button id="review-legal" type="button">Scan contract terms</button>

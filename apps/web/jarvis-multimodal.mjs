@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-let enabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null;
+let enabled=false,specialistsEnabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null;
 async function fileHash(source){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await source.arrayBuffer())),v=>v.toString(16).padStart(2,'0')).join('');}
 async function imageDataHash(data){const b64=data.split(',')[1];const bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');}
 async function request(operation,payload){
@@ -11,9 +11,12 @@ async function init(){
  const r=await fetch('/api/jarvis-multimodal',{credentials:'same-origin'});const j=await r.json();
  if(!r.ok)throw Error(j.error?.code||'Sign in required');
  enabled=j.data.enabled===true;
- $('status').textContent=enabled?'Founder multimodal pilot enabled (read-only preview).':'Multimodal pilot is disabled on this deployment. Source panel remains visible but analysis is held.';
+ specialistsEnabled=j.data.specialistsEnabled===true;
+ $('status').textContent=enabled?'Founder multimodal pilot enabled (read-only preview).':specialistsEnabled?'Pasted Legal and Marketing reviews available. AI file conversion and image analysis remain disabled.':'Multimodal pilot is disabled on this deployment. Source panel remains visible but analysis is held.';
  $('analyze').disabled=!enabled;
- }catch(e){$('status').textContent=String(e.message);$('analyze').disabled=true}
+ $('review-legal-text').disabled=!specialistsEnabled;
+ $('review-marketing-text').disabled=!specialistsEnabled;
+ }catch(e){$('status').textContent=String(e.message);$('analyze').disabled=true;$('review-legal-text').disabled=true;$('review-marketing-text').disabled=true}
 }
 async function imagePayload(){
  let im,close=()=>{},w,h;
@@ -105,6 +108,36 @@ for(const [buttonId,domain] of [['review-legal','LEGAL'],['review-marketing','MA
    $('status').textContent='Preliminary '+domain.toLowerCase()+' keyword review. No AI agent dispatched, legal opinion, campaign score, source certification or business write.';
   }catch(error){$('status').textContent=String(error.message||'Specialist review unavailable');}
   finally{button.disabled=!enabled;}
+ });
+}
+
+
+for(const [buttonId,domain] of [['review-legal-text','LEGAL'],['review-marketing-text','MARKETING']]){
+ $(buttonId).addEventListener('click',async()=>{
+  if(!specialistsEnabled)return;
+  const text=$('specialist-copy').value.trim();
+  if(text.length<60||text.length>12000){
+   $('status').textContent='Paste at least 60 and no more than 12,000 characters for a bounded review.';
+   return;
+  }
+  const button=$(buttonId);button.disabled=true;
+  try{
+   const data=await request('SPECIALIST_REVIEW',{domain,text});
+   if(data.actionAuthorized!==false||data.agentDispatched!==false||data.stored!==false||
+      data.sourceAuthority!=='USER_PASTED_UNVERIFIED'||data.score!==null||
+      !Array.isArray(data.checks)||data.provenance?.fileHashAuthority!=='NO_FILE_PROVENANCE')
+    throw Error('Specialist response was not independently bounded.');
+   $('result').textContent=(domain==='LEGAL'?'LEGAL TERMS — EXCERPT ONLY':'MARKETING COPY — EXCERPT ONLY')+
+    '\n'+data.locatedCount+' of '+data.checks.length+' topics had matching source terms.'+
+    '\n\n'+data.checks.map(c=>c.topic+': '+c.status+
+      (Number.isInteger(c.line)?' (line '+c.line+')\n'+c.excerpt:'')).join('\n\n')+
+    '\n\n'+data.notice+
+    '\n\nPasted excerpt SHA-256: '+data.provenance.excerptSha256+
+    '\nDepartmental owner: '+data.ownerAgentId+' (not dispatched). No document authenticity verified.';
+   $('result-panel').hidden=false;
+   $('status').textContent='Preliminary '+domain.toLowerCase()+' source-text review. No business changes or employee assignment.';
+  }catch(error){$('status').textContent=String(error.message||'Specialist review unavailable');}
+  finally{button.disabled=!specialistsEnabled;}
  });
 }
 

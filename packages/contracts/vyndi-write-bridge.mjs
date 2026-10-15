@@ -188,7 +188,7 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
     sourceFile:'src/lib/engineering-change-control-authority.ts',authority:'releaseEngineeringChangeOrder',
     verificationRefs:['vyndi_engineering_change_notices','vyndi_audit_events'],
     description:'High-assurance configuration release; maker-checker and VYNDI approval remain authoritative.'
-  }),,
+  }),
   route({
     actionType:'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI',employeeId:'orchestrator',effectClass:EFFECT.READ,
     state:ROUTE_STATE.READ_READY,executionEnabled:true,

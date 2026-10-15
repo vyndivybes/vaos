@@ -111,3 +111,31 @@ footer{color:#65777f}
  .wa-visual-overview{gap:12px}.wa-viz-card{padding:15px}
 }
 @media(prefers-reduced-motion:reduce){.wa-panel *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+
+/* Operational activity first: period filters, reviewer evidence and non-fabricated forecasts. */
+.wa-actual-report{border-top:4px solid #b59b71}
+.wa-actual-report .wa-heading h2{font-size:clamp(24px,2.5vw,34px);margin:6px 0}
+.wa-period-controls{display:grid;grid-template-columns:repeat(4,minmax(150px,1fr));gap:12px;
+ padding:16px;background:#faf9f6;border:1px solid #e5e5e1;border-radius:16px;margin:20px 0}
+.wa-period-controls label{display:flex;flex-direction:column;gap:7px;font-size:13px;font-weight:700;color:#526872}
+.wa-period-controls input,.wa-period-controls select{font:inherit;min-height:46px;width:100%;min-width:0;
+ background:#fff;color:#34434b;border:1px solid #d5d9d7;border-radius:10px;padding:8px 12px}
+.wa-period-controls :is(input,select):focus-visible{outline:3px solid #8297a5;outline-offset:3px}
+.wa-period-note{color:#5c7078;font-size:14px;line-height:1.6}
+.wa-period-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:22px 0}
+.wa-period-card,.wa-period-forecast{min-width:0;padding:20px;border:1px solid #e5e5e1;border-radius:17px;background:#fbfaf7}
+.wa-period-card h3,.wa-period-forecast h3{color:#34434b;font-size:19px;margin:0 0 10px}
+.wa-period-card>p,.wa-period-forecast>p{font-size:14px;line-height:1.6;color:#647982}
+.wa-period-list{display:grid;gap:9px;margin:13px 0}
+.wa-period-item{background:#fff;border:1px solid #e5e5e1;border-left:3px solid #8297a5;border-radius:12px;
+ padding:14px 16px;overflow-wrap:anywhere}
+.wa-period-item strong{color:#34434b;font-size:15px;line-height:1.4}
+.wa-period-item p{color:#67787e;font-size:14px;margin:8px 0}
+.wa-period-item a{font-size:14px;font-weight:700}
+.wa-period-forecast{margin:18px 0}
+.wa-period-forecast .wa-period-list{grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr))}
+@media(max-width:1020px){.wa-period-controls{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:750px){.wa-period-grid{grid-template-columns:1fr}}
+@media(max-width:560px){.wa-period-controls{grid-template-columns:1fr;padding:12px}
+ .wa-period-card,.wa-period-forecast{padding:14px}.wa-period-forecast .wa-period-list{grid-template-columns:1fr}}

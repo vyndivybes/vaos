@@ -54,5 +54,6 @@ for(const [employee,expected] of [['qa','QA fixture'],['unknown-id','orchestrato
 
 test('visual overview precedes collapsed detail table without hiding governed evidence',()=>{
  assert.ok(html.indexOf('id="wa-overview-work"')<html.indexOf('id="wa-roster"'));
+ assert.ok(html.indexOf('aria-labelledby="employee-title"')<html.indexOf('aria-labelledby="wa-commissioning-title"'));
  assert.match(html,/<details class="wa-accordion wa-records-disclosure"><summary>Search all employee records/);
 });

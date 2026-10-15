@@ -1,0 +1,24 @@
+name: Enterprise BI read acceptance
+on:
+  workflow_dispatch:
+    inputs:
+      expected_vyndi_sha:
+        description: Exact deployed VYNDI main commit to verify
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  signed-read-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify signed business reads without business writes or raw-record output
+        env:
+          VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
+          EXPECTED_VYNDI_SHA: ${{ inputs.expected_vyndi_sha }}
+        run: node scripts/qualification/enterprise-bi-live-read.mjs

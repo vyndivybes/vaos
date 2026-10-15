@@ -9,11 +9,17 @@ const DEPARTMENTS=[
  ['people','HR & People'],['engineering-configuration','Engineering change'],['security','Security']
 ];
 const el=(tag,value,cls)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=String(value);if(cls)n.className=cls;return n;};
+const WORKSPACES={orchestrator:'governance',project:'planning',vibpe:'engineering',risk:'governance',
+ knowledge:'engineering',release:'operations',qa:'operations',commercial:'sales',procurement:'purchase-execution',
+ inventory:'inventory',production:'production',maintenance:'operations',finance:'financial-cockpit',
+ people:'people-office','engineering-configuration':'engineering',security:'governance'};
 let ticket=0,packet=null,filter='';
+const loadingPages=new Set();
+const expandedSources=new Set();
 function chart(host,statuses){
  host.replaceChildren();
  const items=(Array.isArray(statuses)?statuses:[])
-  .filter(x=>Number.isSafeInteger(x.count)&&x.count>=0&&typeof x.status==='string').slice(0,5);
+  .filter(x=>Number.isSafeInteger(x.count)&&x.count>=0&&typeof x.status==='string');
  const max=Math.max(1,...items.map(x=>x.count));
  if(!items.length){host.append(el('p','No dated status evidence for this period.'));return;}
  for(const x of items){
@@ -66,7 +72,13 @@ function render(data){
    else backlog.append(el('p','Current backlog not supplied by the authoritative source.'));
    card.append(backlog);
    const details=el('details',undefined,'wa-accordion');
-   details.append(el('summary','Inspect dated source rows ('+(record.records?.length??0)+' shown)'));
+   details.open=expandedSources.has(id);
+   details.addEventListener('toggle',()=>{
+    if(details.open)expandedSources.add(id);else expandedSources.delete(id);
+   });
+   const offset=record.detailPage?.offset??0,limit=record.detailPage?.limit??30;
+   const shown=record.records?.length??0;
+   details.append(el('summary','Inspect dated source rows ('+(shown?offset+1:0)+'–'+(offset+shown)+' of '+count+')'));
    const table=el('table');const head=el('thead');
    const hr=el('tr');for(const h of ['Source date','Status','Record reference'])hr.append(el('th',h));
    head.append(hr);table.append(head);
@@ -78,10 +90,22 @@ function render(data){
     body.append(tr);
    }
    table.append(body);const wrap=el('div',undefined,'wa-scroll');wrap.append(table);details.append(wrap);
-   if(record.detailPage?.hasMore)details.append(el('p','Additional source rows exist; results are a bounded page.'));
+   if(!shown)details.append(el('p','No dated source records in the selected period. Current backlog can still exist.'));
+   const pages=el('div',undefined,'wa-heading');
+   for(const [label,next,disabled] of [['Previous records',Math.max(0,offset-limit),offset===0],
+     ['Next records',offset+limit,!record.detailPage?.hasMore||offset+limit>5000]]){
+    const page=el('button',label);page.type='button';
+    page.setAttribute('aria-label',name+': '+label.toLowerCase());
+    page.disabled=disabled||loadingPages.has(id);
+    page.addEventListener('click',()=>{expandedSources.add(id);return loadPage(id,next);});pages.append(page);
+   }
+   details.append(pages);
    card.append(details);
    card.append(el('p','Source: '+String(record.sourceTable??'Not supplied')+' · Forecast: not qualified'));
   }
+  const source=el('a','Inspect current records in VYNDI OS');
+  source.href='https://vyndios.vayushastr.workers.dev/command/'+WORKSPACES[id];
+  card.append(source);
   const open=el('button','Open responsible employee →');open.type='button';
   open.addEventListener('click',()=>{
    const selector=$('wa-period-employee');
@@ -92,14 +116,42 @@ function render(data){
   });card.append(open);host.append(card);
  }
 }
+async function loadPage(employeeId,offset){
+ if(!packet||loadingPages.has(employeeId))return;
+ const seq=ticket,{from,to}=packet.period;
+ loadingPages.add(employeeId);render(packet);
+ try{
+  const result=await fetch('/api/enterprise-bi?'+new URLSearchParams({from,to,employee:employeeId,limit:'30',offset:String(offset)}),
+   {credentials:'same-origin',cache:'no-store'});
+  if(seq!==ticket)return;
+  if(result.status===401){location.assign('/login');return;}
+  if(!result.ok)throw Error('SOURCE_UNAVAILABLE');
+  const data=(await result.json()).data;
+  if(seq!==ticket)return;
+  const record=data?.departments?.find(x=>x.employeeId===employeeId);
+  if(data?.schemaVersion!=='VYNDI_ENTERPRISE_BI_V1'||data.readOnly!==true||data.scope!==employeeId||
+    data.period?.from!==from||data.period?.to!==to||record?.status!=='OBSERVED'||
+    record.detailPage?.offset!==offset)throw Error('UNQUALIFIED_PAGE');
+  packet={...packet,departments:packet.departments.map(x=>x.employeeId===employeeId?record:x)};
+ }catch{
+  if(seq===ticket)$('wa-enterprise-status').textContent='Source page unavailable. Previously observed rows are retained; retry with the record controls.';
+ }finally{
+  loadingPages.delete(employeeId);
+  if(seq===ticket&&packet)render(packet);
+ }
+}
 async function refresh(){
  const seq=++ticket,button=$('wa-enterprise-refresh');
  const from=$('wa-period-from').value,to=$('wa-period-to').value;
+ packet=null;loadingPages.clear();
+ $('wa-enterprise-grid').replaceChildren();$('wa-enterprise-kpis').replaceChildren();
+ button.disabled=false;
  if(!from||!to||from>to){$('wa-enterprise-status').textContent='Choose a valid period above.';return;}
  button.disabled=true;$('wa-enterprise-status').textContent='Reading authenticated 16-department source records…';
  try{
   const qs=new URLSearchParams({from,to,employee:'all',limit:'30'});
   const result=await fetch('/api/enterprise-bi?'+qs,{credentials:'same-origin',cache:'no-store'});
+  if(seq!==ticket)return;
   if(result.status===401){location.assign('/login');return;}
   if(!result.ok)throw Error('SOURCE_UNAVAILABLE');
   const data=(await result.json()).data;

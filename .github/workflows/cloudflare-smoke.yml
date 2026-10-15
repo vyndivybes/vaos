@@ -58,7 +58,7 @@ jobs:
         run: node --test intelligence/vyndi-department-report.test.mjs apps/web/api/vyndi-department-report.test.mjs apps/web/vyndi-department-report.test.mjs
 
       - name: Verify current backlog and period views
-        run: node --test apps/web/enterprise-bi-backlog.test.mjs
+        run: node --test apps/web/enterprise-bi-backlog.test.mjs apps/web/enterprise-bi-navigation.test.mjs
 
       - name: Syntax-check Cloudflare entrypoints
         run: node --check apps/web/cloudflare-worker.mjs && node --check apps/web/lib/cloudflare-adapter.mjs && node --check apps/web/api/zapier-webhook.mjs

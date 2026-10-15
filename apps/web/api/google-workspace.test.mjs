@@ -64,7 +64,7 @@ test('read-only briefing never permits actions or posts data to external Slack',
 test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits metadata-only reads',async()=>{
  const s=setup();
  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
- const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly'].join(' ');
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/calendar.events'].join(' ');
  let n=0;
  const fetchImpl=async(url,init)=>{
   n++;s.calls.push({url,method:init.method});
@@ -90,6 +90,7 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  assert.equal(consent.origin,'https://accounts.google.com');
  assert.equal(consent.searchParams.get('code_challenge_method'),'S256');
  assert.equal(consent.searchParams.get('access_type'),'offline');
+ assert.match(consent.searchParams.get('scope'),/gmail.readonly/);
  const state=consent.searchParams.get('state');
  assert.ok(s.storage.has('runtime/google-workspace/oauth-pending/'+state+'.json'));
  const cookie=start.headers.get('set-cookie').split(';')[0];
@@ -98,7 +99,7 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  }),getResponse(),s.env);
  assert.equal(callback.status,200);
  const body=await callback.json();
- assert.equal(body.status,'CONNECTED_READONLY');
+ assert.equal(body.status,'CONNECTED');
  assert.equal(n,2);
  const saved=s.storage.get('runtime/google-workspace/founder-token.v1.json');
  assert.ok(saved);assert.equal(saved.includes('refresh-token-valid-2026'),false);
@@ -115,7 +116,7 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
 test('OAuth callback refuses a different Google identity and never persists credentials',async()=>{
  const s=setup();
  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
- const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly'].join(' ');
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/calendar.events'].join(' ');
  const fetchImpl=async(url)=>{
   if(url.endsWith('/token'))return new Response(JSON.stringify({
    token_type:'Bearer',access_token:'access-token-valid-2026',refresh_token:'refresh-token-valid-2026',expires_in:3600,scope

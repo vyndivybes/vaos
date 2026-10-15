@@ -178,10 +178,29 @@
         <section class="fc-workforce" aria-labelledby="cockpit-workforce-title">
           <div class="fc-section-head"><div><p class="va-eyebrow">YOUR DIGITAL TEAM</p><h2 id="cockpit-workforce-title">Workforce, at a glance.</h2></div><a href="/workforce-analytics.html">Full employee analytics ↗</a></div>
           <p id="cockpit-workforce-status" class="fc-source-note" role="status">Loading authenticated registry…</p>
-          <div class="fc-team-layout"><div>
-            <div class="fc-team-filters"><label for="cockpit-employee-search">Find an employee<input id="cockpit-employee-search" type="search" placeholder="Name or department" /></label><label for="cockpit-lifecycle">Lifecycle<select id="cockpit-lifecycle"><option value="all">All lifecycle states</option></select></label></div>
-            <p id="cockpit-roster-count" class="fc-source-note" aria-live="polite"></p><div id="cockpit-roster" class="fc-roster"></div>
-          </div><div class="fc-team-charts"><h3>Recorded lifecycle</h3><div id="cockpit-workforce-chart"></div><p>Registry state, not proof of live agents.</p><h3>Source coverage</h3><div id="cockpit-source-chart"></div><p>Connected sources do not certify revenue, stock or production.</p><a href="/agent-supervision.html">Open agent monitoring ↗</a></div></div>
+          <div class="fc-team-layout">
+            <div class="fc-team-charts" aria-label="Founder's visual intelligence overview">
+              <div class="fc-chart-card">
+                <div class="fc-chart-heading"><span class="va-eyebrow">WORKFORCE EVIDENCE</span><h3>Employee lifecycle distribution</h3></div>
+                <div id="cockpit-workforce-chart" role="region" aria-label="Recorded employee lifecycle distribution"></div>
+                <p>Registered lifecycle states only; these are not live agent certifications.</p>
+              </div>
+              <div class="fc-chart-card">
+                <div class="fc-chart-heading"><span class="va-eyebrow">DATA CONNECTIVITY</span><h3>Verified source reachability</h3></div>
+                <div id="cockpit-source-chart" role="region" aria-label="Authorized source connectivity chart"></div>
+                <p>Connection status is not evidence of revenue, inventory or production performance.</p>
+              </div>
+            </div>
+            <details class="fc-roster-disclosure">
+              <summary>Explore individual employee records <span>Search and filter the 16-role registry</span></summary>
+              <div class="fc-team-filters">
+                <label for="cockpit-employee-search">Find an employee<input id="cockpit-employee-search" type="search" placeholder="Name or department" /></label>
+                <label for="cockpit-lifecycle">Lifecycle<select id="cockpit-lifecycle"><option value="all">All lifecycle states</option></select></label>
+              </div>
+              <p id="cockpit-roster-count" class="fc-source-note" aria-live="polite"></p>
+              <div id="cockpit-roster" class="fc-roster"></div>
+            </details>
+          </div>
         </section>
         <details class="fc-runtime-details"><summary>Control plane activity &amp; decision inbox</summary>
         <div class="section-strapline">LIVE CONTROL PLANE / GOVERNED ACTIVITY</div>

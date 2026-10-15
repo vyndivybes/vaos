@@ -139,3 +139,20 @@ footer{color:#65777f}
 @media(max-width:750px){.wa-period-grid{grid-template-columns:1fr}}
 @media(max-width:560px){.wa-period-controls{grid-template-columns:1fr;padding:12px}
  .wa-period-card,.wa-period-forecast{padding:14px}.wa-period-forecast .wa-period-list{grid-template-columns:1fr}}
+
+
+/* Integrated source-backed departmental reporting from VYNDI OS. */
+.wa-vyndi-report{background:#fff;border:1px solid #e5e5e1;border-top:3px solid #b59b71;border-radius:20px;
+ padding:clamp(16px,2.2vw,28px);margin:18px 0;box-shadow:0 7px 30px rgba(52,67,75,.045)}
+.wa-vyndi-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px}
+.wa-vyndi-header h3{font-size:clamp(21px,2.1vw,29px);margin:4px 0 9px;color:#34434b}
+.wa-vyndi-header p{font-size:14px;color:#687a80;max-width:72ch;line-height:1.65}
+.wa-vyndi-header button{flex-shrink:0}
+.wa-vyndi-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;margin:16px 0}
+.wa-vyndi-report h4{font-size:18px;color:#34434b;margin:0 0 10px}
+.wa-vyndi-report td:last-child{min-width:290px;max-width:680px;white-space:normal;overflow-wrap:anywhere;line-height:1.6}
+.wa-vyndi-report .wa-stats{grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin:16px 0}
+.wa-vyndi-report .wa-stat strong{font-size:clamp(18px,1.6vw,24px);overflow-wrap:anywhere}
+.wa-vyndi-report .wa-period-item{padding:11px 13px}
+.wa-vyndi-report .wa-period-item p{font-size:13px}
+@media(max-width:790px){.wa-vyndi-layout{grid-template-columns:1fr}.wa-vyndi-header{flex-direction:column}}

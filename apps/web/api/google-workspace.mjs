@@ -253,7 +253,7 @@ export async function createFounderCalendarReminder(env,body,{fetchImpl=fetch,no
   const eventId='vaos'+body.requestId;
   const url='https://www.googleapis.com/calendar/v3/calendars/primary/events';
   const payload={id:eventId,summary:body.title.trim(),start:{dateTime:body.start},
-   end:{dateTime:body.end},reminders:{useDefault:false,overrides:[{method:'popup',minutes:10}]}};
+   end:{dateTime:body.end},reminders:{useDefault:false,overrides:[{method:'popup',minutes:0}]}};
   const result=await fetchImpl(url,{method:'POST',redirect:'error',
    headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
    body:JSON.stringify(payload),signal:AbortSignal.timeout(8000)});
@@ -268,7 +268,7 @@ export async function createFounderCalendarReminder(env,body,{fetchImpl=fetch,no
    Date.parse(saved?.end?.dateTime)!==Date.parse(body.end))
    return {status:'HOLD',reason:'CALENDAR_READBACK_MISMATCH',saved:false};
   return {status:'PASS',saved:true,id:eventId,summary:saved.summary,
-   start:saved.start.dateTime,end:saved.end.dateTime,reminder:'Google Calendar popup 10 minutes before',source:'GOOGLE_CALENDAR'};
+   start:saved.start.dateTime,end:saved.end.dateTime,reminder:'Google Calendar popup at the scheduled time',source:'GOOGLE_CALENDAR'};
  }catch(e){return {status:'HOLD',reason:e.message==='GOOGLE_SCOPE_RECONNECT_REQUIRED'?e.message:'CALENDAR_SAVE_UNVERIFIED',saved:false}}
 }
 

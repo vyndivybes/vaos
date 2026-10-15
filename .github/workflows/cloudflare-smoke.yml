@@ -57,6 +57,9 @@ jobs:
       - name: Verify VYNDI departmental analytics contract
         run: node --test intelligence/vyndi-department-report.test.mjs apps/web/api/vyndi-department-report.test.mjs apps/web/vyndi-department-report.test.mjs
 
+      - name: Verify full-period enterprise BI authorization and graphs
+        run: node --test apps/web/api/enterprise-bi.test.mjs apps/web/enterprise-bi.test.mjs && node --check apps/web/enterprise-bi.mjs
+
       - name: Syntax-check Cloudflare entrypoints
         run: node --check apps/web/cloudflare-worker.mjs && node --check apps/web/lib/cloudflare-adapter.mjs && node --check apps/web/api/zapier-webhook.mjs
 

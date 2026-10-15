@@ -304,3 +304,16 @@ test('G5 screenshot questions bypass adaptive HOLD and reach authoritative read-
   assert.equal(shouldUseAdaptiveAnswer(intent,true),false,question);
  }
 });
+
+
+test('authenticated workspace offers a JARVIS welcome without automatically opening the microphone',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const js=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ const workspace=await readFile(new URL('./workspace.mjs',import.meta.url),'utf8');
+ assert.match(workspace,/CustomEvent\('vaos-authenticated'/);
+ assert.match(js,/addEventListener\('vaos-authenticated'/);
+ assert.match(js,/Welcome back\. I am JARVIS/);
+ assert.match(js,/wake\.enable\(\)/);
+ assert.match(js,/speakAnswer\(\)/);
+ assert.match(js,/wake\?\.disable\('Hey VAOS switched off/);
+});

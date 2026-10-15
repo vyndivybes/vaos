@@ -219,6 +219,11 @@ function init(){
   input.value=transcript;voiceRequestPending=true;
  });
  const conversation=createG6Conversation();
+ // Show the authenticated welcome without requesting microphone or audio permission.
+ document.addEventListener('vaos-authenticated',()=>{
+  const welcome='Welcome back. I am JARVIS, your VAOS assistant. I am ready to discuss your company, projects, engineering and today\'s priorities. To start a continuous spoken conversation, enable hands-free voice once. Say Stop whenever you want me to stop listening.';
+  if(!busy&&!lastAnswer){lastAnswer=welcome;spokenAnswer=welcome;answer.textContent=welcome;setStatus('JARVIS online · Type below or enable hands-free for a continuing conversation.');state();}
+ });
  const setStatus=message=>{
   note.textContent=message;
   if(root.dataset)root.dataset.voiceState=/\blistening|speech detected/i.test(message)?'listening'
@@ -478,7 +483,11 @@ function init(){
    setStatus('Checking the on-device speech language pack…');
    localSpeech=await prepareLocalSpeech(SpeechRecognition,replyLanguage?.value||'en');
    if(localSpeech.status!=='LOCAL_READY'&&window.confirm('Install the free browser speech language pack for local hands-free listening?'))localSpeech=await prepareLocalSpeech(SpeechRecognition,replyLanguage?.value||'en',{install:true});
-   if(localSpeech.status==='LOCAL_READY')wake.enable();
+   if(localSpeech.status==='LOCAL_READY'){
+    wake.enable();
+    // The founder initiated this gesture; welcome speech must not start the microphone itself.
+    if(lastAnswer.startsWith('Welcome back. I am JARVIS')&&speakToggle?.checked===true)speakAnswer();
+   }
    else setStatus('Local wake recognition is unavailable for this browser/language. The microphone button and typed questions remain available.');
   }
   state();

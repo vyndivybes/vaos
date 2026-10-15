@@ -55,14 +55,16 @@ function periodDay(start,offset){
 function populatePeriodControls(data){
  const bounds=periodBounds(data.observedAt);
  const from=$('wa-period-from'),to=$('wa-period-to'),select=$('wa-period-employee');
- for(const node of [from,to]){node.min=bounds.min;node.max=bounds.max;}
+ // VYNDI business history supports any past window up to 366 days. The
+ // workforce observation has a separate 90-day bound; do not restrict both.
+ for(const node of [from,to]){node.min='';node.max=bounds.max;}
  const previous=select.value||periodSelection;select.replaceChildren();
  const all=element('option','All 16 employees');all.value='all';select.append(all);
  for(const emp of data.employees){
   const option=element('option',emp.name);option.value=emp.id;select.append(option);
  }
  periodSelection=data.employees.some(x=>x.id===previous)?previous:'all';select.value=periodSelection;
- if(!from.value||from.value<bounds.min||to.value>bounds.max){
+ if(!from.value||!to.value||to.value>bounds.max){
   to.value=bounds.max;from.value=periodDay(bounds.max,-29);
  }
  renderPeriod();
@@ -84,7 +86,7 @@ function renderPeriod(){
  let report;
  try{report=workActivityReport(latest,{from,to,employeeId:periodSelection});}
  catch{
-  $('wa-period-status').textContent='Select a valid period within the latest 90 days of recorded history. Older history is not available from this source.';
+  $('wa-period-status').textContent='Workforce observation is available only within the latest 90 days. VYNDI departmental business records use the selected historical dates separately; no older employee activity is inferred.';
   return;
  }
  $('wa-period-status').textContent='Period '+from+' to '+to+
@@ -129,8 +131,7 @@ function selectPeriodPreset(value){
  if(!latest)return;
  const bounds=periodBounds(latest.observedAt);
  to.value=bounds.max;
- from.value=periodDay(bounds.max,-(Math.min(90,Number(value))-1));
- if(from.value<bounds.min)from.value=bounds.min;
+ from.value=periodDay(bounds.max,-(Math.min(366,Number(value))-1));
  renderPeriod();
 }
 $('wa-period-presets').addEventListener('change',event=>selectPeriodPreset(event.target.value));

@@ -310,7 +310,7 @@ export async function readFounderCalendarEvents(env,{fetchImpl=fetch,now=()=>Dat
     maxResults:'20',singleEvents:'true',orderBy:'startTime',
     fields:'nextPageToken,items(status,summary,start(date,dateTime),end(date,dateTime))'
    }).toString();
-  const result=await googleGet(url,token,fetchImpl);
+  const result=await googleCalendarGet(url,token,fetchImpl);
   if(!Array.isArray(result?.items))return hold('GOOGLE_CALENDAR_SCHEMA_INVALID');
   const events=[];
   for(const item of result.items){
@@ -329,8 +329,18 @@ export async function readFounderCalendarEvents(env,{fetchImpl=fetch,now=()=>Dat
    range:'NEXT_7_DAYS',calendarEvents:events.length,
    truncated:Boolean(result.nextPageToken),events};
  }catch(e){
-  const reason=['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED'].includes(e?.message)
-   ?e.message:'GOOGLE_SOURCE_UNVERIFIED';
+  const safe=new Set([
+   'GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED',
+   'GOOGLE_OAUTH_UNAVAILABLE','GOOGLE_VAULT_DECRYPT_FAILED','GOOGLE_VAULT_STORAGE_FAILED',
+   'GOOGLE_SCOPE_CHANGED','GOOGLE_CALENDAR_API_DISABLED',
+   'GOOGLE_CALENDAR_PERMISSION_DENIED','GOOGLE_CALENDAR_ACCESS_DENIED',
+   'GOOGLE_CALENDAR_TOKEN_REJECTED','GOOGLE_CALENDAR_REQUEST_INVALID',
+   'GOOGLE_PRIMARY_CALENDAR_UNAVAILABLE','GOOGLE_CALENDAR_RATE_LIMITED',
+   'GOOGLE_CALENDAR_REDIRECT_REJECTED','GOOGLE_CALENDAR_PROVIDER_UNAVAILABLE',
+   'GOOGLE_CALENDAR_RESPONSE_UNVERIFIED','GOOGLE_CALENDAR_RESPONSE_INVALID',
+   'GOOGLE_CALENDAR_NETWORK_FAILED','GOOGLE_CALENDAR_REQUEST_TIMEOUT'
+  ]);
+  const reason=safe.has(e?.message)?e.message:'GOOGLE_SOURCE_UNVERIFIED';
   return hold(reason);
  }
 }

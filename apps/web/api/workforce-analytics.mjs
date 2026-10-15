@@ -3,6 +3,7 @@ import {apiError} from '../lib/api-contracts.mjs';
 import {createSupabaseControlStore} from '../../../platform/persistence/supabase-store.mjs';
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {buildWorkforceAnalytics} from '../../../intelligence/workforce-analytics.mjs';
+import {buildVyndiAnalyticsSourceMap} from '../../../intelligence/vyndi-analytics-source-map.mjs';
 import {evaluateEmployeeEvidencePriorities} from '../../../intelligence/workforce-evidence-priorities.mjs';
 import {buildWorkforceCommissioningBoard} from '../../../intelligence/workforce-commissioning-board.mjs';
 
@@ -27,7 +28,7 @@ export function createWorkforceAnalyticsHandler({getStore=defaultStore}={}){
    const data=buildWorkforceAnalytics(await getStore(req.env).founderWorkforceOverview(session.email));
    const evidencePriorities=evaluateEmployeeEvidencePriorities({employees:data.employees,actionAuthorized:false});
    const commissioningBoard=buildWorkforceCommissioningBoard(data);
-   return res.status(200).json({data:{...data,evidencePriorities,commissioningBoard}});
+   return res.status(200).json({data:{...data,evidencePriorities,commissioningBoard,vyndiAnalyticsSources:buildVyndiAnalyticsSourceMap()}});
   }catch{
    return res.status(503).json(apiError('WORKFORCE_ANALYTICS_UNAVAILABLE',
     'Verified workforce source or founder analytics migration unavailable'));

@@ -64,7 +64,7 @@ test('read-only briefing never permits actions or posts data to external Slack',
 test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits metadata-only reads',async()=>{
  const s=setup();
  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
- const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/calendar.events'].join(' ');
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events'].join(' ');
  let n=0;
  const fetchImpl=async(url,init)=>{
   n++;s.calls.push({url,method:init.method});
@@ -90,7 +90,9 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  assert.equal(consent.origin,'https://accounts.google.com');
  assert.equal(consent.searchParams.get('code_challenge_method'),'S256');
  assert.equal(consent.searchParams.get('access_type'),'offline');
- assert.match(consent.searchParams.get('scope'),/gmail.readonly/);
+ const requestedScopes=new Set(consent.searchParams.get('scope').split(' '));
+ assert.deepEqual([...requestedScopes].sort(),['openid','email','https://www.googleapis.com/auth/calendar.events'].sort());
+ assert.equal(requestedScopes.has('https://www.googleapis.com/auth/gmail.readonly'),false);
  const state=consent.searchParams.get('state');
  assert.ok(s.storage.has('runtime/google-workspace/oauth-pending/'+state+'.json'));
  const cookie=start.headers.get('set-cookie').split(';')[0];
@@ -105,7 +107,8 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  assert.ok(saved);assert.equal(saved.includes('refresh-token-valid-2026'),false);
  const brief=await readGoogleWorkspaceBrief(s.env,{fetchImpl,now:()=>Date.parse('2026-10-12T04:01:00Z')});
  assert.equal(brief.status,'PASS');
- assert.equal(brief.calendarEvents,1);assert.equal(brief.driveRecent,1);
+ assert.equal(brief.calendarEvents,1);
+ assert.equal(s.calls.filter(c=>c.url.includes('googleapis.com/drive/')).length,0);
  assert.equal(brief.actionAuthorized,false);
  assert.doesNotMatch(brief.answer,/refresh-token|access-token|safe/);
  const replay=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=authorized_code_2026',{
@@ -116,7 +119,7 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
 test('OAuth callback refuses a different Google identity and never persists credentials',async()=>{
  const s=setup();
  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
- const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly','https://www.googleapis.com/auth/calendar.events'].join(' ');
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events'].join(' ');
  const fetchImpl=async(url)=>{
   if(url.endsWith('/token'))return new Response(JSON.stringify({
    token_type:'Bearer',access_token:'access-token-valid-2026',refresh_token:'refresh-token-valid-2026',expires_in:3600,scope
@@ -133,13 +136,10 @@ test('OAuth callback refuses a different Google identity and never persists cred
  assert.equal(s.storage.has('runtime/google-workspace/founder-token.v1.json'),false);
 });
 
-test('consented founder can read Toray Gmail and save a bounded calendar reminder with confirmed event ID',async()=>{
+test('calendar-only OAuth authorizes event creation without granting Gmail access',async()=>{
  const s=setup();
  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
- const scope=['openid','email','https://www.googleapis.com/auth/calendar.events.readonly',
-  'https://www.googleapis.com/auth/drive.metadata.readonly',
-  'https://www.googleapis.com/auth/gmail.readonly',
-  'https://www.googleapis.com/auth/calendar.events'].join(' ');
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events'].join(' ');
  const calls=[];
  const fetchImpl=async(url,init)=>{
   calls.push({url,method:init.method});
@@ -167,8 +167,9 @@ test('consented founder can read Toray Gmail and save a bounded calendar reminde
   cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
  assert.equal(cb.status,200);
  const mail=await readFounderGmail(s.env,'from:Toray',{fetchImpl,now});
- assert.equal(mail.status,'PASS');assert.equal(mail.messages.length,1);
- assert.match(mail.messages[0].subject,/Composite material/);
+ assert.equal(mail.status,'HOLD');
+ assert.equal(mail.reason,'GOOGLE_SCOPE_RECONNECT_REQUIRED');
+ assert.equal(calls.filter(x=>x.url.includes('/gmail/')).length,0);
  const event=await createFounderCalendarReminder(s.env,{
   title:'Follow up with TANSAM',start:'2026-10-19T09:00:00+05:30',
   end:'2026-10-19T09:30:00+05:30',requestId:'a'.repeat(32)

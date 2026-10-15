@@ -102,5 +102,8 @@ test('intelligence views preserve employee deep links and reporting controls',as
  assert.equal(savedUrl.searchParams.get('view'),'departments');
  assert.equal(savedUrl.searchParams.get('employee'),'risk');
  assert.equal(employee.value,'risk');
+ context.location.href=savedUrl.href;
+ runInNewContext(await readFile(new URL('./premium.mjs',import.meta.url),'utf8'),{...context});
+ assert.equal(views[1].hidden,false,'an explicit shared view survives reload with an employee filter');
  employee.handlers.change();assert.equal(views[2].hidden,false);
 });

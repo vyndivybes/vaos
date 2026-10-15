@@ -21,4 +21,4 @@ document.addEventListener('click',event=>{
  if(view)showView(view.dataset.premiumView);
 });
 const params=new URL(location.href).searchParams;
-showView(params.has('employee')?'team':params.get('view')||'overview');
+showView(params.get('view')||(params.has('employee')?'team':'overview'));

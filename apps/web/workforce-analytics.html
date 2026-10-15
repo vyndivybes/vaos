@@ -17,7 +17,7 @@
   <label for="wa-period-employee">Employee
    <select id="wa-period-employee"><option value="all">All 16 employees</option></select>
   </label>
- </div><nav class="premium-tabs" aria-label="Intelligence views"><button type="button" data-premium-tab="overview" aria-pressed="true">Business overview</button><button type="button" data-premium-tab="departments" aria-pressed="false">Departments <span>16</span></button><button type="button" data-premium-tab="team" aria-pressed="false">Your digital team</button><button type="button" data-premium-tab="assurance" aria-pressed="false">Assurance</button></nav><div data-premium-view="overview"><div class="premium-section-title"><span>01 / AT A GLANCE</span><p>Source activity, not inferred business performance.</p></div><div id="wa-enterprise-kpis" class="wa-stats premium-overview-stats"></div><section class="wa-period-card" aria-labelledby="wa-financial-title">
+ </div><nav class="premium-tabs" aria-label="Intelligence views"><button type="button" data-premium-tab="overview" aria-controls="premium-overview" aria-pressed="true">Business overview</button><button type="button" data-premium-tab="departments" aria-controls="premium-departments" aria-pressed="false">Departments <span>16</span></button><button type="button" data-premium-tab="team" aria-controls="premium-team" aria-pressed="false">Your digital team</button><button type="button" data-premium-tab="assurance" aria-controls="premium-assurance" aria-pressed="false">Assurance</button></nav><div data-premium-view="overview" id="premium-overview"><div class="premium-section-title"><span>01 / AT A GLANCE</span><p>Source activity, not inferred business performance.</p></div><div id="wa-enterprise-kpis" class="wa-stats premium-overview-stats"></div><section class="wa-period-card" aria-labelledby="wa-financial-title">
   <div class="wa-heading"><div><h2 id="wa-financial-title">Financial performance</h2>
    <p>Posted, reconciled actuals for your selected period.</p></div>
    <button id="wa-financial-refresh" type="button">Refresh finance</button></div>
@@ -36,7 +36,7 @@
  <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>
  <p>Revenue requires posted or otherwise qualified sales actuals; gross profit is revenue minus attributable cost of goods sold; operating profit also deducts qualified operating expenses. Working capital requires qualified current assets and current liabilities. Cash runway requires qualified cash and burn rate. Stock turnover, production yield, purchase variance, receivables ageing and payroll require their respective canonical transaction records. None can be calculated from mere counts of status records, employee activity or unapproved engineering BOMs. Missing and incomplete figures must remain unavailable, never zero.</p>
  </details>
-</section></div><div data-premium-view="departments"><section class="wa-period-card" aria-labelledby="wa-enterprise-title">
+</section></div><div data-premium-view="departments" id="premium-departments"><section class="wa-period-card" aria-labelledby="wa-enterprise-title">
   <div class="wa-heading"><div><span class="wa-kicker">VYNDI OS Â· 16 SOURCE LEDGERS</span>
    <h3 id="wa-enterprise-title">Across the business</h3>
    <p>Current workload and period activity across all sixteen departments.</p></div>
@@ -47,7 +47,7 @@
 
   <div id="wa-enterprise-grid" class="wa-period-grid" aria-label="Source-backed department reports"></div>
   <p class="wa-period-note">A status on a source business record does not mean a digital employee finished that task. Historical closure and forecasts need distinct qualified evidence.</p>
- </section></div><div data-premium-view="team"><section class="wa-panel wa-actual-report" aria-labelledby="wa-actual-title">
+ </section></div><div data-premium-view="team" id="premium-team"><section class="wa-panel wa-actual-report" aria-labelledby="wa-actual-title">
  <div class="wa-heading">
   <div><span class="wa-kicker">FOUNDER Â· RECORDED OUTPUT AND AUDIT</span>
    <h2 id="wa-actual-title">Employee activity</h2>
@@ -148,7 +148,7 @@
  <div class="wa-subpanel"><h3>Defects, nonconformances &amp; CAPA</h3><p id="wa-defects">Not yet connected to an independently evidenced defect register; no zero-defect claim.</p><div id="wa-capa-status"></div><ul id="wa-capa-cases"></ul></div>
  <div class="wa-subpanel"><h3>Employee reports to founder</h3><p id="wa-report-status">Independent handoff report evidence not loaded.</p><ul id="wa-reports"></ul><p>Reports are shown here for founder review. Outbound delivery and autonomous replies remain uncommissioned.</p><a href="/founder-console.html">Open Founder Command inbox â†’</a></div>
  </div></details>
- </section></div><div data-premium-view="assurance"><section class="wa-panel wa-commissioning" aria-labelledby="wa-commissioning-title">
+ </section></div><div data-premium-view="assurance" id="premium-assurance"><section class="wa-panel wa-commissioning" aria-labelledby="wa-commissioning-title">
   <div class="wa-heading"><div><h2 id="wa-commissioning-title">Workforce execution &amp; corrective-action board</h2>
    <p>Four separate evidence lanes: blocked work, independent departmental audits, open CAPA retests, and qualified plans/reports. Observing an issue does not authorize an employee to clear it.</p></div></div>
   <p id="wa-commissioning-status" role="status" aria-live="polite">Loading founder-only corrective-action evidenceâ€¦</p>

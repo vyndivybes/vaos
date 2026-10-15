@@ -29,3 +29,31 @@ export function resolveFounderGoogleIntent(input,now=new Date()){
  const end=new Date(date.getTime()+30*60000);
  return {kind:'CALENDAR',title:title.slice(0,140),start:date.toISOString(),end:end.toISOString()};
 }
+
+
+// Founder-only calendar lookups are read operations and must precede the generic
+// business evidence router. A calendar event write remains a separate intent.
+export function resolveFounderCalendarReadIntent(input){
+ const q=typeof input==='string'?input.trim():'';
+ if(q.length<5||q.length>300||/[\x00-\x1f\x7f]/.test(q))return null;
+ if(/\b(?:cancel|delete|remove|reschedule|move|edit|update|create|add|book|invite|send|modify)\b/i.test(q))return null;
+ if(/\b(?:schedule|scheduling)\s+(?:a|an|the|new)\s+(?:meeting|event|appointment)\b/i.test(q))return null;
+ if(!/\b(?:google calendar|my calendar|my schedule|appointments?|my meetings|upcoming meetings|scheduled meetings|my events)\b/i.test(q))return null;
+ if(!/\b(?:read|show|list|tell|upcoming|what|when|any|next|today|tomorrow|this week|do i have)\b/i.test(q))return null;
+ return {kind:'CALENDAR_READ',days:7};
+}
+
+export function formatFounderCalendarEvents(data){
+ if(data?.status!=='PASS'||!Array.isArray(data?.events))
+  return 'I could not verify your Google Calendar events. '+String(data?.reason||'Calendar unavailable')+'.';
+ if(!data.events.length)return 'No upcoming events found in your Google Calendar for the next seven days.';
+ const events=data.events.slice(0,20);
+ const lines=events.map((event,index)=>{
+  const date=event?.start;
+  const stamp=event?.allDay?date:(Number.isFinite(Date.parse(date))?new Date(date).toLocaleString():date);
+  return (index+1)+'. '+String(event?.title||'Untitled event').slice(0,140)+' — '+String(stamp||'Unknown time').slice(0,100);
+ });
+ return data.calendarEvents+' upcoming Google Calendar event'+(data.calendarEvents===1?'':'s')+
+  ' in the next seven days:\n'+lines.join('\n')+
+  (data.truncated?'\nShowing the first 20 events.':'');
+}

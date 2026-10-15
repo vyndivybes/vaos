@@ -107,3 +107,28 @@ test('intelligence views preserve employee deep links and reporting controls',as
  assert.equal(views[1].hidden,false,'an explicit shared view survives reload with an employee filter');
  employee.handlers.change();assert.equal(views[2].hidden,false);
 });
+
+
+test('governed source coverage keeps missing data unknown and displays safe business values including zero',async()=>{
+ const {context,get}=await setup(()=>{});
+ const p=packet();p.departments[0].sources=[{sourceTable:'risk-register',status:'OBSERVED',periodEventCount:1,
+  undatedCount:2,excludedTrainingCount:3,unclassifiedOriginCount:4,
+  currentRecordedStates:{finished:0,pending:1,blocked:2,other:0},
+  records:[{date:'2026-10-10',status:'OPEN',fields:{id:'R1',quantity:0}}]},
+  {sourceTable:'legal-register',status:'UNAVAILABLE'}];
+ context.render(p);const nodes=descendants(get('wa-enterprise-grid'));
+ assert.ok(nodes.some(n=>String(n.textContent).includes('id: R1')&&String(n.textContent).includes('quantity: 0')));
+ assert.ok(nodes.some(n=>String(n.textContent).includes('Origin unclassified (all dates): 4')));
+ assert.ok(nodes.some(n=>n.textContent==='Unavailable. Counts, records and forecasts unknown.'));
+});
+
+test('approved demand plan and actuals render with vintage and close references, not invented employee output',async()=>{
+ const {context,get}=await setup(()=>{});const p=packet();
+ p.businessPlanComparison={status:'CLOSED_PERIOD_COMPARISON',planUnits:30,actualUnits:29,
+  rows:[{productId:'carbon',planMonth:1,planQty:30,actualQty:29,planErrorUnits:-1,vintageId:'V1',closeId:'C1'}],
+  forecastAssessment:{status:'UNAVAILABLE',reason:'Only one eligible closed period.'},note:'Closed period demand only.'};
+ context.render(p);const nodes=descendants(get('wa-business-comparison'));
+ assert.ok(nodes.some(n=>n.textContent==='V1 / C1'));
+ assert.ok(nodes.some(n=>String(n.textContent).includes('Only one eligible closed period.')));
+ assert.ok(nodes.some(n=>n.textContent==='Closed period demand only.'));
+});

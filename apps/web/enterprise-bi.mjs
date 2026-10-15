@@ -31,8 +31,67 @@ function chart(host,statuses){
   track.append(bar);line.append(label,track);host.append(line);
  }
 }
+function sourceDetails(record,host){
+ const sources=record.sources||[];
+ if(!sources.length)return;
+ host.append(el('h4','Governed source coverage'));
+ host.append(el('p',sources.filter(x=>x.status==='OBSERVED').length+' / '+sources.length+
+  ' sources observed. Sources overlap; do not add them as employee output.'));
+ for(const source of sources){
+  const details=el('details',undefined,'wa-accordion');
+  details.append(el('summary',source.sourceTable+' · '+source.status));
+  if(source.status!=='OBSERVED'){details.append(el('p','Unavailable. Counts, records and forecasts unknown.'));host.append(details);continue;}
+  details.append(el('p','Dated source rows: '+source.periodEventCount+' · Undated current rows: '+source.undatedCount+
+   ' · Explicit training / fixtures excluded (all dates): '+source.excludedTrainingCount+
+   ' · Origin unclassified (all dates): '+source.unclassifiedOriginCount));
+  const states=source.currentRecordedStates;
+  if(states){
+   details.append(el('h4','Current recorded states, all dates'));
+   const bars=el('div',undefined,'wa-viz-bars');
+   chart(bars,Object.entries(states).map(([status,count])=>({status,count})));details.append(bars);
+  }
+  details.append(el('p','Recorded states describe source workflow stages. Finished does not prove AI execution, independent audit or an in-period completion.'));
+  const wrap=el('div',undefined,'wa-scroll'),table=el('table'),head=el('thead'),row=el('tr');
+  for(const h of ['Source date','Status','Available business fields'])row.append(el('th',h));head.append(row);table.append(head);
+  const body=el('tbody');
+  for(const record of source.records||[]){
+   const tr=el('tr');
+   for(const value of [record.date?(record.date+' ['+(record.dateField||'source date')+']'):'Undated',record.status??'Unknown',
+    Object.entries(record.fields||{}).map(([k,v])=>k+': '+String(v)).join(' · ')])tr.append(el('td',value));
+   body.append(tr);
+  }
+  table.append(body);wrap.append(table);details.append(wrap);
+  if(source.detailPage?.hasMore)details.append(el('p','More rows exist. Select View employee for the larger departmental preview and use the department record controls to page.'));
+  host.append(details);
+ }
+ host.append(el('p','Business plan vs actual: '+(record.planVsActual?.reason||'Comparable baseline unavailable.')),
+  el('p','Independent audit: '+(record.audit?.reason||'Independent review not supplied.')),
+  el('p','Forecast: '+(record.forecast?.reason||'No independently qualified dated source forecast.')));
+}
+function planComparison(data){
+ const host=$('wa-business-comparison');if(!host)return;host.replaceChildren();
+ const report=data.businessPlanComparison;
+ host.append(el('p','Enterprise product demand comparison. Departmental work-plan attainment remains in the employee report.'));
+ if(!report||report.status!=='CLOSED_PERIOD_COMPARISON'){
+  host.append(el('p',report?.reason||'Comparable approved pre-period vintages and closed actuals unavailable. No plan or actual zeros inferred.'));return;
+ }
+ const wrap=el('div',undefined,'wa-scroll'),table=el('table'),head=el('thead'),tr=el('tr');
+ for(const h of ['Product','Plan month','Approved plan units','Closed actual units','Variance units','Vintage / close'])tr.append(el('th',h));
+ head.append(tr);table.append(head);const body=el('tbody');
+ for(const r of report.rows||[]){
+  const row=el('tr');for(const v of [r.productId,r.planMonth,r.planQty,r.actualQty,r.planErrorUnits,r.vintageId+' / '+r.closeId])row.append(el('td',v));body.append(row);
+ }
+ table.append(body);wrap.append(table);host.append(wrap);
+ const chartHost=el('div',undefined,'wa-viz-bars');
+ chart(chartHost,[{status:'Approved plan units',count:report.planUnits},{status:'Closed actual units',count:report.actualUnits}]);host.append(chartHost);
+ const f=report.forecastAssessment;
+ host.append(el('p',report.note),el('p','Forecast evidence: '+f.status+'. '+f.reason+
+  ' Future employee delivery forecast remains unavailable without independent qualification.'));
+ if(f.status==='BACKTEST_AVAILABLE')host.append(el('p','Demand WAPE '+f.wapePct+'% / bias '+f.biasPct+'%. Source: '+report.source));
+}
 function render(data){
  packet=data;
+ planComparison(data);
  const host=$('wa-enterprise-grid');host.replaceChildren();
  const byId=new Map(data.departments.map(x=>[x.employeeId,x]));
  const observed=data.departments.filter(x=>x.status==='OBSERVED');
@@ -42,9 +101,9 @@ function render(data){
  const currentRows=backlogObserved.reduce((a,x)=>a+x.currentSourceCount,0);
  const attention=backlogObserved.reduce((a,x)=>a+(Number.isSafeInteger(x.currentAttentionCount)?x.currentAttentionCount:0),0);
  const stats=$('wa-enterprise-kpis');stats.replaceChildren();
- for(const [label,value] of [['Responding sources',observed.length+' / 16'],
+ for(const [label,value] of [['Responding primary sources',observed.length+' / 16'],
   ['Uncommissioned / unavailable',unavailable],
-  ['Dated source records',sum],
+  ['Primary source rows in period',sum],
   ['Current source records (all dates)',backlogObserved.length?currentRows:'Not observed'],
   ['Current pending / hold / draft flags',backlogObserved.length?attention:'Not observed']]){
   const card=el('div',undefined,'wa-stat');card.append(el('small',label),el('strong',value));stats.append(card);
@@ -57,7 +116,8 @@ function render(data){
   const icon=el('span',name.split(' ').map(x=>x[0]).slice(0,2).join(''),'premium-department-icon');
   icon.setAttribute('aria-hidden','true');heading.append(icon,el('h3',name));card.append(heading);
   if(!record||record.status!=='OBSERVED'){
-   card.append(el('p','Source unavailable / not commissioned. Counts and forecast unknown.'));
+   card.append(el('p','Primary source unavailable / not commissioned. Counts and forecast unknown.'));
+   if(record)sourceDetails(record,card);
   }else{
    const count=Number.isSafeInteger(record.periodEventCount)?record.periodEventCount:null;
    const number=el('div',undefined,'premium-department-number');
@@ -112,6 +172,7 @@ function render(data){
    details.append(pages);
    card.append(details);
    context.append(el('p','Source: '+String(record.sourceTable??'Not supplied')+' · Forecast: not qualified'));
+   sourceDetails(record,context);
    card.append(context);
   }
   const source=el('a','Inspect current records in VYNDI OS');
@@ -157,6 +218,7 @@ async function refresh(){
  const from=$('wa-period-from').value,to=$('wa-period-to').value;
  packet=null;loadingPages.clear();
  $('wa-enterprise-grid').replaceChildren();$('wa-enterprise-kpis').replaceChildren();
+ $('wa-business-comparison')?.replaceChildren();
  button.disabled=false;
  if(!from||!to||from>to){$('wa-enterprise-status').textContent='Choose a valid period above.';return;}
  button.disabled=true;$('wa-enterprise-status').textContent='Reading authenticated 16-department source records…';
@@ -178,6 +240,7 @@ async function refresh(){
  }catch{
   if(seq!==ticket)return;
   packet=null;$('wa-enterprise-grid').replaceChildren();$('wa-enterprise-kpis').replaceChildren();
+ $('wa-business-comparison')?.replaceChildren();
   $('wa-enterprise-status').textContent='Authoritative 16-department source not available yet. No fabricated zeros, jobs or forecasts.';
  }finally{if(seq===ticket)button.disabled=false;}
 }

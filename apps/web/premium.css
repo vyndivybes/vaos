@@ -167,6 +167,7 @@ body.va-premium.workspace-body .control-main{padding:30px 40px;background:var(--
 body.va-premium.workspace-body .workspace-hero{border:0;padding-bottom:15px;margin:0}
 body.va-premium.workspace-body :is(.workspace-breadcrumb,.workspace-overline){color:#7f947a;font-size:9px}
 body.va-premium.workspace-body .workspace-hero h1{font-size:15px;letter-spacing:-.03em;color:var(--p-muted)}
+body.va-premium.workspace-body #module-title{font-size:15px;letter-spacing:-.03em;color:var(--p-muted)}
 body.va-premium.workspace-body #module-description{display:none}
 body.va-premium.workspace-body .hero-status{background:transparent;border:1px solid var(--p-line);color:var(--p-muted);font-size:9px;border-radius:6px;box-shadow:none}
 body.va-premium.workspace-body .workspace-search{background:#19251c;border:1px solid var(--p-line)!important;box-shadow:none!important;border-radius:12px;padding:10px 14px;margin:0 0 32px}

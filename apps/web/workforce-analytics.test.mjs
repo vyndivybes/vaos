@@ -29,13 +29,15 @@ test('employee selection renders unknown evidence as holds and failed refresh re
  await flush();
  nodes.get('wa-select').events.change({target:{value:'qa'}});
  assert.match(nodes.get('wa-profile').textContent,/QA fixture/);
+ assert.match(nodes.get('wa-overview-work').textContent,/Marked completed/);
+ assert.match(nodes.get('wa-overview-heartbeat').textContent,/Recent record/);
  assert.match(nodes.get('wa-forecast').textContent,/NOT_QUALIFIED/);
  assert.match(nodes.get('wa-progress-coverage').textContent,/NO_APPROVED_BASELINE/);
  assert.match(nodes.get('wa-report-status').textContent,/NO_VERIFIED_EMPLOYEE_REPORTS/);
  assert.match(nodes.get('wa-work').textContent,/<img src=x onerror=attack\(\)>/,'untrusted text rendered literally');
  fail=true;await nodes.get('wa-refresh').events.click();await flush();
  assert.match(nodes.get('wa-status').textContent,/source unavailable/);
- for(const id of ['wa-profile','wa-work','wa-forecast','wa-capa-cases','wa-audit-pages','wa-progress','wa-reports'])
+ for(const id of ['wa-profile','wa-work','wa-forecast','wa-capa-cases','wa-audit-pages','wa-progress','wa-reports','wa-overview-work','wa-overview-heartbeat'])
   assert.equal(nodes.get(id).textContent,'',id+' must not retain stale metrics');
  assert.equal(nodes.get('wa-refresh').disabled,false);
 });
@@ -49,3 +51,8 @@ for(const [employee,expected] of [['qa','QA fixture'],['unknown-id','orchestrato
   assert.match(nodes.get('wa-profile').textContent,new RegExp(expected));
  });
 }
+
+test('visual overview precedes collapsed detail table without hiding governed evidence',()=>{
+ assert.ok(html.indexOf('id="wa-overview-work"')<html.indexOf('id="wa-roster"'));
+ assert.match(html,/<details class="wa-accordion wa-records-disclosure"><summary>Search all employee records/);
+});

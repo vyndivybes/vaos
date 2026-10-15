@@ -44,7 +44,9 @@ export async function runFounderContextDraft({ai,agentId,instruction,report,cont
   ||!UUID.test(context?.previousMessageId)
   ||!Array.isArray(context?.prior)||context.prior.length<1||context.prior.length>2
   ||typeof instruction!=='string'||instruction.length<5||instruction.length>2000
-  ||report?.status!=='READ_ONLY_PREVIEW_NOT_AGENT_REPLY'
+  ||report?.status!=='READ_ONLY_PREVIEW_NOT_AGENT_REPLY'||report.agentId!==agentId
+  ||context.prior.at(-1)?.messageId!==context.previousMessageId
+  ||!Number.isInteger(context.sequence)||context.sequence<2||context.sequence>12
   ||report.actionAuthorized!==false||report.modelInvoked!==false
   ||!Array.isArray(report.evidenceRefs)||report.evidenceRefs.length>20
   ||!Array.isArray(report.blockedWorkPackageIds)

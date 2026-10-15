@@ -3,6 +3,7 @@
  * certification, a live website audit, business evidence or agent execution.
  * Input remains untrusted client-supplied excerpt text; no network or model.
  */
+import {sourceSnippet} from './source-snippet.mjs';
 const RULES=Object.freeze({
  LEGAL:Object.freeze([
   ['Parties / agreement',/\b(parties|between|hereby agree|entered into)\b/i],
@@ -35,7 +36,7 @@ export function reviewSpecialistExcerpt({domain,text}={}){
   const idx=lines.findIndex(line=>rule.test(line));
   const located=idx!==-1;
   return Object.freeze({topic,status:located?'TERM_LOCATED':'NOT_LOCATED_IN_EXCERPT',
-   ...(located?{line:idx+1,excerpt:lines[idx].trim().slice(0,220)}:{})});
+   ...(located?{line:idx+1,excerpt:sourceSnippet(lines[idx].trim(),lines[idx].trim().search(rule),220)}:{})});
  });
  return Object.freeze({
   schemaVersion:'VAOS_JARVIS_SPECIALIST_EXCERPT_V1',
@@ -45,7 +46,15 @@ export function reviewSpecialistExcerpt({domain,text}={}){
   sourceAuthority:'USER_UPLOADED_UNVERIFIED',
   evidenceScope:'SUBMITTED_EXCERPT_ONLY',sourceCompletenessVerified:false,
   sourceLineCount:lines.length,locatedCount:checks.filter(x=>x.status==='TERM_LOCATED').length,
-  checks,score:null,legalAdviceProvided:false,regulatoryComplianceCertified:false,
+  checks,workflow:Object.freeze({
+   status:'PREPARE_FOR_HUMAN_REVIEW',executionAllowed:false,
+   requiredInputs:Object.freeze(domain==='LEGAL'
+    ?['Complete contract and revision','Jurisdiction and relevant dates','Parties, objectives and disputed clauses']
+    :['Audience, channel and objective','Source dates and approved claims','Actual campaign metrics with provenance, if performance is requested']),
+   nextSteps:Object.freeze(domain==='LEGAL'
+    ?['Check each cited line in the complete contract','Have qualified counsel assess applicability and proposed edits','Obtain separate governed approval before signing or sending']
+    :['Validate claims against supplied evidence','Prepare copy for owner review without inferring ROI or conversion rates','Obtain separate governed approval before publishing, sending or spending'])
+  }),score:null,legalAdviceProvided:false,regulatoryComplianceCertified:false,
   campaignPerformanceVerified:false,forecastQualified:false,actionAuthorized:false,stored:false,
   notice:domain==='LEGAL'
    ?'Possible contract terms located by keywords only. Missing matches do not prove an omitted clause. Applicability, enforceability and governing law require a qualified legal review.'

@@ -1,6 +1,8 @@
 // Render existing chart evidence as ephemeral artwork. No new requests, storage or exports.
 const art=[...document.querySelectorAll('[data-chart-picture]')];
-const targets=['cockpit-source-chart','cockpit-workforce-chart','wa-overview-work','wa-overview-heartbeat'];
+const targets=document.getElementById('cockpit-source-chart')
+ ?['cockpit-source-chart','cockpit-workforce-chart']
+ :['wa-overview-work','wa-overview-heartbeat'];
 const xml=value=>String(value).replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
 function picture(host){
  const existing=host.querySelector('svg');
@@ -12,7 +14,7 @@ function picture(host){
  return contents?'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 290">'+contents+'</svg>':null;
 }
 function update(){
- const images=targets.map(id=>document.getElementById(id)).filter(Boolean).map(picture).filter(Boolean);
+ const images=targets.map(id=>{const host=document.getElementById(id);return host?picture(host):null;});
  art.forEach((frame,i)=>{const box=frame.querySelector('.mi-picture');const svg=images[i];if(!svg){box.replaceChildren(Object.assign(document.createElement('span'),{textContent:'Awaiting source evidence'}));return;}const src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);if(box.firstElementChild?.getAttribute('src')===src)return;const image=document.createElement('img');image.alt='';image.src=src;box.replaceChildren(image);});
 }
 if(art.length){

@@ -230,3 +230,45 @@ test('G6: existing voice UI manages long-reply barge-in through local-only conse
  assert.match(module,/onActivity\('SPEECH_END'\)/);
  assert.doesNotMatch(module,/fetch\(|localStorage|sessionStorage|navigator\.mediaDevices\.getUserMedia/);
 });
+
+test('Ask JARVIS reads connected Google Calendar instead of falling through to VYNDI evidence',async()=>{
+ const original={document:globalThis.document,window:globalThis.window,fetch:globalThis.fetch};
+ const requests=[];
+ function element(id){
+  const listeners=new Map();
+  return {id,disabled:false,checked:false,value:'',textContent:'',dataset:{},
+   addEventListener(name,fn){listeners.set(name,fn);},
+   setAttribute(){},replaceChildren(){},append(){},
+   click(){const action=listeners.get('click');if(action)return action({type:'click'});}
+  };
+ }
+ const ids=['vaos-voice-mic','vaos-voice-stop','vaos-voice-ask','vaos-voice-speak',
+  'vaos-voice-question','vaos-voice-answer','vaos-voice-status','vaos-voice-sources',
+  'vaos-voice-speech-toggle','vaos-wake-toggle','vaos-wake-indicator','vaos-wake-status','vaos-voice-test'];
+ const nodes=Object.fromEntries(ids.map(id=>[id,element(id)]));
+ const root={dataset:{},querySelector(q){return nodes[q.slice(1)]||null},addEventListener(){}};
+ globalThis.document={visibilityState:'visible',querySelector(q){return q==='#vaos-main-voice'?root:null;},addEventListener(){}};
+ globalThis.window={SpeechRecognition:class{static async available(){return 'available'}},
+  addEventListener(){},speechSynthesis:{cancel(){},speak(){}},SpeechSynthesisUtterance:class{}};
+ globalThis.fetch=async(url,options)=>{
+  requests.push({url,options});
+  if(url==='/api/voice-capabilities')return {ok:true,json:async()=>({data:{
+   enabled:true,manualReviewRequired:true,actionAuthorized:false,
+   agentDispatch:false,automaticSubmission:false,serverAudioEnabled:false}})};
+  if(url==='/api/google-workspace/events')return {ok:true,status:200,json:async()=>({
+   status:'PASS',source:'GOOGLE_CALENDAR',calendarEvents:1,actionAuthorized:false,truncated:false,
+   events:[{title:'Prototype review',start:'2026-10-19T09:00:00+05:30',end:'2026-10-19T09:30:00+05:30',allDay:false}]
+  })};
+  throw Error('UNEXPECTED_BUSINESS_ROUTE');
+ };
+ try{
+  await import('./main-voice.mjs?google-calendar-read-chat-20261016');
+  await new Promise(resolve=>setTimeout(resolve,0));
+  nodes['vaos-voice-question'].value='JARVIS, read my Google Calendar and tell me my upcoming appointments for the next seven days';
+  await nodes['vaos-voice-ask'].click();
+  assert.equal(requests.filter(x=>x.url==='/api/google-workspace/events').length,1);
+  assert.equal(requests.some(x=>String(x.url).startsWith('/api/voice-insight?')),false);
+  assert.match(nodes['vaos-voice-answer'].textContent,/Prototype review/);
+  assert.match(nodes['vaos-voice-answer'].textContent,/1 upcoming/);
+ }finally{Object.assign(globalThis,original);}
+});

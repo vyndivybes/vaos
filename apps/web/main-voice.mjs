@@ -1,3 +1,4 @@
+import {resolveFounderGoogleIntent} from './lib/founder-google-intents.mjs';
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
 import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-timing.mjs';
@@ -210,6 +211,7 @@ function init(){
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
  let localSpeech=null,interruption=null;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
+ let pendingReminderTitle=null,lastGmailSearch=null;
  const g5Timing=createG5ResponseTiming();
  // The paired local speech tool supplies a draft only. The user still presses
  // Ask, and the existing classifier and read-only routes retain authority.
@@ -263,6 +265,7 @@ function init(){
   isOptedIn:()=>wake?.isEnabled()===true&&document.visibilityState==='visible',
   allowQuestion:question=>{
    const resolved=conversation.resolve(question);
+   if(resolveFounderGoogleIntent(resolved.question))return true;
    const candidate=classifyDashboardQuestion(resolved.question);
    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported'
     &&(conversation.canFollowUp(question)||isDirectBusinessQuestion(question));
@@ -365,7 +368,7 @@ function init(){
   // Stop while the mic, hands-free or source request is active still ends
   // the session, invalidates late callbacks and clears conversation context.
   wake?.disable('Hey VAOS switched off. Microphone stopped.');
-  voiceRequestPending=false;
+  voiceRequestPending=false;pendingReminderTitle=null;lastGmailSearch=null;
   cancel();conversation.clear();setStatus('Stopped. No business actions authorized. Conversation context cleared.');
  });
  speech.addEventListener('click',speakAnswer);
@@ -374,6 +377,46 @@ function init(){
   const requestCameFromVoice=voiceRequestPending;
   voiceRequestPending=false;
   const resolved=conversation.resolve(input.value);
+  const googleIntent=resolveFounderGoogleIntent(pendingReminderTitle?'Remind me to '+pendingReminderTitle+' '+resolved.question:resolved.question);
+  if(googleIntent){
+   const wanted=resolveFounderGoogleIntent(resolved.question);
+   const action=wanted||googleIntent;
+   if(action.kind==='NEED_TIME'||action.kind==='NEED_TITLE'){
+    if(action.kind==='NEED_TIME')pendingReminderTitle=(pendingReminderTitle||resolved.question.replace(/^(?:please\\s+)?(?:remind me to|schedule)\\s*/i,'')).slice(0,110);
+    answer.textContent=action.message;lastAnswer=action.message;spokenAnswer=action.message;setStatus('Calendar details required.');
+    if(voiceEnabled&&speakToggle?.checked)speakAnswer();else wake?.resume();state();return;
+   }
+   pendingReminderTitle=null;
+   if(action.kind==='MAIL')lastGmailSearch=action.query;
+   wake?.pause();cancel();busy=true;answer.textContent='Checking connected Google Workspace…';sources.replaceChildren();state();
+   const abort=new AbortController();controller=abort;const timer=setTimeout(()=>abort.abort(),25000);
+   let speaking=false;
+   try{
+    const save=action.kind==='CALENDAR';
+    const reqId=save?crypto.randomUUID().replaceAll('-',''):null;
+    const result=await fetch(save?'/api/google-workspace/reminders':'/api/google-workspace/mail?q='+encodeURIComponent(action.query),{
+     method:save?'POST':'GET',credentials:'same-origin',cache:'no-store',signal:abort.signal,
+     headers:save?{'Content-Type':'application/json',Accept:'application/json'}:{Accept:'application/json'},
+     ...(save?{body:JSON.stringify({title:action.title,start:action.start,end:action.end,requestId:reqId})}:{})});
+    const data=await result.json();
+    if(result.status===401||result.status===403)throw Error('Google Workspace requires an authenticated founder session.');
+    if(save){
+     lastAnswer=data.saved===true&&data.status==='PASS'
+      ?'Saved to your Google Calendar: '+data.summary+' at '+new Date(data.start).toLocaleString()+'. '+data.reminder+'.'
+      :'I could not confirm this calendar event was saved. '+(data.reason||'Google Calendar unavailable')+'.';
+    }else if(data.status==='PASS'&&Array.isArray(data.messages)){
+     lastAnswer=data.messages.length?data.messages.map(m=>'From '+m.from+'. '+m.subject+'. '+m.snippet).join('\\n').slice(0,3600)
+      :'No messages matched your Gmail search.';
+    }else lastAnswer='I could not verify Gmail results. '+(data.reason||'Google Workspace unavailable')+'.';
+    if(data.reason==='GOOGLE_SCOPE_RECONNECT_REQUIRED'||data.reason==='GOOGLE_FOUNDER_CONSENT_REQUIRED'){
+     const link=document.createElement('a');link.href='/api/google-workspace/start';link.textContent='Connect Google Workspace';sources.append(link);
+    }
+    answer.textContent=lastAnswer;spokenAnswer=lastAnswer.slice(0,450);setStatus(save?(data.saved?'Calendar event saved and confirmed.':'Calendar save not confirmed.'):'Google Workspace search complete.');
+    if(speakToggle?.checked&&voiceEnabled)speaking=speakAnswer()===true;
+   }catch{lastAnswer='Google Workspace request failed; no calendar save is confirmed.';answer.textContent=lastAnswer;setStatus(lastAnswer)}
+   finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
+   return;
+  }
   const intent=classifyDashboardQuestion(resolved.question);
   if(intent.kind==='DENY'){conversation.clear();setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
@@ -458,10 +501,11 @@ function init(){
   RecognitionClass:SpeechRecognition,
   isVisible:()=>document.visibilityState==='visible',
   validateQuestion:q=>{
+   if(resolveFounderGoogleIntent(q))return true;
    const candidate=classifyDashboardQuestion(conversation.resolve(q).question);
    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported';
   },
-  acceptDirectQuestion:q=>isDirectBusinessQuestion(q)||conversation.canFollowUp(q),
+  acceptDirectQuestion:q=>isDirectBusinessQuestion(q)||Boolean(resolveFounderGoogleIntent(q))||conversation.canFollowUp(q),
   onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey VAOS.');},
   onDraft:q=>{input.value=q;state();},
   onConfirm:q=>{input.value=q;voiceRequestPending=true;ask.click();},

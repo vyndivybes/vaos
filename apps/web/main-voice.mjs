@@ -211,7 +211,7 @@ function init(){
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
  let localSpeech=null,interruption=null;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
- let pendingReminderTitle=null,lastGmailSearch=null;
+ let pendingReminderTitle=null;
  const g5Timing=createG5ResponseTiming();
  // The paired local speech tool supplies a draft only. The user still presses
  // Ask, and the existing classifier and read-only routes retain authority.
@@ -368,7 +368,7 @@ function init(){
   // Stop while the mic, hands-free or source request is active still ends
   // the session, invalidates late callbacks and clears conversation context.
   wake?.disable('Hey VAOS switched off. Microphone stopped.');
-  voiceRequestPending=false;pendingReminderTitle=null;lastGmailSearch=null;
+  voiceRequestPending=false;pendingReminderTitle=null;
   cancel();conversation.clear();setStatus('Stopped. No business actions authorized. Conversation context cleared.');
  });
  speech.addEventListener('click',speakAnswer);
@@ -387,7 +387,6 @@ function init(){
     if(voiceEnabled&&speakToggle?.checked)speakAnswer();else wake?.resume();state();return;
    }
    pendingReminderTitle=null;
-   if(action.kind==='MAIL')lastGmailSearch=action.query;
    wake?.pause();cancel();busy=true;answer.textContent='Checking connected Google Workspace…';sources.replaceChildren();state();
    const abort=new AbortController();controller=abort;const timer=setTimeout(()=>abort.abort(),25000);
    let speaking=false;

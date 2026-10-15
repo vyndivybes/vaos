@@ -109,3 +109,92 @@ test('G9: a previously executed hourly intent is a recorded state, not a newly p
  assert.equal(result.freshReadbackVerified,false);
  assert.equal(h.calls.filter(x=>x.execute).length,0);
 });
+
+
+test('G9 prelaunch shadow mode checks the existing L5 responsibility contract without creating an intent or executing a job',async()=>{
+ const h=harness({mode:'shadow-v1'});
+ const result=await h.run();
+ assert.deepEqual(result,{
+  status:'SHADOW_READY',
+  actionType:'PRODUCTION.OBSERVE_WIP',
+  hour:'2026-10-10T16:00:00.000Z',
+  canaryMode:'shadow-v1',
+  activeObserver:false,
+  sourceReadPerformed:false,
+  actualObservationVerified:false,
+  businessWrites:false,
+ });
+ assert.deepEqual(h.calls,['snapshot'],'shadow may only inspect existing workforce state');
+});
+
+test('G9 prelaunch shadow mode refuses unqualified or undeclared L5 observer without intent submission',async()=>{
+ for(const changes of [
+  {state:{workforce:{digitalEmployees:[{...production,qualificationLevel:2},qa],responsibilityContracts:[contract]}}},
+  {state:{workforce:{digitalEmployees:[production,qa],responsibilityContracts:[{...contract,autonomousActions:[]}]}}},
+  {state:{workforce:{digitalEmployees:[production,{...qa,status:'RESTRICTED'}],responsibilityContracts:[contract]}}},
+ ]) {
+  const h=harness({mode:'shadow-v1',...changes});
+  const r=await h.run();
+  assert.equal(r.status,'HOLD');
+  assert.equal(r.reason,'PRODUCTION_MONITOR_AUTHORITY_OR_QUALIFICATION_DENIED');
+  assert.deepEqual(h.calls,['snapshot']);
+ }
+});
+
+test('G9 prelaunch shadow-to-live-to-stopped sequence grants no permission by itself and leaves no further admissions after stop',async()=>{
+ let mode='shadow-v1',proposals=0,executions=0;
+ const controlService={
+  snapshot:async()=>snapshot,
+  proposeIntent:async()=>{proposals++;return {status:'AUTHORIZED'};},
+ };
+ const executionEngine={processProductionObservation:async()=>{executions++;return {
+  status:'SUCCEEDED',jobId:'job-1',observationReceipt:verifiedReceipt,
+ }}};
+ const run=()=>runProductionReadOnlyObservation({controlService,executionEngine,mode:()=>mode,now});
+ const shadow=await run();
+ assert.equal(shadow.status,'SHADOW_READY');
+ assert.equal(proposals,0);assert.equal(executions,0);
+ mode='read-only-v1';
+ const canary=await run();
+ assert.equal(canary.status,'PASS');
+ assert.equal(proposals,1);assert.equal(executions,1);
+ mode='off';
+ const stopped=await run();
+ assert.equal(stopped.status,'HOLD');
+ assert.equal(stopped.reason,'PRODUCTION_MONITOR_DISABLED');
+ assert.equal(proposals,1);assert.equal(executions,1);
+});
+
+test('G9 prelaunch stop during a shadow snapshot prevents a READY result and never queues business effects',async()=>{
+ let mode='shadow-v1',intents=0,executes=0;
+ const result=await runProductionReadOnlyObservation({
+  controlService:{
+   snapshot:async()=>{mode='disabled';return snapshot;},
+   proposeIntent:async()=>{intents++;return {status:'AUTHORIZED'};},
+  },
+  executionEngine:{processProductionObservation:async()=>{executes++;return {status:'SUCCEEDED'};}},
+  mode:()=>mode,now,
+ });
+ assert.equal(result.status,'HOLD');
+ assert.equal(result.reason,'PRODUCTION_MONITOR_STOPPED');
+ assert.equal(intents,0);assert.equal(executes,0);
+});
+
+test('G9 prelaunch unknown mode fails closed without even consulting the live workforce ledger',async()=>{
+ for(const mode of ['L5','automatic','production-write-v1',true,'',null]){
+  const h=harness({mode});
+  const r=await h.run();
+  assert.equal(r.status,'HOLD');
+  assert.deepEqual(h.calls,[]);
+ }
+});
+
+test('G9 scheduler admits only existing read-only and shadow modes; neither mode enables business-write queues',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const worker=await readFile(new URL('../../apps/web/cloudflare-worker.mjs',import.meta.url),'utf8');
+ assert.match(worker,/VAOS_PRODUCTION_OBSERVER_CONTROL/);
+ assert.match(worker,/'shadow-v1'/);
+ assert.match(worker,/'read-only-v1'/);
+ assert.match(worker,/runProductionReadOnlyObservation/);
+ assert.doesNotMatch(worker,/VAOS_GLOBAL_AUTONOMY|G9_ENABLE_ALL_WRITE_ACTIONS/);
+});

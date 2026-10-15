@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="theme-color" content="#101318"/><meta name="description" content="Founder-only evidence-based employee performance and audit analytics"/>
+<meta name="theme-color" content="#f8f7f4"/><meta name="description" content="Founder-only evidence-based employee performance and audit analytics"/>
 <link rel="icon" href="/assets/vayu-shastr-original.webp" type="image/webp"/>
 <link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/workforce-analytics.css"/>
 <title>VAOS · Workforce Analytics</title></head><body>
@@ -8,30 +8,24 @@
 <main class="wa-main">
  <section class="wa-panel" aria-labelledby="workforce-title"><div class="wa-heading"><h2 id="workforce-title">Workforce overview</h2><button id="wa-refresh" type="button">Refresh verified records</button></div><p id="wa-status" aria-live="polite">Authenticating and reading governed records…</p>
  <p id="wa-observed">No validated database snapshot yet.</p><p id="wa-ops-status" aria-live="polite">Operational runtime qualification not yet verified.</p><div id="wa-totals" class="wa-stats" aria-live="polite"></div>
- <details class="wa-accordion" open><summary>Workforce evidence priorities · independent verification gaps</summary><p>These are missing-evidence checks, NOT competence judgements, audit passes or authority to take action. Use employee selection for details.</p><div id="wa-evidence-priorities" class="wa-stats" aria-live="polite"></div></details>
- <label class="wa-employee-filter">Search employees <input id="wa-employee-search" type="search" placeholder="Filter by employee, department, lifecycle or audit" autocomplete="off"/></label>
- <div class="wa-scroll"><table><caption>All 16 digital employees · select an employee to inspect</caption><thead><tr><th>Employee</th><th>Lifecycle</th><th>Work</th><th>Verified 90d</th><th>Audit</th><th>Heartbeat evidence</th></tr></thead><tbody id="wa-roster"></tbody></table></div></section>
-
- <section class="wa-panel wa-commissioning" aria-labelledby="wa-commissioning-title">
-  <div class="wa-heading"><div><h2 id="wa-commissioning-title">Workforce execution &amp; corrective-action board</h2>
-   <p>Four separate evidence lanes: blocked work, independent departmental audits, open CAPA retests, and qualified plans/reports. Observing an issue does not authorize an employee to clear it.</p></div></div>
-  <p id="wa-commissioning-status" role="status" aria-live="polite">Loading founder-only corrective-action evidence…</p>
-  <div id="wa-commissioning-totals" class="wa-stats"></div>
-  <label class="wa-employee-filter">Search corrective-action items <input id="wa-action-search" type="search"
-   placeholder="Search mission, employee, CAPA, audit or forecast…" autocomplete="off"/></label>
-  <details class="wa-accordion" open><summary>Blocked work and mission dependencies</summary>
-   <p>Recorded BLOCKED is not automatically removable. Physical engineering release remains separate from training, audit and read-only inspection.</p>
-   <div id="wa-blocked-work" class="wa-action-list"></div></details>
-  <details class="wa-accordion"><summary>16-employee route-by-route audit acceptance</summary>
-   <p>Each assigned route requires actual signed-in navigation, UI, responsive, permissions, records, displays, reconciliation and error-state checks; ledger checks are mandatory where specified. Independent reviewers must accept evidence.</p>
-   <div id="wa-audit-work" class="wa-action-list"></div></details>
-  <details class="wa-accordion"><summary>CAPA corrective actions and independent retests</summary>
-   <p>A CAPA cannot close on an implementation or CI result alone. Record defect root cause, corrective effect, a witnessed retest and reviewed acceptance evidence.</p>
-   <div id="wa-capa-work" class="wa-action-list"></div></details>
-  <details class="wa-accordion"><summary>Forecast qualification and provenance-backed founder reports</summary>
-   <p>Forecasts need approved dated baselines, source integrity and independent backtests. Historical reports do not prove outbound delivery.</p>
-   <div id="wa-forecast-work" class="wa-action-list"></div></details>
+ <section class="wa-visual-overview" aria-label="Graphical workforce evidence overview">
+  <div class="wa-viz-card">
+   <div class="wa-viz-heading"><span class="wa-kicker">RECORDED WORK</span><h3>Mission status distribution</h3></div>
+   <p>Work-package counts only. Marked completion is not an independently verified handoff.</p>
+   <div id="wa-overview-work" class="wa-viz-bars" role="region" aria-label="Observed workforce work status chart"><p>No observed status counts yet.</p></div>
+  </div>
+  <div class="wa-viz-card">
+   <div class="wa-viz-heading"><span class="wa-kicker">OPERATIONAL EVIDENCE</span><h3>Heartbeat record coverage</h3></div>
+   <p>Recorded heartbeat freshness does not establish live autonomous operation.</p>
+   <div id="wa-overview-heartbeat" class="wa-viz-bars" role="region" aria-label="Workforce heartbeat evidence chart"><p>No verified heartbeat evidence yet.</p></div>
+  </div>
  </section>
+ <details class="wa-accordion"><summary>Workforce evidence priorities · independent verification gaps</summary><p>These are missing-evidence checks, NOT competence judgements, audit passes or authority to take action. Use employee selection for details.</p><div id="wa-evidence-priorities" class="wa-stats" aria-live="polite"></div></details>
+ <details class="wa-accordion wa-records-disclosure"><summary>Search all employee records <small>Open detailed roster and audit evidence</small></summary>
+ <label class="wa-employee-filter">Search employees <input id="wa-employee-search" type="search" placeholder="Filter by employee, department, lifecycle or audit" autocomplete="off"/></label>
+ <div class="wa-scroll"><table><caption>All 16 digital employees · select an employee to inspect</caption><thead><tr><th>Employee</th><th>Lifecycle</th><th>Work</th><th>Verified 90d</th><th>Audit</th><th>Heartbeat evidence</th></tr></thead><tbody id="wa-roster"></tbody></table></div>
+ </details></section>
+
  <section class="wa-panel" aria-labelledby="employee-title"><div class="wa-heading"><h2 id="employee-title">Individual employee dashboard</h2><label for="wa-select">Employee <select id="wa-select"></select></label></div>
  <div id="wa-profile"></div><details class="wa-accordion" open><summary>Evidence needed before qualification</summary><div id="wa-evidence-priority-detail" aria-live="polite">Loading independent qualification gaps…</div></details>
  <details class="wa-accordion" open><summary>Employee performance charts · switch graph styles</summary>
@@ -54,6 +48,26 @@
  <div class="wa-subpanel"><h3>Defects, nonconformances &amp; CAPA</h3><p id="wa-defects">Not yet connected to an independently evidenced defect register; no zero-defect claim.</p><div id="wa-capa-status"></div><ul id="wa-capa-cases"></ul></div>
  <div class="wa-subpanel"><h3>Employee reports to founder</h3><p id="wa-report-status">Independent handoff report evidence not loaded.</p><ul id="wa-reports"></ul><p>Reports are shown here for founder review. Outbound delivery and autonomous replies remain uncommissioned.</p><a href="/founder-console.html">Open Founder Command inbox →</a></div>
  </div></details>
+ </section>
+ <section class="wa-panel wa-commissioning" aria-labelledby="wa-commissioning-title">
+  <div class="wa-heading"><div><h2 id="wa-commissioning-title">Workforce execution &amp; corrective-action board</h2>
+   <p>Four separate evidence lanes: blocked work, independent departmental audits, open CAPA retests, and qualified plans/reports. Observing an issue does not authorize an employee to clear it.</p></div></div>
+  <p id="wa-commissioning-status" role="status" aria-live="polite">Loading founder-only corrective-action evidence…</p>
+  <div id="wa-commissioning-totals" class="wa-stats"></div>
+  <label class="wa-employee-filter">Search corrective-action items <input id="wa-action-search" type="search"
+   placeholder="Search mission, employee, CAPA, audit or forecast…" autocomplete="off"/></label>
+  <details class="wa-accordion" open><summary>Blocked work and mission dependencies</summary>
+   <p>Recorded BLOCKED is not automatically removable. Physical engineering release remains separate from training, audit and read-only inspection.</p>
+   <div id="wa-blocked-work" class="wa-action-list"></div></details>
+  <details class="wa-accordion"><summary>16-employee route-by-route audit acceptance</summary>
+   <p>Each assigned route requires actual signed-in navigation, UI, responsive, permissions, records, displays, reconciliation and error-state checks; ledger checks are mandatory where specified. Independent reviewers must accept evidence.</p>
+   <div id="wa-audit-work" class="wa-action-list"></div></details>
+  <details class="wa-accordion"><summary>CAPA corrective actions and independent retests</summary>
+   <p>A CAPA cannot close on an implementation or CI result alone. Record defect root cause, corrective effect, a witnessed retest and reviewed acceptance evidence.</p>
+   <div id="wa-capa-work" class="wa-action-list"></div></details>
+  <details class="wa-accordion"><summary>Forecast qualification and provenance-backed founder reports</summary>
+   <p>Forecasts need approved dated baselines, source integrity and independent backtests. Historical reports do not prove outbound delivery.</p>
+   <div id="wa-forecast-work" class="wa-action-list"></div></details>
  </section>
  <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
 </main><script type="module" src="/workforce-analytics.mjs"></script></body></html>

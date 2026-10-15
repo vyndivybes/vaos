@@ -17,6 +17,35 @@ function bar(host,label,value,max){
  wrapper.append(caption,track);host.append(wrapper);
 }
 function counts(host,items){host.replaceChildren();for(const [name,value] of items){const d=element('div',undefined,'wa-stat');d.append(element('small',name),element('strong',display(value)));host.append(d);}}
+// Only render counts actually recorded by the read-only workforce authority.
+// Missing values are not treated as zero; heartbeats are not runtime certification.
+function renderOverview(data){
+ const panels=[
+  ['wa-overview-work',[
+   ['Planned',data.summary.planned],
+   ['In progress',data.summary.inProgress],
+   ['Marked completed',data.summary.completed],
+   ['Blocked',data.summary.blocked],
+   ['Failed',data.summary.failed],
+  ]],
+  ['wa-overview-heartbeat',[
+   ['Recent record · 24h',data.operationalReadiness.recentHeartbeatRecords24h],
+   ['Stale record',data.operationalReadiness.staleHeartbeatRecords24h],
+   ['Missing / invalid',data.operationalReadiness.missingOrInvalidHeartbeats],
+  ]],
+ ];
+ for(const [id,values] of panels){
+  const host=$(id);host.replaceChildren();
+  const observed=values.filter(([,value])=>Number.isSafeInteger(value)&&value>=0);
+  if(!observed.length){
+   host.append(element('p','No independently observed counts available. Unknown is not zero.','wa-viz-empty'));
+   continue;
+  }
+  const max=Math.max(1,...observed.map(([,value])=>value));
+  for(const [label,value] of observed)bar(host,label,value,max);
+  if(observed.length<values.length)host.append(element('p','Some categories have no validated count.','wa-viz-empty'));
+ }
+}
 function renderRoster(data){
  const table=$('wa-roster');table.replaceChildren();
  for(const emp of data.employees){
@@ -73,7 +102,7 @@ function renderEmployeeCharts(emp){
  const total=series.reduce((a,x)=>a+x.value,0);
  if(total===0){root.textContent='No work packages recorded in these categories. Other operational activity is not inferred.';return;}
  const maximum=Math.max(1,...series.map(x=>x.value));
- const colors=['#edc06e','#54beb5','#83b0ef','#b899df','#d48e9a','#d9a066','#a1b98c'];
+ const colors=['#b59b71','#8297a5','#83a596','#b6a7b7','#c89c80','#adbac7','#9bb9b6'];
  if(selectedChartKind==='bars'){for(const x of series)bar(root,x.label,x.value,maximum);return;}
  if(selectedChartKind==='donut'){
   const pieces=[];let a=0;
@@ -244,6 +273,7 @@ async function refresh(){
    !Array.isArray(op.employees)||op.employees.length!==16)
    throw Error('WORKFORCE_OPERATIONAL_EVIDENCE_UNVERIFIED');
   latest=data;
+  renderOverview(data);
   renderEvidencePriorities(data);
    renderCommissioningBoard(data);
   $('wa-status').textContent='Read-only workforce evidence loaded; independent live operational certification remains HOLD.';
@@ -267,6 +297,7 @@ async function refresh(){
   s.value=selection;renderEmployee();
  }catch{
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
+  for(const id of ['wa-overview-work','wa-overview-heartbeat'])$(id).replaceChildren();
   $('wa-observed').textContent='No validated snapshot';$('wa-ops-status').textContent='Operational evidence unavailable; liveness not certified.';$('wa-totals').replaceChildren();
   $('wa-roster').replaceChildren();$('wa-select').replaceChildren();$('wa-commissioning-totals').replaceChildren();
   $('wa-commissioning-status').textContent='Source unavailable; no corrective evidence qualified.';

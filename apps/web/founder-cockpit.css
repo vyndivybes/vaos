@@ -73,3 +73,82 @@
 @media(max-width:720px){.founder-cockpit .nav-item{display:flex;gap:8px;flex:0 0 auto;min-width:max-content;padding:10px 14px}.founder-cockpit .workspace-search__action{display:block;flex-shrink:0}.founder-cockpit .header-brand__copy em{display:none}}
 @media(max-width:720px){.founder-cockpit #command-view{display:flex;flex-direction:column}.fc-intro{order:0;flex-direction:row;align-items:center;margin:8px 0}.fc-intro h2,.fc-intro>div>p:not(.va-eyebrow){display:none}.fc-intro .va-eyebrow{font-size:10px;margin:0}.fc-intro button{font-size:12px;padding:8px}.founder-cockpit #vaos-main-voice{order:1;margin:14px 0}.fc-metrics{order:2}.fc-business{order:3}.fc-workforce{order:4}.fc-runtime-details{order:5}.founder-cockpit .workspace-hero{padding-bottom:8px;margin-bottom:8px}.founder-cockpit .workspace-search{margin-bottom:8px}.founder-cockpit .va-voice-widget__intro h2{font-size:25px}.founder-cockpit .va-voice-widget__intro p{font-size:14px}.fc-prompts{gap:6px}.fc-prompts button{font-size:12px;padding:6px 10px}}
 @media(max-width:720px){.founder-cockpit .va-voice-widget__intro>div{flex:1 1 100%;min-width:0}.founder-cockpit .va-voice-badge{margin:0 0 8px}.founder-cockpit .va-voice-widget__intro{gap:8px}}
+
+
+/* VAOS X phase 2 — Pearl Titanium visual-first Founder Command. */
+.founder-cockpit{
+ --workspace-ink:#34434b;--workspace-muted:#6a777b;--workspace-gold:#967b55;
+ --workspace-gold-bright:#b59b71;--workspace-rim:#e5e5e1;
+ background:#f8f7f4;color:#34434b;
+}
+.founder-cockpit .control-shell,.founder-cockpit .control-main{background:#f8f7f4}
+.founder-cockpit .control-sidebar{background:#f0efec;border-color:#e2e0da}
+.founder-cockpit .sidebar-section-title,.founder-cockpit .nav-group__label{color:#667579}
+.founder-cockpit .nav-item{color:#34434b}
+.founder-cockpit .nav-item[aria-current=page]{background:#e9dfcf;color:#594c3b;border-color:#d4c2a6}
+.founder-cockpit .nav-glyph{background:#fff;color:#536b73;border-color:#e5e5e1}
+.founder-cockpit .sidebar-footer__note,.founder-cockpit .sidebar-mission-link{color:#52636b}
+.founder-cockpit .control-header,.founder-cockpit .workspace-search{background:#fff;border-color:#e5e5e1!important}
+.founder-cockpit #module-title,.founder-cockpit h2,.founder-cockpit h3{color:#34434b}
+.founder-cockpit #module-description,.fc-intro p,.fc-section-head p{color:#65757a}
+.founder-cockpit .va-eyebrow{color:#987d57}
+.founder-cockpit .workspace-search__action,.founder-cockpit .va-button--primary{background:#344f59;border-color:#344f59;color:#fff}
+.founder-cockpit .va-button--outline{background:#fff;color:#34434b;border-color:#e0ded9}
+.fc-metrics>:is(article,a,button){
+ background:#fff;border:1px solid #e5e5e1;border-radius:16px;
+ box-shadow:0 8px 24px rgba(52,67,75,.045);padding:20px;
+}
+.fc-metrics strong{color:#34434b}
+.fc-metrics :is(a,button):hover{border-color:#b59b71;background:#fffdf9}
+.founder-cockpit .va-voice-widget{
+ background:linear-gradient(135deg,#fff 0%,#faf8f3 100%);
+ border:1px solid #e7e1d6;border-top:3px solid #b59b71;
+ border-radius:22px;box-shadow:0 12px 36px rgba(52,67,75,.06);
+}
+.fc-team-layout{
+ display:flex;flex-direction:column;gap:16px;background:transparent;
+ border:0;border-radius:0;padding:0;
+}
+.fc-team-charts{
+ display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;
+ border:0;padding:0;min-width:0;
+}
+.fc-chart-card{
+ min-width:0;background:#fff;border:1px solid #e5e5e1;border-radius:20px;
+ padding:clamp(16px,2.3vw,28px);box-shadow:0 9px 32px rgba(52,67,75,.05);
+}
+.fc-chart-heading{display:flex;flex-direction:column;gap:4px;margin-bottom:10px}
+.fc-chart-heading h3{font-size:clamp(17px,1.65vw,22px);line-height:1.25;margin:0}
+.fc-team-charts .fc-chart-card p{font-size:13px;color:#67777b;line-height:1.6}
+.fc-chart-card :is(#cockpit-workforce-chart,#cockpit-source-chart){min-height:175px}
+.fc-chart-card svg{width:100%;height:auto;max-height:265px;display:block}
+.fc-chart-card .va-evidence-axis,.fc-chart-card .va-evidence-value,.fc-chart-card .va-evidence-total{
+ fill:#34434b;font-size:14px;
+}
+.fc-roster-disclosure{background:#fff;border:1px solid #e5e5e1;border-radius:16px;padding:14px 20px}
+.fc-roster-disclosure>summary{
+ display:list-item;cursor:pointer;color:#34434b;font-size:17px;
+ font-weight:700;line-height:1.45;padding:6px 0;
+}
+.fc-roster-disclosure>summary span{display:block;font-size:13px;color:#6b777b;font-weight:400}
+.fc-roster-disclosure[open] .fc-team-filters{margin-top:16px}
+.fc-roster{max-height:460px}
+.fc-team-filters input,.fc-team-filters select{border-color:#d8dedc;border-radius:10px;color:#34434b}
+.fc-employee{color:#34434b!important;border-color:#ecebe8}
+.fc-employee:hover{background:#f8f7f4}
+.fc-domain{background:#fff;border-color:#e5e5e1;border-radius:16px}
+.fc-domain p,.fc-source-note{color:#67777b}
+.fc-status{background:#f4f0e8;color:#806744}
+.fc-status--connected{background:#e8f1eb;color:#456d5c}
+.founder-cockpit :is(button,a,input,select,summary):focus-visible{outline:3px solid #8297a5;outline-offset:3px}
+@media(max-width:900px){.fc-team-charts{grid-template-columns:1fr}}
+@media(max-width:720px){
+ .founder-cockpit .control-sidebar{background:#f0efec}
+ .fc-team-layout{padding:0}
+ .fc-team-charts{gap:12px;padding:0;border:0}
+ .fc-chart-card{padding:16px}
+ .fc-roster-disclosure{padding:12px 15px}
+}
+
+/* On mobile, charts precede the source directory just as on desktop. */
+@media(max-width:720px){.founder-cockpit #command-view>.fc-workforce{order:3}.founder-cockpit #command-view>.fc-business{order:4}}

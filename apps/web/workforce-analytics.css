@@ -39,3 +39,75 @@
 .wa-action-row a:hover,.wa-action-row button:hover {background:#f7d894}
 .wa-action-row a:focus-visible,.wa-action-row button:focus-visible {outline:3px solid #e8cf83;outline-offset:3px}
 @media(max-width:700px){.wa-action-list{grid-template-columns:1fr}.wa-action-row{padding:14px}.wa-commissioning .wa-heading p{font-size:15px}}
+
+
+/* VAOS X phase 2: Pearl Titanium, visualization before records. */
+body{background:#f8f7f4;color:#34434b;font-family:Inter,'Segoe UI',Arial,sans-serif}
+a{color:#516f7c;text-underline-offset:3px}
+.wa-header{background:#fff;border-bottom:1px solid #e5e5e1;box-shadow:0 8px 24px rgba(52,67,75,.03)}
+.wa-header small{color:#9e825b}
+.wa-header h1{letter-spacing:-.035em;color:#34434b}
+.wa-header p{color:#68767b}
+.wa-main{max-width:1500px;padding:clamp(14px,2.6vw,38px)}
+.wa-panel{background:#fff;border:1px solid #e5e5e1;border-radius:22px;
+ box-shadow:0 9px 32px rgba(52,67,75,.045);padding:clamp(18px,2.3vw,30px)}
+.wa-panel h2{color:#34434b;font-size:clamp(21px,2vw,27px);letter-spacing:-.025em}
+.wa-heading{margin-bottom:18px}
+button,select{background:#fff;color:#34434b;border-color:#d9ddd9;min-height:44px}
+button{background:#34535f;color:#fff;border-color:#34535f}
+button:hover{background:#456c78;color:#fff}
+button:focus-visible,select:focus-visible,a:focus-visible,
+.wa-accordion>summary:focus-visible,.wa-employee-filter input:focus-visible{
+ outline:3px solid #8297a5;outline-offset:3px
+}
+.wa-stats{grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px}
+.wa-stat,.wa-subpanel{background:#faf9f6;border:1px solid #e8e6e1;border-radius:15px}
+.wa-stat{padding:17px}
+.wa-stat strong{color:#34434b;font-size:clamp(22px,2.3vw,30px)}
+.wa-stat small{color:#6c7c81;line-height:1.4}
+.wa-subpanel h3{color:#4d636b}
+.wa-subpanel p,#wa-observed,.wa-commissioning .wa-heading p{color:#66787f}
+.wa-visual-overview{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:20px 0}
+.wa-viz-card{min-width:0;padding:clamp(16px,2vw,26px);border:1px solid #e5e5e1;
+ background:linear-gradient(150deg,#fff,#faf9f6);border-radius:20px;
+ box-shadow:0 7px 24px rgba(52,67,75,.045)}
+.wa-viz-heading h3{font-size:clamp(18px,1.75vw,22px);line-height:1.3;margin:3px 0 9px;color:#34434b}
+.wa-kicker{font-size:11px;letter-spacing:.14em;font-weight:800;color:#a48b66}
+.wa-viz-card>p{font-size:13px;line-height:1.55;color:#6a7b80;max-width:48ch}
+.wa-viz-bars{margin-top:16px;padding:2px 0;min-height:140px}
+.wa-viz-bars .wa-bar-row{margin:14px 0 18px}
+.wa-viz-bars .wa-bar-label{font-size:14px;color:#34434b;margin-bottom:8px}
+.wa-track,.wa-chart-column-track{background:#e8eae7;border-radius:8px}
+.wa-fill{background:linear-gradient(90deg,#8297a5,#b59b71)}
+.wa-viz-empty{color:#65777f;font-size:14px}
+.wa-accordion{background:#faf9f6;border:1px solid #e5e5e1;border-radius:16px}
+.wa-accordion>summary{color:#34434b;font-size:17px;line-height:1.45}
+.wa-accordion>summary small{display:block;font-weight:400;font-size:13px;color:#697a80}
+.wa-accordion>p{color:#697a80}
+.wa-employee-filter input{color:#34434b;background:#fff;border:1px solid #d9ddd9;border-radius:10px}
+.wa-scroll{background:#fff;border-radius:12px;border:1px solid #e5e5e1}
+table{font-size:14px}
+caption{color:#6e7d82}
+th,td{border-bottom-color:#e5e5e1;color:#34434b}
+th{background:#f7f6f2;color:#526970}
+tr[data-current="true"]{background:#f2eee6}
+td button{color:#506f7c;background:transparent}
+td button:hover{color:#34434b;background:#ece9e3}
+#wa-profile{background:#f5f4f0;color:#34434b}
+.wa-chart-column strong{color:#8a7454}
+.wa-chart-column small{color:#34434b}
+.wa-chart-donut-hole{background:#fff;color:#34434b}
+.wa-chart-legend li{background:#f0efec;color:#34434b}
+#wa-evidence-chart{background:#fff;border-color:#e5e5e1;border-radius:16px}
+.wa-action-row{background:#fff;border-color:#e5e5e1}
+.wa-action-row strong{color:#536d79}
+.wa-action-row p{color:#34434b}
+.wa-action-row a,.wa-action-row button{background:#edf2f2;color:#344f59}
+footer{color:#65777f}
+@media(max-width:860px){.wa-visual-overview{grid-template-columns:1fr}}
+@media(max-width:620px){
+ .wa-main{padding:12px}.wa-panel{padding:16px;border-radius:16px}
+ .wa-stats{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .wa-visual-overview{gap:12px}.wa-viz-card{padding:15px}
+}
+@media(prefers-reduced-motion:reduce){.wa-panel *{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

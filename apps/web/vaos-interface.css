@@ -206,3 +206,25 @@ body.va-premium .va-product-nav .va-tools-menu>summary:after{content:'⌄';float
 body.va-premium :is(.notice,.status){background:#e8edde;color:#526846;border:1px solid #d8e1ca;border-radius:7px;padding:10px 14px;font-size:12px}
 body.va-premium #connection-state{padding:6px 10px;font-size:11px}
 .va-context-title{font-size:18px;letter-spacing:-.03em;color:#33462a}
+/* Department modules and group consolidation use the same working surfaces. */
+body.va-premium.workspace-body :is(.va-focused-dashboard>header,.va-group-hero){background:#e3e9d7;border:1px solid #d3ddc4;box-shadow:none;border-radius:12px;padding:26px;color:#304427}
+body.va-premium.workspace-body :is(.va-focused-dashboard>header h2,.va-group-hero h2){color:#2c4126;font-size:29px;line-height:1.2}
+body.va-premium.workspace-body :is(.va-focused-dashboard>header p,.va-group-hero__copy>p:not(.va-eyebrow)){color:#647959;font-size:14px}
+body.va-premium.workspace-body .va-group-hero .va-eyebrow{color:#748768}
+body.va-premium.workspace-body .va-group-hero__stat{background:#f3f5ed;border:1px solid #d4dec6;border-radius:10px}
+body.va-premium.workspace-body .va-group-hero__stat :is(strong,span,small,p){color:#526d43}
+body.va-premium.workspace-body :is(.va-kpi-card,.va-focused-metrics article,.va-dashboard-fold,.va-metric-dash,.va-unit,.va-domain-row,.operational-summary-card,.domain-summary-card,.operational-record,.domain-record-row,.va-contract-list article){background:#fffefa;border:1px solid #dce2d1;border-radius:10px;box-shadow:none;color:#35472c}
+body.va-premium.workspace-body :is(.va-kpi-card strong,.va-focused-metrics strong,.va-unit__copy strong,.va-domain-row__name strong,.operational-summary-card strong,.domain-summary-card strong,.operational-record__heading strong){color:#2d4326}
+body.va-premium.workspace-body :is(.va-kpi-card small,.va-kpi-card p,.va-focused-metrics span,.va-focused-metrics small,.va-unit__copy small,.va-domain-row__name small,.va-section-head p:not(.va-eyebrow),.va-coverage__legend p,.va-group-footer,.operational-record>p,.domain-record-row small){color:#728465;font-size:12px}
+body.va-premium.workspace-body :is(.va-kpi-card__icon,.va-unit__icon,.va-tag){background:#e8eedc;color:#647f4d}
+body.va-premium.workspace-body .va-tag--warn{background:#f5ead6;color:#8b6229}
+body.va-premium.workspace-body .va-focus-panel{background:#e9eedf;border-color:#d5dfc7;border-radius:10px}.va-focus-panel h4{color:#3b5430!important}
+body.va-premium.workspace-body .va-coverage__donut>div{background:#fffefa}.va-coverage__donut strong{color:#3f5d30!important}
+body.va-premium.workspace-body :is(.va-dashboard-fold summary,.va-metric-dash summary){font-size:14px;color:#4c663d}
+body.va-premium.workspace-body .va-evidence-svg{background:#f2f5ea;border-radius:9px}
+body.va-premium.workspace-body :is(.va-dashboard-fold label,.va-metric-dash label){font-size:13px;color:#627653}
+body.va-premium.workspace-body :is(.domain-record-table,.operational-record-list){gap:10px}
+body.va-premium.workspace-body :is(.domain-record-row,.operational-record){padding:17px}
+body.va-premium.workspace-body :is(.va-group-dashboard,.domain-workspace,.operational-workspace) a{color:#98472f}
+body.va-premium.workspace-body :is(.domain-summary,.operational-summary){gap:13px;margin-bottom:22px}
+@media(max-width:720px){body.va-premium.workspace-body :is(.va-focused-dashboard>header,.va-group-hero){padding:20px}body.va-premium.workspace-body :is(.va-focused-dashboard>header h2,.va-group-hero h2){font-size:25px}}

@@ -246,9 +246,13 @@ export async function readGoogleWorkspaceBrief(env,{fetchImpl=fetch,now=()=>Date
 const validIso=s=>typeof s==='string' && /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(s)&&Number.isFinite(Date.parse(s));
 async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),required=[]}={}){
  if(!googleWorkspaceReadiness(env).ready)throw Error('GOOGLE_OAUTH_UNAVAILABLE');
- const blob=await env.VAOS_ARTIFACTS.get(RECORD);
+ let blob;
+ try{blob=await env.VAOS_ARTIFACTS.get(RECORD)}
+ catch{throw Error('GOOGLE_VAULT_STORAGE_FAILED')}
  if(!blob)throw Error('GOOGLE_FOUNDER_CONSENT_REQUIRED');
- const record=await decryptRecord(JSON.parse(await blob.text()),env.VAOS_GOOGLE_VAULT_KEY);
+ let record;
+ try{record=await decryptRecord(JSON.parse(await blob.text()),env.VAOS_GOOGLE_VAULT_KEY)}
+ catch{throw Error('GOOGLE_VAULT_DECRYPT_FAILED')}
  if(!required.every(s=>record.scopes.includes(s)))throw Error('GOOGLE_SCOPE_RECONNECT_REQUIRED');
  if(record.expiresAt<=now()+90000){
   const tok=await postToken(fetchImpl,{client_id:env.GOOGLE_OAUTH_CLIENT_ID,

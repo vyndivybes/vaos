@@ -69,7 +69,10 @@ def execute(request):
             text = data.get("text", "")
             if not isinstance(text, str) or not text.isascii() or len(text) > 1000 or any(ord(c)<32 for c in text):
                 raise ValueError("DESKTOP_TEXT_INVALID")
-            pyautogui.write(text, interval=0.015)
+            for character in text:
+                if (pyautogui.getActiveWindowTitle() or "") != title:
+                    raise ValueError("DESKTOP_FOCUS_CHANGED_PARTIAL")
+                pyautogui.write(character, interval=0.015)
             return {"typedCharacters": len(text), "window": title}
         if data["action"] == "click":
             x, y = data["x"], data["y"]

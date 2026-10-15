@@ -253,7 +253,11 @@ function init(){
  const acknowledgement=createVoiceAcknowledgement({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
   outputBusy:()=>player.active(),
-  onError:()=>setStatus('Acknowledgement audio unavailable. The evidence request continues; read the screen.')
+  onError:()=>setStatus('JARVIS acknowledgement could not play. Check browser audio; you can still type or use the microphone.'),
+  onFinished:phase=>{
+   // Do not re-capture JARVIS's wake acknowledgement as a new user question.
+   if(phase==='WAKE_READY'){wake?.resume({preserveQuestion:true});state();}
+  }
  });
  const readiness=()=>getMicrophoneReadiness({capability,
   recognitionAvailable:typeof SpeechRecognition==='function',
@@ -527,7 +531,15 @@ function init(){
    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported';
   },
   acceptDirectQuestion:q=>isDirectBusinessQuestion(q)||Boolean(resolveFounderGoogleIntent(q))||Boolean(resolveFounderCalendarReadIntent(q))||conversation.canFollowUp(q),
-  onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey VAOS.');},
+  onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey JARVIS.');},
+   onPrompt:()=>{
+    if(!(voiceEnabled&&speakToggle?.checked===true))return;
+    // The founder opted in before this callback; speech must not feed the mic.
+    wake?.pause({preserveQuestion:true});
+    const queued=acknowledgement.announce('WAKE_READY',{enabled:true});
+    if(!queued){wake?.resume({preserveQuestion:true});state();}
+    else setStatus('JARVIS heard your wake phrase; acknowledgement queued. Ask your question when listening resumes.');
+   },
   onDraft:q=>{input.value=q;state();},
   onConfirm:q=>{input.value=q;voiceRequestPending=true;ask.click();},
   onStatus:message=>{if(wakeStatus)wakeStatus.textContent=message;},

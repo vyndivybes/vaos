@@ -13,6 +13,11 @@ const SCOPES=Object.freeze([
  'https://www.googleapis.com/auth/calendar.events.readonly',
  'https://www.googleapis.com/auth/drive.metadata.readonly'
 ]);
+const EXTENDED_SCOPES=Object.freeze([
+ ...SCOPES,
+ 'https://www.googleapis.com/auth/gmail.readonly',
+ 'https://www.googleapis.com/auth/calendar.events'
+]);
 const AAD=new TextEncoder().encode('vaos:google-workspace:founder-readonly:v1');
 const enc=new TextEncoder();
 function reply(status,body){
@@ -100,7 +105,7 @@ async function oauthStart(env,now){
  const u=new URL('https://accounts.google.com/o/oauth2/v2/auth');
  u.search=new URLSearchParams({
   client_id:env.GOOGLE_OAUTH_CLIENT_ID,response_type:'code',
-  redirect_uri:ORIGIN+'/api/google-workspace/callback',scope:SCOPES.join(' '),
+  redirect_uri:ORIGIN+'/api/google-workspace/callback',scope:EXTENDED_SCOPES.join(' '),
   access_type:'offline',prompt:'consent',state,
   code_challenge:bytes64(new Uint8Array(sha)),code_challenge_method:'S256',
   login_hint:FOUNDER
@@ -133,7 +138,7 @@ async function oauthCallback(req,env,fetchImpl,now){
    client_secret:env.GOOGLE_OAUTH_CLIENT_SECRET,redirect_uri:ORIGIN+'/api/google-workspace/callback',
    code,code_verifier:p.verifier,grant_type:'authorization_code'
   });
-  if(!allowedScopes(tok.scope)||typeof tok.refresh_token!=='string'||tok.refresh_token.length<8)
+  if(!EXTENDED_SCOPES.every(scope=>(tok.scope||'').split(/\s+/).includes(scope))||typeof tok.refresh_token!=='string'||tok.refresh_token.length<8)
    return reply(503,hold('OAUTH_SCOPES_OR_REFRESH_TOKEN_MISSING'));
   const identity=await fetchImpl('https://openidconnect.googleapis.com/v1/userinfo',{
    method:'GET',headers:{Authorization:'Bearer '+tok.access_token},
@@ -146,8 +151,8 @@ async function oauthCallback(req,env,fetchImpl,now){
    email:FOUNDER,accessToken:tok.access_token,refreshToken:tok.refresh_token,
    expiresAt:now()+tok.expires_in*1000,scopes:tok.scope.split(/\s+/)
   });
-  return reply(200,{status:'CONNECTED_READONLY',actionAuthorized:false,
-   message:'Founder Google Calendar and Drive read-only OAuth was authorized. Return to VAOS Slack DM and ask for Google Workspace brief.'});
+  return reply(200,{status:'CONNECTED',actionAuthorized:false,
+   message:'Founder Google Calendar, Gmail read and Drive metadata OAuth authorized. Calendar event creation is permitted only after a direct authenticated founder request.'});
  }catch{return reply(503,hold('OAUTH_EXCHANGE_UNVERIFIED'))}
 }
 async function googleGet(url,token,fetchImpl){
@@ -189,10 +194,97 @@ export async function readGoogleWorkspaceBrief(env,{fetchImpl=fetch,now=()=>Date
     'No scheduling or document writes are authorized.'};
  }catch{return hold('GOOGLE_SOURCE_UNVERIFIED')}
 }
+
+const validIso=s=>typeof s==='string' && /^20\\d{2}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,3})?(?:Z|[+-]\\d{2}:\\d{2})$/.test(s)&&Number.isFinite(Date.parse(s));
+async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),required=[]}={}){
+ if(!googleWorkspaceReadiness(env).ready)throw Error('GOOGLE_OAUTH_UNAVAILABLE');
+ const blob=await env.VAOS_ARTIFACTS.get(RECORD);
+ if(!blob)throw Error('GOOGLE_FOUNDER_CONSENT_REQUIRED');
+ const record=await decryptRecord(JSON.parse(await blob.text()),env.VAOS_GOOGLE_VAULT_KEY);
+ if(!required.every(s=>record.scopes.includes(s)))throw Error('GOOGLE_SCOPE_RECONNECT_REQUIRED');
+ if(record.expiresAt<=now()+90000){
+  const tok=await postToken(fetchImpl,{client_id:env.GOOGLE_OAUTH_CLIENT_ID,
+   client_secret:env.GOOGLE_OAUTH_CLIENT_SECRET,refresh_token:record.refreshToken,grant_type:'refresh_token'});
+  if(!allowedScopes(tok.scope||record.scopes.join(' ')))throw Error('GOOGLE_SCOPE_CHANGED');
+  record.accessToken=tok.access_token;record.expiresAt=now()+tok.expires_in*1000;
+  await saveTokens(env,record);
+ }
+ return record.accessToken;
+}
+export async function readFounderGmail(env,q,{fetchImpl=fetch,now=()=>Date.now()}={}){
+ const mailScope='https://www.googleapis.com/auth/gmail.readonly';
+ if(typeof q!=='string'||q.trim().length<2||q.length>120||/[\\x00-\\x1f]/.test(q))
+  return hold('MAIL_QUERY_INVALID');
+ try{
+  const token=await founderGoogleCredential(env,{fetchImpl,now,required:[mailScope]});
+  const base='https://gmail.googleapis.com/gmail/v1/users/me/messages';
+  const url=base+'?'+new URLSearchParams({q:q.trim(),maxResults:'8'}).toString();
+  const matches=await googleGet(url,token,fetchImpl);
+  if(!Array.isArray(matches?.messages)&&matches?.resultSizeEstimate!==0)
+   return hold('GMAIL_SEARCH_SCHEMA_INVALID');
+  const messages=await Promise.all((matches.messages||[]).slice(0,8).map(async item=>{
+   if(!/^[A-Za-z0-9_-]{5,100}$/.test(item?.id||''))throw Error('MAIL_ID_INVALID');
+   const detail=await googleGet(base+'/'+encodeURIComponent(item.id)+
+    '?'+new URLSearchParams({format:'metadata',metadataHeaders:['From','Subject','Date','To']}).toString(),token,fetchImpl);
+   if(detail.id!==item.id||!Array.isArray(detail.payload?.headers))throw Error('MAIL_SCHEMA_INVALID');
+   const header=name=>String(detail.payload.headers.find(x=>String(x.name).toLowerCase()===name)?.value||'').slice(0,220);
+   return {id:item.id,from:header('from'),subject:header('subject'),date:header('date'),
+    snippet:String(detail.snippet||'').slice(0,400)};
+  }));
+  return {status:'PASS',actionAuthorized:false,source:'GMAIL',query:q.trim(),messages,
+   answer:messages.length?messages.map(m=>m.date+' · '+m.from+' · '+m.subject+' · '+m.snippet).join('\\n').slice(0,4000)
+    :'No matching messages found in the connected Gmail account.'};
+ }catch(e){return hold(e.message==='GOOGLE_SCOPE_RECONNECT_REQUIRED'?e.message:'GMAIL_SOURCE_UNVERIFIED')}
+}
+export async function createFounderCalendarReminder(env,body,{fetchImpl=fetch,now=()=>Date.now()}={}){
+ if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['title','start','end','requestId'].includes(k))
+  ||typeof body.title!=='string'||body.title.trim().length<3||body.title.length>140
+  ||!validIso(body.start)||!validIso(body.end)
+  ||typeof body.requestId!=='string'||!/^[a-f0-9]{32}$/.test(body.requestId)
+  ||Date.parse(body.start)<now()+60000||Date.parse(body.end)<=Date.parse(body.start)
+  ||Date.parse(body.end)-Date.parse(body.start)>86400000)
+  return {status:'HOLD',reason:'CALENDAR_EVENT_VALIDATION_FAILED',saved:false};
+ try{
+  const token=await founderGoogleCredential(env,{fetchImpl,now,
+   required:['https://www.googleapis.com/auth/calendar.events']});
+  // Deterministic event ID: a retry returns the same Calendar item, never a duplicate.
+  const eventId='vaos'+body.requestId;
+  const url='https://www.googleapis.com/calendar/v3/calendars/primary/events';
+  const payload={id:eventId,summary:body.title.trim(),start:{dateTime:body.start},
+   end:{dateTime:body.end},reminders:{useDefault:false,overrides:[{method:'popup',minutes:10}]}};
+  const result=await fetchImpl(url,{method:'POST',redirect:'error',
+   headers:{Authorization:'Bearer '+token,'Content-Type':'application/json'},
+   body:JSON.stringify(payload),signal:AbortSignal.timeout(8000)});
+  let saved;
+  if(result.status===200||result.status===201)saved=await result.json();
+  else if(result.status===409){
+   // A lost response is reconciled against the same stable event ID.
+   saved=await googleGet(url+'/'+eventId,token,fetchImpl);
+  }else throw Error('CALENDAR_INSERT_FAILED');
+  if(saved?.id!==eventId||saved?.status==='cancelled'||saved?.summary!==payload.summary||
+   Date.parse(saved?.start?.dateTime)!==Date.parse(body.start)||
+   Date.parse(saved?.end?.dateTime)!==Date.parse(body.end))
+   return {status:'HOLD',reason:'CALENDAR_READBACK_MISMATCH',saved:false};
+  return {status:'PASS',saved:true,id:eventId,summary:saved.summary,
+   start:saved.start.dateTime,end:saved.end.dateTime,reminder:'Google Calendar popup 10 minutes before',source:'GOOGLE_CALENDAR'};
+ }catch(e){return {status:'HOLD',reason:e.message==='GOOGLE_SCOPE_RECONNECT_REQUIRED'?e.message:'CALENDAR_SAVE_UNVERIFIED',saved:false}}
+}
+
 export function createGoogleWorkspaceHandler({authorized=isFounder,fetchImpl=fetch,now=()=>Date.now()}={}){
  return async (req,_res,overrideEnv)=>{
   const env=overrideEnv||req.env,path=new URL(req.url).pathname;
-  if(req.method!=='GET')return reply(405,{error:'METHOD_NOT_ALLOWED',actionAuthorized:false});
+  const write=path==='/api/google-workspace/reminders';
+  if(write ? req.method!=='POST' : req.method!=='GET')
+   return reply(405,{error:'METHOD_NOT_ALLOWED',actionAuthorized:false});
+  if(write){
+   let origin;try{origin=new URL(req.url).origin}catch{}
+   if(!authorized(req)||req.headers?.origin!==origin)
+    return reply(403,{error:'FOUNDER_OR_ORIGIN_DENIED',actionAuthorized:false});
+   if(!/^application\\/json(?:\\s*;|$)/i.test(req.headers?.['content-type']||''))
+    return reply(415,{error:'JSON_REQUIRED',actionAuthorized:false});
+   const result=await createFounderCalendarReminder(env,req.body,{fetchImpl,now});
+   return reply(result.saved?200:409,result);
+  }
   if(path==='/api/google-workspace/callback')return oauthCallback(req,env,fetchImpl,now);
   if(!authorized(req))return reply(403,{error:'FOUNDER_SESSION_REQUIRED',actionAuthorized:false});
   if(path==='/api/google-workspace/status'){
@@ -203,6 +295,10 @@ export function createGoogleWorkspaceHandler({authorized=isFounder,fetchImpl=fet
   }
   if(path==='/api/google-workspace/start')return oauthStart(env,now);
   if(path==='/api/google-workspace/brief')return reply(200,await readGoogleWorkspaceBrief(env,{fetchImpl,now}));
+  if(path==='/api/google-workspace/mail'){
+   const q=new URL(req.url).searchParams.get('q');
+   return reply(200,await readFounderGmail(env,q,{fetchImpl,now}));
+  }
   return reply(404,{error:'NOT_FOUND',actionAuthorized:false});
  }
 }

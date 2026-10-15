@@ -39,6 +39,13 @@ export const VYNDI_BRIDGE_EFFECT=EFFECT;
 
 export const VYNDI_BRIDGE_ROUTES=freeze([
   route({
+    actionType:'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI',employeeId:'orchestrator',effectClass:EFFECT.READ,
+    state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/vaos-enterprise-bi-read.ts',authority:'getEnterpriseBusinessIntelligence',
+    verificationRefs:['vyndi_audit_events','vyndi_program_tasks','vyndi_sales_orders','epr_finance_journals'],
+    description:'Founder-scoped signed 16-department date-bounded aggregate; no inferred agent actions or forecasts.'
+  }),
+  route({
     actionType:'PROJECT.OBSERVE_SCHEDULE',employeeId:'project',effectClass:EFFECT.READ,
     state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/vaos-schedule-export.ts',authority:'readGovernedProgramSchedule',

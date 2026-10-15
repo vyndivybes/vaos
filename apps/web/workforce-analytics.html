@@ -44,6 +44,18 @@
    <select id="wa-period-employee"><option value="all">All 16 employees</option></select>
   </label>
  </div>
+ <section class="wa-period-card" aria-labelledby="wa-enterprise-title">
+  <div class="wa-heading"><div><span class="wa-kicker">VYNDI OS · 16 SOURCE LEDGERS</span>
+   <h3 id="wa-enterprise-title">All departmental records · status &amp; exceptions</h3>
+   <p>Complete dated source-status aggregates with responsible employee drilldowns. Independent AI work evidence remains in the sections below.</p></div>
+   <button type="button" id="wa-enterprise-refresh">Refresh all 16</button></div>
+  <label class="wa-employee-filter">Find department
+   <input id="wa-enterprise-search" type="search" placeholder="Sales, engineering, finance, quality…" autocomplete="off"/></label>
+  <p role="status" aria-live="polite" id="wa-enterprise-status">Awaiting signed VYNDI department data.</p>
+  <div id="wa-enterprise-kpis" class="wa-stats"></div>
+  <div id="wa-enterprise-grid" class="wa-period-grid" aria-label="Source-backed department reports"></div>
+  <p class="wa-period-note">A status on a source business record does not mean a digital employee finished that task. Historical closure and forecasts need distinct qualified evidence.</p>
+ </section>
  <p id="wa-period-status" class="wa-period-note" role="status" aria-live="polite">Reading authenticated historical evidence…</p>
  <div id="wa-period-kpis" class="wa-stats" aria-live="polite"></div>
  <section class="wa-vyndi-report" aria-labelledby="wa-vyndi-title">
@@ -161,4 +173,4 @@
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
  </section>
  <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
-</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script></body></html>
+</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script></body></html>

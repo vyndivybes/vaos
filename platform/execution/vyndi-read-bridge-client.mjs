@@ -62,6 +62,13 @@ export function createVyndiReadBridgeClient({
         missionId: String(job.payload?.missionId || `ad-hoc:${job.intentId}`),
         input: {
           limit: Number.isInteger(job.payload?.limit) ? job.payload.limit : 50,
+          ...(job.actionType === 'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI'
+            ? {
+              employeeId: job.payload?.employeeId ?? 'all',
+              from: job.payload?.from,
+              to: job.payload?.to,
+              offset: Number.isInteger(job.payload?.offset) ? job.payload.offset : 0,
+            } : {}),
           ...(job.actionType === 'PROJECT.OBSERVE_SCHEDULE'
             ? { projectId: job.payload?.projectId } : {}),
           ...(job.actionType === 'FINANCE.OBSERVE_STATEMENTS'

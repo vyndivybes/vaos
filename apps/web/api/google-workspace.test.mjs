@@ -475,3 +475,15 @@ test('calendar listing with no founder consent fails closed',async()=>{
  assert.equal(result.actionAuthorized,false);
  assert.equal(fetched,0);
 });
+
+test('calendar status interpretation is restricted to safe diagnostic codes',async()=>{
+ const {calendarApiFailureReason}=await import('./google-workspace.mjs');
+ assert.equal(calendarApiFailureReason(401),'GOOGLE_CALENDAR_TOKEN_REJECTED');
+ assert.equal(calendarApiFailureReason(403,'accessNotConfigured'),'GOOGLE_CALENDAR_API_DISABLED');
+ assert.equal(calendarApiFailureReason(403,'insufficientPermissions'),'GOOGLE_CALENDAR_PERMISSION_DENIED');
+ assert.equal(calendarApiFailureReason(403),'GOOGLE_CALENDAR_ACCESS_DENIED');
+ assert.equal(calendarApiFailureReason(429),'GOOGLE_CALENDAR_RATE_LIMITED');
+ assert.equal(calendarApiFailureReason(400),'GOOGLE_CALENDAR_REQUEST_INVALID');
+ assert.equal(calendarApiFailureReason(302),'GOOGLE_CALENDAR_REDIRECT_REJECTED');
+ assert.equal(calendarApiFailureReason(500),'GOOGLE_CALENDAR_PROVIDER_UNAVAILABLE');
+});

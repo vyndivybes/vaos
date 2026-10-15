@@ -246,9 +246,13 @@ export async function readGoogleWorkspaceBrief(env,{fetchImpl=fetch,now=()=>Date
 const validIso=s=>typeof s==='string' && /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(s)&&Number.isFinite(Date.parse(s));
 async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),required=[]}={}){
  if(!googleWorkspaceReadiness(env).ready)throw Error('GOOGLE_OAUTH_UNAVAILABLE');
- const blob=await env.VAOS_ARTIFACTS.get(RECORD);
+ let blob;
+ try{blob=await env.VAOS_ARTIFACTS.get(RECORD)}
+ catch{throw Error('GOOGLE_VAULT_STORAGE_FAILED')}
  if(!blob)throw Error('GOOGLE_FOUNDER_CONSENT_REQUIRED');
- const record=await decryptRecord(JSON.parse(await blob.text()),env.VAOS_GOOGLE_VAULT_KEY);
+ let record;
+ try{record=await decryptRecord(JSON.parse(await blob.text()),env.VAOS_GOOGLE_VAULT_KEY)}
+ catch{throw Error('GOOGLE_VAULT_DECRYPT_FAILED')}
  if(!required.every(s=>record.scopes.includes(s)))throw Error('GOOGLE_SCOPE_RECONNECT_REQUIRED');
  if(record.expiresAt<=now()+90000){
   const tok=await postToken(fetchImpl,{client_id:env.GOOGLE_OAUTH_CLIENT_ID,
@@ -261,6 +265,44 @@ async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),r
 }
 
 /** Private founder-only event detail read. Never include attendees or OAuth tokens. */
+export function calendarApiFailureReason(status,reason){
+ if(status===401)return 'GOOGLE_CALENDAR_TOKEN_REJECTED';
+ if(status===403){
+  if(['accessNotConfigured','SERVICE_DISABLED'].includes(reason))return 'GOOGLE_CALENDAR_API_DISABLED';
+  if(['insufficientPermissions','ACCESS_TOKEN_SCOPE_INSUFFICIENT'].includes(reason))
+   return 'GOOGLE_CALENDAR_PERMISSION_DENIED';
+  return 'GOOGLE_CALENDAR_ACCESS_DENIED';
+ }
+ if(status===400)return 'GOOGLE_CALENDAR_REQUEST_INVALID';
+ if(status===404)return 'GOOGLE_PRIMARY_CALENDAR_UNAVAILABLE';
+ if(status===429)return 'GOOGLE_CALENDAR_RATE_LIMITED';
+ if(status>=300&&status<400)return 'GOOGLE_CALENDAR_REDIRECT_REJECTED';
+ if(status>=500&&status<=599)return 'GOOGLE_CALENDAR_PROVIDER_UNAVAILABLE';
+ return 'GOOGLE_CALENDAR_RESPONSE_UNVERIFIED';
+}
+async function googleCalendarGet(url,token,fetchImpl){
+ let response;
+ try{
+  response=await fetchImpl(url,{method:'GET',headers:{Authorization:'Bearer '+token},
+   redirect:'manual',signal:AbortSignal.timeout(8000)});
+ }catch(e){
+  if(e?.name==='TimeoutError'||e?.name==='AbortError')throw Error('GOOGLE_CALENDAR_REQUEST_TIMEOUT');
+  throw Error('GOOGLE_CALENDAR_NETWORK_FAILED');
+ }
+ if(response.status!==200){
+  let upstream;
+  if(response.status===403){
+   try{
+    const error=await response.json();
+    upstream=error?.error?.errors?.[0]?.reason||error?.error?.details?.[0]?.reason;
+   }catch{}
+  }
+  throw Error(calendarApiFailureReason(response.status,upstream));
+ }
+ try{return await response.json();}
+ catch{throw Error('GOOGLE_CALENDAR_RESPONSE_INVALID')}
+}
+
 export async function readFounderCalendarEvents(env,{fetchImpl=fetch,now=()=>Date.now()}={}){
  try{
   const token=await founderGoogleCredential(env,{fetchImpl,now,
@@ -272,7 +314,7 @@ export async function readFounderCalendarEvents(env,{fetchImpl=fetch,now=()=>Dat
     maxResults:'20',singleEvents:'true',orderBy:'startTime',
     fields:'nextPageToken,items(status,summary,start(date,dateTime),end(date,dateTime))'
    }).toString();
-  const result=await googleGet(url,token,fetchImpl);
+  const result=await googleCalendarGet(url,token,fetchImpl);
   if(!Array.isArray(result?.items))return hold('GOOGLE_CALENDAR_SCHEMA_INVALID');
   const events=[];
   for(const item of result.items){
@@ -291,8 +333,18 @@ export async function readFounderCalendarEvents(env,{fetchImpl=fetch,now=()=>Dat
    range:'NEXT_7_DAYS',calendarEvents:events.length,
    truncated:Boolean(result.nextPageToken),events};
  }catch(e){
-  const reason=['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED'].includes(e?.message)
-   ?e.message:'GOOGLE_SOURCE_UNVERIFIED';
+  const safe=new Set([
+   'GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED',
+   'GOOGLE_OAUTH_UNAVAILABLE','GOOGLE_VAULT_DECRYPT_FAILED','GOOGLE_VAULT_STORAGE_FAILED',
+   'GOOGLE_SCOPE_CHANGED','GOOGLE_CALENDAR_API_DISABLED',
+   'GOOGLE_CALENDAR_PERMISSION_DENIED','GOOGLE_CALENDAR_ACCESS_DENIED',
+   'GOOGLE_CALENDAR_TOKEN_REJECTED','GOOGLE_CALENDAR_REQUEST_INVALID',
+   'GOOGLE_PRIMARY_CALENDAR_UNAVAILABLE','GOOGLE_CALENDAR_RATE_LIMITED',
+   'GOOGLE_CALENDAR_REDIRECT_REJECTED','GOOGLE_CALENDAR_PROVIDER_UNAVAILABLE',
+   'GOOGLE_CALENDAR_RESPONSE_UNVERIFIED','GOOGLE_CALENDAR_RESPONSE_INVALID',
+   'GOOGLE_CALENDAR_NETWORK_FAILED','GOOGLE_CALENDAR_REQUEST_TIMEOUT'
+  ]);
+  const reason=safe.has(e?.message)?e.message:'GOOGLE_SOURCE_UNVERIFIED';
   return hold(reason);
  }
 }

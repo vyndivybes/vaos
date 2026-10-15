@@ -64,6 +64,12 @@ export function createVyndiReadBridgeClient({
           limit: Number.isInteger(job.payload?.limit) ? job.payload.limit : 50,
           ...(job.actionType === 'PROJECT.OBSERVE_SCHEDULE'
             ? { projectId: job.payload?.projectId } : {}),
+          ...(job.actionType === 'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI' ? {
+            employeeId: job.payload?.employeeId,
+            from: job.payload?.from,
+            to: job.payload?.to,
+            offset: job.payload?.offset ?? 0,
+          } : {}),
           ...(job.actionType === 'FINANCE.OBSERVE_STATEMENTS'
             ? { fromDate: job.payload?.fromDate, toDate: job.payload?.toDate } : {}),
         },

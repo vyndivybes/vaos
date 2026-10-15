@@ -70,6 +70,8 @@ test('source-intelligence UI offers explicit camera, microphone and speech contr
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8');
  const ui=await readFile(new URL('../jarvis-multimodal.mjs',import.meta.url),'utf8');
+ const workspace=await readFile(new URL('../workspace.html',import.meta.url),'utf8');
+ assert.ok(workspace.includes('Open JARVIS camera &amp; files'), 'founder voice panel must link to camera');
  for(const id of ['camera-start','camera-stop','camera-capture','camera-preview','dictate-question','speak-result','stop-result-speech'])assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(ui,/createCameraSession/);
  assert.match(ui,/createQuestionDictation/);

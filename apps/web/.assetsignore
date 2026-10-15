@@ -9,6 +9,7 @@ lib/*
 !lib/federated-voice-report.mjs
 !lib/group-portfolio.mjs
 !lib/dashboard-charts.mjs
+!lib/founder-cockpit.mjs
 !lib/hey-vaos.mjs
 !lib/voice-intelligence.mjs
 !lib/g5-response-timing.mjs

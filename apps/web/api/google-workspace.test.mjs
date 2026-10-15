@@ -178,3 +178,80 @@ test('calendar-only OAuth authorizes event creation without granting Gmail acces
  assert.equal(event.id,'vaos'+'a'.repeat(32));
  assert.equal(calls.filter(x=>x.method==='POST'&&x.url.endsWith('/calendars/primary/events')).length,1);
 });
+
+
+test('OAuth callback safely distinguishes invalid OAuth client credentials from an invalid code',async()=>{
+ for(const [googleError,expected] of [
+  ['invalid_client','OAUTH_CLIENT_CREDENTIALS_REJECTED'],
+  ['invalid_grant','OAUTH_AUTHORIZATION_CODE_REJECTED']
+ ]){
+  const s=setup();
+  s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+  const fetchImpl=async(url)=>{
+   assert.equal(url,'https://oauth2.googleapis.com/token');
+   return Response.json({error:googleError,error_description:'do not disclose'}, {status:400});
+  };
+  const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl});
+  const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+  const state=new URL(start.headers.get('location')).searchParams.get('state');
+  const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_code_2026',{
+   cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+  const body=await cb.json();
+  assert.equal(cb.status,503);
+  assert.equal(body.reason,expected);
+  assert.doesNotMatch(JSON.stringify(body),/do not disclose|invalid_client|invalid_grant/);
+ }
+});
+
+test('Google OpenID canonical email scope is accepted and stored as the requested email permission',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const scopes='openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar.events';
+ const fetchImpl=async(url)=>{
+  if(url==='https://oauth2.googleapis.com/token')return Response.json({
+   token_type:'Bearer',access_token:'access-token-valid-2026',refresh_token:'refresh-token-valid-2026',
+   expires_in:3600,scope:scopes
+  });
+  if(url==='https://openidconnect.googleapis.com/v1/userinfo')return Response.json({
+   email:'shyamsundhar1982@gmail.com',email_verified:true
+  });
+  if(url.startsWith('https://www.googleapis.com/calendar/v3/'))return Response.json({items:[]});
+  throw Error('unexpected_network');
+ };
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_code_2026',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ assert.equal((await cb.json()).status,'CONNECTED');
+ assert.equal((await readGoogleWorkspaceBrief(s.env,{fetchImpl})).status,'PASS');
+});
+
+test('R2 token persistence failure reports a safe vault code instead of opaque exchange failure',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const priorPut=s.env.VAOS_ARTIFACTS.put.bind(s.env.VAOS_ARTIFACTS);
+ s.env.VAOS_ARTIFACTS.put=(key,...args)=>{
+  if(key==='runtime/google-workspace/founder-token.v1.json')throw Error('hidden storage details');
+  return priorPut(key,...args);
+ };
+ const fetchImpl=async(url)=>{
+  if(url==='https://oauth2.googleapis.com/token')return Response.json({
+   token_type:'Bearer',access_token:'access-token-valid-2026',refresh_token:'refresh-token-valid-2026',
+   expires_in:3600,scope:'openid email https://www.googleapis.com/auth/calendar.events'
+  });
+  if(url==='https://openidconnect.googleapis.com/v1/userinfo')return Response.json({
+   email:'shyamsundhar1982@gmail.com',email_verified:true
+  });
+  throw Error('unexpected_network');
+ };
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_code_2026',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ const body=await cb.json();
+ assert.equal(cb.status,503);
+ assert.equal(body.reason,'OAUTH_VAULT_WRITE_FAILED');
+ assert.doesNotMatch(JSON.stringify(body),/hidden storage details/);
+});

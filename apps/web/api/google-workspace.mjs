@@ -71,8 +71,10 @@ async function decryptRecord(doc,key){
 }
 async function saveTokens(env,record){
  const encrypted=await encryptRecord(record,env.VAOS_GOOGLE_VAULT_KEY);
- await env.VAOS_ARTIFACTS.put(RECORD,JSON.stringify(encrypted),{
-  httpMetadata:{contentType:'application/json'}});
+ try {
+  await env.VAOS_ARTIFACTS.put(RECORD,JSON.stringify(encrypted),{
+   httpMetadata:{contentType:'application/json'}});
+ } catch { throw Error('OAUTH_VAULT_WRITE_FAILED'); }
 }
 async function postToken(fetchImpl,data){
  const r=await fetchImpl('https://oauth2.googleapis.com/token',{
@@ -80,16 +82,33 @@ async function postToken(fetchImpl,data){
   body:new URLSearchParams(data).toString(),redirect:'error',
   signal:AbortSignal.timeout(8000)
  });
- if(r.status!==200)throw Error('GOOGLE_TOKEN_EXCHANGE_FAILED');
+ if(r.status!==200){
+  // Classify Google OAuth errors without returning Google's descriptions,
+  // tokens, credentials or other upstream response details.
+  let type;
+  try{type=(await r.json())?.error}catch{}
+  if(type==='invalid_client'||type==='unauthorized_client')
+   throw Error('OAUTH_CLIENT_CREDENTIALS_REJECTED');
+  if(type==='invalid_grant')
+   throw Error('OAUTH_AUTHORIZATION_CODE_REJECTED');
+  throw Error('GOOGLE_TOKEN_EXCHANGE_FAILED');
+ }
  const value=await r.json();
  if(value.token_type!=='Bearer'||typeof value.access_token!=='string'||value.access_token.length<8||
  !Number.isInteger(value.expires_in)||value.expires_in<60||value.expires_in>86400)
  throw Error('GOOGLE_TOKEN_RESPONSE_INVALID');
  return value;
 }
+function normalizeGrantedScopes(raw){
+ const scopes=typeof raw==='string'?raw.split(/\s+/).filter(Boolean):[];
+ // Google's OIDC response may canonicalize the requested "email" scope.
+ if(scopes.includes('https://www.googleapis.com/auth/userinfo.email'))
+  scopes.push('email');
+ return [...new Set(scopes)];
+}
 function allowedScopes(raw){
- const a=typeof raw==='string'?raw.split(/\s+/):[];
- return SCOPES.every(s=>a.includes(s));
+ const granted=normalizeGrantedScopes(raw);
+ return SCOPES.every(scope=>granted.includes(scope));
 }
 async function oauthStart(env,now){
  const check=googleWorkspaceReadiness(env);
@@ -135,22 +154,32 @@ async function oauthCallback(req,env,fetchImpl,now){
    client_secret:env.GOOGLE_OAUTH_CLIENT_SECRET,redirect_uri:ORIGIN+'/api/google-workspace/callback',
    code,code_verifier:p.verifier,grant_type:'authorization_code'
   });
-  if(!EXTENDED_SCOPES.every(scope=>(tok.scope||'').split(/\s+/).includes(scope))||typeof tok.refresh_token!=='string'||tok.refresh_token.length<8)
+  if(!allowedScopes(tok.scope)||typeof tok.refresh_token!=='string'||tok.refresh_token.length<8)
    return reply(503,hold('OAUTH_SCOPES_OR_REFRESH_TOKEN_MISSING'));
-  const identity=await fetchImpl('https://openidconnect.googleapis.com/v1/userinfo',{
-   method:'GET',headers:{Authorization:'Bearer '+tok.access_token},
-   redirect:'error',signal:AbortSignal.timeout(8000)});
+  let identity;
+  try {
+   identity=await fetchImpl('https://openidconnect.googleapis.com/v1/userinfo',{
+    method:'GET',headers:{Authorization:'Bearer '+tok.access_token},
+    redirect:'error',signal:AbortSignal.timeout(8000)});
+  } catch { throw Error('OAUTH_IDENTITY_FETCH_FAILED'); }
   if(identity.status!==200)return reply(503,hold('OAUTH_IDENTITY_UNVERIFIED'));
   const person=await identity.json();
   if(person?.email_verified!==true||String(person.email||'').toLowerCase()!==FOUNDER)
    return reply(403,hold('OAUTH_FOUNDER_IDENTITY_MISMATCH'));
   await saveTokens(env,{
    email:FOUNDER,accessToken:tok.access_token,refreshToken:tok.refresh_token,
-   expiresAt:now()+tok.expires_in*1000,scopes:tok.scope.split(/\s+/)
+   expiresAt:now()+tok.expires_in*1000,scopes:normalizeGrantedScopes(tok.scope)
   });
   return reply(200,{status:'CONNECTED',actionAuthorized:false,
    message:'Founder Google Calendar OAuth authorized. Calendar event creation is permitted only after a direct authenticated founder request.'});
- }catch{return reply(503,hold('OAUTH_EXCHANGE_UNVERIFIED'))}
+ }catch(error){
+  const code=String(error?.message||'');
+  const safe=new Set(['OAUTH_CLIENT_CREDENTIALS_REJECTED',
+   'OAUTH_AUTHORIZATION_CODE_REJECTED','GOOGLE_TOKEN_EXCHANGE_FAILED',
+   'GOOGLE_TOKEN_RESPONSE_INVALID','OAUTH_IDENTITY_FETCH_FAILED',
+   'GOOGLE_VAULT_UNAVAILABLE','OAUTH_VAULT_WRITE_FAILED']);
+  return reply(503,hold(safe.has(code)?code:'OAUTH_EXCHANGE_UNVERIFIED'));
+ }
 }
 async function googleGet(url,token,fetchImpl){
  const r=await fetchImpl(url,{method:'GET',headers:{Authorization:'Bearer '+token},

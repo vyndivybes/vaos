@@ -282,7 +282,7 @@ export function createGoogleWorkspaceHandler({authorized=isFounder,fetchImpl=fet
    let origin;try{origin=new URL(req.url).origin}catch{}
    if(!authorized(req)||req.headers?.origin!==origin)
     return reply(403,{error:'FOUNDER_OR_ORIGIN_DENIED',actionAuthorized:false});
-   if(!/^application\\/json(?:\\s*;|$)/i.test(req.headers?.['content-type']||''))
+   if(!/^application\/json(?:\s*;|$)/i.test(req.headers?.['content-type']||''))
     return reply(415,{error:'JSON_REQUIRED',actionAuthorized:false});
    const result=await createFounderCalendarReminder(env,req.body,{fetchImpl,now});
    return reply(result.saved?200:409,result);

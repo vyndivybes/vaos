@@ -225,7 +225,7 @@ test('signed founder direct message persists an intake, never claims released pr
  assert.equal(result.route,'PRODUCTION');
  assert.equal(result.status,'PENDING_SOURCE_VALIDATION');
  assert.equal(result.actionAuthorized,false);
- assert.match(result.answer,/job card.*not/i);
+ assert.match(result.answer,/No confirmed sales order, production job card/i);
  const saved=await readFounderProductionIntake(env,result.requestId);
  assert.equal(saved?.productionOrderCreated,false);
  await saveFounderSlackContext(env,ctx,{...result.contextToSave,at:Date.now()});

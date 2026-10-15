@@ -2,6 +2,7 @@ import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {convertDocumentToStudyText,validateDocumentUpload} from '../lib/multimodal-contract.mjs';
 import {selectDocumentEvidence,validateMultimodalAdvisory,validateClientDocumentSource} from '../lib/g7-source-evidence.mjs';
 import {reviewSpecialistExcerpt} from '../lib/jarvis-specialist-review.mjs';
+import {analyzeVideoSense} from '../lib/video-sense.mjs';
 const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
 const decodedBytes=value=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
 function frameContext(value){
@@ -32,7 +33,7 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
   if(!session)return reply(res,401,{error:{code:'UNAUTHENTICATED'}});
   if(session.email!=='shyamsundhar1982@gmail.com')return reply(res,403,{error:{code:'FOUNDER_ONLY'}});
   const enabled=req.env?.VAOS_MULTIMODAL_CONTROL===ENABLED;
-  if(req.method==='GET')return reply(res,200,{data:{enabled,specialistsEnabled:true,documentFormats:['pdf','docx','pptx'],imageFormat:'JPEG/PNG/WebP',visionModel:enabled?MODEL:null,writeAuthorized:false,noPersistence:true,productionCertified:false,notice:enabled?'Limited read-only input analysis, unverified until independently accepted.':'Independent multimodal pilot is disabled on this deployment.'}});
+  if(req.method==='GET')return reply(res,200,{data:{enabled,specialistsEnabled:true,documentFormats:['pdf','docx','pptx'],imageFormat:'JPEG/PNG/WebP',videoSense:enabled?'SPARSE_TIMESTAMPED_FRAMES':'DISABLED',visionModel:enabled?MODEL:null,writeAuthorized:false,noPersistence:true,productionCertified:false,notice:enabled?'Limited read-only input analysis, unverified until independently accepted.':'Independent multimodal pilot is disabled on this deployment.'}});
   let origin;try{origin=new URL(req.url).origin}catch{return reply(res,403,{error:{code:'ORIGIN_DENIED'}})}
   if(req.headers?.origin!==origin)return reply(res,403,{error:{code:'ORIGIN_DENIED'}});
   if(!/^application\/json(?:\s*;|$)/i.test(req.headers?.['content-type']||''))return reply(res,415,{error:{code:'JSON_REQUIRED'}});
@@ -72,6 +73,18 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
     }}});
   }
   if(!enabled)return reply(res,409,{error:{code:'MULTIMODAL_DISABLED'}});
+  if(b.operation==='ANALYZE_VIDEO'){
+   try{
+    const data=await analyzeVideoSense({
+     input:b.video,question:b.question,ai:req.env?.AI,model:MODEL,
+     imageValid,digest,decodedBytes,validateAdvisory:validateMultimodalAdvisory
+    });
+    return reply(res,200,{data});
+   }catch(error){
+    const code=typeof error?.code==='string'?error.code:'VIDEO_SENSE_AI_UNAVAILABLE';
+    return reply(res,error?.status===422?422:503,{error:{code}});
+   }
+  }
   if(b.operation==='ANSWER_DOCUMENT'){
    if(typeof b.text!=='string'||b.text.length<60||b.text.length>12000
       ||typeof b.question!=='string'||b.question.length<5||b.question.length>1200)

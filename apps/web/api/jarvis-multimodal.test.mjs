@@ -225,3 +225,74 @@ test('pasted Legal and Marketing entrypoints are independent of the multimodal c
  assert.match(ui,/specialistsEnabled=j.data.specialistsEnabled===true/);
  assert.match(ui,/request\('SPECIALIST_REVIEW',\{domain,text\}\)/);
 });
+
+
+const frameHash=async data=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',
+ Uint8Array.from(atob(data.split(',')[1]),x=>x.charCodeAt(0)))),x=>x.toString(16).padStart(2,'0')).join('');
+
+test('video sense reports server-verified sampled timestamps without persisting or dispatching',async()=>{
+ const h=harness(),hash=await frameHash(image);
+ const video={sourceSha256:'f'.repeat(64),durationSeconds:20,frames:[
+  {timeSeconds:1,image,imageSha256:hash},
+  {timeSeconds:8,image,imageSha256:hash},
+  {timeSeconds:15,image,imageSha256:hash}
+ ],transcript:'An unverified narrator claims this object is ready for release.'};
+ const a=await h.run('ANALYZE_VIDEO',{video,question:'What changes across the visible samples?',confirm:true});
+ assert.equal(a.status,200);
+ assert.equal(a.body.data.status,'unverified-ai');
+ assert.equal(a.body.data.stored,false);
+ assert.equal(a.body.data.actionAuthorized,false);
+ assert.equal(a.body.data.agentDispatched,false);
+ assert.equal(a.body.data.productionCertified,false);
+ assert.equal(a.body.data.frameObservations.length,3);
+ assert.deepEqual(a.body.data.frameObservations.map(x=>x.timestamp),['00:01','00:08','00:15']);
+ assert.equal(a.body.data.provenance.temporalCoverage,'SPARSE_SAMPLED_FRAMES_ONLY');
+ assert.equal(a.body.data.provenance.originalVideoHashAuthority,'CLIENT_DECLARED_LOCAL_FILE');
+ assert.equal(a.body.data.provenance.frameImageHashAuthority,'SERVER_SHA256_MATCHED');
+ assert.equal(a.body.data.provenance.transcriptAuthority,'USER_PASTED_UNVERIFIED');
+ assert.equal(h.invocations.length,4,'three frame reads followed by one bounded synthesis');
+ assert.ok(h.invocations.slice(0,3).every(x=>x.input.messages[1].content.some(z=>z.type==='image_url')));
+ assert.equal(h.invocations[3].input.messages[1].content.includes('unverified narrator'),true);
+ assert.equal(JSON.stringify(a.body).includes(image),false,'frame images are never echoed');
+});
+
+test('video sense rejects tampering, bad sequence and too many frames before model invocation',async()=>{
+ const h=harness(),hash=await frameHash(image);
+ const frame=t=>({timeSeconds:t,image,imageSha256:hash});
+ const base={sourceSha256:'e'.repeat(64),durationSeconds:12,frames:[frame(2),frame(9)]};
+ const badDigest=await h.run('ANALYZE_VIDEO',{video:{...base,frames:[frame(2),{...frame(9),imageSha256:'0'.repeat(64)}]},
+  question:'Describe these frames',confirm:true});
+ assert.equal(badDigest.status,422);
+ assert.equal(badDigest.body.error.code,'VIDEO_SENSE_FRAME_DIGEST_MISMATCH');
+ for(const frames of [[frame(9),frame(2)],[frame(2),frame(2)],Array.from({length:5},(_,i)=>frame(i+1))]){
+  const a=await h.run('ANALYZE_VIDEO',{video:{...base,frames},question:'Describe these frames',confirm:true});
+  assert.equal(a.status,422);
+ }
+ assert.equal(h.invocations.length,0);
+});
+
+test('video sense respects founder access, deployment gate, user consent and source policy',async()=>{
+ const hash=await frameHash(image);
+ const payload={video:{sourceSha256:'a'.repeat(64),durationSeconds:10,frames:[
+  {timeSeconds:1,image,imageSha256:hash},{timeSeconds:9,image,imageSha256:hash}
+ ]},question:'What is visible?',confirm:true};
+ assert.equal((await harness({control:'off'}).run('ANALYZE_VIDEO',payload)).status,409);
+ assert.equal((await harness({email:''}).run('ANALYZE_VIDEO',payload)).status,401);
+ assert.equal((await harness({email:'other@example.com'}).run('ANALYZE_VIDEO',payload)).status,403);
+ const h=harness();
+ assert.equal((await h.run('ANALYZE_VIDEO',{...payload,confirm:false})).status,400);
+ assert.equal((await h.run('ANALYZE_VIDEO',payload,'https://wrong.example')).status,403);
+ assert.equal(h.invocations.length,0);
+});
+
+test('video-sense interface samples four timestamped frames locally with optional captions',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const [html,ui]=await Promise.all([
+  readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8'),
+  readFile(new URL('../jarvis-multimodal.mjs',import.meta.url),'utf8')]);
+ assert.match(html,/id="video-transcript"/);
+ assert.match(ui,/request\('ANALYZE_VIDEO'/);
+ assert.match(ui,/\.08,\.36,\.65,\.92/);
+ assert.match(ui,/sourceGeneration/);
+ assert.match(html,/events between sampled timestamps cannot be established/);
+});

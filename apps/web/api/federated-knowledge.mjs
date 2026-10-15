@@ -1,3 +1,4 @@
+import {featureControl} from '../lib/feature-flags.mjs';
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
@@ -54,7 +55,7 @@ export function createFederatedKnowledgeHandler({fetchImpl=globalThis.fetch}={})
   const session=verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE]);
   if(!session)return res.status(401).json(apiError('UNAUTHENTICATED','Sign in required'));
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder identity required'));
-  if(req.env?.VAOS_FEDERATED_KNOWLEDGE_CONTROL!=='founder-readonly-v1')
+  if(featureControl(req.env,'VAOS_FEDERATED_KNOWLEDGE_CONTROL')!=='founder-readonly-v1')
     return res.status(409).json(apiError('FEDERATED_DISABLED','Federated gateway not commissioned'));
   let q;try{q=new URL(req.url).searchParams.get('q');}catch{}
   if(!QUERY.test(q||'')||/\b(password|secret|token|credentials|private key|api key)\b/i.test(q))

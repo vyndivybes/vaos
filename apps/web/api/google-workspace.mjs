@@ -259,6 +259,44 @@ async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),r
  }
  return record.accessToken;
 }
+
+/** Private founder-only event detail read. Never include attendees or OAuth tokens. */
+export async function readFounderCalendarEvents(env,{fetchImpl=fetch,now=()=>Date.now()}={}){
+ try{
+  const token=await founderGoogleCredential(env,{fetchImpl,now,
+   required:['https://www.googleapis.com/auth/calendar.events']});
+  const url='https://www.googleapis.com/calendar/v3/calendars/primary/events?'+
+   new URLSearchParams({
+    timeMin:new Date(now()).toISOString(),
+    timeMax:new Date(now()+7*86400000).toISOString(),
+    maxResults:'20',singleEvents:'true',orderBy:'startTime',
+    fields:'nextPageToken,items(status,summary,start(date,dateTime),end(date,dateTime))'
+   }).toString();
+  const result=await googleGet(url,token,fetchImpl);
+  if(!Array.isArray(result?.items))return hold('GOOGLE_CALENDAR_SCHEMA_INVALID');
+  const events=[];
+  for(const item of result.items){
+   if(item?.status==='cancelled')continue;
+   const rawStart=item?.start?.dateTime||item?.start?.date;
+   const rawEnd=item?.end?.dateTime||item?.end?.date;
+   if(typeof rawStart!=='string'||!Number.isFinite(Date.parse(rawStart))||
+      typeof rawEnd!=='string'||!Number.isFinite(Date.parse(rawEnd)))
+    return hold('GOOGLE_CALENDAR_SCHEMA_INVALID');
+   events.push({
+    title:typeof item.summary==='string'?item.summary.slice(0,140):'Busy',
+    start:rawStart,end:rawEnd,allDay:!item.start?.dateTime
+   });
+  }
+  return {status:'PASS',source:'GOOGLE_CALENDAR',actionAuthorized:false,
+   range:'NEXT_7_DAYS',calendarEvents:events.length,
+   truncated:Boolean(result.nextPageToken),events};
+ }catch(e){
+  const reason=['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED'].includes(e?.message)
+   ?e.message:'GOOGLE_SOURCE_UNVERIFIED';
+  return hold(reason);
+ }
+}
+
 export async function readFounderGmail(env,q,{fetchImpl=fetch,now=()=>Date.now()}={}){
  const mailScope='https://www.googleapis.com/auth/gmail.readonly';
  if(typeof q!=='string'||q.trim().length<2||q.length>120||/[\x00-\x1f]/.test(q))
@@ -345,6 +383,7 @@ export function createGoogleWorkspaceHandler({authorized=isFounder,fetchImpl=fet
   }
   if(path==='/api/google-workspace/start')return oauthStart(env,now);
   if(path==='/api/google-workspace/brief')return reply(200,await readGoogleWorkspaceBrief(env,{fetchImpl,now}));
+  if(path==='/api/google-workspace/events')return reply(200,await readFounderCalendarEvents(env,{fetchImpl,now}));
   if(path==='/api/google-workspace/mail'){
    const q=new URL(req.url).searchParams.get('q');
    return reply(200,await readFounderGmail(env,q,{fetchImpl,now}));

@@ -109,6 +109,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/google-workspace/start': googleWorkspace,
   '/api/google-workspace/callback': googleWorkspace,
   '/api/google-workspace/brief': googleWorkspace,
+  '/api/google-workspace/events': googleWorkspace,
   '/api/google-workspace/mail': googleWorkspace,
   '/api/google-workspace/reminders': googleWorkspace,
   '/api/langgraph': langgraph,

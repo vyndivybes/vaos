@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief,readFounderGmail,createFounderCalendarReminder} from './google-workspace.mjs';
+import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief,readFounderCalendarEvents,readFounderGmail,createFounderCalendarReminder} from './google-workspace.mjs';
 
 const ORIGIN='https://vaos.vayushastr.workers.dev';
 const ctx={email:'shyamsundhar1982@gmail.com'};
@@ -409,4 +409,69 @@ test('Google identity redirect never follows or saves tokens',async()=>{
   cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
  assert.equal((await callback.json()).reason,'OAUTH_IDENTITY_UNVERIFIED');
  assert.equal(s.storage.has('runtime/google-workspace/founder-token.v1.json'),false);
+});
+
+test('authenticated founder can list actual Calendar events without modifying records',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const scope='openid email https://www.googleapis.com/auth/calendar.events';
+ let readCalls=0;
+ const fetchImpl=async(url,init)=>{
+  if(url==='https://oauth2.googleapis.com/token')return Response.json({
+   token_type:'Bearer',access_token:'access-token-calendar',refresh_token:'refresh-token-calendar',
+   expires_in:3600,scope
+  });
+  if(url==='https://openidconnect.googleapis.com/v1/userinfo')return Response.json({
+   email:'shyamsundhar1982@gmail.com',email_verified:true
+  });
+  if(url.startsWith('https://www.googleapis.com/calendar/v3/calendars/primary/events?')){
+   readCalls++;
+   assert.equal(init.method,'GET');
+   const query=new URL(url).searchParams;
+   assert.equal(query.get('singleEvents'),'true');
+   assert.equal(query.get('maxResults'),'20');
+   return Response.json({items:[
+    {id:'meet1',status:'confirmed',summary:'Toray technical review',
+     start:{dateTime:'2026-10-19T09:00:00+05:30'},
+     end:{dateTime:'2026-10-19T09:30:00+05:30'}},
+    {id:'cancel1',status:'cancelled',summary:'Old appointment',
+     start:{dateTime:'2026-10-20T09:00:00+05:30'}},
+    {id:'all1',summary:'Prototype milestone',
+     start:{date:'2026-10-21'},end:{date:'2026-10-22'}}
+   ]});
+  }
+  throw Error('Unexpected Google API operation');
+ };
+ const now=()=>Date.parse('2026-10-16T04:00:00.000Z');
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl,now});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const connected=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=authorization_code_2026',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ assert.equal((await connected.json()).status,'CONNECTED');
+ const resp=await h(makeReq('/api/google-workspace/events'),getResponse(),s.env);
+ assert.equal(resp.status,200);
+ const data=await resp.json();
+ assert.equal(data.status,'PASS');
+ assert.equal(data.actionAuthorized,false);
+ assert.equal(data.calendarEvents,2);
+ assert.equal(data.events[0].title,'Toray technical review');
+ assert.equal(data.events[1].allDay,true);
+ assert.equal(readCalls,1);
+ assert.doesNotMatch(JSON.stringify(data),/access-token|refresh-token|cancel1|participants|attendees/);
+});
+test('calendar listing cannot reveal private appointments to unauthenticated users',async()=>{
+ const s=setup();let fetched=0;
+ const h=createGoogleWorkspaceHandler({authorized:()=>false,fetchImpl:async()=>{fetched++;throw Error()}});
+ const resp=await h(makeReq('/api/google-workspace/events'),getResponse(),s.env);
+ assert.equal(resp.status,403);
+ assert.equal(fetched,0);
+ assert.equal(s.storage.size,0);
+});
+test('calendar listing with no founder consent fails closed',async()=>{
+ const s=setup();let fetched=0;
+ const result=await readFounderCalendarEvents(s.env,{fetchImpl:async()=>{fetched++;throw Error()}});
+ assert.equal(result.status,'HOLD');
+ assert.equal(result.actionAuthorized,false);
+ assert.equal(fetched,0);
 });

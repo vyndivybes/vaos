@@ -5,7 +5,7 @@ import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-t
 import {createG6Conversation,createG6BargeInListener} from './lib/g6-conversation.mjs';
 import {isAdvisoryQuestion} from './lib/business-advice.mjs';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
-import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261012-handsfree-unified';
+import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261016-audible-wake-v1';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone-diagnostics.mjs';
 import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';

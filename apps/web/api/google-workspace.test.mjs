@@ -255,3 +255,45 @@ test('R2 token persistence failure reports a safe vault code instead of opaque e
  assert.equal(body.reason,'OAUTH_VAULT_WRITE_FAILED');
  assert.doesNotMatch(JSON.stringify(body),/hidden storage details/);
 });
+
+
+test('OAuth callback identifies token transport failure without exposing upstream exception',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,
+  fetchImpl:async()=>{throw Error('SECRET NETWORK INTERNAL ERROR');}});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_authorization_code',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ const body=await cb.json();
+ assert.equal(body.reason,'OAUTH_TOKEN_TRANSPORT_FAILED');
+ assert.doesNotMatch(JSON.stringify(body),/SECRET NETWORK INTERNAL ERROR/);
+});
+
+test('OAuth callback identifies malformed success payload from token endpoint',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,
+  fetchImpl:async()=>new Response('invalid json',{status:200})});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_authorization_code',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ const body=await cb.json();
+ assert.equal(body.reason,'OAUTH_TOKEN_RESPONSE_INVALID');
+});
+
+test('OAuth callback identifies malformed Google identity without exposing body',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,
+  fetchImpl:async(url)=>url==='https://oauth2.googleapis.com/token'
+   ?Response.json({token_type:'Bearer',access_token:'access-token-test-2026',refresh_token:'refresh-token-test-2026',expires_in:3600,scope:'openid email https://www.googleapis.com/auth/calendar.events'})
+   :new Response('malformed',{status:200})});
+ const start=await h(makeReq('/api/google-workspace/start'),getResponse(),s.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const cb=await h(makeReq('/api/google-workspace/callback?state='+state+'&code=fresh_authorization_code',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),s.env);
+ assert.equal((await cb.json()).reason,'OAUTH_IDENTITY_RESPONSE_INVALID');
+});

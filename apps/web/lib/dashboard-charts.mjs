@@ -6,7 +6,7 @@ export function normalizeCounts(rows) {
   typeof x.value==='number' && Number.isSafeInteger(x.value) && x.value>=0 && x.value<=1_000_000_000)
   .slice(0,12).map(x=>({label:x.label.trim().slice(0,80),value:x.value}));
 }
-const palette=['#d49c48','#38b5ac','#7a9aeb','#d18bc9','#a2b772','#ed957c','#98bbdf','#b5a3e0','#a7c9b1','#dec07a','#d49ca2','#9cbbcc'];
+const palette=['#b59b71','#8297a5','#83a596','#c89c80','#9bb9b6','#b6a7b7','#adbac7','#c2bb9d','#a8b9a8','#d1b79e','#bbaaa8','#9faeaf'];
 const heading=(title,detail)=>'<title>'+escapeXml(title)+'</title><desc>'+escapeXml(detail)+'</desc>';
 const text=(x,y,t,extra='')=>'<text x="'+x+'" y="'+y+'" '+extra+'>'+escapeXml(t)+'</text>';
 export function chartSvg(raw,kind='columns',title='Observed counts') {

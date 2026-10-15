@@ -1,3 +1,4 @@
+import {featureControl} from '../lib/feature-flags.mjs';
 import { parseCookies, SESSION_COOKIE, verifySessionToken } from '../lib/auth.mjs';
 import { apiError } from '../lib/api-contracts.mjs';
 import { getDurableControlService } from '../lib/durable-control-provider.mjs';
@@ -38,7 +39,7 @@ export function createLangGraphHandler({ getControlService = getDurableControlSe
     } catch {
       return res.status(422).json(apiError('VALIDATION_ERROR', 'Valid mission ID and bounded operation required'));
     }
-    const enabled = () => req.env?.VAOS_LANGGRAPH_CONTROL === 'read-only-v1';
+    const enabled = () => featureControl(req.env,'VAOS_LANGGRAPH_CONTROL') === 'read-only-v1';
     if (req.method === 'POST' && !enabled()) {
       return res.status(409).json(apiError('LANGGRAPH_CONTROL_DISABLED', 'LangGraph read-only control is not commissioned'));
     }

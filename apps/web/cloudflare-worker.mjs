@@ -1,3 +1,4 @@
+import {featureControl} from './lib/feature-flags.mjs';
 import {runFounderWorkspaceDigest} from '../../platform/execution/google-founder-daily-brief.mjs';
 import googleWorkspace from './api/google-workspace.mjs';
 import {runHourlyIncidentAlerts} from '../../platform/execution/slack-incident-observer.mjs';
@@ -276,12 +277,12 @@ export default {
     const productionObservation=Promise.resolve().then(async()=>{
       // Existing kill switch: absent/OFF skips the observer entirely.
       // Shadow assesses only stored workforce readiness; no jobs or VYNDI.
-      if(!['read-only-v1','shadow-v1'].includes(env.VAOS_PRODUCTION_OBSERVER_CONTROL))return;
+      if(!['read-only-v1','shadow-v1'].includes(featureControl(env,'VAOS_PRODUCTION_OBSERVER_CONTROL')))return;
       const result=await runProductionReadOnlyObservation({
         controlService:getDurableControlService(env),
-        executionEngine:env.VAOS_PRODUCTION_OBSERVER_CONTROL==='read-only-v1'
+        executionEngine:featureControl(env,'VAOS_PRODUCTION_OBSERVER_CONTROL')==='read-only-v1'
           ?getExecutionEngine(env):undefined,
-        mode:()=>env.VAOS_PRODUCTION_OBSERVER_CONTROL,
+        mode:()=>featureControl(env,'VAOS_PRODUCTION_OBSERVER_CONTROL'),
       });
       console.log('VAOS_PRODUCTION_L5_OBSERVATION',JSON.stringify(result));
       if(result.status==='HOLD')throw new Error('PRODUCTION_OBSERVATION_HOLD');
@@ -330,7 +331,7 @@ export default {
       console.log('VAOS_GOOGLE_DAILY_BRIEF',JSON.stringify(result));
     }).catch(()=>console.warn('VAOS_GOOGLE_DAILY_BRIEF_HOLD'));
     const slackAgent = Promise.resolve().then(async()=>{
-      if(env.VAOS_SLACK_AGENT_CONTROL!=='founder-readonly-v1')return;
+      if(featureControl(env,'VAOS_SLACK_AGENT_CONTROL')!=='founder-readonly-v1')return;
       const result=await runSlackFounderAgent({env});
       const status={status:result.status,processed:result.processed||0,route:result.route||null,
         reason:null,actionAuthorized:false,checkedAt:new Date().toISOString()};

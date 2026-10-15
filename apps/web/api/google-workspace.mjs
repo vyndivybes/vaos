@@ -1,4 +1,4 @@
-// Independent VAOS Google Workspace read-only OAuth, disabled without
+// Founder-scoped Google Calendar OAuth, disabled without
 // hardened founder authentication, dedicated Google client and AES-256-GCM vault.
 // OAuth tokens never enter Slack, GitHub, URLs, logs or public response bodies.
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
@@ -10,14 +10,11 @@ const RECORD=PREFIX+'founder-token.v1.json';
 const PENDING=PREFIX+'oauth-pending/';
 const SCOPES=Object.freeze([
  'openid','email',
- 'https://www.googleapis.com/auth/calendar.events.readonly',
- 'https://www.googleapis.com/auth/drive.metadata.readonly'
-]);
-const EXTENDED_SCOPES=Object.freeze([
- ...SCOPES,
- 'https://www.googleapis.com/auth/gmail.readonly',
  'https://www.googleapis.com/auth/calendar.events'
 ]);
+// Request only the Calendar permission configured for VAOS; Gmail and Drive
+// require separate explicit integrations and are not part of Calendar consent.
+const EXTENDED_SCOPES=SCOPES;
 const AAD=new TextEncoder().encode('vaos:google-workspace:founder-readonly:v1');
 const enc=new TextEncoder();
 function reply(status,body){
@@ -28,7 +25,7 @@ function reply(status,body){
 }
 function hold(reason='GOOGLE_OAUTH_UNQUALIFIED'){
  return {status:'HOLD',reason,actionAuthorized:false,
-  answer:'VAOS Google Workspace: HOLD ('+reason+'). No Calendar or Drive information has been inferred or released.'};
+  answer:'VAOS Google Calendar: HOLD ('+reason+'). No calendar information has been inferred or released.'};
 }
 function tokenKeyReady(key){
  return key?.type==='secret'&&key.extractable===false&&
@@ -44,7 +41,7 @@ export function googleWorkspaceReadiness(env){
  tokenKeyReady(env.VAOS_GOOGLE_VAULT_KEY) &&
  typeof env.VAOS_ARTIFACTS?.get==='function'&&typeof env.VAOS_ARTIFACTS?.put==='function';
  return {status:ready?'READY':'HOLD',ready:Boolean(ready),actionAuthorized:false,
-  scopes:['calendar.events.readonly','drive.metadata.readonly','openid','email'],
+  scopes:['calendar.events','openid','email'],
   productionWritesAuthorized:false};
 }
 const isFounder=(req)=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE])?.email===FOUNDER;
@@ -152,7 +149,7 @@ async function oauthCallback(req,env,fetchImpl,now){
    expiresAt:now()+tok.expires_in*1000,scopes:tok.scope.split(/\s+/)
   });
   return reply(200,{status:'CONNECTED',actionAuthorized:false,
-   message:'Founder Google Calendar, Gmail read and Drive metadata OAuth authorized. Calendar event creation is permitted only after a direct authenticated founder request.'});
+   message:'Founder Google Calendar OAuth authorized. Calendar event creation is permitted only after a direct authenticated founder request.'});
  }catch{return reply(503,hold('OAUTH_EXCHANGE_UNVERIFIED'))}
 }
 async function googleGet(url,token,fetchImpl){
@@ -179,19 +176,13 @@ export async function readGoogleWorkspaceBrief(env,{fetchImpl=fetch,now=()=>Date
   const calUrl='https://www.googleapis.com/calendar/v3/calendars/primary/events?'+
    new URLSearchParams({timeMin:from,timeMax:to,maxResults:'10',singleEvents:'true',orderBy:'startTime',
     fields:'items(id,status,start),nextPageToken'}).toString();
-  const driveUrl='https://www.googleapis.com/drive/v3/files?'+
-   new URLSearchParams({pageSize:'10',orderBy:'modifiedTime desc',q:'trashed = false',
-    fields:'nextPageToken,files(id,mimeType,modifiedTime)'}).toString();
-  const [cal,drive]=await Promise.all([googleGet(calUrl,record.accessToken,fetchImpl),
-    googleGet(driveUrl,record.accessToken,fetchImpl)]);
-  if(!Array.isArray(cal?.items)||!Array.isArray(drive?.files))return hold('GOOGLE_SOURCE_SCHEMA_INVALID');
+  const cal=await googleGet(calUrl,record.accessToken,fetchImpl);
+  if(!Array.isArray(cal?.items))return hold('GOOGLE_SOURCE_SCHEMA_INVALID');
   const calendarEvents=cal.items.filter(x=>x?.status!=='cancelled').length;
-  const driveRecent=drive.files.length;
-  return {status:'PASS',actionAuthorized:false,calendarEvents,driveRecent,
-   answer:'VAOS Google Workspace connectivity brief (founder read-only): next 7 days: '+
-    calendarEvents+' calendar events in the first 10; recent Drive metadata: '+driveRecent+
-    ' files in the first 10. Event titles, document names, participants and contents are not posted to Slack. '+
-    'No scheduling or document writes are authorized.'};
+  return {status:'PASS',actionAuthorized:false,calendarEvents,
+   answer:'VAOS Google Calendar connectivity brief (founder): next 7 days: '+
+    calendarEvents+' calendar events in the first 10. Event titles and participants are not posted to Slack. '+
+    'No scheduling writes are authorized without a direct authenticated founder request.'};
  }catch{return hold('GOOGLE_SOURCE_UNVERIFIED')}
 }
 

@@ -3,7 +3,7 @@ import {VYNDI_BRIDGE_ROUTES} from '../packages/contracts/vyndi-write-bridge.mjs'
 // Metadata-only inventory of source authorities already admitted by the governed
 // VYNDI read bridge. This does not fetch business records or certify data freshness.
 const DOMAINS=Object.freeze({
-  PROJECT:'Programme',COMMERCIAL:'Commercial',PROCUREMENT:'Procurement',
+  ORCHESTRATOR:'Enterprise intelligence',PROJECT:'Programme',COMMERCIAL:'Commercial',PROCUREMENT:'Procurement',
   INVENTORY:'Inventory',PRODUCTION:'Production',MAINTENANCE:'Maintenance',
   FINANCE:'Finance',PEOPLE:'People & Office',ENGINEERING:'Engineering',
 });

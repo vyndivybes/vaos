@@ -1,5 +1,5 @@
 const $=id=>document.getElementById(id);
-let enabled=false,specialistsEnabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null;
+let enabled=false,specialistsEnabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null,sourceGeneration=0;
 async function fileHash(source){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await source.arrayBuffer())),v=>v.toString(16).padStart(2,'0')).join('');}
 async function imageDataHash(data){const b64=data.split(',')[1];const bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');}
 async function request(operation,payload){
@@ -35,15 +35,77 @@ async function imagePayload(){
  if(out.length>600000)throw Error('Image too large after resizing');
  return out;
 }
+
+/**
+ * The original video never leaves the browser. Seek and compress four sparse
+ * visual samples; any transcript must be pasted by the founder separately.
+ * Sampling cannot substantiate motion or events between sampled instants.
+ */
+async function seekVideo(video,seconds){
+ if(Math.abs(video.currentTime-seconds)<0.015&&video.readyState>=2)return;
+ await new Promise((resolve,reject)=>{
+  let settled=false;
+  const finish=error=>{
+   if(settled)return;settled=true;clearTimeout(timeout);
+   video.removeEventListener('seeked',onSeek);
+   video.removeEventListener('error',onError);
+   error?reject(error):resolve();
+  };
+  const onSeek=()=>finish(),onError=()=>finish(Error('Video could not seek to the chosen time'));
+  const timeout=setTimeout(()=>finish(Error('Video frame decoding timed out')),6000);
+  video.addEventListener('seeked',onSeek);video.addEventListener('error',onError);
+  try{video.currentTime=seconds}catch(error){finish(error)}
+ });
+}
+function compressedVideoFrame(video){
+ if(!video.videoWidth||!video.videoHeight)throw Error('Video frame dimensions unavailable');
+ const canvas=document.createElement('canvas');
+ const scale=Math.min(1,640/Math.max(video.videoWidth,video.videoHeight));
+ canvas.width=Math.max(1,Math.floor(video.videoWidth*scale));
+ canvas.height=Math.max(1,Math.floor(video.videoHeight*scale));
+ const ctx=canvas.getContext('2d');
+ ctx.drawImage(video,0,0,canvas.width,canvas.height);
+ let quality=.7,image=canvas.toDataURL('image/jpeg',quality);
+ while(image.length>215000&&quality>.28){
+  quality-=.08;image=canvas.toDataURL('image/jpeg',quality);
+ }
+ if(image.length>215000){
+  canvas.width=Math.max(1,Math.floor(canvas.width*.65));
+  canvas.height=Math.max(1,Math.floor(canvas.height*.65));
+  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  image=canvas.toDataURL('image/jpeg',.42);
+ }
+ if(image.length>215000)throw Error('Video frame exceeds the bounded analysis budget');
+ return image;
+}
+async function sampleLocalVideo(video,original,generation){
+ if(!Number.isFinite(video.duration)||video.duration<=0||video.readyState<2)
+  throw Error('Wait until video metadata and a local frame have loaded');
+ video.pause();
+ const positions=[.08,.36,.65,.92].map(fraction=>Math.min(video.duration-.001,Math.max(0,video.duration*fraction)));
+ const frames=[];
+ for(const time of positions){
+  if(file!==original||sourceGeneration!==generation)throw Error('Source changed during video sampling');
+  await seekVideo(video,time);
+  if(file!==original||sourceGeneration!==generation)throw Error('Source changed during video sampling');
+  const image=compressedVideoFrame(video);
+  frames.push({timeSeconds:Number(video.currentTime.toFixed(4)),image,imageSha256:await imageDataHash(image)});
+ }
+ return frames;
+}
+
 $('source-file').addEventListener('change',e=>{
+ sourceGeneration++;
+ $('video-transcript-panel').hidden=true;
  file=e.target.files?.[0]||null;converted='';sourceHash=null;lastFrame=null;documentSource=null;$('doc-panel').hidden=true;$('result-panel').hidden=true;$('vedm-panel').hidden=true;$('vedm-result').textContent='No VEDM comparison has been requested.';
  if(frameUrl){URL.revokeObjectURL(frameUrl);frameUrl=null}
  $('frame-preview').replaceChildren();
  if(file&&/\.(mp4|webm)$/i.test(file.name)){
+  $('video-transcript-panel').hidden=false;
   if(file.size>18000000){$('status').textContent='Video exceeds the 18 MB local preview limit';file=null;return}
   const v=document.createElement('video');v.id='video-local';v.controls=true;v.muted=true;v.playsInline=true;
   frameUrl=URL.createObjectURL(file);v.src=frameUrl;$('frame-preview').append(v);
-  $('status').textContent='The video stays on your device. Pause on one frame before analysis.';
+  $('status').textContent='Video stays on your device. JARVIS can sample four timestamps; paste captions if available. Sparse samples do not capture all motion.';
  }
 });
 $('analyze').addEventListener('click',async()=>{
@@ -61,7 +123,26 @@ $('analyze').addEventListener('click',async()=>{
    converted=r.text;documentSource={name:r.name,fileSha256:r.provenance.fileSha256,excerptSha256:r.provenance.excerptSha256};
    $('document-text').textContent=converted;
    $('doc-panel').hidden=false;$('vedm-panel').hidden=false;$('status').textContent='Document converted with SHA-256 '+documentSource.fileSha256+'. The extracted text is unverified; check completeness before asking JARVIS.';
-  }else if(/\.(jpg|jpeg|png|webp|mp4|webm)$/i.test(file.name)){
+  }else if(/\.(mp4|webm)$/i.test(file.name)){
+   const original=file,generation=sourceGeneration;
+   if(original.size>18000000)throw Error('Video exceeds the 18 MB local analysis limit');
+   const transcript=$('video-transcript').value.trim();
+   if(transcript.length>4000)throw Error('Pasted transcript exceeds 4,000 characters');
+   if(!confirm('Send four compressed video-frame images'+(transcript?' and your pasted transcript':'')+' to Workers AI for read-only analysis? Original video remains on this device.'))return;
+   sourceHash=await fileHash(original);
+   if(file!==original||sourceGeneration!==generation)throw Error('Video selection changed');
+   const video=$('video-local'),frames=await sampleLocalVideo(video,original,generation);
+   const data=await request('ANALYZE_VIDEO',{video:{sourceSha256:sourceHash,durationSeconds:video.duration,frames,...(transcript?{transcript}:{})},question});
+   if(!Array.isArray(data.frameObservations)||data.provenance?.temporalCoverage!=='SPARSE_SAMPLED_FRAMES_ONLY')
+    throw Error('Video-sense timestamp provenance was not returned');
+   $('result').textContent=data.answer+'\n\nSAMPLED TIMESTAMP OBSERVATIONS (not continuous footage):\n'+
+    data.frameObservations.map(x=>x.timestamp+' — '+x.observation).join('\n')+
+    '\n\nOriginal clip association: client-declared, not server-verified. Transcript: '+
+    data.provenance.transcriptAuthority+'. No business records were modified.';
+   $('result-panel').hidden=false;$('vedm-panel').hidden=false;
+   $('status').textContent='Sparse video sense completed across '+data.frameObservations.length+
+    ' timestamped frames. Original video remained local. Motion between frames and transcript alignment remain unverified.';
+  }else if(/\.(jpg|jpeg|png|webp)$/i.test(file.name)){
    if(!confirm('Send only this image / single video frame to Workers AI? It will not be saved.'))return;
    const chosen=file;if(chosen.size>18000000)throw Error('Source exceeds the 18 MB local analysis limit.');sourceHash=await fileHash(chosen);if(file!==chosen)throw Error('Source changed; select it again.');
    const image=await imagePayload();

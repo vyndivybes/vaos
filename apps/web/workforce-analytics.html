@@ -1,40 +1,14 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/>
-<meta name="theme-color" content="#f8f7f4"/><meta name="description" content="Founder-only evidence-based employee performance and audit analytics"/>
+<meta name="theme-color" content="#101714"/><meta name="description" content="Founder-only evidence-based employee performance and audit analytics"/>
 <link rel="icon" href="/assets/vayu-shastr-original.webp" type="image/webp"/>
 <link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/workforce-analytics.css"/>
-<title>VAOS · Workforce Analytics</title></head><body>
-<header class="wa-header"><div><small>VĀYŪ SHASTR · VAOS</small><h1>Workforce Analytics</h1><p>Founder Command · 16 digital employees · evidence-backed read-only reporting</p></div><a href="/founder-console.html">← Founder Command</a></header>
-<main class="wa-main">
-<section class="wa-panel" aria-labelledby="wa-business-title">
- <div class="wa-heading"><div><span class="wa-kicker">FOUNDER · COMPANY OPERATING INTELLIGENCE</span>
- <h2 id="wa-business-title">Business analytics by department</h2>
- <p>Sales, Finance, HR, Production, Procurement, Inventory, Engineering and Maintenance. Each department opens its responsible AI employee and canonical business records.</p></div>
- <button id="wa-business-refresh" type="button">Refresh all departments</button></div>
- <p id="wa-business-status" role="status" aria-live="polite">Awaiting authenticated departmental evidence.</p>
- <div id="wa-business-departments" class="wa-period-grid" aria-label="Business department records and drill-down"></div>
- <section class="wa-period-card" aria-labelledby="wa-financial-title">
-  <div class="wa-heading"><div><h3 id="wa-financial-title">Financial performance · posted actuals</h3>
-   <p>Reconciled VYNDI OS financial statements for the reporting period selected above. Profit is never calculated from the department record-count charts.</p></div>
-   <button id="wa-financial-refresh" type="button">Refresh finance</button></div>
-  <p id="wa-financial-status" role="status" aria-live="polite">Awaiting authenticated posted financial evidence.</p>
-  <div id="wa-financial-kpis" class="wa-stats" aria-label="Qualified financial KPIs"></div>
-  <div id="wa-financial-chart" class="wa-viz-bars" role="region" aria-label="Revenue, cost of goods sold, gross profit, and net profit"></div>
-  <p class="wa-period-note">Manufacturing cost uses recorded job-cost snapshots; gross and net margin require posted revenue. Missing activity, incomplete statements and reconciliation holds are never displayed as zero profit.</p>
- </section>
- <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>
- <p>Revenue requires posted or otherwise qualified sales actuals; gross profit is revenue minus attributable cost of goods sold; operating profit also deducts qualified operating expenses. Working capital requires qualified current assets and current liabilities. Cash runway requires qualified cash and burn rate. Stock turnover, production yield, purchase variance, receivables ageing and payroll require their respective canonical transaction records. None can be calculated from mere counts of status records, employee activity or unapproved engineering BOMs. Missing and incomplete figures must remain unavailable, never zero.</p>
- </details>
-</section>
-
-<section class="wa-panel wa-actual-report" aria-labelledby="wa-actual-title">
- <div class="wa-heading">
-  <div><span class="wa-kicker">FOUNDER · RECORDED OUTPUT AND AUDIT</span>
-   <h2 id="wa-actual-title">What did your AI employees actually do?</h2>
-   <p>Choose a period and an employee to inspect dated work, reviewed audits, verified reports and realistic forecast availability.</p>
-  </div>
- </div>
- <div class="wa-period-controls">
+<title>VAOS · Founder Intelligence</title><link rel="stylesheet" href="/premium.css?v=20261015"/></head><body class="va-premium premium-analytics">
+<a class="premium-skip" href="#intelligence-main">Skip to intelligence</a>
+<header class="premium-topbar"><a class="premium-brand" href="/workspace"><span class="premium-mark" aria-hidden="true">V</span><strong>VAOS<span> / Intelligence</span></strong></a><nav aria-label="Workspace navigation"><a href="/workspace">Workspace</a><a class="active" aria-current="page" href="/workforce-analytics">Intelligence</a><a href="/mission-status.html">Missions</a></nav><a class="premium-avatar" href="/founder-console.html" aria-label="Open founder command">SS</a></header>
+<main class="wa-main" id="intelligence-main">
+<section class="premium-hero"><div><span class="premium-eyebrow"><i></i> YOUR BUSINESS, IN FOCUS</span><h1>A clearer view.<br><span>A better next move.</span></h1><p>Your people, performance and priorities.<br>One considered view of the business.</p><a class="premium-text-link" href="/workspace">Open your workspace <span aria-hidden="true">↗</span></a></div><div class="premium-orbit" aria-hidden="true"><div class="premium-orbit-ring"></div><div class="premium-orbit-ring"></div><div class="premium-orbit-core">V<span>VĀYŪ SHASTR</span></div><span class="premium-orbit-label">CONNECTED INTELLIGENCE</span></div></section>
+<div class="wa-period-controls">
   <label for="wa-period-presets">Reporting period
    <select id="wa-period-presets"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="custom">Custom dates</option></select>
   </label>
@@ -43,19 +17,45 @@
   <label for="wa-period-employee">Employee
    <select id="wa-period-employee"><option value="all">All 16 employees</option></select>
   </label>
- </div>
- <section class="wa-period-card" aria-labelledby="wa-enterprise-title">
+ </div><nav class="premium-tabs" aria-label="Intelligence views"><button type="button" data-premium-tab="overview" aria-controls="premium-overview" aria-pressed="true">Business overview</button><button type="button" data-premium-tab="departments" aria-controls="premium-departments" aria-pressed="false">Departments <span>16</span></button><button type="button" data-premium-tab="team" aria-controls="premium-team" aria-pressed="false">Your digital team</button><button type="button" data-premium-tab="assurance" aria-controls="premium-assurance" aria-pressed="false">Assurance</button></nav><div data-premium-view="overview" id="premium-overview"><div class="premium-section-title"><span>01 / AT A GLANCE</span><p>Source activity, not inferred business performance.</p></div><div id="wa-enterprise-kpis" class="wa-stats premium-overview-stats"></div><section class="wa-period-card" aria-labelledby="wa-financial-title">
+  <div class="wa-heading"><div><h2 id="wa-financial-title">Financial performance</h2>
+   <p>Posted, reconciled actuals for your selected period.</p></div>
+   <button id="wa-financial-refresh" type="button">Refresh finance</button></div>
+  <p id="wa-financial-status" role="status" aria-live="polite">Awaiting authenticated posted financial evidence.</p>
+  <div id="wa-financial-kpis" class="wa-stats" aria-label="Qualified financial KPIs"></div>
+  <div id="wa-financial-chart" class="wa-viz-bars" role="region" aria-label="Revenue, cost of goods sold, gross profit, and net profit"></div>
+  <p class="wa-period-note">Unqualified amounts remain unavailable. Source and reconciliation details accompany each statement.</p>
+ </section><section class="wa-panel" aria-labelledby="wa-business-title">
+ <div class="wa-heading"><div><span class="wa-kicker">FOUNDER · COMPANY OPERATING INTELLIGENCE</span>
+ <h2 id="wa-business-title">Business pulse</h2>
+ <p>Your operating sources, connected in one place.</p></div>
+ <button id="wa-business-refresh" type="button">Refresh all departments</button></div>
+ <p id="wa-business-status" role="status" aria-live="polite">Awaiting authenticated departmental evidence.</p>
+ <details class="wa-accordion"><summary>Explore eight business snapshots</summary><div id="wa-business-departments" class="wa-period-grid" aria-label="Business department records and drill-down"></div></details>
+
+ <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>
+ <p>Revenue requires posted or otherwise qualified sales actuals; gross profit is revenue minus attributable cost of goods sold; operating profit also deducts qualified operating expenses. Working capital requires qualified current assets and current liabilities. Cash runway requires qualified cash and burn rate. Stock turnover, production yield, purchase variance, receivables ageing and payroll require their respective canonical transaction records. None can be calculated from mere counts of status records, employee activity or unapproved engineering BOMs. Missing and incomplete figures must remain unavailable, never zero.</p>
+ </details>
+</section></div><div data-premium-view="departments" id="premium-departments"><section class="wa-period-card" aria-labelledby="wa-enterprise-title">
   <div class="wa-heading"><div><span class="wa-kicker">VYNDI OS · 16 SOURCE LEDGERS</span>
-   <h3 id="wa-enterprise-title">All departmental records · status &amp; exceptions</h3>
-   <p>Complete dated source-status aggregates with responsible employee drilldowns. Independent AI work evidence remains in the sections below.</p></div>
+   <h2 id="wa-enterprise-title">Across the business</h2>
+   <p>Current workload and period activity across all sixteen departments.</p></div>
    <button type="button" id="wa-enterprise-refresh">Refresh all 16</button></div>
   <label class="wa-employee-filter">Find department
    <input id="wa-enterprise-search" type="search" placeholder="Sales, engineering, finance, quality…" autocomplete="off"/></label>
   <p role="status" aria-live="polite" id="wa-enterprise-status">Awaiting signed VYNDI department data.</p>
-  <div id="wa-enterprise-kpis" class="wa-stats"></div>
+
   <div id="wa-enterprise-grid" class="wa-period-grid" aria-label="Source-backed department reports"></div>
   <p class="wa-period-note">A status on a source business record does not mean a digital employee finished that task. Historical closure and forecasts need distinct qualified evidence.</p>
- </section>
+ </section></div><div data-premium-view="team" id="premium-team"><section class="wa-panel wa-actual-report" aria-labelledby="wa-actual-title">
+ <div class="wa-heading">
+  <div><span class="wa-kicker">FOUNDER · RECORDED OUTPUT AND AUDIT</span>
+   <h2 id="wa-actual-title">Employee activity</h2>
+   <p>Assignments, reviewed reports and delivery evidence for your selected employee.</p>
+  </div>
+ </div>
+
+
  <p id="wa-period-status" class="wa-period-note" role="status" aria-live="polite">Reading authenticated historical evidence…</p>
  <div id="wa-period-kpis" class="wa-stats" aria-live="polite"></div>
  <section class="wa-vyndi-report" aria-labelledby="wa-vyndi-title">
@@ -78,7 +78,7 @@
       <div id="wa-vyndi-coverage" class="wa-period-list"></div>
     </section>
   </div>
-  <details class="wa-accordion" open>
+  <details class="wa-accordion">
    <summary>View source business records as a table</summary>
    <div class="wa-scroll"><table><caption>Governed VYNDI OS source snapshot · no inferred transactions</caption>
     <thead><tr><th>Source</th><th>Record date</th><th>Identity</th><th>Status</th><th>Available fields</th></tr></thead>
@@ -108,8 +108,7 @@
  <details class="wa-accordion"><summary>Evidence interpretation and date-window limitations</summary>
   <p>Only the existing governed 90-day snapshot is available. Work status is the current recorded state for a work package whose last update falls inside the chosen window, not a reconstructed historical status or a dated completion event. A reviewed audit or verified report is counted only on its event timestamp. Registration, training fixtures and technical PASS labels do not prove productive business output. A forecast is shown only if independently qualified; no fictitious productivity or delivery dates are generated.</p>
  </details>
-</section>
- <section class="wa-panel" aria-labelledby="workforce-title"><div class="wa-heading"><h2 id="workforce-title">Workforce overview</h2><button id="wa-refresh" type="button">Refresh verified records</button></div><p id="wa-status" aria-live="polite">Authenticating and reading governed records…</p>
+</section><section class="wa-panel" aria-labelledby="workforce-title"><div class="wa-heading"><h2 id="workforce-title">Workforce overview</h2><button id="wa-refresh" type="button">Refresh verified records</button></div><p id="wa-status" aria-live="polite">Authenticating and reading governed records…</p>
  <p id="wa-observed">No validated database snapshot yet.</p><p id="wa-ops-status" aria-live="polite">Operational runtime qualification not yet verified.</p><div id="wa-totals" class="wa-stats" aria-live="polite"></div>
  <section class="wa-visual-overview" aria-label="Graphical workforce evidence overview">
   <div class="wa-viz-card">
@@ -127,23 +126,21 @@
  <details class="wa-accordion wa-records-disclosure"><summary>Search all employee records <small>Open detailed roster and audit evidence</small></summary>
  <label class="wa-employee-filter">Search employees <input id="wa-employee-search" type="search" placeholder="Filter by employee, department, lifecycle or audit" autocomplete="off"/></label>
  <div class="wa-scroll"><table><caption>All 16 digital employees · select an employee to inspect</caption><thead><tr><th>Employee</th><th>Lifecycle</th><th>Work</th><th>Verified 90d</th><th>Audit</th><th>Heartbeat evidence</th></tr></thead><tbody id="wa-roster"></tbody></table></div>
- </details></section>
-
- <section class="wa-panel" aria-labelledby="employee-title"><div class="wa-heading"><h2 id="employee-title">Individual employee dashboard</h2><label for="wa-select">Employee <select id="wa-select"></select></label></div>
- <div id="wa-profile"></div><details class="wa-accordion" open><summary>Evidence needed before qualification</summary><div id="wa-evidence-priority-detail" aria-live="polite">Loading independent qualification gaps…</div></details>
- <details class="wa-accordion" open><summary>Employee performance charts · switch graph styles</summary>
+ </details></section><section class="wa-panel" aria-labelledby="employee-title"><div class="wa-heading"><h2 id="employee-title">Individual employee dashboard</h2><label for="wa-select">Employee <select id="wa-select"></select></label></div>
+ <div id="wa-profile"></div><details class="wa-accordion"><summary>Evidence needed before qualification</summary><div id="wa-evidence-priority-detail" aria-live="polite">Loading independent qualification gaps…</div></details>
+ <details class="wa-accordion"><summary>Employee performance charts · switch graph styles</summary>
  <label class="wa-chart-control">Graph style <select id="wa-chart-kind"><option value="columns">Columns</option><option value="bars">Horizontal bars</option><option value="donut">Doughnut</option></select></label>
  <p>Registered work-package counts only. Verified handoff closures and independently reviewed audits are separately qualified.</p>
  <div id="wa-evidence-chart" role="region" aria-label="Observed employee work charts"></div>
  </details>
- <details class="wa-accordion" open><summary>Work distribution, verified windows and planning</summary><div class="wa-grid">
+ <details class="wa-accordion"><summary>Work distribution, verified windows and planning</summary><div class="wa-grid">
  <div class="wa-subpanel"><h3>Work distribution</h3><p>Registered work-package status, not an audit-pass percentage.</p><div id="wa-status-bars"></div></div>
  <div class="wa-subpanel"><h3>Verified completion trend</h3><p>Independently verified handoff closures in each trailing window, not task-plan attainment.</p><div id="wa-trend"></div></div>
  <div class="wa-subpanel"><h3>Adaptive role analysis</h3><p>Role-specific KPIs from the VAOS job catalog. Values appear only when measured.</p><ul id="wa-kpis"></ul></div>
  <div class="wa-subpanel"><h3>Forecast &amp; planning</h3><p id="wa-forecast">Forecast qualification pending.</p></div>
  <div class="wa-subpanel"><h3>Actual versus planned progress</h3><p id="wa-progress-coverage">Approved baseline source not loaded.</p><div id="wa-progress"></div></div>
  </div></details>
- <details class="wa-accordion" open><summary>Current work and independently reviewed audits</summary><div class="wa-grid">
+ <details class="wa-accordion"><summary>Current work and independently reviewed audits</summary><div class="wa-grid">
  <div class="wa-subpanel"><h3>Current and recent work</h3><div class="wa-scroll"><table><thead><tr><th>Mission / action</th><th>Status</th><th>Updated</th></tr></thead><tbody id="wa-work"></tbody></table></div></div>
  <div class="wa-subpanel"><h3>Individual departmental audits</h3><p id="wa-audit">Independent audit result source not yet linked.</p><p id="wa-qualification">Employee qualification assessment record not yet loaded.</p><div class="wa-scroll"><table><thead><tr><th>Page / scope</th><th>Evidence</th></tr></thead><tbody id="wa-audit-pages"></tbody></table></div></div>
  </div></details>
@@ -151,15 +148,14 @@
  <div class="wa-subpanel"><h3>Defects, nonconformances &amp; CAPA</h3><p id="wa-defects">Not yet connected to an independently evidenced defect register; no zero-defect claim.</p><div id="wa-capa-status"></div><ul id="wa-capa-cases"></ul></div>
  <div class="wa-subpanel"><h3>Employee reports to founder</h3><p id="wa-report-status">Independent handoff report evidence not loaded.</p><ul id="wa-reports"></ul><p>Reports are shown here for founder review. Outbound delivery and autonomous replies remain uncommissioned.</p><a href="/founder-console.html">Open Founder Command inbox →</a></div>
  </div></details>
- </section>
- <section class="wa-panel wa-commissioning" aria-labelledby="wa-commissioning-title">
+ </section></div><div data-premium-view="assurance" id="premium-assurance"><section class="wa-panel wa-commissioning" aria-labelledby="wa-commissioning-title">
   <div class="wa-heading"><div><h2 id="wa-commissioning-title">Workforce execution &amp; corrective-action board</h2>
    <p>Four separate evidence lanes: blocked work, independent departmental audits, open CAPA retests, and qualified plans/reports. Observing an issue does not authorize an employee to clear it.</p></div></div>
   <p id="wa-commissioning-status" role="status" aria-live="polite">Loading founder-only corrective-action evidence…</p>
   <div id="wa-commissioning-totals" class="wa-stats"></div>
   <label class="wa-employee-filter">Search corrective-action items <input id="wa-action-search" type="search"
    placeholder="Search mission, employee, CAPA, audit or forecast…" autocomplete="off"/></label>
-  <details class="wa-accordion" open><summary>Blocked work and mission dependencies</summary>
+  <details class="wa-accordion"><summary>Blocked work and mission dependencies</summary>
    <p>Recorded BLOCKED is not automatically removable. Physical engineering release remains separate from training, audit and read-only inspection.</p>
    <div id="wa-blocked-work" class="wa-action-list"></div></details>
   <details class="wa-accordion"><summary>16-employee route-by-route audit acceptance</summary>
@@ -171,6 +167,4 @@
   <details class="wa-accordion"><summary>Forecast qualification and provenance-backed founder reports</summary>
    <p>Forecasts need approved dated baselines, source integrity and independent backtests. Historical reports do not prove outbound delivery.</p>
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
- </section>
- <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
-</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script></body></html>
+ </section></div><footer class="premium-footer"><span>VĀYŪ SHASTR <b> / VAOS</b></span><p>Source-backed reporting · Human authority</p><a href="/founder-console.html">Founder Command ↗</a></footer></main><script type="module" src="/premium.mjs"></script><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script></body></html>

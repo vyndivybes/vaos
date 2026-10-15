@@ -84,3 +84,26 @@ test('finance clears the previous period immediately and ignores an older statem
  assert.match(get('wa-financial-status').textContent,/Select a valid reporting period/);
  assert.equal(get('wa-financial-refresh').disabled,false);
 });
+test('intelligence views preserve employee deep links and reporting controls',async()=>{
+ const names=['overview','departments','team','assurance'];
+ const tabs=names.map(name=>Object.assign(new Element('button'),{dataset:{premiumTab:name}}));
+ const views=names.map(name=>Object.assign(new Element('div'),{dataset:{premiumView:name}}));
+ const employee=new Element('select');employee.value='risk';
+ let savedUrl;
+ const context={document:{querySelectorAll:selector=>selector==='[data-premium-tab]'?tabs:views,
+  getElementById:id=>id==='wa-period-employee'?employee:null,addEventListener(){}},
+  location:{href:'https://vaos.local/workforce-analytics?employee=risk'},URL,
+  history:{replaceState(_a,_b,url){savedUrl=url;}}};
+ runInNewContext(await readFile(new URL('./premium.mjs',import.meta.url),'utf8'),context);
+ assert.equal(views[2].hidden,false);
+ assert.equal(views[0].hidden,true);
+ tabs[1].handlers.click();
+ assert.equal(views[1].hidden,false);assert.equal(views[2].hidden,true);
+ assert.equal(savedUrl.searchParams.get('view'),'departments');
+ assert.equal(savedUrl.searchParams.get('employee'),'risk');
+ assert.equal(employee.value,'risk');
+ context.location.href=savedUrl.href;
+ runInNewContext(await readFile(new URL('./premium.mjs',import.meta.url),'utf8'),{...context});
+ assert.equal(views[1].hidden,false,'an explicit shared view survives reload with an employee filter');
+ employee.handlers.change();assert.equal(views[2].hidden,false);
+});

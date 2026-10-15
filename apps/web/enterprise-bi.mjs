@@ -52,25 +52,35 @@ function render(data){
  for(const [id,name] of DEPARTMENTS){
   if(filter&&!name.toLowerCase().includes(filter)&&!id.includes(filter))continue;
   const record=byId.get(id);
-  const card=el('article',undefined,'wa-period-card');
-  card.append(el('h3',name));
+  const card=el('article',undefined,'wa-period-card premium-department');
+  const heading=el('div',undefined,'premium-department-head');
+  const icon=el('span',name.split(' ').map(x=>x[0]).slice(0,2).join(''),'premium-department-icon');
+  icon.setAttribute('aria-hidden','true');heading.append(icon,el('h3',name));card.append(heading);
   if(!record||record.status!=='OBSERVED'){
    card.append(el('p','Source unavailable / not commissioned. Counts and forecast unknown.'));
   }else{
    const count=Number.isSafeInteger(record.periodEventCount)?record.periodEventCount:null;
-   card.append(el('strong',count===null?'Count unavailable':count+' dated source records'));
-   card.append(el('p',(Number.isSafeInteger(record.flaggedStatusCount)?record.flaggedStatusCount:'Unknown')+
+   const number=el('div',undefined,'premium-department-number');
+   number.append(el('strong',Number.isSafeInteger(record.currentAttentionCount)?record.currentAttentionCount:'—'),
+    el('span','pending / held / draft'));
+   card.append(number);
+   const currentChart=el('div',undefined,'wa-viz-bars');
+   chart(currentChart,record.currentStatusDistribution);card.append(currentChart);
+   const context=el('details',undefined,'wa-accordion');
+   context.append(el('summary','Period activity & source context'));
+   context.append(el('strong',count===null?'Count unavailable':count+' dated source records'));
+   context.append(el('p',(Number.isSafeInteger(record.flaggedStatusCount)?record.flaggedStatusCount:'Unknown')+
     ' records with possible open/held/error statuses. Status classification is preliminary, not verified discrepancy closure.'));
-   card.append(el('p',(Number.isSafeInteger(record.currentAttentionCount)?record.currentAttentionCount:'Not observed')+
+   context.append(el('p',(Number.isSafeInteger(record.currentAttentionCount)?record.currentAttentionCount:'Not observed')+
     ' current pending/hold/draft-type status flags across '+(Number.isSafeInteger(record.currentSourceCount)?record.currentSourceCount:'unknown')+
     ' source records (all dates). These are open backlogs, not in-period completions or audited defects.'));
-   card.append(el('h4','Activity recorded in selected period'));
-   const bars=el('div',undefined,'wa-viz-bars');chart(bars,record.statusDistribution);card.append(bars);
-   card.append(el('h4','Current backlog and source status (all dates)'));
+   context.append(el('h4','Activity recorded in selected period'));
+   const bars=el('div',undefined,'wa-viz-bars');chart(bars,record.statusDistribution);context.append(bars);
+   context.append(el('h4','Current backlog and source status (all dates)'));
    const backlog=el('div',undefined,'wa-viz-bars');
    if(Array.isArray(record.currentStatusDistribution))chart(backlog,record.currentStatusDistribution);
    else backlog.append(el('p','Current backlog not supplied by the authoritative source.'));
-   card.append(backlog);
+   context.append(backlog);
    const details=el('details',undefined,'wa-accordion');
    details.open=expandedSources.has(id);
    details.addEventListener('toggle',()=>{
@@ -101,19 +111,21 @@ function render(data){
    }
    details.append(pages);
    card.append(details);
-   card.append(el('p','Source: '+String(record.sourceTable??'Not supplied')+' · Forecast: not qualified'));
+   context.append(el('p','Source: '+String(record.sourceTable??'Not supplied')+' · Forecast: not qualified'));
+   card.append(context);
   }
   const source=el('a','Inspect current records in VYNDI OS');
   source.href='https://vyndios.vayushastr.workers.dev/command/'+WORKSPACES[id];
-  card.append(source);
-  const open=el('button','Open responsible employee →');open.type='button';
+  source.textContent='Open VYNDI OS ↗';
+  const actions=el('div',undefined,'premium-department-foot');actions.append(source);
+  const open=el('button','View employee →');open.type='button';
   open.addEventListener('click',()=>{
    const selector=$('wa-period-employee');
    if([...selector.options].some(x=>x.value===id)){
     selector.value=id;selector.dispatchEvent(new Event('change',{bubbles:true}));
     $('wa-actual-title').scrollIntoView({behavior:'smooth',block:'start'});
    }
-  });card.append(open);host.append(card);
+  });actions.append(open);card.append(actions);host.append(card);
  }
 }
 async function loadPage(employeeId,offset){

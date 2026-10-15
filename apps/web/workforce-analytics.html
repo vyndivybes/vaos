@@ -74,6 +74,32 @@
   </details>
   <p class="wa-period-note">Forecasts and audit judgments remain separate from business-record snapshots. A record with no transaction date is a current observation, not a period completion.</p>
  </section>
+ <section class="wa-business-intelligence" aria-labelledby="wa-bi-title">
+  <div class="wa-vyndi-header">
+   <div><span class="wa-kicker">LIVE · VYNDI BUSINESS AUTHORITY</span>
+    <h3 id="wa-bi-title">Enterprise Business Intelligence</h3>
+    <p>All 16 departmental authorities · actual period-scoped database counts, source evidence, flagged work and reporting gaps.</p></div>
+   <button type="button" id="wa-bi-refresh">Generate period report</button>
+  </div>
+  <p id="wa-bi-status" role="status" aria-live="polite">The report will load from the signed VYNDI OS business sources.</p>
+  <div id="wa-bi-summary" class="wa-stats" aria-live="polite"></div>
+  <div id="wa-bi-departments" class="wa-bi-departments" aria-label="Departmental source completeness"></div>
+  <section class="wa-bi-visual" aria-labelledby="wa-bi-status-title">
+   <h4 id="wa-bi-status-title">Observed department status distribution</h4>
+   <p>Chart counts dated source records by recorded status. Flagged statuses are leads to review, not independently confirmed discrepancies.</p>
+   <div id="wa-bi-chart" class="wa-viz-bars" role="region" aria-label="Verified date-filtered status distribution"></div>
+  </section>
+  <details class="wa-accordion" open>
+   <summary>Detailed dated business records, source references and audit evidence</summary>
+   <div class="wa-scroll"><table>
+    <caption>Current selected reporting period · detailed VYNDI OS evidence</caption>
+    <thead><tr><th>Department</th><th>Business record date</th><th>Status</th><th>Source identity / fields</th></tr></thead>
+    <tbody id="wa-bi-table"></tbody>
+   </table></div>
+   <button type="button" id="wa-bi-more" hidden>Load next page of source evidence</button>
+  </details>
+  <p id="wa-bi-caveat" class="wa-period-note">These reports are derived from VYNDI OS source tables. Agent execution, independent audits and evidence-backed forecasts are reported separately below.</p>
+ </section>
  <div class="wa-period-grid">
   <section class="wa-period-card" aria-labelledby="wa-period-work-title">
    <h3 id="wa-period-work-title">Recorded work and assignments</h3>
@@ -161,4 +187,4 @@
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
  </section>
  <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
-</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script></body></html>
+</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script></body></html>

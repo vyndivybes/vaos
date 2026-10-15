@@ -70,8 +70,8 @@ $('camera-capture').addEventListener('click',async()=>{
   if(token!==cameraGeneration||!camera.active()||document.visibilityState==='hidden')return;
   if(data.actionAuthorized!==false||data.stored!==false||data.provenance?.imageSha256!==expectedHash)
    throw Error('Camera snapshot provenance invalid. Explanation withheld.');
-  $('result').textContent='Selected camera snapshot — not continuous video monitoring.\\n\\n'+data.answer+
-   '\\n\\nFrame SHA-256: '+expectedHash+'. No business records changed.';
+  $('result').textContent='Selected camera snapshot — not continuous video monitoring.\n\n'+data.answer+
+   '\n\nFrame SHA-256: '+expectedHash+'. No business records changed.';
   $('result-panel').hidden=false;
   $('vedm-panel').hidden=false;
   $('status').textContent='JARVIS inspected one consented camera frame. Camera preview is still local. Press Stop camera to close it.';

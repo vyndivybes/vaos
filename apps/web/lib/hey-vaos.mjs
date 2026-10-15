@@ -44,7 +44,7 @@ export function advanceWakeTurn(input,utterance,validateQuestion=()=>true,{accep
 }
 export function createWakeListener({
  RecognitionClass,isVisible=()=>true,validateQuestion=()=>true,acceptDirectQuestion=()=>false,
- onStatus=()=>{},onDraft=()=>{},onConfirm=()=>{},onChange=()=>{},onHeard=()=>{},
+ onStatus=()=>{},onDraft=()=>{},onConfirm=()=>{},onChange=()=>{},onHeard=()=>{},onPrompt=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
  clock=()=>Date.now(),configureRecognition=()=>{},onInterim=()=>{},onActivity=()=>{},
 }={}){
@@ -89,7 +89,10 @@ export function createWakeListener({
     tell('Speech recognized, but not a supported business question. Ask about sales, production or materials; “Hey VAOS” is optional in hands-free mode.');
     return;
    }
-   if(result.event==='PROMPT'){tell('Hey VAOS activated. Say your read-only question.');}
+   if(result.event==='PROMPT'){
+    tell('Hey JARVIS activated. Ask your read-only question.');
+    onPrompt();
+   }
    else if(result.event==='REJECTED'){tell('That request is not an allowed read-only question. Say Hey VAOS to try again.');}
    else if(result.event==='CANCELLED'){tell('Question cancelled. Listening for Hey VAOS.');}
    else if(result.event==='SUBMIT'){
@@ -133,13 +136,19 @@ export function createWakeListener({
   enabled=true;paused=false;generation++;transientFailures=0;starts=[];turn=initial();
   listen();return enabled;
  }
- function pause(){
+ function pause({preserveQuestion=false}={}){
   if(!enabled)return;
-  paused=true;generation++;turn=initial();clearTimers();abortCurrent();onChange({enabled,paused,mode:turn.mode,active:false});
+  paused=true;generation++;
+  if(!preserveQuestion||turn.mode!=='QUESTION')turn=initial();
+  clearTimers();abortCurrent();onChange({enabled,paused,mode:turn.mode,active:false});
  }
- function resume(){
+ function resume({preserveQuestion=false}={}){
   if(!enabled||!isVisible())return false;
-  paused=false;generation++;turn=initial();clearTimers();listen();return true;
+  paused=false;generation++;
+  if(!preserveQuestion||turn.mode!=='QUESTION')turn=initial();
+  clearTimers();listen();
+  if(turn.mode==='QUESTION')armExpiry();
+  return true;
  }
  function onVisibilityChange(){if(!isVisible()&&enabled)disable('Hey VAOS stopped because the tab is not visible. Enable it again when you return.');}
  return {enable,disable,pause,resume,onVisibilityChange,isEnabled:()=>enabled,state:()=>({enabled,paused,mode:turn.mode,active:!!current})};

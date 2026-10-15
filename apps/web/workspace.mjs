@@ -1,3 +1,4 @@
+import {initializeFounderCockpit} from './founder-cockpit.mjs';
 import { resolveCommand } from './command-router.mjs?v=20261008-q2-workforce';
 import {showGroupDashboard} from './group-dashboard.mjs?v=20261012-group';
 import {renderModuleDashboard} from './module-dashboard.mjs';
@@ -32,6 +33,7 @@ const workforceEvidenceRefs = document.querySelector('#workforce-evidence-refs')
 const workforceActionStatus = document.querySelector('#workforce-action-status');
 
 let model = null;
+let cockpit = null;
 let currentView = 'command';
 let traceProposalKey = null;
 let commandIntentKey = null;
@@ -145,6 +147,7 @@ function renderHomeAgentOverview(){
   }).join('');
 }
 function renderAll() {
+  cockpit?.update(model);
   renderPulse();renderAgents();renderApprovals();renderEvents();renderRisks();renderNavigation();renderHomeAgentOverview();
 }
 
@@ -610,7 +613,7 @@ function renderModule(module) {
 function setView(view, { push = true } = {}) {
   const module = model.modules.find((item) => item.id === view) || model.modules[0];
   currentView = module.id;
-  moduleTitle.textContent = module.label; moduleGroup.textContent = module.group; moduleDescription.textContent = module.description;
+  moduleTitle.textContent = module.id === 'command' ? 'Founder Cockpit' : module.label; moduleGroup.textContent = module.group; moduleDescription.textContent = module.id === 'command' ? 'Company readiness, decisions and your digital workforce.' : module.description;
   commandView.hidden = module.id !== 'command'; moduleView.hidden = module.id === 'command';
   if (module.id !== 'command') {
     renderModule(module);
@@ -1111,6 +1114,7 @@ async function bootstrap() {
     controlPlaneStatus.classList.remove('hero-status--connecting', 'hero-status--offline');
     renderAll();
     wireInteractions();
+    cockpit = initializeFounderCockpit(model);
     setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false });
     loading.hidden = true; shell.hidden = false;
   } catch (error) {

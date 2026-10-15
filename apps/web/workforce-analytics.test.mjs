@@ -39,3 +39,13 @@ test('employee selection renders unknown evidence as holds and failed refresh re
   assert.equal(nodes.get(id).textContent,'',id+' must not retain stale metrics');
  assert.equal(nodes.get('wa-refresh').disabled,false);
 });
+
+for(const [employee,expected] of [['qa','QA fixture'],['unknown-id','orchestrator']]){
+ test('employee deep link selects a recorded employee or safely falls back: '+employee,async()=>{
+  const nodes=new Map([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element('div')]));
+  const document={getElementById:id=>nodes.get(id),createElement:tag=>new Element(tag)};
+  runInNewContext(source,{document,fetch:async()=>({ok:true,status:200,json:async()=>({data:buildWorkforceAnalytics(raw)})}),location:{href:'https://vaos.example/workforce-analytics.html?employee='+employee,assign(){throw Error('Unexpected redirect');}},Date,URL,Math,Number,String,Object});
+  await flush();
+  assert.match(nodes.get('wa-profile').textContent,new RegExp(expected));
+ });
+}

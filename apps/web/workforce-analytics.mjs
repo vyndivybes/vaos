@@ -1,6 +1,6 @@
 const $=id=>document.getElementById(id);
 const workLabels=[['planned','Planned'],['ready','Ready / queued'],['inProgress','In progress'],['completed','Marked completed'],['blocked','Blocked'],['failed','Failed'],['cancelled','Cancelled']];
-let latest=null,selection='orchestrator';
+let latest=null,selection=new URL(globalThis.location?.href||'http://localhost').searchParams.get('employee')||'orchestrator';
 let employeeSearch='',selectedChartKind='columns';
 function element(tag,text,cls){const e=document.createElement(tag);if(text!==undefined)e.textContent=String(text);if(cls)e.className=cls;return e;}
 function cell(row,value){const td=element('td',value);row.append(td);return td;}

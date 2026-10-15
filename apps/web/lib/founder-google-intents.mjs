@@ -3,7 +3,7 @@ export function resolveFounderGoogleIntent(input,now=new Date()){
  const q=typeof input==='string'?input.trim():'';
  if(q.length<5||q.length>300)return null;
  if(/\b(?:mail|emails?|inbox|messages?)\b/i.test(q) &&
-    /\b(?:any|check|find|search|show|latest|new|received|what|did|have|tell)\b/i.test(q)){
+    /\b(?:any|check|find|search|show|read|summarize|latest|new|received|what|did|have|tell)\b/i.test(q)){
   const from=q.match(/\bfrom\s+([a-z0-9][a-z0-9 .@_-]{1,65}?)(?:\s*(?:\?|$|today\b|recently\b|this week\b))/i);
   const term=from?.[1]?.trim()||q.match(/\b(?:about|regarding)\s+([a-z0-9][a-z0-9 ._-]{1,65})/i)?.[1]?.trim();
   return {kind:'MAIL',query:term?'from:'+term.replace(/\s+/g,' ').slice(0,65):'newer_than:30d'};

@@ -47,3 +47,25 @@ test('signed VYNDI bridge read may expose validated private summary while defaul
  assert.match(privateView.answer,/JC-S/);
  assert.equal(privateView.actionAuthorized,false);
 });
+
+test('real VYNDI People bridge shape is recognized without disclosing personal details',()=>{
+ const data={people:[
+  {id:'p-1',name:'Sensitive Name 1',email:'private1@example.com',status:'active',salary:180000},
+  {id:'p-2',name:'Sensitive Name 2',phone:'9999999999',status:'draft'}
+ ],authority:[{personName:'Private Authority Person',operational_status:'active'}]};
+ const answer=summarizeFounderPrivateDepartment('PEOPLE',data);
+ assert.match(answer,/2 records/i);
+ assert.match(answer,/1 active/i);
+ assert.match(answer,/1 draft/i);
+ assert.doesNotMatch(answer,/Sensitive Name|private1|9999999999|180000|Private Authority/i);
+});
+
+test('Procurement shortages from actual VYNDI bridge schema show bounded verified SKU shortages',()=>{
+ const answer=summarizeFounderPrivateDepartment('PROCUREMENT',{
+  records:[{sku:'CARBON-T700',shortage_quantity:2,unit:'kg',supplier_name:'Private Material Vendor'},
+   {sku:'RESIN-01',shortage_quantity:5,unit:'kg',supplier_contact:'private@vendor.example'}]
+ });
+ assert.match(answer,/2 shortage/i);
+ assert.match(answer,/CARBON-T700.*2 kg/i);
+ assert.doesNotMatch(answer,/Private Material Vendor|private@vendor/);
+});

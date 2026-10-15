@@ -147,6 +147,13 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
   }),
 
   route({
+    actionType:'FINANCE.OBSERVE_STATEMENTS',employeeId:'finance',effectClass:EFFECT.READ,
+    state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/finance/vaos-financial-statements-export.ts',authority:'buildFinancialStatements',
+    verificationRefs:['epr_finance_general_ledger','epr_job_cost_snapshots'],
+    description:'Read complete-to-date posted financial statement pack with source reconciliation; read-only.'
+  }),
+  route({
     actionType:'PEOPLE.OBSERVE_WORKFORCE',employeeId:'people',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/people-office-authority.ts',authority:'listPeopleOfficeAuthority',
     verificationRefs:['vyndi_people_records'],description:'Read canonical People & Office authority state.'

@@ -11,6 +11,7 @@ on:
       - 'apps/web/api/langgraph.mjs'
       - 'platform/execution/slack-founder-agent.mjs'
       - 'apps/web/cloudflare-worker.mjs'
+      - 'wrangler.jsonc'
 permissions:
   contents: read
 concurrency:

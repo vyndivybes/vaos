@@ -104,8 +104,8 @@ test('G4 Founder Command browser entry imports every roster/command dependency b
 test('G4 founder command starts bounded safe work on the same submission, with scheduled fallback',async()=>{
  const script=await readFile(new URL('./founder-console.mjs',import.meta.url),'utf8');
  const flow=await readFile(new URL('./lib/founder-mission-flow.mjs',import.meta.url),'utf8');
- assert.match(script,/await runFounderMissionSafe\(\{missionId:id,request:fetch\}\)/);
+ assert.match(script,/await runFounderMissionSafe\(\{missionId:id,request:fetch,assignedWorkPackages:mission\.assignedWorkPackages\}\)/);
  assert.match(script,/the existing hourly scheduler will continue permitted work/);
- assert.match(flow,/operation:'RUN_SAFE',missionId,maxHandoffs:4/);
+ assert.match(flow,/operation:'RUN_SAFE',missionId,maxHandoffs:batchSize/);
  assert.match(flow,/businessEffectsExecuted:false/);
 });

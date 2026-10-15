@@ -55,32 +55,42 @@ export async function createFounderMission({command,messageId,request}={}){
  * This does not bypass the authority or maker/checker controls; hourly scheduled
  * continuation handles remaining or unavailable assignments.
  */
-export async function runFounderMissionSafe({missionId,request}={}){
- if(!MISSION.test(missionId||'')||typeof request!=='function'){
+export async function runFounderMissionSafe({missionId,request,assignedWorkPackages}={}){
+ if(!MISSION.test(missionId||'')||typeof request!=='function'
+   ||(assignedWorkPackages!==undefined&&(!Number.isSafeInteger(assignedWorkPackages)
+     ||assignedWorkPackages<0||assignedWorkPackages>15))){
   throw Error('FOUNDER_MISSION_EXECUTION_INVALID');
  }
- const result=await request('/api/missions',{
-  method:'POST',credentials:'same-origin',
-  headers:{'Content-Type':'application/json'},
-  body:JSON.stringify({operation:'RUN_SAFE',missionId,maxHandoffs:4}),
- });
- let data;
- try{data=(await result.json())?.data;}catch{}
- const consumed=data?.consumed,reviewed=data?.reviewed;
- if(!result.ok||consumed?.missionId!==missionId||reviewed?.missionId!==missionId
-   ||!Number.isSafeInteger(consumed.submitted)||consumed.submitted<0||consumed.submitted>4
-   ||!Number.isSafeInteger(reviewed.verified)||reviewed.verified<0||reviewed.verified>4
-   ||!Number.isSafeInteger(consumed.returned)||consumed.returned<0||consumed.returned>4
-   ||!Number.isSafeInteger(reviewed.returned)||reviewed.returned<0||reviewed.returned>4
-   ||!Array.isArray(consumed.holds)||consumed.holds.length>4){
-  throw Error('FOUNDER_MISSION_EXECUTION_UNCONFIRMED');
+ // A 15-department founder instruction takes two existing, sequential
+ // eight-handoff passes. Pending first-time work is prioritized by the
+ // consumer, so a held read never starves the remaining departments.
+ // Smaller missions keep the original four-item bounded execution.
+ const totalPasses=assignedWorkPackages>8?2:1;
+ const batchSize=totalPasses===2?8:4;
+ const combined={submitted:0,verified:0,returned:0,held:0};
+ for(let pass=0;pass<totalPasses;pass++){
+  const result=await request('/api/missions',{
+   method:'POST',credentials:'same-origin',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({operation:'RUN_SAFE',missionId,maxHandoffs:batchSize}),
+  });
+  let data;
+  try{data=(await result.json())?.data;}catch{}
+  const consumed=data?.consumed,reviewed=data?.reviewed;
+  if(!result.ok||consumed?.missionId!==missionId||reviewed?.missionId!==missionId
+   ||!Number.isSafeInteger(consumed.submitted)||consumed.submitted<0||consumed.submitted>batchSize
+   ||!Number.isSafeInteger(reviewed.verified)||reviewed.verified<0||reviewed.verified>batchSize
+   ||!Number.isSafeInteger(consumed.returned)||consumed.returned<0||consumed.returned>batchSize
+   ||!Number.isSafeInteger(reviewed.returned)||reviewed.returned<0||reviewed.returned>batchSize
+   ||!Array.isArray(consumed.holds)||consumed.holds.length>batchSize){
+   throw Error('FOUNDER_MISSION_EXECUTION_UNCONFIRMED');
+  }
+  combined.submitted+=consumed.submitted;
+  combined.verified+=reviewed.verified;
+  combined.returned+=consumed.returned+reviewed.returned;
+  combined.held+=consumed.holds.length;
  }
- return Object.freeze({
-  submitted:consumed.submitted,
-  verified:reviewed.verified,
-  returned:consumed.returned+reviewed.returned,
-  held:consumed.holds.length,
- });
+ return Object.freeze(combined);
 }
 
 export function formatFounderMissionResults(record,id){

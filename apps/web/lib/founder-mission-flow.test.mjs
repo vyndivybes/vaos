@@ -111,6 +111,29 @@ test('one successful founder instruction triggers existing bounded RUN_SAFE acti
  assert.equal(calls[0].options.credentials,'same-origin');
  assert.deepEqual(result,{submitted:2,verified:2,returned:0,held:0});
 });
+test('fifteen assigned departments get two existing bounded safe execution passes with no business writes',async()=>{
+ const calls=[];
+ const responsePackets=[
+  {consumed:{missionId,submitted:8,returned:0,holds:[]},reviewed:{missionId,verified:8,returned:0}},
+  {consumed:{missionId,submitted:7,returned:0,holds:[{code:'SOURCE_UNAVAILABLE'}]},reviewed:{missionId,verified:7,returned:0}},
+ ];
+ const result=await runFounderMissionSafe({
+  missionId,assignedWorkPackages:15,
+  request:async(url,opts)=>{
+   calls.push({url,opts});
+   return response(responsePackets[calls.length-1]);
+  },
+ });
+ assert.deepEqual(calls.map(x=>JSON.parse(x.opts.body)),[
+  {operation:'RUN_SAFE',missionId,maxHandoffs:8},
+  {operation:'RUN_SAFE',missionId,maxHandoffs:8},
+ ]);
+ assert.ok(calls.every(x=>x.opts.credentials==='same-origin'));
+ assert.deepEqual(result,{submitted:15,verified:15,returned:0,held:1});
+ await assert.rejects(runFounderMissionSafe({missionId,assignedWorkPackages:16,request:async()=>response({})}),
+  /FOUNDER_MISSION_EXECUTION_INVALID/);
+});
+
 test('initial safe run fails closed without falsely claiming results or changing mission identity',async()=>{
  for(const payload of [
   {consumed:{missionId:'other',submitted:1,holds:[]},reviewed:{missionId,verified:1}},

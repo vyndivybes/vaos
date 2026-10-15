@@ -94,7 +94,7 @@ async function issueFounderInstruction(){
   message.textContent='Mission assigned: '+mission.assignedWorkPackages+'/'+
     mission.totalWorkPackages+' eligible departments. Running permitted tasks…';
   try{
-   const safe=await runFounderMissionSafe({missionId:id,request:fetch});
+   const safe=await runFounderMissionSafe({missionId:id,request:fetch,assignedWorkPackages:mission.assignedWorkPackages});
    message.textContent='Mission assigned: '+mission.assignedWorkPackages+'/'+mission.totalWorkPackages+
     ' departments. Safe pass: '+safe.submitted+' submitted, '+safe.verified+
     ' independently reviewed, '+safe.held+' source holds. Other work continues on the existing schedule.';

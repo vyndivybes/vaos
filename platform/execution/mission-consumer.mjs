@@ -266,6 +266,18 @@ function maxCount(value) {
   return value;
 }
 
+/** Dispatch pending, never-attempted departmental work before retrying reads
+ * whose source has already been found unavailable. Preserve source order within
+ * each class; do not alter handoff records, immutable evidence or permissions.
+ */
+export function prioritizedRunnableHandoffs(handoffs) {
+ if (!Array.isArray(handoffs)) throw new Error('MISSION_HANDOFFS_INVALID');
+ return [
+  ...handoffs.filter(item=>item?.status==='PENDING'),
+  ...handoffs.filter(item=>item?.status==='ACCEPTED'),
+ ];
+}
+
 function handoffOwner(handoff) { return prop(handoff, 'to_agent_id', 'toAgentId'); }
 function handoffAction(handoff) { return prop(handoff, 'requested_job', 'requestedJob'); }
 function handoffWorkPackage(handoff) { return prop(handoff, 'work_package_id', 'workPackageId'); }
@@ -327,7 +339,7 @@ export function createMissionConsumer({ service, readDepartment } = {}) {
       const initial = requiredSnapshot(await service.snapshot(id), id);
       let submitted = 0, unsupported = 0, attempted = 0, returned = 0;
       const used = [], holds = [];
-      for (const handoff of initial.handoffs) {
+      for (const handoff of prioritizedRunnableHandoffs(initial.handoffs)) {
         if (attempted >= limit) break;
         if (!['PENDING', 'ACCEPTED'].includes(handoff.status)) continue;
         const wp = initial.workPackages.find((item) => item.id === handoffWorkPackage(handoff));

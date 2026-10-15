@@ -6,6 +6,7 @@ import {
   calculateReadOnlyMissionAudit,
   verifyReadOnlyMissionAudit,
   SAFE_MISSION_JOBS,
+  prioritizedRunnableHandoffs,
 } from './mission-consumer.mjs';
 
 function fixture() {
@@ -64,6 +65,19 @@ test('only approved deterministic read-only job types are supported', () => {
     'PEOPLE.OBSERVE_WORKFORCE', 'PROCUREMENT.OBSERVE_SHORTAGE', 'PRODUCTION.OBSERVE_WIP', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY',
     'QA.AUDIT_EVIDENCE', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY', 'SECURITY.ASSESS_ACCESS',
   ]);
+});
+
+test('unattempted departmental handoffs are scheduled ahead of previously held source reads',()=>{
+ const queue=[
+  {id:'unavailable-finance',status:'ACCEPTED'},
+  {id:'pending-production',status:'PENDING'},
+  {id:'pending-quality',status:'PENDING'},
+  {id:'submitted',status:'SUBMITTED'},
+ ];
+ const selected=prioritizedRunnableHandoffs(queue);
+ assert.deepEqual(selected.map(x=>x.id),['pending-production','pending-quality','unavailable-finance']);
+ assert.deepEqual(queue.map(x=>x.id),['unavailable-finance','pending-production','pending-quality','submitted']);
+ assert.throws(()=>prioritizedRunnableHandoffs(null),/MISSION_HANDOFFS_INVALID/);
 });
 
 test('consumer accepts, records source-backed evidence and submits but cannot self-verify', async () => {

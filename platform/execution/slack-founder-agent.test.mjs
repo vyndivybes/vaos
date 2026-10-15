@@ -233,3 +233,15 @@ test('signed founder direct message persists an intake, never claims released pr
  assert.match(followUp.answer,/PENDING_SOURCE_VALIDATION/);
  assert.equal(followUp.actionAuthorized,false);
 });
+
+test('supplier details in signed private founder Slack DM returns honest capability rather than delaying on shortage source',async()=>{
+ const {answerFounderSlackQuestion}=await import('./slack-founder-agent.mjs');
+ const response=await answerFounderSlackQuestion('SUPPLIER DETAILS',{},{
+  kind:'dm',channel:'D0FOUNDER123',eventId:'EvSUPP20261016'
+ });
+ assert.equal(response.route,'PROCUREMENT');
+ assert.equal(response.actionAuthorized,false);
+ assert.match(response.answer,/supplier directory.*not connected/i);
+ assert.match(response.answer,/shortage/i);
+ assert.doesNotMatch(response.answer,/qualified engineering evidence|source.*responded/i);
+});

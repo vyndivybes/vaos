@@ -45,8 +45,11 @@ function render(packet){
 }
 async function refresh(){
  const from=$('wa-period-from').value,to=$('wa-period-to').value,button=$('wa-financial-refresh');
+ const ticket=++request;
+ $('wa-financial-kpis').replaceChildren();$('wa-financial-chart').replaceChildren();
+ button.disabled=false;
  if(!from||!to||from>to){$('wa-financial-status').textContent='Select a valid reporting period above.';return;}
- const ticket=++request;button.disabled=true;
+ button.disabled=true;
  $('wa-financial-status').textContent='Reading signed VYNDI OS financial statements…';
  try{
   const response=await fetch('/api/finance-scorecard?'+new URLSearchParams({from,to}),{credentials:'same-origin',cache:'no-store'});
@@ -54,6 +57,7 @@ async function refresh(){
   if(response.status===401){location.assign('/login');return;}
   if(!response.ok)throw Error('NOT_AVAILABLE');
   const data=(await response.json())?.data;
+  if(ticket!==request)return;
   if(!data||data.schemaVersion!=='VAOS_FINANCIAL_SCORECARD_V1'||data.readOnly!==true||data.from!==from||data.to!==to)throw Error('INVALID_PACKET');
   render(data);
  }catch{

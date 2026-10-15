@@ -11,6 +11,7 @@ lib/*
 !lib/dashboard-charts.mjs
 !lib/insight-studio.mjs
 !lib/workforce-period-report.mjs
+!lib/business-department-summary.mjs
 !lib/founder-mission-flow.mjs
 !lib/founder-cockpit.mjs
 !lib/founder-launch-summary.mjs

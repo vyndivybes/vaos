@@ -21,13 +21,13 @@ function packet(offset=0,scope='all'){
    detailPage:{offset,limit:30,hasMore:offset===0},sourceTable:'vyndi_risk_intelligence',
   }]};
 }
-async function setup(fetch){
+async function setup(fetch,module='enterprise-bi.mjs'){
  const ids=new Map();
  const get=id=>{if(!ids.has(id))ids.set(id,new Element());return ids.get(id);};
  get('wa-period-from').value='2026-10-01';get('wa-period-to').value='2026-10-15';
  const context={document:{getElementById:get,createElement:tag=>new Element(tag),addEventListener(){}},
   fetch,URLSearchParams,location:{assign(){throw Error('unexpected redirect');}}};
- runInNewContext(await readFile(new URL('./enterprise-bi.mjs',import.meta.url),'utf8'),context);
+ runInNewContext(await readFile(new URL('./'+module,import.meta.url),'utf8'),context);
  return {context,get};
 }
 test('all recorded statuses stay visible and source pages request the scoped next offset',async()=>{
@@ -67,4 +67,20 @@ test('an older page response cannot replace a refreshed reporting period',async(
  finish({ok:true,status:200,json:async()=>({data:packet(30,'risk')})});
  await pending;
  assert.equal(get('wa-enterprise-grid').children.length,0);
+});
+test('finance clears the previous period immediately and ignores an older statement decode',async()=>{
+ let decode;
+ const {context,get}=await setup(async()=>({ok:true,status:200,
+  json:()=>new Promise(resolve=>{decode=resolve;})}),'financial-performance.mjs');
+ const pending=context.refresh();
+ await new Promise(resolve=>setImmediate(resolve));
+ get('wa-financial-kpis').append(new Element());
+ get('wa-period-from').value='2026-11-01';await context.refresh();
+ assert.equal(get('wa-financial-kpis').children.length,0);
+ decode({data:{schemaVersion:'VAOS_FINANCIAL_SCORECARD_V1',readOnly:true,
+  from:'2026-10-01',to:'2026-10-15'}});
+ await pending;
+ assert.equal(get('wa-financial-kpis').children.length,0);
+ assert.match(get('wa-financial-status').textContent,/Select a valid reporting period/);
+ assert.equal(get('wa-financial-refresh').disabled,false);
 });

@@ -172,7 +172,7 @@ test('production voice and workforce pages ship their complete browser module de
   return rules.includes('lib/*')&&!rules.includes('!'+path);
  };
  const visited=new Set();
- const queue=['main-voice.mjs','mission-status.mjs','agent-supervision.mjs','workforce-analytics.mjs','workspace.mjs','group-dashboard.mjs','module-dashboard.mjs'];
+ const queue=['main-voice.mjs','mission-status.mjs','agent-supervision.mjs','workforce-analytics.mjs','workspace.mjs','group-dashboard.mjs','module-dashboard.mjs','business-analytics.mjs','financial-performance.mjs','enterprise-bi.mjs'];
  while(queue.length){
   const path=queue.shift();if(visited.has(path))continue;
   visited.add(path);
@@ -193,6 +193,7 @@ test('production voice and workforce pages ship their complete browser module de
  assert.ok(visited.has('lib/mission-status-model.mjs'));
  assert.ok(visited.has('lib/dashboard-charts.mjs'));
  assert.ok(visited.has('module-dashboard.mjs'));
+ assert.ok(visited.has('lib/business-department-summary.mjs'));
 });
 
 test('workspace stylesheet is noncacheable just like HTML and browser JS',async()=>{

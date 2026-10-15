@@ -1,3 +1,4 @@
+import {workActivityReport,periodBounds} from './lib/workforce-period-report.mjs';
 const $=id=>document.getElementById(id);
 const workLabels=[['planned','Planned'],['ready','Ready / queued'],['inProgress','In progress'],['completed','Marked completed'],['blocked','Blocked'],['failed','Failed'],['cancelled','Cancelled']];
 let latest=null,selection=new URL(globalThis.location?.href||'http://localhost').searchParams.get('employee')||'orchestrator';
@@ -46,6 +47,98 @@ function renderOverview(data){
   if(observed.length<values.length)host.append(element('p','Some categories have no validated count.','wa-viz-empty'));
  }
 }
+
+let periodSelection='all',periodPreset='30';
+function periodDay(start,offset){
+ return new Date(Date.parse(start+'T00:00:00Z')+offset*86400000).toISOString().slice(0,10);
+}
+function populatePeriodControls(data){
+ const bounds=periodBounds(data.observedAt);
+ const from=$('wa-period-from'),to=$('wa-period-to'),select=$('wa-period-employee');
+ for(const node of [from,to]){node.min=bounds.min;node.max=bounds.max;}
+ const previous=select.value||periodSelection;select.replaceChildren();
+ const all=element('option','All 16 employees');all.value='all';select.append(all);
+ for(const emp of data.employees){
+  const option=element('option',emp.name);option.value=emp.id;select.append(option);
+ }
+ periodSelection=data.employees.some(x=>x.id===previous)?previous:'all';select.value=periodSelection;
+ if(!from.value||from.value<bounds.min||to.value>bounds.max){
+  to.value=bounds.max;from.value=periodDay(bounds.max,-29);
+ }
+ renderPeriod();
+}
+function evidenceRow(host,title,details,missionId=null){
+ const row=element('article',undefined,'wa-period-item');
+ row.append(element('strong',title),element('p',details));
+ if(missionId&&/^[a-zA-Z0-9][a-zA-Z0-9._:-]{3,95}$/.test(missionId)){
+  const a=element('a','Open source mission ↗');
+  a.href='/mission-status.html?missionId='+encodeURIComponent(missionId);row.append(a);
+ }
+ host.append(row);
+}
+function renderPeriod(){
+ if(!latest)return;
+ const from=$('wa-period-from').value,to=$('wa-period-to').value;
+ for(const id of ['wa-period-kpis','wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts'])
+  $(id).replaceChildren();
+ let report;
+ try{report=workActivityReport(latest,{from,to,employeeId:periodSelection});}
+ catch{
+  $('wa-period-status').textContent='Select a valid period within the latest 90 days of recorded history. Older history is not available from this source.';
+  return;
+ }
+ $('wa-period-status').textContent='Period '+from+' to '+to+
+  ' (UTC) · snapshot '+time(report.asOf)+
+  '. Task statuses are current recorded values, not historical end-of-day states.';
+ counts($('wa-period-kpis'),[
+  ['Employees selected',report.employees],['Tasks updated',report.recordedUpdated],
+  ['Currently marked completed',report.markedCompleted],['Currently blocked',report.blocked],
+  ['Verified employee reports',report.verifiedReports],
+  ['Audits reviewed',report.reviewedAudits],['Failed audits',report.auditFailures],
+ ]);
+ const work=$('wa-period-work');
+ for(const x of report.rows) evidenceRow(work,x.employee+' · '+x.description,
+  'Recorded status: '+x.status+' · Updated '+time(x.updatedAt)+' · Action '+x.action,x.missionId);
+ if(!report.rows.length)work.append(element('p','No recorded work-package updates in the selected period. This does not prove that no work took place.'));
+ const audit=$('wa-period-audits');
+ for(const x of report.audits) evidenceRow(audit,x.employee+' · '+x.outcome+' · '+x.route,
+  'Reviewed '+time(x.reviewedAt)+' by '+x.reviewer+' · Open findings '+x.openFindings+
+  '. '+x.rationale);
+ if(!report.audits.length)audit.append(element('p','No independently reviewed departmental audit recorded in this period.'));
+ const verified=$('wa-period-reports');
+ for(const x of report.reports) evidenceRow(verified,x.employee+' · '+x.action.replaceAll('_',' '),
+  'Verified '+time(x.verifiedAt)+' by '+x.reviewer+' · Work package '+x.workPackageId);
+ if(!report.reports.length)verified.append(element('p','No independently verified employee handoff reports recorded in this period.'));
+ const forecasts=$('wa-period-forecasts');
+ let qualified=0;
+ for(const x of report.forecast){
+  const ok=x.status==='INDEPENDENTLY_QUALIFIED_PROJECTION'&&x.projectedFinishAt;
+  if(ok)qualified++;
+  evidenceRow(forecasts,x.employee+' · '+(ok?'Qualified projection':'Forecast unavailable'),
+   ok?'Expected finish '+time(x.projectedFinishAt)+' · Confidence '+x.confidence+
+    '. This is a conditional projection, not a guarantee.':
+    (x.reason||'No approved dated plan and independently qualified historical forecast.'));
+ }
+ $('wa-period-forecast-note').textContent=qualified+' of '+report.forecast.length+
+  ' selected employees have a current qualified projection. No projected dates are fabricated. '+
+  'This section shows existing qualified forecasts rather than creating an unsupported new model.';
+}
+function selectPeriodPreset(value){
+ periodPreset=value;const to=$('wa-period-to'),from=$('wa-period-from');
+ if(value==='custom')return renderPeriod();
+ if(!latest)return;
+ const bounds=periodBounds(latest.observedAt);
+ to.value=bounds.max;
+ from.value=periodDay(bounds.max,-(Math.min(90,Number(value))-1));
+ if(from.value<bounds.min)from.value=bounds.min;
+ renderPeriod();
+}
+$('wa-period-presets').addEventListener('change',event=>selectPeriodPreset(event.target.value));
+for(const id of ['wa-period-from','wa-period-to'])$(id).addEventListener('change',()=>{
+ $('wa-period-presets').value='custom';periodPreset='custom';renderPeriod();
+});
+$('wa-period-employee').addEventListener('change',event=>{periodSelection=event.target.value;renderPeriod();});
+
 function renderRoster(data){
  const table=$('wa-roster');table.replaceChildren();
  for(const emp of data.employees){
@@ -273,6 +366,7 @@ async function refresh(){
    !Array.isArray(op.employees)||op.employees.length!==16)
    throw Error('WORKFORCE_OPERATIONAL_EVIDENCE_UNVERIFIED');
   latest=data;
+  populatePeriodControls(data);
   renderOverview(data);
   renderEvidencePriorities(data);
    renderCommissioningBoard(data);
@@ -297,6 +391,8 @@ async function refresh(){
   s.value=selection;renderEmployee();
  }catch{
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
+  $('wa-period-status').textContent='No authenticated source evidence available; period performance and forecasts cannot be reported.';
+  for(const id of ['wa-period-kpis','wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts'])$(id).replaceChildren();
   for(const id of ['wa-overview-work','wa-overview-heartbeat'])$(id).replaceChildren();
   $('wa-observed').textContent='No validated snapshot';$('wa-ops-status').textContent='Operational evidence unavailable; liveness not certified.';$('wa-totals').replaceChildren();
   $('wa-roster').replaceChildren();$('wa-select').replaceChildren();$('wa-commissioning-totals').replaceChildren();

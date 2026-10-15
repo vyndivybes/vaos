@@ -18,7 +18,7 @@ test('live camera requires explicit start, captures only after a preview, and st
  assert.equal(media.calls,1);
  assert.equal(video.srcObject.getTracks().length,2);
  const image=camera.capture();
- assert.match(image,/^data:image\\/jpeg;base64,/);
+ assert.ok(image.startsWith('data:image/jpeg;base64,'));
  assert.ok(canvas.width<=760);
  camera.stop();
  assert.ok(tracks.every(t=>t.stopped));
@@ -73,7 +73,7 @@ test('source-intelligence UI offers explicit camera, microphone and speech contr
  for(const id of ['camera-start','camera-stop','camera-capture','camera-preview','dictate-question','speak-result','stop-result-speech'])assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(ui,/createCameraSession/);
  assert.match(ui,/createQuestionDictation/);
- assert.match(ui,/request\\('ANALYZE_IMAGE'/);
+ assert.ok(ui.includes("request('ANALYZE_IMAGE'"));
  assert.match(ui,/visibilitychange/);
  assert.match(ui,/pagehide/);
  assert.match(html,/one selected camera frame/i);

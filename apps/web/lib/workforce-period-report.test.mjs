@@ -25,3 +25,16 @@ test('rejects periods outside bounded source history',()=>{
   assert.throws(()=>workActivityReport(fixture,range));
  }
 });
+
+
+test('period plan comparison requires approved baselines and independent proof by the period end',()=>{
+ const person=structuredClone(fixture.employees[0]);person.progress={status:'APPROVED_BASELINE_COHORT',baselines:[
+  {id:'B1',workPackageId:'w1',approvedAt:'2026-10-01T00:00:00Z',plannedFinishAt:'2026-10-12T00:00:00Z'},
+  {id:'B2',workPackageId:'w2',approvedAt:'2026-10-01T00:00:00Z',plannedFinishAt:'2026-10-14T00:00:00Z'}]};
+ person.reports.status='VERIFIED_EMPLOYEE_HANDOFF_REPORTS';
+ person.reports.reports.push({workPackageId:'w2',verifiedAt:'2026-10-16T00:00:00Z'});
+ const report=workActivityReport({...fixture,employees:[person]},{from:'2026-10-01',to:'2026-10-15'});
+ assert.equal(report.plans[0].plannedDue,2);assert.equal(report.plans[0].verifiedByPeriodEnd,1);assert.equal(report.plans[0].variance,-1);
+ const unavailable=workActivityReport(fixture,{from:'2026-10-01',to:'2026-10-15'}).plans[0];
+ assert.equal(unavailable.status,'UNAVAILABLE');assert.equal(unavailable.plannedDue,null);
+});

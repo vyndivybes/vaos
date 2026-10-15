@@ -26,11 +26,14 @@ export function createEnterpriseBiHandler({
   const session=sessionVerifier(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE]);
   if(!session)return res.status(401).json(apiError('UNAUTHENTICATED','Sign in required'));
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder identity required'));
-  let from,to,employeeId,limit,offset;
+  let from,to,employeeId,limit,offset,sourceTable;
   try{
    const query=new URL(req.url).searchParams;
-   if([...query.keys()].some(k=>!['from','to','employee','limit','offset'].includes(k)))throw Error();
+   if([...query.keys()].some(k=>!['from','to','employee','limit','offset','source'].includes(k))||
+     [...query.keys()].some(k=>query.getAll(k).length!==1))throw Error();
    from=query.get('from');to=query.get('to');employeeId=query.get('employee')||'all';
+   sourceTable=query.get('source');
+   if(sourceTable&&(employeeId==='all'||!/^[_a-z][_a-z0-9]{0,95}$/.test(sourceTable)))throw Error();
    const rawLimit=query.get('limit')||'30',rawOffset=query.get('offset')||'0';
    if(!/^\d+$/.test(rawLimit)||!/^\d+$/.test(rawOffset))throw Error();
    limit=Number(rawLimit);offset=Number(rawOffset);
@@ -47,7 +50,8 @@ export function createEnterpriseBiHandler({
    const client=bridgeFactory({signer:getStore(req.env),serviceBinding:req.env.VYNDI});
    const evidence=await client.execute({id:crypto.randomUUID(),intentId:crypto.randomUUID(),
     actionType:'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI',
-    payload:{missionId:'founder:enterprise-bi',from,to,employeeId,limit,offset}});
+    payload:{missionId:'founder:enterprise-bi',from,to,employeeId,limit,offset,
+     ...(sourceTable?{sourceTable}:{})}});
    const data=evidence?.data;
    if(data?.schemaVersion!=='VYNDI_ENTERPRISE_BI_V1'||data.readOnly!==true||
       data.period?.from!==from||data.period?.to!==to||data.scope!==employeeId||

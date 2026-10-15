@@ -10,7 +10,7 @@
 <section class="premium-hero va-intelligence-heading"><div><span class="premium-eyebrow">COMPANY INTELLIGENCE</span><h1>Business, in perspective.</h1><p>Explore observed activity, departmental evidence and your digital workforce.</p></div><a class="premium-text-link" href="/workspace">Back to overview ↗</a></section>
 <div class="wa-period-controls">
   <label for="wa-period-presets">Reporting period
-   <select id="wa-period-presets"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="custom">Custom dates</option></select>
+   <select id="wa-period-presets"><option value="7">Last 7 days</option><option value="30" selected>Last 30 days</option><option value="90">Last 90 days</option><option value="365">Last 365 days</option><option value="custom">Custom dates</option></select>
   </label>
   <label for="wa-period-from">From (UTC)<input id="wa-period-from" type="date" /></label>
   <label for="wa-period-to">To (UTC)<input id="wa-period-to" type="date" /></label>
@@ -25,14 +25,8 @@
   <div id="wa-financial-kpis" class="wa-stats" aria-label="Qualified financial KPIs"></div>
   <div id="wa-financial-chart" class="wa-viz-bars" role="region" aria-label="Revenue, cost of goods sold, gross profit, and net profit"></div>
   <p class="wa-period-note">Unqualified amounts remain unavailable. Source and reconciliation details accompany each statement.</p>
- </section><section class="wa-panel" aria-labelledby="wa-business-title">
- <div class="wa-heading"><div><span class="wa-kicker">FOUNDER · COMPANY OPERATING INTELLIGENCE</span>
- <h2 id="wa-business-title">Business pulse</h2>
- <p>Your operating sources, connected in one place.</p></div>
- <button id="wa-business-refresh" type="button">Refresh all departments</button></div>
- <p id="wa-business-status" role="status" aria-live="polite">Awaiting authenticated departmental evidence.</p>
- <details class="wa-accordion"><summary>Explore eight business snapshots</summary><div id="wa-business-departments" class="wa-period-grid" aria-label="Business department records and drill-down"></div></details>
-
+ </section><section class="wa-panel" aria-labelledby="wa-business-title"><h2 id="wa-business-title">Approved plan and closed actuals</h2><div id="wa-business-comparison" role="region" aria-label="Approved demand plan compared with closed actuals"></div>
+<p>Open Departments for all 16 reports, source coverage and records. Select an employee to inspect its business records alongside verified work, audits and approved plans.</p>
  <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>
  <p>Revenue requires posted or otherwise qualified sales actuals; gross profit is revenue minus attributable cost of goods sold; operating profit also deducts qualified operating expenses. Working capital requires qualified current assets and current liabilities. Cash runway requires qualified cash and burn rate. Stock turnover, production yield, purchase variance, receivables ageing and payroll require their respective canonical transaction records. None can be calculated from mere counts of status records, employee activity or unapproved engineering BOMs. Missing and incomplete figures must remain unavailable, never zero.</p>
  </details>
@@ -100,6 +94,11 @@
    <div id="wa-period-reports" class="wa-period-list"></div>
   </section>
  </div>
+ <section class="wa-period-card" aria-labelledby="wa-period-plan-title">
+  <h3 id="wa-period-plan-title">Approved work plan versus verified delivery</h3>
+  <p>Work packages due in the selected period, compared with independent handoff proof recorded by period end. Business demand plan comparisons remain in the overview. Missing approved baselines are unavailable.</p>
+  <div id="wa-period-plans"></div>
+ </section>
  <section class="wa-period-forecast" aria-labelledby="wa-period-forecast-title">
   <h3 id="wa-period-forecast-title">Forecast and upcoming delivery</h3>
   <p id="wa-period-forecast-note">Projected finish dates require approved dated plans and qualified forecasts.</p>
@@ -167,4 +166,4 @@
   <details class="wa-accordion"><summary>Forecast qualification and provenance-backed founder reports</summary>
    <p>Forecasts need approved dated baselines, source integrity and independent backtests. Historical reports do not prove outbound delivery.</p>
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
- </section></div><footer class="premium-footer"><span>VĀYŪ SHASTR <b> / VAOS</b></span><p>Source-backed reporting · Human authority</p><a href="/founder-console.html">Founder Command ↗</a></footer></main><script type="module" src="/premium.mjs"></script><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script><script type="module" src="/vaos-interface.mjs"></script></body></html>
+ </section></div><footer class="premium-footer"><span>VĀYŪ SHASTR <b> / VAOS</b></span><p>Source-backed reporting · Human authority</p><a href="/founder-console.html">Founder Command ↗</a></footer></main><script type="module" src="/premium.mjs"></script><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/financial-performance.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script><script type="module" src="/vaos-interface.mjs"></script></body></html>

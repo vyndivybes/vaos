@@ -10,7 +10,7 @@ test('VYNDI business reporting is integrated in the existing employee and period
  }
  assert.ok(html.indexOf('id="wa-vyndi-title"')<html.indexOf('id="wa-period-work-title"'));
  assert.match(browser,/document\.addEventListener\('vaos:workforce-loaded'/);
- assert.match(browser,/fetch\('\/api\/vyndi-department-report\?/);
+ assert.match(browser,/fetch\('\/api\/enterprise-bi\?/);
  assert.match(browser,/credentials:'same-origin'/);
  assert.match(browser,/textContent=/);
  assert.doesNotMatch(browser,/innerHTML\s*=/);

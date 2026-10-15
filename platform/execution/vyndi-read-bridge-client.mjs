@@ -68,6 +68,7 @@ export function createVyndiReadBridgeClient({
               from: job.payload?.from,
               to: job.payload?.to,
               offset: Number.isInteger(job.payload?.offset) ? job.payload.offset : 0,
+              ...(job.payload?.sourceTable?{sourceTable:job.payload.sourceTable}:{}),
             } : {}),
           ...(job.actionType === 'PROJECT.OBSERVE_SCHEDULE'
             ? { projectId: job.payload?.projectId } : {}),

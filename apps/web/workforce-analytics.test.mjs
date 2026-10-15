@@ -65,3 +65,16 @@ test('actual period reporting provides date, employee, audit and forecast contro
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.ok(html.indexOf('id="wa-actual-title"')<html.indexOf('id="workforce-title"'));
 });
+
+
+test('business history dates remain selectable beyond the workforce observation window',async()=>{
+ const nodes=new Map([...html.matchAll(/id="([^"]+)"/g)].map(m=>[m[1],new Element('div')]));
+ const document={getElementById:id=>nodes.get(id),createElement:tag=>new Element(tag)};
+ const context={document,workActivityReport,periodBounds,fetch:async()=>({ok:true,status:200,json:async()=>({data:buildWorkforceAnalytics(raw)})}),location:{assign(){}},Date,URL,Math,Number,String,Object};
+ runInNewContext(source,context);await flush();
+ nodes.get('wa-period-from').value='2026-01-01';nodes.get('wa-period-to').value='2026-02-01';
+ await nodes.get('wa-refresh').events.click();await flush();
+ assert.equal(nodes.get('wa-period-from').value,'2026-01-01');assert.equal(nodes.get('wa-period-from').min,'');
+ assert.match(nodes.get('wa-period-status').textContent,/departmental business records use the selected historical dates/);
+ assert.equal(nodes.get('wa-period-kpis').textContent,'');
+});

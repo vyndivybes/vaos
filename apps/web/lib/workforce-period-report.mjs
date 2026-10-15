@@ -14,8 +14,21 @@ export function workActivityReport(data,{from,to,employeeId='all'}){
  const oldest=new Date(Date.parse(last+'T00:00:00Z')-89*86400000).toISOString().slice(0,10);
  if(from<oldest||to>last)throw Error('OUTSIDE_OBSERVED_90_DAY_WINDOW');
  const people=(data.employees||[]).filter(x=>employeeId==='all'||x.id===employeeId);
- const rows=[],audits=[],reports=[],forecast=[];
+ const rows=[],audits=[],reports=[],forecast=[],plans=[];
  for(const person of people){
+  const baseline=person.progress?.baselines;
+  const qualified=person.progress?.status==='APPROVED_BASELINE_COHORT'&&Array.isArray(baseline)&&
+   ['VERIFIED_EMPLOYEE_HANDOFF_REPORTS','NO_VERIFIED_EMPLOYEE_REPORTS'].includes(person.reports?.status)&&
+   Array.isArray(person.reports?.reports);
+  const due=qualified?baseline.filter(b=>inRange(b.plannedFinishAt,from,to)&&
+   b.approvedAt.slice(0,10)<=to):[];
+  const verified=due.filter(b=>person.reports.reports.some(r=>r.workPackageId===b.workPackageId&&
+   r.verifiedAt.slice(0,10)<=to));
+  plans.push({employeeId:person.id,employee:person.name,
+   status:qualified?'APPROVED_DUE_COHORT':'UNAVAILABLE',
+   plannedDue:qualified?due.length:null,verifiedByPeriodEnd:qualified?verified.length:null,
+   variance:qualified?verified.length-due.length:null,
+   baselineRefs:due.map(b=>b.id||b.workPackageId)});
   for(const item of person.workItems||[]){
    if(!inRange(item.updatedAt,from,to))continue;
    rows.push({employeeId:person.id,employee:person.name,id:item.id,
@@ -41,7 +54,7 @@ export function workActivityReport(data,{from,to,employeeId='all'}){
  reports.sort((a,b)=>b.verifiedAt.localeCompare(a.verifiedAt));
  return {from,to,asOf,scope:'RECENT_UPDATES_NOT_HISTORICAL_STATES',
   employees:people.length,
-  rows,audits,reports,forecast,
+  rows,audits,reports,forecast,plans,
   recordedUpdated:rows.length,markedCompleted:rows.filter(x=>x.status==='COMPLETED').length,
   blocked:rows.filter(x=>x.status==='BLOCKED').length,
   verifiedReports:reports.length,reviewedAudits:audits.length,

@@ -156,3 +156,6 @@ footer{color:#65777f}
 .wa-vyndi-report .wa-period-item{padding:11px 13px}
 .wa-vyndi-report .wa-period-item p{font-size:13px}
 @media(max-width:790px){.wa-vyndi-layout{grid-template-columns:1fr}.wa-vyndi-header{flex-direction:column}}
+
+/* Specialist source tables use the existing scroll container at narrow widths. */
+#wa-enterprise-grid td:last-child{max-width:38rem;white-space:normal;overflow-wrap:anywhere;line-height:1.6}

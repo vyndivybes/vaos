@@ -55,14 +55,16 @@ function periodDay(start,offset){
 function populatePeriodControls(data){
  const bounds=periodBounds(data.observedAt);
  const from=$('wa-period-from'),to=$('wa-period-to'),select=$('wa-period-employee');
- for(const node of [from,to]){node.min=bounds.min;node.max=bounds.max;}
+ // VYNDI business history supports any past window up to 366 days. The
+ // workforce observation has a separate 90-day bound; do not restrict both.
+ for(const node of [from,to]){node.min='';node.max=bounds.max;}
  const previous=select.value||periodSelection;select.replaceChildren();
  const all=element('option','All 16 employees');all.value='all';select.append(all);
  for(const emp of data.employees){
   const option=element('option',emp.name);option.value=emp.id;select.append(option);
  }
  periodSelection=data.employees.some(x=>x.id===previous)?previous:'all';select.value=periodSelection;
- if(!from.value||from.value<bounds.min||to.value>bounds.max){
+ if(!from.value||!to.value||to.value>bounds.max){
   to.value=bounds.max;from.value=periodDay(bounds.max,-29);
  }
  renderPeriod();
@@ -79,12 +81,12 @@ function evidenceRow(host,title,details,missionId=null){
 function renderPeriod(){
  if(!latest)return;
  const from=$('wa-period-from').value,to=$('wa-period-to').value;
- for(const id of ['wa-period-kpis','wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts'])
+ for(const id of ['wa-period-kpis','wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts','wa-period-plans'])
   $(id).replaceChildren();
  let report;
  try{report=workActivityReport(latest,{from,to,employeeId:periodSelection});}
  catch{
-  $('wa-period-status').textContent='Select a valid period within the latest 90 days of recorded history. Older history is not available from this source.';
+  $('wa-period-status').textContent='Workforce observation is available only within the latest 90 days. VYNDI departmental business records use the selected historical dates separately; no older employee activity is inferred.';
   return;
  }
  $('wa-period-status').textContent='Period '+from+' to '+to+
@@ -109,6 +111,20 @@ function renderPeriod(){
  for(const x of report.reports) evidenceRow(verified,x.employee+' · '+x.action.replaceAll('_',' '),
   'Verified '+time(x.verifiedAt)+' by '+x.reviewer+' · Work package '+x.workPackageId);
  if(!report.reports.length)verified.append(element('p','No independently verified employee handoff reports recorded in this period.'));
+ const planHost=$('wa-period-plans'),planTable=element('table'),planHead=element('tr');
+ for(const heading of ['Employee','Approved work due','Verified by period end','Variance','Baseline references'])planHead.append(element('th',heading));
+ planTable.append(planHead);
+ for(const p of report.plans){
+  const row=element('tr');
+  for(const value of [p.employee,p.plannedDue??'Unavailable',p.verifiedByPeriodEnd??'Unavailable',
+   p.variance??'Unavailable',p.baselineRefs.join(', ')||'No comparable approved due cohort'])cell(row,value);
+  planTable.append(row);
+  if(p.status==='APPROVED_DUE_COHORT'){
+   bar(planHost,p.employee+' approved work due',p.plannedDue,Math.max(1,p.plannedDue));
+   bar(planHost,p.employee+' independently verified',p.verifiedByPeriodEnd,Math.max(1,p.plannedDue));
+  }
+ }
+ const planScroll=element('div',undefined,'wa-scroll');planScroll.append(planTable);planHost.append(planScroll);
  const forecasts=$('wa-period-forecasts');
  let qualified=0;
  for(const x of report.forecast){
@@ -129,15 +145,20 @@ function selectPeriodPreset(value){
  if(!latest)return;
  const bounds=periodBounds(latest.observedAt);
  to.value=bounds.max;
- from.value=periodDay(bounds.max,-(Math.min(90,Number(value))-1));
- if(from.value<bounds.min)from.value=bounds.min;
+ from.value=periodDay(bounds.max,-(Math.min(366,Number(value))-1));
  renderPeriod();
 }
 $('wa-period-presets').addEventListener('change',event=>selectPeriodPreset(event.target.value));
 for(const id of ['wa-period-from','wa-period-to'])$(id).addEventListener('change',()=>{
  $('wa-period-presets').value='custom';periodPreset='custom';renderPeriod();
 });
-$('wa-period-employee').addEventListener('change',event=>{periodSelection=event.target.value;renderPeriod();});
+$('wa-period-employee').addEventListener('change',event=>{
+ periodSelection=event.target.value;
+ if(periodSelection!=='all'&&latest?.employees.some(x=>x.id===periodSelection)){
+  selection=periodSelection;$('wa-select').value=selection;renderEmployee();
+ }
+ renderPeriod();
+});
 
 function renderRoster(data){
  const table=$('wa-roster');table.replaceChildren();
@@ -393,7 +414,7 @@ async function refresh(){
  }catch{
   latest=null;$('wa-status').textContent='Analytics source unavailable or migration uncommissioned. No employee metrics can be inferred.';
   $('wa-period-status').textContent='No authenticated source evidence available; period performance and forecasts cannot be reported.';
-  for(const id of ['wa-period-kpis','wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts'])$(id).replaceChildren();
+  for(const id of ['wa-period-kpis','wa-period-work','wa-period-audits','wa-period-reports','wa-period-forecasts','wa-period-plans'])$(id).replaceChildren();
   for(const id of ['wa-overview-work','wa-overview-heartbeat'])$(id).replaceChildren();
   $('wa-observed').textContent='No validated snapshot';$('wa-ops-status').textContent='Operational evidence unavailable; liveness not certified.';$('wa-totals').replaceChildren();
   $('wa-roster').replaceChildren();$('wa-select').replaceChildren();$('wa-commissioning-totals').replaceChildren();

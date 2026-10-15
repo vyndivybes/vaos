@@ -17,14 +17,14 @@ function render(payload){
  const summary=$('wa-vyndi-summary');summary.replaceChildren();
  const stats=[
   ['Department',payload.department],
-  ['Dated records in period',payload.datedRecords],
+  ['Primary source rows in period',payload.datedRecords],
   ['Current undated observations',payload.undatedCurrentRecords],
   ['Source',payload.sourceAuthority]
  ];
  for(const [label,v] of stats){const card=node('div',undefined,'wa-stat');
  card.append(node('small',label),node('strong',v));summary.append(card);}
  const chart=$('wa-vyndi-chart');chart.replaceChildren();
- if(!payload.statusDistribution.length)chart.append(node('p','No date-qualified business status data in this source sample.'));
+ if(!payload.statusDistribution.length)chart.append(node('p','No date-qualified business status data in this period.'));
  else{const max=Math.max(...payload.statusDistribution.map(x=>x.count),1);
   for(const {label,count} of payload.statusDistribution){
    const row=node('div',undefined,'wa-bar-row');
@@ -37,8 +37,8 @@ function render(payload){
  const coverage=$('wa-vyndi-coverage');coverage.replaceChildren();
  for(const group of payload.groups){
   line(coverage,group.group,
-   'Sampled '+group.sampled+' · dated in period '+group.inPeriod+' · current undated '+group.currentUndated+
-   (group.mayBeTruncated?' · Source limit reached; more records may exist':''));
+   'Current source rows '+group.sampled+' · dated in period '+group.inPeriod+' · current undated '+group.currentUndated+
+   (group.mayBeTruncated?' · More dated rows available in department pages':''));
  }
  for(const note of payload.notes)line(coverage,'Reporting qualification',note);
  const body=$('wa-vyndi-records');body.replaceChildren();
@@ -56,7 +56,7 @@ function render(payload){
  $('wa-vyndi-status').textContent='Read-only '+payload.department+
   ' records as of '+new Date(payload.observedAt).toLocaleString()+
   '. Selected dates '+payload.period.from+' to '+payload.period.to+
-  '. This is a bounded source sample, not a complete historical departmental audit.';
+  '. Full source counts with bounded row previews; current rows are not a complete historical departmental audit.';
 }
 async function reload(){
  const employee=$('wa-period-employee').value;
@@ -67,24 +67,36 @@ async function reload(){
   return;
  }
  if(!from||!to||from>to){$('wa-vyndi-status').textContent='Select a valid reporting period.';return;}
- const commissioned=['commercial','procurement','inventory','production','maintenance','finance','people','engineering-configuration'];
- if(!commissioned.includes(employee)){
-  $('wa-vyndi-status').textContent='This employee has no directly commissioned VYNDI signed business-read source. Its VAOS activities, handoffs, audits and approved plans remain in the report above. A zero business record count is NOT inferred.';
-  return;
- }
  $('wa-vyndi-status').textContent='Reading signed VYNDI OS departmental authority…';
  try{
-  const params=new URLSearchParams({employee,from,to});
-  const res=await fetch('/api/vyndi-department-report?'+params,{credentials:'same-origin',cache:'no-store'});
+  const params=new URLSearchParams({employee,from,to,limit:'30'});
+  const res=await fetch('/api/enterprise-bi?'+params,{credentials:'same-origin',cache:'no-store'});
   if(ticket!==seq)return;
   if(!res.ok){
    $('wa-vyndi-status').textContent='VYNDI authoritative read is unavailable or not commissioned (HTTP '+res.status+'). No business metrics inferred.';
    return;
   }
-  const payload=(await res.json()).data;
+  const data=(await res.json()).data;
   if(ticket!==seq)return;
-  if(payload?.schemaVersion!=='VAOS_VYNDI_DEPARTMENT_REPORT_V1'||payload.employeeId!==employee||payload.readOnly!==true)throw Error('SOURCE_CONTRACT');
-  render(payload);
+  const source=data?.departments?.find(x=>x.employeeId===employee);
+  if(data?.schemaVersion!=='VYNDI_ENTERPRISE_BI_V1'||data.readOnly!==true||data.scope!==employee||
+   data.period?.from!==from||data.period?.to!==to||!source)throw Error('SOURCE_CONTRACT');
+  const sources=source.sources||[source];
+  const observed=sources.filter(x=>x.status==='OBSERVED');
+  if(!observed.length)throw Error('SOURCE_UNAVAILABLE');
+  const entries=observed.flatMap(group=>(group.records||[]).map(r=>({group:group.sourceTable,date:r.date,
+   fields:Object.entries({...r.fields,status:r.status}).map(([field,value])=>({field,value}))})));
+  render({department:source.department,sourceAuthority:'getEnterpriseBusinessIntelligence',
+   observedAt:data.observedAt,period:data.period,
+   datedRecords:source.periodEventCount??'Unavailable',undatedCurrentRecords:source.undatedCount??'Unavailable',
+   records:entries,statusDistribution:(source.statusDistribution||[]).map(x=>({label:x.status,count:x.count})),
+   groups:sources.map(x=>({group:x.sourceTable,sampled:x.currentSourceCount??'Unavailable',
+    inPeriod:x.periodEventCount??'Unavailable',currentUndated:x.undatedCount??'Unknown',mayBeTruncated:x.detailPage?.hasMore})),
+   notes:[...data.interpretation,
+    'Coverage '+observed.length+' / '+sources.length+' governed sources. Table rows are bounded previews; full counts are calculated on the server.',
+    'Forecast: '+(source.forecast?.reason||'Unavailable. No independently qualified source forecast.'),
+    'Business plan comparison: '+source.planVsActual?.reason,
+    'Audit: '+source.audit?.reason]});
  }catch{if(ticket===seq){clear();$('wa-vyndi-status').textContent='VYNDI department report unavailable; recorded operations above remain unchanged.';}}
 }
 for(const id of ['wa-period-employee','wa-period-from','wa-period-to','wa-period-presets'])$(id).addEventListener('change',()=>{

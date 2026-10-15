@@ -296,3 +296,16 @@ test('video-sense interface samples four timestamped frames locally with optiona
  assert.match(ui,/sourceGeneration/);
  assert.match(html,/events between sampled timestamps cannot be established/);
 });
+
+
+test('consolidated multimodal flag enables founder video sense without another Cloudflare binding',async()=>{
+ const h=harness({control:'off'});
+ delete h.env.VAOS_MULTIMODAL_CONTROL;
+ h.env.VAOS_FEATURE_FLAGS=JSON.stringify({VAOS_MULTIMODAL_CONTROL:'founder-preview-only-v1'});
+ const status=await h.run();
+ assert.equal(status.status,200);
+ assert.equal(status.body.data.enabled,true);
+ assert.equal(status.body.data.videoSense,'SPARSE_TIMESTAMPED_FRAMES');
+ h.env.VAOS_FEATURE_FLAGS=JSON.stringify({VAOS_MULTIMODAL_CONTROL:'disabled'});
+ assert.equal((await h.run()).body.data.enabled,false);
+});

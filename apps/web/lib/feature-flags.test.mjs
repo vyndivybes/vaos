@@ -6,10 +6,11 @@ const flags = {
  VAOS_FEDERATED_KNOWLEDGE_CONTROL:'founder-readonly-v1',
  VAOS_LANGGRAPH_CONTROL:'read-only-v1',
  VAOS_PRODUCTION_OBSERVER_CONTROL:'read-only-v1',
- VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1'
+ VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',
+ VAOS_MULTIMODAL_CONTROL:'founder-preview-only-v1'
 };
 
-test('four controls retain exact expected values from consolidated configuration',()=>{
+test('five controls retain exact expected values from consolidated configuration',()=>{
  const env={VAOS_FEATURE_FLAGS:JSON.stringify(flags)};
  for(const [name,value] of Object.entries(flags))assert.equal(featureControl(env,name),value);
 });

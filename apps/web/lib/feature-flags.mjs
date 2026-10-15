@@ -5,6 +5,7 @@ const NAMES = new Set([
   'VAOS_LANGGRAPH_CONTROL',
   'VAOS_PRODUCTION_OBSERVER_CONTROL',
   'VAOS_SLACK_AGENT_CONTROL',
+  'VAOS_MULTIMODAL_CONTROL',
 ]);
 
 export function featureControl(env, name) {

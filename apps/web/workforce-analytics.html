@@ -13,6 +13,15 @@
  <button id="wa-business-refresh" type="button">Refresh all departments</button></div>
  <p id="wa-business-status" role="status" aria-live="polite">Awaiting authenticated departmental evidence.</p>
  <div id="wa-business-departments" class="wa-period-grid" aria-label="Business department records and drill-down"></div>
+ <section class="wa-period-card" aria-labelledby="wa-financial-title">
+  <div class="wa-heading"><div><h3 id="wa-financial-title">Financial performance · posted actuals</h3>
+   <p>Reconciled VYNDI OS financial statements for the reporting period selected above. Profit is never calculated from the department record-count charts.</p></div>
+   <button id="wa-financial-refresh" type="button">Refresh finance</button></div>
+  <p id="wa-financial-status" role="status" aria-live="polite">Awaiting authenticated posted financial evidence.</p>
+  <div id="wa-financial-kpis" class="wa-stats" aria-label="Qualified financial KPIs"></div>
+  <div id="wa-financial-chart" class="wa-viz-bars" role="region" aria-label="Revenue, cost of goods sold, gross profit, and net profit"></div>
+  <p class="wa-period-note">Manufacturing cost uses recorded job-cost snapshots; gross and net margin require posted revenue. Missing activity, incomplete statements and reconciliation holds are never displayed as zero profit.</p>
+ </section>
  <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>
  <p>Revenue requires posted or otherwise qualified sales actuals; gross profit is revenue minus attributable cost of goods sold; operating profit also deducts qualified operating expenses. Working capital requires qualified current assets and current liabilities. Cash runway requires qualified cash and burn rate. Stock turnover, production yield, purchase variance, receivables ageing and payroll require their respective canonical transaction records. None can be calculated from mere counts of status records, employee activity or unapproved engineering BOMs. Missing and incomplete figures must remain unavailable, never zero.</p>
  </details>
@@ -152,4 +161,4 @@
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
  </section>
  <footer>Source: governed PostgreSQL mission/work and independent handoff evidence. Unknown, failed, and unavailable data are shown distinctly. This dashboard cannot authorize production writes, audit passes, or employee qualifications.</footer>
-</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script></body></html>
+</main><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/business-analytics.mjs"></script><script type="module" src="/financial-performance.mjs"></script></body></html>

@@ -13,10 +13,16 @@ export async function runProductionReadOnlyObservation({
   controlService, executionEngine, mode, now = () => new Date(),
   missionId = 'VAOS-CARBON-FRAME-S-20261010',
 } = {}) {
-  if(typeof mode!=='function'||mode()!=='read-only-v1') return HOLD('PRODUCTION_MONITOR_DISABLED');
+  // Existing opt-in control: "shadow-v1" assesses the already-authorized
+  // workforce contract without creating an intent or observing production.
+  // The operational "read-only-v1" path below retains all existing controls.
+  const selectedMode=typeof mode==='function'?mode():null;
+  if(!['read-only-v1','shadow-v1'].includes(selectedMode))return HOLD('PRODUCTION_MONITOR_DISABLED');
   if(!controlService || typeof controlService.snapshot!=='function'
-    || typeof controlService.proposeIntent!=='function'
-    || typeof executionEngine?.processProductionObservation!=='function') return HOLD('PRODUCTION_MONITOR_PORT_MISSING');
+    || (selectedMode==='read-only-v1'&&(
+      typeof controlService.proposeIntent!=='function'
+      ||typeof executionEngine?.processProductionObservation!=='function')))
+    return HOLD('PRODUCTION_MONITOR_PORT_MISSING');
   if(!ID_PATTERN.test(missionId)) return HOLD('PRODUCTION_MONITOR_MISSION_ID_INVALID');
   try {
     const snapshot=await controlService.snapshot();
@@ -40,6 +46,15 @@ export async function runProductionReadOnlyObservation({
     if(!(stamp instanceof Date)||!Number.isFinite(stamp.valueOf())) return HOLD('PRODUCTION_MONITOR_CLOCK_INVALID');
     const hourlyStamp=new Date(stamp);
     hourlyStamp.setUTCMinutes(0,0,0);
+    if(selectedMode==='shadow-v1'){
+      if(mode()!=='shadow-v1')return HOLD('PRODUCTION_MONITOR_STOPPED');
+      // Shadow is a reversible zero-write readiness observation. It does not
+      // perform a signed VYNDI read, qualify a source, or authorize L5 effects.
+      return {status:'SHADOW_READY',actionType:PRODUCTION_OBSERVATION_ACTION,
+        hour:hourlyStamp.toISOString(),canaryMode:'shadow-v1',
+        activeObserver:false,sourceReadPerformed:false,
+        actualObservationVerified:false,businessWrites:false};
+    }
     const idempotencyKey=`vaos-production-l5:${hourlyStamp.toISOString()}`;
     if(mode()!=='read-only-v1') return HOLD('PRODUCTION_MONITOR_STOPPED');
     const proposed=await controlService.proposeIntent({

@@ -51,3 +51,70 @@
 .data-agent-panel .data-agent-technical pre{margin:12px 0 0}
 .data-agent-panel .data-agent-brief-steps{margin:12px 0 0;padding-left:24px}
 .data-agent-panel .data-agent-brief-steps li{margin:8px 0;font-size:15px;line-height:1.55;color:#23485d}
+
+
+/* VAOS X / Pearl Titanium: chart-first Insight Studio, accessible and source-aware. */
+.data-agent-panel{
+ --va-porcelain:#f8f7f4;--va-pearl:#fff;--va-stone:#f0efec;
+ --va-champagne:#b59b71;--va-mist:#8297a5;--va-sage:#83a596;
+ --va-ink:#34434b;--va-line:#e5e5e1;
+ color:var(--va-ink);background:linear-gradient(150deg,#fff 0%,#faf9f6 100%);
+ border:1px solid var(--va-line);border-radius:24px;
+ box-shadow:0 10px 36px rgba(52,67,75,.055);padding:clamp(16px,2vw,30px);
+}
+.data-agent-panel h2,.data-agent-panel h3,.data-agent-panel h4{color:var(--va-ink);letter-spacing:-.025em}
+.data-agent-panel h2{font-size:clamp(24px,2.8vw,36px);line-height:1.16}
+.data-agent-panel p,.data-agent-panel li{color:var(--va-ink);line-height:1.65}
+.data-agent-panel textarea,.data-agent-panel select{
+ color:var(--va-ink);background:#fff;border:1px solid #d9ddd9;border-radius:12px;
+ padding:12px;max-width:100%;
+}
+.data-agent-panel textarea:focus-visible,.data-agent-panel select:focus-visible,
+.data-agent-panel button:focus-visible,.data-agent-panel summary:focus-visible{
+ outline:3px solid #b7c8d1;outline-offset:3px;
+}
+.data-agent-panel button{border-radius:12px;min-height:42px}
+.data-agent-panel #data-agent-chart{
+ background:var(--va-pearl);border:1px solid var(--va-line);
+ border-radius:18px;padding:clamp(12px,1.8vw,24px);min-height:220px;
+ box-shadow:0 4px 18px rgba(52,67,75,.035);
+}
+.data-agent-panel .va-evidence-svg{min-height:210px;max-height:460px}
+.data-agent-panel .va-evidence-axis,.data-agent-panel .va-evidence-value,
+.data-agent-panel .va-evidence-total{fill:var(--va-ink);font-size:14px}
+.data-agent-panel .data-agent-founder-brief{
+ background:linear-gradient(135deg,#fff,#f8f7f2);
+ border:1px solid var(--va-line);border-top:3px solid var(--va-champagne);
+ border-radius:18px;box-shadow:0 5px 22px rgba(52,67,75,.045);
+}
+.data-agent-panel .data-agent-investigation{
+ background:var(--va-porcelain);border-color:var(--va-line);border-radius:18px;
+}
+.data-agent-panel .data-agent-investigation summary,
+.data-agent-panel .data-agent-evidence summary,
+.data-agent-panel .data-agent-technical summary{color:var(--va-ink)}
+.data-agent-panel .data-agent-finding{
+ border:1px solid var(--va-line);border-left:4px solid var(--va-mist);
+ border-radius:14px;background:#fff;
+}
+.data-agent-panel .data-agent-finding h4,
+.data-agent-panel .data-agent-finding p{color:var(--va-ink)}
+.data-agent-panel .data-agent-evidence,.data-agent-panel .data-agent-technical,
+.data-agent-panel .data-agent-prelaunch-note{
+ background:var(--va-porcelain);border-color:var(--va-line);color:var(--va-ink);
+}
+.data-agent-panel .data-agent-prelaunch-note{border-left:3px solid var(--va-champagne)}
+.data-agent-panel pre{background:var(--va-stone);color:var(--va-ink)}
+.data-agent-panel th{background:#f5f4f0;color:var(--va-ink)}
+.data-agent-panel td{color:var(--va-ink);border-bottom-color:var(--va-line)}
+.data-agent-panel th{border-bottom-color:var(--va-line)}
+.data-agent-panel #data-agent-employees{border:1px solid var(--va-line);border-radius:14px}
+@media(max-width:720px){
+ .data-agent-panel{padding:16px;border-radius:16px}
+ .data-agent-panel #data-agent-chart{padding:12px;min-height:190px}
+ .data-agent-panel .va-evidence-svg{min-height:180px}
+ .data-agent-panel h2{font-size:25px}
+}
+@media(prefers-reduced-motion:reduce){
+ .data-agent-panel *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}

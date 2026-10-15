@@ -509,7 +509,7 @@ function init(){
   RecognitionClass:SpeechRecognition,
   isVisible:()=>document.visibilityState==='visible',
   validateQuestion:q=>{
-   if(resolveFounderGoogleIntent(q))return true;
+   if(resolveFounderGoogleIntent(q)||resolveFounderCalendarReadIntent(q))return true;
    const candidate=classifyDashboardQuestion(conversation.resolve(q).question);
    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported';
   },

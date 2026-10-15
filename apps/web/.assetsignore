@@ -10,6 +10,7 @@ lib/*
 !lib/group-portfolio.mjs
 !lib/dashboard-charts.mjs
 !lib/founder-cockpit.mjs
+!lib/founder-launch-summary.mjs
 !lib/hey-vaos.mjs
 !lib/voice-intelligence.mjs
 !lib/g5-response-timing.mjs

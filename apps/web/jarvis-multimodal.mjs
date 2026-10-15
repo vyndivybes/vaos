@@ -96,6 +96,7 @@ async function sampleLocalVideo(video,original,generation){
 
 $('source-file').addEventListener('change',e=>{
  sourceGeneration++;
+ $('video-transcript').value='';
  $('video-transcript-panel').hidden=true;
  file=e.target.files?.[0]||null;converted='';sourceHash=null;lastFrame=null;documentSource=null;$('doc-panel').hidden=true;$('result-panel').hidden=true;$('vedm-panel').hidden=true;$('vedm-result').textContent='No VEDM comparison has been requested.';
  if(frameUrl){URL.revokeObjectURL(frameUrl);frameUrl=null}

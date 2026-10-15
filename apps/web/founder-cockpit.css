@@ -149,3 +149,6 @@
  .fc-chart-card{padding:16px}
  .fc-roster-disclosure{padding:12px 15px}
 }
+
+/* On mobile, charts precede the source directory just as on desktop. */
+@media(max-width:720px){.founder-cockpit #command-view>.fc-workforce{order:3}.founder-cockpit #command-view>.fc-business{order:4}}

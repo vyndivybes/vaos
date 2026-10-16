@@ -13,6 +13,7 @@ function showPresence(mode,detail=''){
  };
  const safe=Object.hasOwn(modes,mode)?mode:'IDLE';
  $('jarvis-presence').dataset.mode=safe;
+ $('jarvis-interrupt').disabled=safe!=='SPEAKING'||guided?.active()!==true;
  $('jarvis-presence-title').textContent=modes[safe][0];
  $('jarvis-presence-detail').textContent=detail||modes[safe][1];
 }
@@ -100,6 +101,9 @@ $('guided-visual-start').addEventListener('click',()=>{
  if(!enabled||!camera.active())return;
  dictation.stop();voiceReadback.cancel();
  if(guided.start())syncGuidedControls();
+});
+$('jarvis-interrupt').addEventListener('click',()=>{
+ if(guided?.interruptSpeech())showPresence('LISTENING');
 });
 $('guided-visual-stop').addEventListener('click',()=>{
  guided.stop();syncGuidedControls();

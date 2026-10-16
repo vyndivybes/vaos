@@ -2,14 +2,20 @@
 // It never sends business commands, starts listening, or claims completion.
 const CUES=Object.freeze({
  HEARD:'I heard your question.',
+ WAKE_READY:'Yes, I am listening.',
+ SOURCE_REQUESTED:'I heard you. I am checking the available records.'
+});
+const FOUNDER_CUES=Object.freeze({
+ HEARD:'I heard you, Sir.',
  WAKE_READY:'Yes, Sir. I am listening.',
  SOURCE_REQUESTED:'Certainly, Sir. I am checking the available records.'
 });
-export function voiceAcknowledgementText(phase){
- return Object.hasOwn(CUES,phase)?CUES[phase]:'';
+export function voiceAcknowledgementText(phase,{founder=false}={}){
+ const cues=founder?FOUNDER_CUES:CUES;
+ return Object.hasOwn(cues,phase)?cues[phase]:'';
 }
 export function createVoiceAcknowledgement({
- synthesis,UtteranceClass,outputBusy=()=>false,onError=()=>{},onFinished=()=>{},
+ synthesis,UtteranceClass,outputBusy=()=>false,isFounder=()=>false,onError=()=>{},onFinished=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id)
 }={}){
  let active=null;
@@ -32,7 +38,7 @@ export function createVoiceAcknowledgement({
   onFinished(state.phase,reason);
  }
  function announce(phase,{enabled=false}={}){
-  const phrase=voiceAcknowledgementText(phase);
+  const phrase=voiceAcknowledgementText(phase,{founder:isFounder()===true});
   if(!enabled||!phrase||!supported()||outputBusy())return false;
   cancel();
   try{

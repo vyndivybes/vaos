@@ -81,8 +81,9 @@ test('founder login greeting is enthusiastic, time-aware and strictly gated by s
  assert.equal(founderLoginGreeting({email:undefined,hour:8}),'');
 });
 test('Hey JARVIS addresses an authenticated founder as Sir without asserting biometric recognition',()=>{
- assert.equal(voiceAcknowledgementText('WAKE_READY'),'Yes, Sir. I am listening.');
- assert.doesNotMatch(voiceAcknowledgementText('WAKE_READY'),/recognized your face|recognized your voice|biometric/i);
+ assert.equal(voiceAcknowledgementText('WAKE_READY'),'Yes, I am listening.');
+ assert.equal(voiceAcknowledgementText('WAKE_READY',{founder:true}),'Yes, Sir. I am listening.');
+ assert.doesNotMatch(voiceAcknowledgementText('WAKE_READY',{founder:true}),/recognized your face|recognized your voice|biometric/i);
 });
 test('workspace login event conveys validated session email and voice starts greeting without microphone capture',async()=>{
  const {readFile}=await import('node:fs/promises');

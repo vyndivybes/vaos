@@ -141,3 +141,25 @@ test('interrupting active speech starts the next listening turn without closing 
  guided.stop();
  assert.equal(guided.interruptSpeech(),false);
 });
+
+test('spoken stop and camera-off commands never submit an image',async()=>{
+ let submissions=0;const commands=[];
+ const g=createGuidedVisualConversation({isCameraActive:()=>true,isVisible:()=>true,
+  dictation:{start:()=>true,stop(){}},readback:{speak:()=>true,cancel(){}},
+  submitQuestion:async()=>{submissions++;return{spokenText:'not expected'}},
+  onCommand:c=>commands.push(c)});
+ g.start();assert.equal(await g.onTranscript('Jarvis stop listening'),true);
+ assert.deepEqual(commands,['STOP_LISTENING']);assert.equal(submissions,0);assert.equal(g.active(),false);
+ g.start();assert.equal(await g.onTranscript('Jarvis turn off the camera'),true);
+ assert.deepEqual(commands,['STOP_LISTENING','STOP_CAMERA']);assert.equal(submissions,0);
+});
+test('ordinary question with stop word remains a normal visual question',async()=>{
+ let submissions=0;const commands=[];
+ const g=createGuidedVisualConversation({isCameraActive:()=>true,isVisible:()=>true,
+  dictation:{start:()=>true,stop(){}},readback:{speak:()=>true,cancel(){}},
+  submitQuestion:async()=>{submissions++;return{spokenText:'This is an answer'}},
+  onCommand:c=>commands.push(c)});
+ g.start();await g.onTranscript('Where is the stop button located?');
+ assert.equal(submissions,1);assert.deepEqual(commands,[]);
+ g.stop();
+});

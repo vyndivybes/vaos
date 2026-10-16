@@ -6,7 +6,7 @@
  */
 export function createGuidedVisualConversation({
  isVisible=()=>true,isCameraActive=()=>false,
- dictation,readback,submitQuestion,shouldContinue=()=>false,onStatus=()=>{}
+ dictation,readback,submitQuestion,shouldContinue=()=>false,onStatus=()=>{},onCommand=()=>{}
 }={}){
  if(typeof dictation?.start!=='function'||typeof dictation?.stop!=='function'||
     typeof readback?.speak!=='function'||typeof readback?.cancel!=='function'||
@@ -35,6 +35,13 @@ export function createGuidedVisualConversation({
  }
  async function onTranscript(question){
   if(!enabled||busy||awaitingPlayback)return false;
+  const command=typeof question==='string'?question.trim().toLowerCase().replace(/[.!?]+$/,''):''; 
+  if(/^(?:(?:hey )?jarvis[, ]+)?(?:stop listening|end conversation|stop conversation)$/.test(command)){
+   stop({silent:true});onStatus('JARVIS stopped listening; camera preview may remain on.');onCommand('STOP_LISTENING');return true;
+  }
+  if(/^(?:(?:hey )?jarvis[, ]+)?(?:stop camera|turn off (?:the )?camera|camera off)$/.test(command)){
+   stop({silent:true});onStatus('JARVIS camera session stopped by voice.');onCommand('STOP_CAMERA');return true;
+  }
   if(typeof question!=='string'||question.trim().length<4||question.length>1000){
    stop();onStatus('Question rejected. Visual conversation stopped.');return false;
   }

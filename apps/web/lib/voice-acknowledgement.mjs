@@ -2,8 +2,8 @@
 // It never sends business commands, starts listening, or claims completion.
 const CUES=Object.freeze({
  HEARD:'I heard your question.',
- WAKE_READY:'Yes, I am listening.',
- SOURCE_REQUESTED:'I heard you. I am checking the available records.'
+ WAKE_READY:'Yes, Sir. I am listening.',
+ SOURCE_REQUESTED:'Certainly, Sir. I am checking the available records.'
 });
 export function voiceAcknowledgementText(phase){
  return Object.hasOwn(CUES,phase)?CUES[phase]:'';

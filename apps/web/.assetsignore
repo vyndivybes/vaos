@@ -34,3 +34,6 @@ cloudflare-worker.mjs
 
 
 !lib/founder-google-intents.mjs
+
+!lib/live-sense.mjs
+!lib/guided-visual-conversation.mjs

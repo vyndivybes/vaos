@@ -23,6 +23,9 @@ test('companion authenticates, isolates origins, reviews skills, denies action r
   await app.jobs.idle(); // The test executor is intentionally injected; production approval is checked separately.
   assert.equal((await request('/api/skills/'+proposed.id+'/approve','POST',{hash:'wrong'})).status,400);
   assert.equal((await request('/api/skills/'+proposed.id+'/approve','POST',{hash:proposed.hash})).status,200);
+  assert.equal((await request('/api/skills/'+proposed.id+'/revoke','POST',{hash:'wrong'})).status,400);
+  assert.equal((await request('/api/skills/'+proposed.id+'/revoke','POST',{hash:proposed.hash})).status,200);
+  assert.equal((await request('/api/skills/'+proposed.id+'/approve','POST',{hash:proposed.hash})).status,400);
   const failed=await (await request('/api/skills/propose','POST',{name:'wrong-case',purpose:'uppercase',tests:[{input:'hello',expected:'incorrect'}]})).json();
   assert.equal(failed.state,'failed');
   assert.equal((await request('/api/skills/'+failed.id+'/approve','POST',{hash:failed.hash})).status,400);

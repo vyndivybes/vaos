@@ -1,0 +1,27 @@
+name: No-Cloudflare VAOS preview
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Validate source without deploying
+        run: npm run lint
+      - name: Package browser UI for inspection (not the backend)
+        run: |
+          mkdir -p preview
+          cp -R apps/web/. preview/
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vaos-ui-source-preview
+          path: preview/
+          retention-days: 7

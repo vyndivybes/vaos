@@ -82,3 +82,26 @@ test('source-intelligence UI offers explicit camera, microphone and speech contr
  assert.ok(html.includes('.live-camera[hidden]{display:none}'),'hide local camera when stopped');
  assert.doesNotMatch(ui,/\bgetDisplayMedia\s*\(/,'no covert screen capture');
 });
+
+test('one no-speech microphone timeout automatically rearms once and never loops forever',()=>{
+ const instances=[];const status=[];
+ class Recognition{
+  constructor(){instances.push(this);}
+  start(){} abort(){} stop(){}
+ }
+ const dictation=createQuestionDictation({RecognitionClass:Recognition,onStatus:s=>status.push(s)});
+ assert.equal(dictation.start(),true);
+ instances[0].onerror({error:'no-speech'});
+ assert.equal(instances.length,2,'first silence should retry listening automatically');
+ instances[1].onerror({error:'no-speech'});
+ assert.equal(instances.length,2,'second silence must stop and avoid an infinite retry loop');
+ assert.equal(dictation.active(),false);
+ assert.ok(status.some(s=>/speech recognition unavailable/i.test(s)));
+});
+test('permission denial cannot retry microphone access',()=>{
+ const instances=[];
+ class Recognition{constructor(){instances.push(this)}start(){}abort(){}stop(){}}
+ const d=createQuestionDictation({RecognitionClass:Recognition});
+ d.start();instances[0].onerror({error:'not-allowed'});
+ assert.equal(instances.length,1);assert.equal(d.active(),false);
+});

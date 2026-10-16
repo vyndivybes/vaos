@@ -82,12 +82,13 @@ export function createCameraSession({
 
 /** One spoken question becomes text, never an automatic source request. */
 export function createQuestionDictation({RecognitionClass,onText=()=>{},onStatus=()=>{}}={}){
- let active=null;
+ let active=null,silenceRetries=0;
  function stop(){
-  const r=active;active=null;
+  const r=active;active=null;silenceRetries=0;
   if(r)try{r.abort?.()}catch{}
  }
- function start(){
+ function start(retry=false){
+  if(!retry)silenceRetries=0;
   if(active||typeof RecognitionClass!=='function')return false;
   let r;
   try{
@@ -110,9 +111,14 @@ export function createQuestionDictation({RecognitionClass,onText=()=>{},onStatus
     const handled=onText(result)===true;
     if(!handled)onStatus('Question transcribed. Review it, then explicitly choose Analyze.');
    };
-   r.onerror=()=>{
+   r.onerror=event=>{
     if(active!==r)return;
     active=null;
+    if(event?.error==='no-speech'&&silenceRetries<1){
+     silenceRetries++;
+     onStatus('No speech heard. JARVIS is listening once more.');
+     if(start(true))return;
+    }
     onStatus('Speech recognition unavailable. Type the question instead.');
    };
    r.onend=()=>{if(active===r)active=null};

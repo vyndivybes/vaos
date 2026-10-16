@@ -1,0 +1,21 @@
+{
+  "name": "VAOS development (no deployment)",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:22",
+  "forwardPorts": [
+    8787
+  ],
+  "portsAttributes": {
+    "8787": {
+      "label": "VAOS local Worker",
+      "onAutoForward": "notify"
+    }
+  },
+  "postCreateCommand": "npm ci",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode"
+      ]
+    }
+  }
+}

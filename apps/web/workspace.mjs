@@ -1118,7 +1118,7 @@ async function bootstrap() {
     setView(new URL(window.location.href).searchParams.get('view') || 'command', { push: false });
     loading.hidden = true; shell.hidden = false;
     // Announce only after the server has established an authenticated session.
-    document.dispatchEvent(new CustomEvent('vaos-authenticated'));
+    document.dispatchEvent(new CustomEvent('vaos-authenticated',{detail:{email:payload.session.email}}));
   } catch (error) {
     controlPlaneStatus.textContent = 'Control plane unavailable';
     controlPlaneStatus.classList.remove('hero-status--connecting');

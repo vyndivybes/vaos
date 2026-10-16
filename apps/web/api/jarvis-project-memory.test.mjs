@@ -45,3 +45,15 @@ test('R2 is mandatory; corrupt or stale records fail safely without overwriting'
  const f=fixture();f.setObject({etag:'broken',payload:{version:7,notes:[{note:'untrusted'}]}});
  assert.equal((await f.call()).status,503);assert.equal(f.stats().writes,0);
 });
+
+test('browser exposes only explicit save and delete controls and includes loaded notes as unverified conversation context',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8');
+ const ui=await readFile(new URL('../jarvis-multimodal.mjs',import.meta.url),'utf8');
+ for(const id of ['project-cloud-save','project-cloud-refresh','project-cloud-clear','project-cloud-status','project-cloud-list'])assert.ok(html.includes('id="'+id+'"'),id);
+ assert.ok(ui.includes("fetch('/api/jarvis-project-memory'"));
+ assert.ok(ui.includes('mergedMemoryQuestion('));
+ assert.ok(ui.includes('cloudNotes=[]'));
+ assert.ok(ui.includes('confirm('));
+ assert.doesNotMatch(ui,/projectNotes\.list\(\)[^\n]*fetch\('/);
+});

@@ -41,3 +41,5 @@ cloudflare-worker.mjs
 !lib/visual-session-context.mjs
 
 !lib/project-notes.mjs
+
+!lib/founder-voice-identity.mjs

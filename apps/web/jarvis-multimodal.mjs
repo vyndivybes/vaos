@@ -2,6 +2,7 @@ import {createCameraSession,createQuestionDictation} from './lib/live-sense.mjs'
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {createGuidedVisualConversation} from './lib/guided-visual-conversation.mjs';
 import {createVisualSessionContext} from './lib/visual-session-context.mjs';
+import {createProjectNotes} from './lib/project-notes.mjs';
 const $=id=>document.getElementById(id);
 function showPresence(mode,detail=''){
  const modes={
@@ -24,6 +25,24 @@ let autoVisualSession=false;
 let framesInSession=0;
 const MAX_VISUAL_TURNS=12;
 const visualContext=createVisualSessionContext();
+const projectNotes=createProjectNotes({store:typeof localStorage==='undefined'?null:localStorage});
+function refreshProjectNotes(){
+ const notes=projectNotes.list();
+ $('project-note-list').textContent=notes.length?notes.map(x=>x.project+': '+x.note).join(' | '):'No project notes saved on this device.';
+}
+$('project-note-save').addEventListener('click',()=>{
+ try{
+  projectNotes.save($('project-note-project').value,$('project-note').value);
+  $('project-note').value='';refreshProjectNotes();
+  $('status').textContent='Project note saved on this device. No camera content saved.';
+ }catch(error){$('status').textContent='Project note not saved: '+String(error.message);}
+});
+$('project-note-clear').addEventListener('click',()=>{
+ projectNotes.clear();refreshProjectNotes();
+ $('status').textContent='Local JARVIS project notes cleared.';
+});
+refreshProjectNotes();
+
 async function fileHash(source){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await source.arrayBuffer())),v=>v.toString(16).padStart(2,'0')).join('');}
 async function imageDataHash(data){const b64=data.split(',')[1];const bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');}
 async function request(operation,payload,{signal}={}){
@@ -82,7 +101,7 @@ guided=createGuidedVisualConversation({
   framesInSession++;
   const imageSha256=await imageDataHash(image);
   if(!isCurrent())return null;
-  const data=await request('ANALYZE_IMAGE',{image,question:visualContext.question(question)},{signal});
+  const data=await request('ANALYZE_IMAGE',{image,question:projectNotes.context(visualContext.question(question))},{signal});
   if(!isCurrent())return null;
   if(data.actionAuthorized!==false||data.stored!==false||
      data.provenance?.imageSha256!==imageSha256||

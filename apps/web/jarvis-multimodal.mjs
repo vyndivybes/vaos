@@ -91,6 +91,7 @@ guided=createGuidedVisualConversation({
  dictation,
  readback:voiceReadback,
  shouldContinue:()=>autoVisualSession&&$('guided-visual-continue').checked===true&&framesInSession<MAX_VISUAL_TURNS,
+ onCommand:command=>{if(command==='STOP_CAMERA')stopCamera();else syncGuidedControls();},
  onStatus:message=>{$('status').textContent=message;showPresence(/listening/i.test(message)?'LISTENING':/question received|preparing|interpreting|analysis/i.test(message)?'THINKING':/stopped|unavailable|cancelled/i.test(message)?'PAUSED':'IDLE');syncGuidedControls();},
  submitQuestion:async(question,{signal,isCurrent})=>{
   if(!enabled||!isCurrent())return null;

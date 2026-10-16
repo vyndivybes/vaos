@@ -113,7 +113,7 @@ test('guided camera conversation is discoverable and gated by explicit user cont
  assert.ok(html.includes('id="guided-visual-start"'));
  assert.ok(html.includes('id="guided-visual-stop"'));
  assert.ok(html.includes('id="guided-visual-continue"'));
- assert.match(html,/confirm.*camera snapshot|approve.*camera snapshot|per-frame approval/i);
+ assert.match(html,/up to 12 compressed camera frames/i);
  assert.ok(ui.includes('createGuidedVisualConversation'));
  assert.ok(ui.includes("request('ANALYZE_IMAGE'"));
  assert.ok(ui.includes('if(document.visibilityState===\'hidden\')'));

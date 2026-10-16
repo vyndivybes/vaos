@@ -149,6 +149,7 @@ guided=createGuidedVisualConversation({
  dictation,
  readback:voiceReadback,
  shouldContinue:()=>autoVisualSession&&$('guided-visual-continue').checked===true&&framesInSession<MAX_VISUAL_TURNS,
+ onSessionEnd:()=>stopCamera(),
  onCommand:command=>{if(command==='STOP_CAMERA')stopCamera();else syncGuidedControls();},
  onStatus:message=>{$('status').textContent=message;showPresence(/listening/i.test(message)?'LISTENING':/question received|preparing|interpreting|analysis/i.test(message)?'THINKING':/stopped|unavailable|cancelled/i.test(message)?'PAUSED':'IDLE');syncGuidedControls();},
  submitQuestion:async(question,{signal,isCurrent})=>{
@@ -414,6 +415,8 @@ $('analyze').addEventListener('click',async()=>{
     throw Error('Video-sense timestamp provenance was not returned');
    $('result').textContent=data.answer+'\n\nSAMPLED TIMESTAMP OBSERVATIONS (not continuous footage):\n'+
     data.frameObservations.map(x=>x.timestamp+' — '+x.observation).join('\n')+
+    '\n\nUnsampled intervals in seconds: '+JSON.stringify(data.provenance.temporalEvidence?.unsampledIntervals||[])+
+    '\nLargest gap: '+data.provenance.temporalEvidence?.largestGapSeconds+' seconds. Sample times are client-declared; continuous motion is not established.'+
     '\n\nOriginal clip association: client-declared, not server-verified. Transcript: '+
     data.provenance.transcriptAuthority+'. No business records were modified.';
    $('result-panel').hidden=false;$('vedm-panel').hidden=false;

@@ -90,6 +90,12 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
      if(!skill||skill.state!=='tested'||skill.hash!==data.hash||skillHash(skill.definition)!==data.hash)throw error('SKILL_REVIEW_INVALID');
      skill.state='approved';store.saveSkill(skill);return json(res,200,skill);
     }
+    const revokeSkill=path.match(/^\/api\/skills\/([a-f0-9-]{36})\/revoke$/);
+    if(revokeSkill&&req.method==='POST'){
+     const data=await body(req),skill=store.skills().find(s=>s.id===revokeSkill[1]);
+     if(!skill||skill.state!=='approved'||data.hash!==skill.hash)throw error('SKILL_REVIEW_INVALID');
+     skill.state='revoked';store.saveSkill(skill);return json(res,200,skill);
+    }
     if(path==='/api/artifacts'&&req.method==='GET')return json(res,200,store.artifacts());
     const artifactMatch=path.match(/^\/api\/artifacts\/([a-f0-9-]{36}\.(?:docx|xlsx|pdf|bin))$/);
     if(artifactMatch&&req.method==='DELETE'){

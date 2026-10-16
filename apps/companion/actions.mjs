@@ -7,7 +7,7 @@ import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {createWorker} from 'tesseract.js';
 import {pythonOperation} from './python.mjs';
 import {runBrowser} from './browser.mjs';
-import {runSkill} from './forge.mjs';
+import {runSkill,skillHash} from './forge.mjs';
 
 const require=createRequire(import.meta.url);
 const languages=require('@tesseract.js-data/eng');
@@ -79,6 +79,7 @@ export function createActions({dataDir,store,python,modelDir,chromePath,allowLoo
   if(kind==='skill.run'){
    const skill=store.skills().find(s=>s.id===input.id&&s.state==='approved');
    if(!skill)throw Error('SKILL_NOT_APPROVED');
+   if(skill.hash!==skillHash(skill.definition))throw Error('SKILL_REVIEW_INVALID');
    return {text:runSkill(skill.definition,input.text)};
   }
   throw Error('OPERATION_NOT_SUPPORTED');

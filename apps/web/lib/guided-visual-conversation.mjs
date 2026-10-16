@@ -6,14 +6,17 @@
  */
 export function createGuidedVisualConversation({
  isVisible=()=>true,isCameraActive=()=>false,
- dictation,readback,submitQuestion,shouldContinue=()=>false,onStatus=()=>{},onCommand=()=>{}
+ dictation,readback,submitQuestion,shouldContinue=()=>false,onStatus=()=>{},onCommand=()=>{},onSessionEnd=()=>{},
+ schedule=(fn,ms)=>{const timer=setTimeout(fn,ms);timer.unref?.();return timer},clear=id=>clearTimeout(id)
 }={}){
  if(typeof dictation?.start!=='function'||typeof dictation?.stop!=='function'||
     typeof readback?.speak!=='function'||typeof readback?.cancel!=='function'||
     typeof submitQuestion!=='function')throw Error('GUIDED_DEPENDENCIES_REQUIRED');
- let enabled=false,busy=false,epoch=0,pendingAbort=null,awaitingPlayback=false;
+ let enabled=false,busy=false,epoch=0,pendingAbort=null,awaitingPlayback=false,sessionTimer=null,turns=0;
+ function expire(){stop({silent:true});onSessionEnd();onStatus('Visual session limit reached. Camera and microphone stopped; explicitly start a new session.');}
  function stop({silent=false}={}){
   epoch++;enabled=false;busy=false;awaitingPlayback=false;
+  if(sessionTimer!==null)clear(sessionTimer);sessionTimer=null;
   const previous=pendingAbort;pendingAbort=null;
   previous?.abort();
   dictation.stop();readback.cancel();
@@ -21,6 +24,7 @@ export function createGuidedVisualConversation({
  }
  function listen(){
   if(!enabled||busy||awaitingPlayback||!isVisible()||!isCameraActive())return false;
+  if(turns>=12){expire();return false;}
   const started=dictation.start();
   if(!started){stop({silent:true});onStatus('Speech recognition unavailable. You can still type and capture manually.');return false;}
   onStatus('JARVIS listening for one visual question. No image sent yet.');
@@ -31,7 +35,7 @@ export function createGuidedVisualConversation({
    onStatus('Start a visible camera preview before guided voice conversation.');
    return false;
   }
-  enabled=true;epoch++;return listenImmediately?listen():true;
+  enabled=true;epoch++;turns=0;sessionTimer=schedule(expire,300000);return listenImmediately?listen():true;
  }
  async function onTranscript(question){
   if(!enabled||busy||awaitingPlayback)return false;
@@ -45,10 +49,11 @@ export function createGuidedVisualConversation({
   if(typeof question!=='string'||question.trim().length<4||question.length>1000){
    stop();onStatus('Question rejected. Visual conversation stopped.');return false;
   }
-  busy=true;dictation.stop();
+  if(turns>=12){expire();return false;}
+  turns++;busy=true;dictation.stop();
   const turn=++epoch,abort=new AbortController();
   pendingAbort=abort;
-  onStatus('Question received. Approval is required before sending one camera frame.');
+  onStatus('Question received. Preparing one frame within your approved session.');
   try{
    const response=await submitQuestion(question.trim(),{
     signal:abort.signal,
@@ -87,6 +92,7 @@ export function createGuidedVisualConversation({
   if(!enabled||!awaitingPlayback)return false;
   awaitingPlayback=false;
   if(state!=='FINISHED'){stop({silent:true});onStatus('Playback stopped. Microphone will not restart.');return false;}
+  if(turns>=12){expire();return true;}
   if(!shouldContinue()){stop({silent:true});onStatus('Visual question answered. Camera preview remains local; start again for another question.');return true;}
   return listen();
  }

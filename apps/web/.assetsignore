@@ -39,3 +39,5 @@ cloudflare-worker.mjs
 !lib/guided-visual-conversation.mjs
 
 !lib/visual-session-context.mjs
+
+!lib/project-notes.mjs

@@ -43,3 +43,5 @@ cloudflare-worker.mjs
 !lib/project-notes.mjs
 
 !lib/founder-voice-identity.mjs
+
+!lib/engineering-viewer-intents.mjs

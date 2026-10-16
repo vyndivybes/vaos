@@ -37,3 +37,5 @@ cloudflare-worker.mjs
 
 !lib/live-sense.mjs
 !lib/guided-visual-conversation.mjs
+
+!lib/visual-session-context.mjs

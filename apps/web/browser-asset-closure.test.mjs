@@ -10,11 +10,12 @@ const read=async path=>readFile(resolve(root,path),'utf8');
 test('Founder Command and JARVIS browser modules are included in Cloudflare assets',async()=>{
  const ignore=await read('.assetsignore');
  const included=new Set(ignore.split(/\r?\n/).filter(x=>x.startsWith('!lib/')).map(x=>x.slice(1)));
- const html=await read('founder-console.html');
+ const html=(await read('founder-console.html'))+'\n'+(await read('jarvis-multimodal.html'));
  const starters=[...html.matchAll(/<script\b[^>]*type="module"[^>]*src="([^"]+)"/g)]
   .map(x=>x[1].split('?')[0].replace(/^\//,''));
  assert.ok(starters.includes('founder-console.mjs'));
  assert.ok(starters.includes('jarvis-data-agent.mjs'));
+ assert.ok(starters.includes('jarvis-multimodal.mjs'));
  const visited=new Set();
  async function examine(p){
   assert.ok(!p.startsWith('..'),'Browser imports must not escape the static asset root: '+p);
@@ -34,4 +35,6 @@ test('Founder Command and JARVIS browser modules are included in Cloudflare asse
  for(const p of starters)await examine(p);
  assert.ok(visited.has('lib/founder-mission-flow.mjs'));
  assert.ok(visited.has('lib/insight-studio.mjs'));
+ assert.ok(visited.has('lib/live-sense.mjs'));
+ assert.ok(visited.has('lib/guided-visual-conversation.mjs'));
 });

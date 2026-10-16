@@ -3,6 +3,20 @@ import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {createGuidedVisualConversation} from './lib/guided-visual-conversation.mjs';
 import {createVisualSessionContext} from './lib/visual-session-context.mjs';
 const $=id=>document.getElementById(id);
+function showPresence(mode,detail=''){
+ const modes={
+  IDLE:['JARVIS is ready','Start JARVIS to begin a visual conversation.'],
+  LISTENING:['JARVIS is listening','Ask a question about what the camera can see.'],
+  THINKING:['JARVIS is observing','Interpreting a selected camera frame.'],
+  SPEAKING:['JARVIS is speaking','Responding to your visual question.'],
+  PAUSED:['JARVIS is paused','Camera session stopped or audio unavailable.']
+ };
+ const safe=Object.hasOwn(modes,mode)?mode:'IDLE';
+ $('jarvis-presence').dataset.mode=safe;
+ $('jarvis-presence-title').textContent=modes[safe][0];
+ $('jarvis-presence-detail').textContent=detail||modes[safe][1];
+}
+
 let enabled=false,specialistsEnabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null,sourceGeneration=0;
 let guided=null;
 let autoVisualSession=false;
@@ -34,7 +48,7 @@ const voiceReadback=createVoiceReadback({
  synthesis:window.speechSynthesis,
  UtteranceClass:window.SpeechSynthesisUtterance,
  language:()=> 'en-US',
- onState:mode=>{if(mode==='SPEAKING')$('status').textContent='JARVIS is speaking the displayed advisory explanation.';},
+ onState:mode=>{if(mode==='SPEAKING'){showPresence('SPEAKING');$('status').textContent='JARVIS is speaking the displayed advisory explanation.';}},
  onError:code=>{
   $('status').textContent='Browser audio unavailable ('+code+'). The written answer remains visible.';
   guided?.onPlaybackFinished('ERROR');
@@ -57,7 +71,7 @@ guided=createGuidedVisualConversation({
  dictation,
  readback:voiceReadback,
  shouldContinue:()=>autoVisualSession&&$('guided-visual-continue').checked===true&&framesInSession<MAX_VISUAL_TURNS,
- onStatus:message=>{$('status').textContent=message;syncGuidedControls();},
+ onStatus:message=>{$('status').textContent=message;showPresence(/listening/i.test(message)?'LISTENING':/question received|preparing|interpreting|analysis/i.test(message)?'THINKING':/stopped|unavailable|cancelled/i.test(message)?'PAUSED':'IDLE');syncGuidedControls();},
  submitQuestion:async(question,{signal,isCurrent})=>{
   if(!enabled||!isCurrent())return null;
   // Camera start explicitly authorizes a bounded visual session; no separate dialogs.
@@ -92,6 +106,7 @@ $('guided-visual-stop').addEventListener('click',()=>{
 });
 let cameraGeneration=0;
 function stopCamera(){
+ showPresence('IDLE');
  visualContext.clear();
  autoVisualSession=false;
  framesInSession=0;
@@ -115,6 +130,7 @@ $('camera-start').addEventListener('click',async()=>{
   const visible=await camera.start();
   if(!visible||document.visibilityState==='hidden'){stopCamera();return;}
   cameraPreview.hidden=false;
+  showPresence('THINKING');
   $('camera-stop').disabled=false;
   $('camera-capture').disabled=false;
   syncGuidedControls();

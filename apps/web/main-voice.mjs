@@ -10,6 +10,7 @@ import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone-diagnostics.mjs';
 import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
 import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
+import {founderLoginGreeting} from './lib/founder-voice-identity.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
@@ -222,6 +223,7 @@ function init(){
  let localSpeech=null,interruption=null;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
  let pendingReminderTitle=null;
+ let authenticatedFounder=false,loginWelcome='';
  const g5Timing=createG5ResponseTiming();
  // The paired local speech tool supplies a draft only. The user still presses
  // Ask, and the existing classifier and read-only routes retain authority.
@@ -232,9 +234,23 @@ function init(){
  });
  const conversation=createG6Conversation();
  // Show the authenticated welcome without requesting microphone or audio permission.
- document.addEventListener('vaos-authenticated',()=>{
-  const welcome='Welcome back. I am JARVIS, your VAOS assistant. I am ready to discuss your company, projects, engineering and today\'s priorities. To start a continuous spoken conversation, enable hands-free voice once. Say Stop whenever you want me to stop listening.';
-  if(!busy&&!lastAnswer){lastAnswer=welcome;spokenAnswer=welcome;answer.textContent=welcome;setStatus('JARVIS online · Type below or enable hands-free for a continuing conversation.');state();}
+ document.addEventListener('vaos-authenticated',event=>{
+  const signedEmail=event?.detail?.email;
+  authenticatedFounder=typeof signedEmail==='string'&&signedEmail.toLowerCase()==='shyamsundhar1982@gmail.com';
+  const founderGreeting=founderLoginGreeting({email:signedEmail,hour:new Date().getHours()});
+  const welcome=founderGreeting||'Welcome back. I am JARVIS, your VAOS assistant. I am ready to discuss your company, projects, engineering and today\'s priorities. To start a continuous spoken conversation, enable hands-free voice once. Say Stop whenever you want me to stop listening.';
+  if(!busy&&!lastAnswer){
+   loginWelcome=welcome;
+   lastAnswer=welcome;spokenAnswer=welcome;answer.textContent=welcome;
+   setStatus(authenticatedFounder?'Welcome back, Sir! JARVIS is ready.':'JARVIS online · Type below or enable hands-free for a continuing conversation.');
+   state();
+   // Signed-in founder requested a spoken greeting. No microphone/camera is opened.
+   // A browser may block automatic audio; Replay answer remains available.
+   if(authenticatedFounder&&speakToggle?.checked===true){
+    const queued=player.speak(welcome);
+    if(!queued)setStatus('Welcome back, Sir. Select Replay answer to hear the greeting.');
+   }
+  }
  });
  const setStatus=message=>{
   note.textContent=message;
@@ -253,6 +269,7 @@ function init(){
  const acknowledgement=createVoiceAcknowledgement({
   synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
   outputBusy:()=>player.active(),
+  isFounder:()=>authenticatedFounder,
   onError:()=>setStatus('JARVIS acknowledgement could not play. Check browser audio; you can still type or use the microphone.'),
   onFinished:phase=>{
    // Do not re-capture JARVIS's wake acknowledgement as a new user question.
@@ -269,7 +286,7 @@ function init(){
   ask.disabled=busy;
   if(wakeToggle)wakeToggle.disabled=!micState.mayListen;
   stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
-  speech.disabled=!lastAnswer||!voiceEnabled||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
+  speech.disabled=!lastAnswer||(!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
  // One consented, local-only microphone at a time during synthesized speech.
  // Re-arm bounded short windows on long replies while playback is active.
  const ondeviceBarge=createG6BargeInListener({
@@ -315,7 +332,7 @@ function init(){
   busy=false;state();
  };
  const speakAnswer=()=>{
-  if(!voiceEnabled||!lastAnswer)return false;
+  if((!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!lastAnswer)return false;
   acknowledgement.cancel();
   wake?.pause();
   stopInterruption();

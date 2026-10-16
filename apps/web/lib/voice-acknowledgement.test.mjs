@@ -70,3 +70,28 @@ test('silently stalled wake playback exits safely rather than keeping the microp
  assert.deepEqual(finished,[['WAKE_READY','ACK_AUDIO_NOT_STARTED']]);
  assert.equal(ack.active(),false);
 });
+
+test('founder login greeting is enthusiastic, time-aware and strictly gated by server-authenticated founder email',async()=>{
+ const {founderLoginGreeting}=await import('./founder-voice-identity.mjs');
+ assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:8}),/^Good morning, Sir!/);
+ assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:14}),/^Good afternoon, Sir!/);
+ assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:20}),/^Good evening, Sir!/);
+ assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:8}),/welcome back/i);
+ assert.equal(founderLoginGreeting({email:'other@example.com',hour:8}),'');
+ assert.equal(founderLoginGreeting({email:undefined,hour:8}),'');
+});
+test('Hey JARVIS addresses an authenticated founder as Sir without asserting biometric recognition',()=>{
+ assert.equal(voiceAcknowledgementText('WAKE_READY'),'Yes, I am listening.');
+ assert.equal(voiceAcknowledgementText('WAKE_READY',{founder:true}),'Yes, Sir. I am listening.');
+ assert.doesNotMatch(voiceAcknowledgementText('WAKE_READY',{founder:true}),/recognized your face|recognized your voice|biometric/i);
+});
+test('workspace login event conveys validated session email and voice starts greeting without microphone capture',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const workspace=await readFile(new URL('../workspace.mjs',import.meta.url),'utf8');
+ const main=await readFile(new URL('../main-voice.mjs',import.meta.url),'utf8');
+ assert.match(workspace,/CustomEvent\('vaos-authenticated',\s*\{detail:\s*\{email:\s*payload\.session\.email\}\}\)/);
+ assert.match(main,/founderLoginGreeting\(/);
+ assert.match(main,/player\.speak\(welcome\)/);
+ assert.match(main,/speakToggle\?\.checked/);
+ assert.doesNotMatch(main,/vaos-authenticated[^\n]*getUserMedia/);
+});

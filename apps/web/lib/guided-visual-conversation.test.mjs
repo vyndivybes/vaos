@@ -92,6 +92,20 @@ test('declined snapshot and failed microphone never trigger background analysis'
  assert.equal(calls,1);
 });
 
+test('camera start controls offer automatic first spoken observation with a bounded AI frame budget',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8');
+ const ui=await readFile(new URL('../jarvis-multimodal.mjs',import.meta.url),'utf8');
+ assert.match(html,/>Start JARVIS</);
+ assert.match(html,/>Stop JARVIS</);
+ assert.match(html,/up to 12 compressed camera frames/);
+ assert.match(ui,/MAX_VISUAL_TURNS=12/);
+ assert.match(ui,/framesInSession\+\+/);
+ assert.match(ui,/guided\.onTranscript\('Describe what is visible/);
+ assert.match(ui,/autoVisualSession=false/);
+ assert.ok(ui.includes("document.visibilityState==='hidden'"));
+});
+
 test('guided camera conversation is discoverable and gated by explicit user controls',async()=>{
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8');
@@ -99,7 +113,7 @@ test('guided camera conversation is discoverable and gated by explicit user cont
  assert.ok(html.includes('id="guided-visual-start"'));
  assert.ok(html.includes('id="guided-visual-stop"'));
  assert.ok(html.includes('id="guided-visual-continue"'));
- assert.match(html,/confirm.*camera snapshot|approve.*camera snapshot|per-frame approval/i);
+ assert.match(html,/up to 12 compressed camera frames/i);
  assert.ok(ui.includes('createGuidedVisualConversation'));
  assert.ok(ui.includes("request('ANALYZE_IMAGE'"));
  assert.ok(ui.includes('if(document.visibilityState===\'hidden\')'));

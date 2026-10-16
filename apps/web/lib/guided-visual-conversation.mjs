@@ -26,12 +26,12 @@ export function createGuidedVisualConversation({
   onStatus('JARVIS listening for one visual question. No image sent yet.');
   return true;
  }
- function start(){
+ function start({listenImmediately=true}={}){
   if(enabled||busy||!isVisible()||!isCameraActive()){
    onStatus('Start a visible camera preview before guided voice conversation.');
    return false;
   }
-  enabled=true;epoch++;return listen();
+  enabled=true;epoch++;return listenImmediately?listen():true;
  }
  async function onTranscript(question){
   if(!enabled||busy||awaitingPlayback)return false;

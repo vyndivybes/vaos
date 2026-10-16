@@ -4,6 +4,9 @@ import {createGuidedVisualConversation} from './lib/guided-visual-conversation.m
 const $=id=>document.getElementById(id);
 let enabled=false,specialistsEnabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null,sourceGeneration=0;
 let guided=null;
+let autoVisualSession=false;
+let framesInSession=0;
+const MAX_VISUAL_TURNS=12;
 async function fileHash(source){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await source.arrayBuffer())),v=>v.toString(16).padStart(2,'0')).join('');}
 async function imageDataHash(data){const b64=data.split(',')[1];const bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');}
 async function request(operation,payload,{signal}={}){
@@ -51,14 +54,15 @@ guided=createGuidedVisualConversation({
  isVisible:()=>document.visibilityState!=='hidden',
  dictation,
  readback:voiceReadback,
- shouldContinue:()=>$('guided-visual-continue').checked===true,
+ shouldContinue:()=>autoVisualSession&&$('guided-visual-continue').checked===true&&framesInSession<MAX_VISUAL_TURNS,
  onStatus:message=>{$('status').textContent=message;syncGuidedControls();},
  submitQuestion:async(question,{signal,isCurrent})=>{
   if(!enabled||!isCurrent())return null;
-  // Each spoken question needs independent consent for a fresh image.
-  if(!confirm('Share ONE camera snapshot for this spoken question? Only the compressed image and question are sent to Workers AI. No microphone audio or continuous video is sent.'))return null;
+  // Camera start explicitly authorizes a bounded visual session; no separate dialogs.
+  if(!autoVisualSession||framesInSession>=MAX_VISUAL_TURNS)return null;
   if(!isCurrent())return null;
   const image=camera.capture();
+  framesInSession++;
   const imageSha256=await imageDataHash(image);
   if(!isCurrent())return null;
   const data=await request('ANALYZE_IMAGE',{image,question},{signal});
@@ -85,6 +89,8 @@ $('guided-visual-stop').addEventListener('click',()=>{
 });
 let cameraGeneration=0;
 function stopCamera(){
+ autoVisualSession=false;
+ framesInSession=0;
  guided?.stop({silent:true});
  cameraGeneration++;
  camera.stop();
@@ -98,6 +104,8 @@ $('camera-start').addEventListener('click',async()=>{
  if(!enabled){$('status').textContent='Multimodal pilot is not enabled for this session.';return;}
  if(window.isSecureContext===false){$('status').textContent='Camera needs HTTPS or a secure local browser context.';return;}
  const button=$('camera-start');button.disabled=true;
+ autoVisualSession=true;
+ framesInSession=0;
  try{
   const visible=await camera.start();
   if(!visible||document.visibilityState==='hidden'){stopCamera();return;}
@@ -105,6 +113,13 @@ $('camera-start').addEventListener('click',async()=>{
   $('camera-stop').disabled=false;
   $('camera-capture').disabled=false;
   syncGuidedControls();
+  // One camera-start gesture authorizes the first narrated frame and follow-up Q&A.
+  if(guided.start({listenImmediately:false})){
+   syncGuidedControls();
+   void guided.onTranscript('Describe what is visible in this camera view in a warm, concise sentence. Invite me to ask a follow-up. Do not guess.');
+  }else{
+   $('status').textContent='Camera active. Voice unavailable; use Capture & analyze frame or type a question.';
+  }
  }catch(error){
   stopCamera();
   $('status').textContent='Camera could not start. Check browser camera permission and close other camera apps.';

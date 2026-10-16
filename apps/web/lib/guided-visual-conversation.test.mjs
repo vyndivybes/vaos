@@ -119,3 +119,25 @@ test('guided camera conversation is discoverable and gated by explicit user cont
  assert.ok(ui.includes('if(document.visibilityState===\'hidden\')'));
  assert.match(ui,/pagehide/);
 });
+
+test('interrupting active speech starts the next listening turn without closing the camera',async()=>{
+ let listens=0,cancelled=0;
+ const guided=createGuidedVisualConversation({
+  isCameraActive:()=>true,isVisible:()=>true,
+  dictation:{start(){listens++;return true},stop(){}},
+  readback:{speak(){return true},cancel(){cancelled++;}},
+  submitQuestion:async()=>({spokenText:'I can see a wheel'}),
+  shouldContinue:()=>true
+ });
+ assert.equal(guided.start(),true);
+ await guided.onTranscript('Tell me about the view');
+ assert.equal(listens,1);
+ assert.equal(guided.interruptSpeech(),true);
+ assert.equal(listens,2);
+ assert.equal(guided.active(),true);
+ assert.ok(cancelled>=1);
+ guided.onPlaybackFinished('FINISHED');
+ assert.equal(listens,2,'stale playback callback cannot start duplicate listening');
+ guided.stop();
+ assert.equal(guided.interruptSpeech(),false);
+});

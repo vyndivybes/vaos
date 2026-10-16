@@ -68,6 +68,14 @@ export function createGuidedVisualConversation({
    if(epoch===turn)busy=false;
   }
  }
+ function interruptSpeech(){
+  if(!enabled||!awaitingPlayback||busy||!isVisible()||!isCameraActive())return false;
+  // Invalidate pending playback callbacks before cancelling the synthesizer.
+  awaitingPlayback=false;
+  readback.cancel();
+  onStatus('JARVIS interrupted. Listening for your next question.');
+  return listen();
+ }
  function onPlaybackFinished(state){
   if(!enabled||!awaitingPlayback)return false;
   awaitingPlayback=false;
@@ -75,5 +83,5 @@ export function createGuidedVisualConversation({
   if(!shouldContinue()){stop({silent:true});onStatus('Visual question answered. Camera preview remains local; start again for another question.');return true;}
   return listen();
  }
- return Object.freeze({start,stop,onTranscript,onPlaybackFinished,active:()=>enabled,busy:()=>busy});
+ return Object.freeze({start,stop,onTranscript,interruptSpeech,onPlaybackFinished,active:()=>enabled,busy:()=>busy});
 }

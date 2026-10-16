@@ -54,7 +54,7 @@ guided=createGuidedVisualConversation({
  isVisible:()=>document.visibilityState!=='hidden',
  dictation,
  readback:voiceReadback,
- shouldContinue:()=>autoVisualSession&&framesInSession<MAX_VISUAL_TURNS,
+ shouldContinue:()=>autoVisualSession&&$('guided-visual-continue').checked===true&&framesInSession<MAX_VISUAL_TURNS,
  onStatus:message=>{$('status').textContent=message;syncGuidedControls();},
  submitQuestion:async(question,{signal,isCurrent})=>{
   if(!enabled||!isCurrent())return null;
@@ -114,7 +114,7 @@ $('camera-start').addEventListener('click',async()=>{
   $('camera-capture').disabled=false;
   syncGuidedControls();
   // One camera-start gesture authorizes the first narrated frame and follow-up Q&A.
-  if(guided.start()){
+  if(guided.start({listenImmediately:false})){
    syncGuidedControls();
    void guided.onTranscript('Describe what is visible in this camera view in a warm, concise sentence. Invite me to ask a follow-up. Do not guess.');
   }else{

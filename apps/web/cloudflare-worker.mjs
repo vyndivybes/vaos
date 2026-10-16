@@ -37,6 +37,7 @@ import workforceAnalytics from './api/workforce-analytics.mjs';
 import vyndiDepartmentReport from './api/vyndi-department-report.mjs';
 import financeScorecard from './api/finance-scorecard.mjs';
 import enterpriseBi from './api/enterprise-bi.mjs';
+import dashboards from './api/dashboards.mjs';
 import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
 import founderChat from './api/founder-chat.mjs';
@@ -118,6 +119,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/vyndi-department-report': vyndiDepartmentReport,
   '/api/finance-scorecard': financeScorecard,
   '/api/enterprise-bi': enterpriseBi,
+  '/api/dashboards': dashboards,
   '/api/founder-inbox': founderInbox,
   '/api/founder-agent-report': founderAgentReport,
   '/api/founder-chat': founderChat,

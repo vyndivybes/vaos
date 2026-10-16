@@ -28,6 +28,7 @@ export function createSupabaseControlStore({
   }
 
   return Object.freeze({
+    dashboards(input) { return invoke('dashboards', input); },
     prelaunchOutput(input) { return invoke('prelaunchOutput', input); },
     prelaunchRecovery(actorEmail) { return invoke('prelaunchRecovery', {actorEmail}); },
     founderWorkforceOverview(actorEmail) { return invoke('founderWorkforceOverview', { actorEmail }); },

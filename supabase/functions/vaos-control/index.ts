@@ -67,7 +67,10 @@ Deno.serve(async (req: Request) => {
   let rpcName = ''
   let args: Record<string, unknown> = {}
 
-  if (operation === 'founderWorkforceOverview') {
+  if (operation === 'dashboards') {
+    rpcName = 'vaos_dashboard_definitions'
+    args = {p_server_key:serverKey,p_actor_email:payload.actorEmail,p_action:payload.action,p_id:payload.id,p_revision:payload.revision || 0,p_visibility:payload.visibility || 'private',p_definition:payload.definition || null}
+  } else if (operation === 'founderWorkforceOverview') {
     rpcName = 'vaos_founder_workforce_overview'
     args = { p_server_key: serverKey, p_actor_email: payload.actorEmail }
   } else if (operation === 'founderInboxAppend') {

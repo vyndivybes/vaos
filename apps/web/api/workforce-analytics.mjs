@@ -28,7 +28,12 @@ export function createWorkforceAnalyticsHandler({getStore=defaultStore}={}){
    const data=buildWorkforceAnalytics(await getStore(req.env).founderWorkforceOverview(session.email));
    const evidencePriorities=evaluateEmployeeEvidencePriorities({employees:data.employees,actionAuthorized:false});
    const commissioningBoard=buildWorkforceCommissioningBoard(data);
-   return res.status(200).json({data:{...data,evidencePriorities,commissioningBoard,vyndiAnalyticsSources:buildVyndiAnalyticsSourceMap()}});
+   return res.status(200).json({data:{...data,evidencePriorities,commissioningBoard,vyndiAnalyticsSources:buildVyndiAnalyticsSourceMap(),query:{
+    id:'vaos_founder_workforce_overview',readOnly:true,
+    sql:'select public.vaos_founder_workforce_overview($1::text, $2::text);',
+    parameters:['[server authentication key redacted]',session.email],
+    note:'Inspectable equivalent of the existing Supabase RPC. Uses independent handoff verification; never accepts client SQL.'
+   }}});
   }catch{
    return res.status(503).json(apiError('WORKFORCE_ANALYTICS_UNAVAILABLE',
     'Verified workforce source or founder analytics migration unavailable'));

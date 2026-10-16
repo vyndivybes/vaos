@@ -41,6 +41,7 @@ import founderInbox from './api/founder-inbox.mjs';
 import founderAgentReport from './api/founder-agent-report.mjs';
 import founderChat from './api/founder-chat.mjs';
 import jarvisMultimodal from './api/jarvis-multimodal.mjs';
+import jarvisProjectMemory from './api/jarvis-project-memory.mjs';
 import prelaunchWorkforce from './api/prelaunch-workforce.mjs';
 import prelaunchRecovery from './api/prelaunch-recovery.mjs';
 import founderConversation from './api/founder-conversation.mjs';
@@ -121,6 +122,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/founder-agent-report': founderAgentReport,
   '/api/founder-chat': founderChat,
   '/api/jarvis-multimodal': jarvisMultimodal,
+  '/api/jarvis-project-memory': jarvisProjectMemory,
   '/api/founder-conversation': founderConversation,
   '/api/voice-capabilities': voiceCapabilities,
   '/api/voice-discover': voiceDiscover,

@@ -1,12 +1,14 @@
 import {createCameraSession,createQuestionDictation} from './lib/live-sense.mjs';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {createGuidedVisualConversation} from './lib/guided-visual-conversation.mjs';
+import {createVisualSessionContext} from './lib/visual-session-context.mjs';
 const $=id=>document.getElementById(id);
 let enabled=false,specialistsEnabled=false,file=null,frameUrl=null,converted='',sourceHash=null,lastFrame=null,documentSource=null,sourceGeneration=0;
 let guided=null;
 let autoVisualSession=false;
 let framesInSession=0;
 const MAX_VISUAL_TURNS=12;
+const visualContext=createVisualSessionContext();
 async function fileHash(source){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',await source.arrayBuffer())),v=>v.toString(16).padStart(2,'0')).join('');}
 async function imageDataHash(data){const b64=data.split(',')[1];const bytes=Uint8Array.from(atob(b64),ch=>ch.charCodeAt(0));return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');}
 async function request(operation,payload,{signal}={}){
@@ -65,12 +67,13 @@ guided=createGuidedVisualConversation({
   framesInSession++;
   const imageSha256=await imageDataHash(image);
   if(!isCurrent())return null;
-  const data=await request('ANALYZE_IMAGE',{image,question},{signal});
+  const data=await request('ANALYZE_IMAGE',{image,question:visualContext.question(question)},{signal});
   if(!isCurrent())return null;
   if(data.actionAuthorized!==false||data.stored!==false||
      data.provenance?.imageSha256!==imageSha256||
      typeof data.answer!=='string'||data.answer.length>5000)
    throw Error('Snapshot provenance or read-only authority was not verified.');
+  visualContext.record(question,data.answer);
   $('result').textContent='Visual question: '+question+'\n\n'+data.answer+
    '\n\nOne consented frame SHA-256: '+imageSha256+'. No business changes.';
   $('result-panel').hidden=false;
@@ -89,6 +92,7 @@ $('guided-visual-stop').addEventListener('click',()=>{
 });
 let cameraGeneration=0;
 function stopCamera(){
+ visualContext.clear();
  autoVisualSession=false;
  framesInSession=0;
  guided?.stop({silent:true});
@@ -105,6 +109,7 @@ $('camera-start').addEventListener('click',async()=>{
  if(window.isSecureContext===false){$('status').textContent='Camera needs HTTPS or a secure local browser context.';return;}
  const button=$('camera-start');button.disabled=true;
  autoVisualSession=true;
+ visualContext.clear();
  framesInSession=0;
  try{
   const visible=await camera.start();

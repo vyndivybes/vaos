@@ -38,3 +38,15 @@ test('JARVIS visual UI stores memory only in session and labels it accurately',a
  assert.match(ui,/visualContext\.record\(/);
  assert.match(html,/short-term visual context/i);
 });
+
+test('expressive JARVIS visual presence exposes distinct accessible listening and speaking states',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const ui=await readFile(new URL('../jarvis-multimodal.mjs',import.meta.url),'utf8');
+ const html=await readFile(new URL('../jarvis-multimodal.html',import.meta.url),'utf8');
+ assert.ok(html.includes('id="jarvis-presence"'));
+ assert.ok(html.includes('aria-live="polite"'));
+ for(const mode of ['IDLE','LISTENING','THINKING','SPEAKING','PAUSED'])assert.ok(ui.includes(mode+':'),mode);
+ assert.match(ui,/showPresence\('SPEAKING'\)/);
+ assert.match(ui,/showPresence\('IDLE'\)/);
+ assert.match(html,/prefers-reduced-motion/);
+});

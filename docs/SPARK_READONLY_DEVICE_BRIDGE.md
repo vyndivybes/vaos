@@ -9,7 +9,7 @@ In the Cloudflare Worker environment, configure:
 - `VAOS_SPARK_DEVICE_ID=spark-windows-1` (choose a unique lowercase device name)
 - `VAOS_SPARK_BRIDGE_TOKEN` as a Cloudflare encrypted secret: a strong random string of at least 32 characters, **never checked into Git**.
 
-Configure the same device ID and token on the SPARK machine as `SPARK_JARVIS_DEVICE_ID` and `SPARK_JARVIS_TOKEN`. Set `SPARK_JARVIS_URL` to the authoritative HTTPS Worker origin. Do not put these values in Electron, HTML, browser storage, repository settings, or chat logs.
+Configure the same device ID and token only in SPARK's ignored Python `backend/.env` as `SPARK_JARVIS_DEVICE_ID` and `SPARK_JARVIS_TOKEN`. Do not place the remote token into the Electron process environment. Set `SPARK_JARVIS_URL` to the authoritative HTTPS Worker origin. Do not put these values in Electron, HTML, browser storage, repository settings, or chat logs.
 
 Rotate the secret on both sides to revoke old clients. Disable the bridge by removing the control flag or secret. For now, **one paired device** is supported.
 

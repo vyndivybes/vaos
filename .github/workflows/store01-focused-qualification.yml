@@ -1,0 +1,24 @@
+name: Store 01 focused qualification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/store01-focused-qualification.yml'
+      - 'integrations/vyndios/store01-intake-planner.test.mjs'
+      - 'integrations/vyndios/store01-intake-planner.mjs'
+      - 'docs/STORE01-VAOS-INTEGRATION.md'
+      - 'package.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  store01-unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Store 01 non-actuating regression
+        run: node --test integrations/vyndios/store01-intake-planner.test.mjs

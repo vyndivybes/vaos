@@ -86,3 +86,28 @@ test('source tool mutation is never available even when discovered',async()=>{
   await reader.getUser(context);
   assert.equal(calls.some(x=>x.params?.name==='share_meeting'),false);
 });
+
+test('streamable HTTP SSE replies are parsed without following external URLs',async()=>{
+  const calls=[];
+  const transport={async request({url,headers,body}) {
+    const req=JSON.parse(body);calls.push(req.method);
+    if(req.method==='notifications/initialized')return {status:202,headers:{},body:null};
+    let result=req.method==='initialize'?{capabilities:{tools:{}}}
+      :req.method==='tools/list'?{tools:[{name:'fireflies_get_summary'}]}
+      :{content:[{type:'text',text:'{"overview":"Read-only summary"}'}]};
+    const event='event: message\\ndata: '+JSON.stringify({jsonrpc:'2.0',id:req.id,result})+'\\n\\n';
+    return {status:200,headers:{'content-type':'text/event-stream'},body:event};
+  }};
+  const reader=createFirefliesMcpReader({enabled:true,transport,
+    resolveCredential:async()=>({accessToken:'test-secret',accountId:context.accountId}),
+    authorize:async()=>true,reserveQuota:async()=>true});
+  const response=await reader.getSummary(context,'meeting-1');
+  assert.equal(response.operation,'getSummary');
+  assert.ok(calls.includes('tools/call'));
+});
+test('quota admission is required separately for every MCP protocol request',async()=>{
+  let reservations=0;
+  const {reader}=client({reserveQuota:async()=>{reservations++;return reservations<=3}});
+  await assert.rejects(()=>reader.getUser(context),/FIREFLIES_DAILY_QUOTA_BLOCKED/);
+  assert.equal(reservations,4);
+});

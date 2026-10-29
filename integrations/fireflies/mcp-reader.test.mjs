@@ -62,8 +62,8 @@ test('disabled, missing authorization, mismatched account and missing quota all 
 
 test('invalid search and transcript ids are rejected before network access',async()=>{
   const {reader,calls}=client();
-  await assert.rejects(()=>reader.searchMeetings(context,{limit:51}),/FIREFLIES_INPUT_INVALID/);
-  await assert.rejects(()=>reader.getSummary(context,'../../escape'),/FIREFLIES_INPUT_INVALID/);
+  assert.throws(()=>reader.searchMeetings(context,{limit:51}),/FIREFLIES_INPUT_INVALID/);
+  assert.throws(()=>reader.getSummary(context,'../../escape'),/FIREFLIES_INPUT_INVALID/);
   assert.equal(calls.length,0);
 });
 

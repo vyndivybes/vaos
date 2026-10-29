@@ -35,3 +35,10 @@ References:
 - https://docs.openclaw.ai/tools/mcp
 - `integrations/provider-manifest-v2.schema.json`
 - `mcp/README.md`
+
+## Implementation update (29 October 2026)
+
+`mcp-reader.mjs` now implements the read-only remote Fireflies Streamable HTTP session, tool discovery, bounded search, summary retrieval and identity reads, with explicit actor/tenant authorization, account matching, secret-broker and atomic shared-quota ports. It supports MCP JSON and SSE responses. `mcp-reader.test.mjs` covers protocol, permission and failure gates.
+
+**Do not confuse a library with production integration:** no VAOS API route, live Fireflies credential, production secret-binding instance, shared quota service, end-user H5 mapping or deployed endpoint was commissioned. `enabled` in the provider manifest intentionally remains false. Production activation must separately wire the authorization, secret broker and atomic shared provider quota, execute the Node test suite, verify identity and smoke-test with a consented meeting, then obtain release approval. The isolated JS tests run so far are not the full project CI.
+

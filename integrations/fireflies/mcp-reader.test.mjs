@@ -95,7 +95,7 @@ test('streamable HTTP SSE replies are parsed without following external URLs',as
     let result=req.method==='initialize'?{capabilities:{tools:{}}}
       :req.method==='tools/list'?{tools:[{name:'fireflies_get_summary'}]}
       :{content:[{type:'text',text:'{"overview":"Read-only summary"}'}]};
-    const event='event: message\\ndata: '+JSON.stringify({jsonrpc:'2.0',id:req.id,result})+'\\n\\n';
+    const event='event: message\ndata: '+JSON.stringify({jsonrpc:'2.0',id:req.id,result})+'\n\n';
     return {status:200,headers:{'content-type':'text/event-stream'},body:event};
   }};
   const reader=createFirefliesMcpReader({enabled:true,transport,

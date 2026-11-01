@@ -1,0 +1,23 @@
+name: VAOS Finance BI foundation qualification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'intelligence/financial-scorecard.mjs'
+      - 'intelligence/financial-scorecard.test.mjs'
+      - 'intelligence/financial-intelligence.test.mjs'
+      - 'apps/web/financial-performance.mjs'
+      - '.github/workflows/finance-bi-foundation.yml'
+permissions:
+  contents: read
+jobs:
+  signed-finance-projection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Signed and reconciled finance projection tests
+        run: node --test intelligence/financial-scorecard.test.mjs intelligence/financial-intelligence.test.mjs

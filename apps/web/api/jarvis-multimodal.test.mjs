@@ -230,7 +230,7 @@ test('pasted Legal and Marketing entrypoints are independent of the multimodal c
 const frameHash=async data=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',
  Uint8Array.from(atob(data.split(',')[1]),x=>x.charCodeAt(0)))),x=>x.toString(16).padStart(2,'0')).join('');
 
-test('video sense reports server-verified sampled timestamps without persisting or dispatching',async()=>{
+test('video sense reports client-declared timestamps with server-verified images without persisting or dispatching',async()=>{
  const h=harness(),hash=await frameHash(image);
  const video={sourceSha256:'f'.repeat(64),durationSeconds:20,frames:[
   {timeSeconds:1,image,imageSha256:hash},
@@ -247,12 +247,16 @@ test('video sense reports server-verified sampled timestamps without persisting 
  assert.equal(a.body.data.frameObservations.length,3);
  assert.deepEqual(a.body.data.frameObservations.map(x=>x.timestamp),['00:01','00:08','00:15']);
  assert.equal(a.body.data.provenance.temporalCoverage,'SPARSE_SAMPLED_FRAMES_ONLY');
+ assert.equal(a.body.data.provenance.temporalEvidence.timestampAuthority,'CLIENT_DECLARED_NOT_VIDEO_VERIFIED');
+ assert.equal(a.body.data.provenance.temporalEvidence.largestGapSeconds,7);
+ assert.deepEqual(a.body.data.provenance.temporalEvidence.unsampledIntervals,[{from:0,to:1},{from:1,to:8},{from:8,to:15},{from:15,to:20}]);
  assert.equal(a.body.data.provenance.originalVideoHashAuthority,'CLIENT_DECLARED_LOCAL_FILE');
  assert.equal(a.body.data.provenance.frameImageHashAuthority,'SERVER_SHA256_MATCHED');
  assert.equal(a.body.data.provenance.transcriptAuthority,'USER_PASTED_UNVERIFIED');
  assert.equal(h.invocations.length,4,'three frame reads followed by one bounded synthesis');
  assert.ok(h.invocations.slice(0,3).every(x=>x.input.messages[1].content.some(z=>z.type==='image_url')));
  assert.equal(h.invocations[3].input.messages[1].content.includes('unverified narrator'),true);
+ assert.match(h.invocations[3].input.messages[1].content,/TEMPORAL GAPS/);
  assert.equal(JSON.stringify(a.body).includes(image),false,'frame images are never echoed');
 });
 

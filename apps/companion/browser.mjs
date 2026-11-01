@@ -18,9 +18,22 @@ export async function validateBrowserTarget(value,{lookupHost=lookup,allowLoopba
  if(!addresses.length||addresses.some(x=>!publicAddress(x.address)&&!(allowLoopbackForTests&&x.address==='127.0.0.1')))throw Error('BROWSER_PRIVATE_ADDRESS_DENIED');
  return {url,ip:addresses[0].address};
 }
+// Reviewed network permission is deliberately limited to exact, query-free POST paths.
+export function validateWritePaths(paths=[]){
+ if(!Array.isArray(paths)||paths.length>4||new Set(paths).size!==paths.length||paths.some(p=>typeof p!=='string'||p.length>200||!/^\/[a-zA-Z0-9_/-]*$/.test(p)||p.startsWith('//')||p.includes('..')))throw Error('BROWSER_WRITE_PATHS_INVALID');
+ return [...paths];
+}
+export function browserRequestAllowed({url,method,origin,writePaths=[],active=false}){
+ const target=new URL(url);
+ if(target.origin!==origin||!['https:','http:'].includes(target.protocol))return false;
+ return ['GET','HEAD'].includes(method)||(active&&method==='POST'&&!target.search&&writePaths.includes(target.pathname));
+}
 export async function runBrowser(input,{signal,artifactPath,artifactId,executablePath=process.env.VAOS_CHROME_PATH,allowLoopbackForTests=false}={}){
  const {url,ip}=await validateBrowserTarget(input.url,{allowLoopbackForTests});
  const steps=input.steps||[];
+ const writePaths=validateWritePaths(input.writePaths);
+ let activeStep=false;
+ const remainingWrites=new Set(writePaths);
  if(!Array.isArray(steps)||steps.length>8)throw Error('BROWSER_STEPS_INVALID');
  for(const step of steps){
   if(!['fill','click','download'].includes(step.action)||typeof (step.selector||step.target)!=='string'||(step.selector||step.target).length>300)throw Error('BROWSER_STEP_INVALID');
@@ -38,20 +51,20 @@ export async function runBrowser(input,{signal,artifactPath,artifactId,executabl
   await context.routeWebSocket('**/*',socket=>socket.close());
   await context.route('**/*',route=>{
    const request=route.request(),target=new URL(request.url());
-   if(target.origin!==url.origin||!['http:','https:'].includes(target.protocol))return route.abort();
-   if(!steps.length&&!['GET','HEAD'].includes(request.method()))return route.abort();
+   if(!browserRequestAllowed({url:target.href,method:request.method(),origin:url.origin,writePaths:[...remainingWrites],active:activeStep}))return route.abort();
+   if(request.method()==='POST')remainingWrites.delete(target.pathname);
    return route.continue();
   });
   const page=await context.newPage();
   page.setDefaultTimeout(15000);
-  const response=await page.goto(url.href,{waitUntil:'domcontentloaded',timeout:25000});
+  const response=await page.goto(url.href,{waitUntil:'networkidle',timeout:25000});
   if(!response?.ok())throw Error('BROWSER_PAGE_FAILED');
   let downloadResult=null;
   for(const step of steps){
    if(signal?.aborted)throw Error('CANCELLED');
    const locator=step.selector?page.locator(step.selector):step.targetType==='label'?page.getByLabel(step.target,{exact:true}):page.getByRole(step.targetType,{name:step.target,exact:true});
    if(step.action==='fill')await locator.fill(step.value);
-   if(step.action==='click')await locator.click();
+   if(step.action==='click'){activeStep=true;try{await locator.click();await page.waitForLoadState('networkidle',{timeout:5000});}finally{activeStep=false;}}
    if(step.action==='download'){
     const event=page.waitForEvent('download');
     await locator.click();
@@ -61,6 +74,6 @@ export async function runBrowser(input,{signal,artifactPath,artifactId,executabl
    }
   }
   if(new URL(page.url()).origin!==url.origin)throw Error('BROWSER_REDIRECT_DENIED');
-  return {title:await page.title(),url:page.url(),text:(await page.locator('body').innerText()).slice(0,16000),download:downloadResult,stepsCompleted:steps.length};
+  return {title:await page.title(),url:page.url(),text:(await page.locator('body').innerText()).slice(0,16000),download:downloadResult,stepsCompleted:steps.length,permissions:{origin:url.origin,writePaths,credentials:'ISOLATED_SESSION',sourceAuthority:'UNTRUSTED_PAGE_CONTENT'}};
  }finally{signal?.removeEventListener('abort',abort);await browser.close();}
 }

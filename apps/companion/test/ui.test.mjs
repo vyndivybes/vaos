@@ -45,6 +45,10 @@ test('UI pairs, creates a workbook, reviews memory/tools, runs an event routine 
   await page.locator('#skill-run-form [name=text]').fill('c\na\nc');
   await page.locator('#skill-run-form button').click();
   await page.waitForFunction(()=>document.getElementById('result-text').textContent==='a\nc');
+  assert.match(await page.locator('#skill-list').innerText(),/Reviewed SHA-256: [a-f0-9]{64}/);
+  await page.getByRole('button',{name:'Revoke tool',exact:true}).click();
+  await page.locator('#approved-skills option').waitFor({state:'detached'});
+  assert.match(await page.locator('#skill-list').innerText(),/revoked/);
   await page.locator('[data-panel="routines"]').click();
   await page.locator('#routine-form [name=title]').fill('Event briefing');
   await page.locator('#routine-form [name=trigger]').selectOption('event');

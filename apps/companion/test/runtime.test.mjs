@@ -12,6 +12,7 @@ import {PDFDocument} from 'pdf-lib';
 import {chromium} from 'playwright';
 import {createCompanion} from '../server.mjs';
 import {createActions} from '../actions.mjs';
+import {skillHash} from '../forge.mjs';
 import {runBrowser} from '../browser.mjs';
 
 const enabled=process.env.VAOS_RUNTIME_ACCEPTANCE==='1';
@@ -47,14 +48,14 @@ test('real Word, Excel, PDF, OCR, browser research/form/download and reviewed sk
   const png=await page.screenshot();await browser.close();
   const ocr=await run('image.ocr',{format:'png',data:png.toString('base64')});assert.match(ocr.text,/VAOS TEST REPORT/i);
   const research=await runBrowser({url},{executablePath:chromePath,allowLoopbackForTests:true});assert.equal(research.title,'VAOS browser fixture');assert.match(research.text,/VAOS TEST REPORT/);assert.equal(effects,0);
-  const form=await runBrowser({url,steps:[{action:'fill',targetType:'label',target:'Project',value:'VAOS'},{action:'click',targetType:'button',target:'Save'}]},{executablePath:chromePath,allowLoopbackForTests:true});assert.equal(form.stepsCompleted,2);assert.equal(effects,1);
+  const form=await runBrowser({url,writePaths:['/effect'],steps:[{action:'fill',targetType:'label',target:'Project',value:'VAOS'},{action:'click',targetType:'button',target:'Save'}]},{executablePath:chromePath,allowLoopbackForTests:true});assert.equal(form.stepsCompleted,2);assert.equal(effects,1);
   const path=join(dir,'download.bin');
   const downloaded=await runBrowser({url,steps:[{action:'download',targetType:'link',target:'Download report'}]},{executablePath:chromePath,allowLoopbackForTests:true,artifactPath:path,artifactId:'test.bin'});
   assert.equal(downloaded.download.filename,'report.txt');assert.equal(await readFile(path,'utf8'),'downloaded VAOS report');
   const definition={name:'unique-lines',steps:[{op:'unique-lines'}]};
-  app.store.saveSkill({id:'reviewed-test',definition,hash:'test',state:'tested'});
+  app.store.saveSkill({id:'reviewed-test',definition,hash:skillHash(definition),state:'tested'});
   await assert.rejects(run('skill.run',{id:'reviewed-test',text:'a\na'}),/NOT_APPROVED/);
-  app.store.saveSkill({id:'reviewed-test',definition,hash:'test',state:'approved'});
+  app.store.saveSkill({id:'reviewed-test',definition,hash:skillHash(definition),state:'approved'});
   assert.equal((await run('skill.run',{id:'reviewed-test',text:'a\na'})).text,'a');
  }finally{await new Promise(r=>fixture.close(r));await app.close();await rm(dir,{recursive:true,force:true});}
 });

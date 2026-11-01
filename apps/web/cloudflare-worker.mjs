@@ -49,6 +49,7 @@ import voiceCapabilities from './api/voice-capabilities.mjs';
 import voiceDiscover from './api/voice-discover.mjs';
 import voiceCommercial from './api/voice-commercial.mjs';
 import voiceInsight from './api/voice-insight.mjs';
+import sparkBridge from './api/spark-bridge.mjs';
 import businessAdvisor from './api/business-advisor.mjs';
 import jarvisDataAgent from './api/jarvis-data-agent.mjs';
 import adaptiveIntelligence from './api/adaptive-intelligence.mjs';
@@ -128,6 +129,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/voice-discover': voiceDiscover,
   '/api/voice-commercial': voiceCommercial,
   '/api/voice-insight': voiceInsight,
+  '/api/spark-bridge': sparkBridge,
   '/api/business-advisor': businessAdvisor,
   '/api/jarvis-data-agent': jarvisDataAgent,
   '/api/adaptive-intelligence': adaptiveIntelligence,

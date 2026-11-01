@@ -1,0 +1,89 @@
+name: VYNDI OS Finance Exact-SHA Recovery (one-time)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vyndios-store01-recovery.yml'
+permissions:
+  contents: read
+concurrency:
+  group: vyndios-store01-exact-sha-recovery
+  cancel-in-progress: false
+jobs:
+  deploy-pinned-reviewed-vyndios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_VYNDI_SHA: 697c60be5ce94e14804b0bff607500769731951a
+      CLOUDFLARE_ACCOUNT_ID: e20ce7032f6475caaf1197b09d3fe164
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      WORKERS_CI_COMMIT_SHA: 697c60be5ce94e14804b0bff607500769731951a
+      VYNDI_TEST_BASE_URL: https://vyndios.vayushastr.workers.dev
+      VYNDI_TEST_EXPECTED_SHA: 697c60be5ce94e14804b0bff607500769731951a
+      VITE_AUTH_ENABLED: 'true'
+    steps:
+      - name: Checkout only the reviewed VYNDI OS main commit
+        uses: actions/checkout@v4
+        with:
+          repository: vyndivybes/vyndios
+          ref: 697c60be5ce94e14804b0bff607500769731951a
+          path: vyndios
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: vyndios/package-lock.json
+      - name: Require exact pinned SHA and unchanged upstream main
+        shell: bash
+        working-directory: vyndios
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_VYNDI_SHA"
+          test "$(git ls-remote https://github.com/vyndivybes/vyndios.git refs/heads/main | cut -f1)" = "$EXPECTED_VYNDI_SHA"
+          grep -q '"name": "vyndios"' wrangler.jsonc
+          grep -q '"keep_vars": true' wrangler.jsonc
+      - name: Install dependency lockfile and validate migration source
+        working-directory: vyndios
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run db:validate
+      - name: Verify Store01 and finance controls before release
+        working-directory: vyndios
+        run: |
+          node --experimental-strip-types --test src/lib/store01-dock-preflight.test.ts src/lib/finance/financial-statements.test.ts src/lib/finance/financial-intelligence.test.ts
+          node --test scripts/production-deployment-readiness.test.mjs
+      - name: Compile exact source with existing runtime authority
+        working-directory: vyndios
+        run: npm run build:bundle
+      - name: Recheck pinned source remains on main
+        working-directory: vyndios
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote https://github.com/vyndivybes/vyndios.git refs/heads/main | cut -f1)" = "$EXPECTED_VYNDI_SHA"
+      - name: Check exact production SHA before considering deployment
+        id: probe
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import {appendFile} from "node:fs/promises";
+          const response=await fetch("https://vyndios.vayushastr.workers.dev/api/runtime/health",{headers:{"cache-control":"no-cache"},signal:AbortSignal.timeout(20000)});
+          const health=await response.json().catch(()=>({}));
+          const matches=response.ok && health?.ok===true && health?.sourceSha===process.env.EXPECTED_VYNDI_SHA && health?.checks?.database==="ok" && health?.checks?.schema==="current" && Number(health?.pendingMigrationCount)===0;
+          console.log("Production exact SHA already healthy:",matches,"reported:",String(health?.sourceSha??"unavailable").slice(0,40));
+          await appendFile(process.env.GITHUB_OUTPUT,"deploy_required="+(!matches)+"\n");
+          NODE
+      - name: Verify existing scoped deploy credential only if deployment needed
+        if: steps.probe.outputs.deploy_required == 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Cloudflare deploy credential missing; holding without upload"; exit 1; }
+      - name: Deploy only the VYNDI OS Worker, preserving secrets and Hyperdrive
+        if: steps.probe.outputs.deploy_required == 'true'
+        working-directory: vyndios
+        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
+      - name: Confirm exact deployed SHA and production schema readiness
+        working-directory: vyndios
+        run: node scripts/production-deployment-readiness.mjs

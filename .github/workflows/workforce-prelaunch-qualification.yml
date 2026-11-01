@@ -1,0 +1,21 @@
+name: Workforce 16-identity prelaunch policy qualification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'platform/qualification/workforce-prelaunch-drills.test.mjs'
+      - 'platform/runtime/policy-engine.mjs'
+      - '.github/workflows/workforce-prelaunch-qualification.yml'
+permissions:
+  contents: read
+jobs:
+  role-isolation-and-authority:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify all sixteen agents in isolated dry-run, no live actuation
+        run: node --test platform/qualification/workforce-prelaunch-drills.test.mjs

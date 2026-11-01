@@ -8,6 +8,12 @@ export const POLICY_DECISION = Object.freeze({
 });
 
 export const ACTION_POLICIES = Object.freeze({
+  'KNOWLEDGE.READ_GRAPH': Object.freeze({
+    commissioningMode: 'live_read',
+    minimumAuthority: AUTHORITY.ANALYSE,
+    requiresApproval: false,
+    defaultRisk: 'low',
+  }),
   'QA.OPEN_CAPA': Object.freeze({
     minimumAuthority: AUTHORITY.APPROVED_EXECUTION,
     requiresApproval: true,

@@ -1,0 +1,56 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "fireflies",
+  "displayName": "Fireflies.ai",
+  "adapterVersion": "0.1.0",
+  "description": "Read-only meeting intelligence source; disabled until OAuth or bearer secret binding and isolation/retrieval qualification.",
+  "capabilities": [
+    "meeting.search",
+    "meeting.summarize"
+  ],
+  "deploymentModes": [
+    "managed-saas"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "candidate",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "medium",
+      "high"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "oauth2",
+      "bearer"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "safe",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-fireflies-provider-and-revoke-scoped-credentials"
+  },
+  "operations": {
+    "retentionClass": "metadata-only-default-no-raw-transcript-retention",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "50-provider-requests-per-day-free-tier-ceiling-must-be-enforced-before-enablement"
+  },
+  "notes": "Candidate only: no runtime adapter, live authentication, tenant guard, production route or automatic ingestion yet. Never silently promote provider. Treat external meeting text as untrusted evidence; mapping into H5 requires approved canonical authority."
+}

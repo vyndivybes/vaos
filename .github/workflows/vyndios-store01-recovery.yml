@@ -1,0 +1,75 @@
+name: VYNDI OS Store01 Exact-SHA Recovery (one-time)
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/vyndios-store01-recovery.yml'
+permissions:
+  contents: read
+concurrency:
+  group: vyndios-store01-exact-sha-recovery
+  cancel-in-progress: false
+jobs:
+  deploy-pinned-reviewed-vyndios:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      EXPECTED_VYNDI_SHA: 2e04bdd6f37467581dea3e4cb6d22c27b2690968
+      CLOUDFLARE_ACCOUNT_ID: e20ce7032f6475caaf1197b09d3fe164
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      WORKERS_CI_COMMIT_SHA: 2e04bdd6f37467581dea3e4cb6d22c27b2690968
+      VYNDI_TEST_BASE_URL: https://vyndios.vayushastr.workers.dev
+      VYNDI_TEST_EXPECTED_SHA: 2e04bdd6f37467581dea3e4cb6d22c27b2690968
+      VITE_AUTH_ENABLED: 'true'
+    steps:
+      - name: Verify existing Cloudflare deploy credential
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Cloudflare token missing in VAOS release secret"; exit 1; }
+      - name: Checkout only the reviewed VYNDI OS main commit
+        uses: actions/checkout@v4
+        with:
+          repository: vyndivybes/vyndios
+          ref: 2e04bdd6f37467581dea3e4cb6d22c27b2690968
+          path: vyndios
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: vyndios/package-lock.json
+      - name: Require exact pinned SHA and unchanged upstream main
+        shell: bash
+        working-directory: vyndios
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_VYNDI_SHA"
+          test "$(git ls-remote https://github.com/vyndivybes/vyndios.git refs/heads/main | cut -f1)" = "$EXPECTED_VYNDI_SHA"
+          grep -q '"name": "vyndios"' wrangler.jsonc
+          grep -q '"keep_vars": true' wrangler.jsonc
+      - name: Install dependency lockfile and validate migration source
+        working-directory: vyndios
+        run: |
+          npm ci --ignore-scripts --no-audit --no-fund
+          npm run db:validate
+      - name: Verify Store01 and finance controls before release
+        working-directory: vyndios
+        run: |
+          node --experimental-strip-types --test src/lib/store01-dock-preflight.test.ts src/lib/finance/financial-statements.test.ts src/lib/finance/financial-intelligence.test.ts
+          node --test scripts/production-deployment-readiness.test.mjs
+      - name: Compile exact source with existing runtime authority
+        working-directory: vyndios
+        run: npm run build:bundle
+      - name: Recheck pinned source remains on main
+        working-directory: vyndios
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git ls-remote https://github.com/vyndivybes/vyndios.git refs/heads/main | cut -f1)" = "$EXPECTED_VYNDI_SHA"
+      - name: Deploy only the VYNDI OS Worker, preserving secrets and Hyperdrive
+        working-directory: vyndios
+        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
+      - name: Confirm exact deployed SHA and production schema readiness
+        working-directory: vyndios
+        run: node scripts/production-deployment-readiness.mjs

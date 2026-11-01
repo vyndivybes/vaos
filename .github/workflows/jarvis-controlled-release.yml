@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
     paths:
+      - 'intelligence/financial-scorecard.mjs'
+      - 'intelligence/financial-intelligence.test.mjs'
+      - 'apps/web/financial-performance.mjs'
       - 'apps/web/api/adaptive-intelligence.mjs'
       - 'apps/web/lib/adaptive-intelligence.mjs'
       - 'apps/web/main-voice.mjs'

@@ -16,7 +16,6 @@ jobs:
     env:
       EXPECTED_VYNDI_SHA: 697c60be5ce94e14804b0bff607500769731951a
       CLOUDFLARE_ACCOUNT_ID: e20ce7032f6475caaf1197b09d3fe164
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       WORKERS_CI_COMMIT_SHA: 697c60be5ce94e14804b0bff607500769731951a
       VYNDI_TEST_BASE_URL: https://vyndios.vayushastr.workers.dev
       VYNDI_TEST_EXPECTED_SHA: 697c60be5ce94e14804b0bff607500769731951a
@@ -76,12 +75,16 @@ jobs:
           NODE
       - name: Verify existing scoped deploy credential only if deployment needed
         if: steps.probe.outputs.deploy_required == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         shell: bash
         run: |
           set -euo pipefail
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "::error::Cloudflare deploy credential missing; holding without upload"; exit 1; }
       - name: Deploy only the VYNDI OS Worker, preserving secrets and Hyperdrive
         if: steps.probe.outputs.deploy_required == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
         working-directory: vyndios
         run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
       - name: Confirm exact deployed SHA and production schema readiness

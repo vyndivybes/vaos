@@ -12,11 +12,19 @@ function render(packet){
   ['Revenue',packet.revenueInr,'money'],['Cost of goods sold',packet.costOfGoodsSoldInr,'money'],
   ['Gross profit',packet.grossProfitInr,'money'],['Net profit',packet.netProfitInr,'money'],
   ['Gross margin',packet.grossMarginPct,'pct'],['Net margin',packet.netMarginPct,'pct'],
-  ['Closing cash',packet.closingCashInr,'money'],['Unit manufacturing cost',packet.unitManufacturingCostInr,'money']
+  ['Closing cash',packet.closingCashInr,'money'],['Unit manufacturing cost',packet.unitManufacturingCostInr,'money'],
+  ['Operating cash flow',packet.operatingCashFlowInr,'money'],
+  ['Direct asset-bank CAPEX',packet.directCashCapexInr,'money'],
+  ['Indicative FCF · direct CAPEX only',packet.indicativeFreeCashFlowInr,'money'],
+  ['Net working capital',packet.workingCapitalInr,'money'],
+  ['DSO · indicative',packet.dsoDays,'days'],
+  ['Inventory days · indicative',packet.dioDays,'days'],
+  ['Payables to COGS days · proxy',packet.payablesToCogsDays,'days'],
+  ['Cash conversion cycle · proxy',packet.cashConversionCycleProxyDays,'days']
  ];
  for(const [name,raw,kind] of metrics){
   const card=el('div',undefined,'wa-stat');
-  card.append(el('small',name),el('strong',val(raw)?kind==='pct'?raw.toFixed(2)+'%':MONEY.format(raw):'Not available'));
+  card.append(el('small',name),el('strong',val(raw)?kind==='pct'?raw.toFixed(2)+'%':kind==='days'?raw.toFixed(1)+' days':MONEY.format(raw):'Not available'));
   host.append(card);
  }
  const chartMetrics=metrics.slice(0,4).filter(([,raw])=>val(raw));
@@ -41,7 +49,7 @@ function render(packet){
   ' · posted journals '+packet.periodJournalCount+
   ' · manufacturing cost snapshots '+packet.costSnapshotCount+
   ' · observed '+new Date(packet.observedAt).toLocaleString()+
-  '. Source: '+packet.source+'.';
+  '. Source: '+packet.source+'. Cash CAPEX is direct asset-bank evidence only; indicative FCF and turnover-day proxies are not certified totals.';
 }
 async function refresh(){
  const from=$('wa-period-from').value,to=$('wa-period-to').value,button=$('wa-financial-refresh');

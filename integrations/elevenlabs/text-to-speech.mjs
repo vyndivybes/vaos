@@ -1,5 +1,7 @@
-import {ElevenLabsClient} from '@elevenlabs/elevenlabs-js';
-
+async function sdkClient(key){
+ const {ElevenLabsClient}=await import('@elevenlabs/elevenlabs-js');
+ return new ElevenLabsClient({apiKey:key});
+}
 export const ELEVENLABS_PROFILE=Object.freeze({provider:'elevenlabs',voiceId:'JBFqnCBsd6RMkjVDRZzb',voiceName:'George',modelId:'eleven_v4',platformFallback:false,costPolicy:'FREE_PLAN_ONLY_NO_OVERAGE',commercialUseQualified:false});
 export const ELEVENLABS_SAMPLE='Hello. I am JARVIS, your VAOS assistant. This is an ElevenLabs voice preview.';
 const BUDGET_KEY='voice/elevenlabs/free-preview-budget-v1.json';
@@ -34,7 +36,7 @@ async function reserve(bucket,characters,now){
   await bucket.put(BUDGET_KEY,JSON.stringify({...value,activeUntil:0}),{onlyIf:{etagMatches:object.etag},httpMetadata:{contentType:'application/json'}});
  };
 }
-export async function createElevenLabsSpeech({env,text,language='en-US',signal,fetcher=fetch,clientFactory=key=>new ElevenLabsClient({apiKey:key}),now=()=>Date.now()}={}){
+export async function createElevenLabsSpeech({env,text,language='en-US',signal,fetcher=fetch,clientFactory=sdkClient,now=()=>Date.now()}={}){
  if(!elevenLabsConfiguration(env).ready)fail('ELEVENLABS_NOT_CONFIGURED');
  // User-approved personal/non-commercial test mode. Never upgrade a plan,
  // spend prepaid/paid credits, or fall back to a platform voice.
@@ -48,7 +50,8 @@ export async function createElevenLabsSpeech({env,text,language='en-US',signal,f
  const release=await reserve(env.VAOS_ARTIFACTS,text.length,now());
  try{
   // No retries after an ambiguous result; already reserved credits are not refunded.
-  const audio=await clientFactory(env.ELEVENLABS_API_KEY).textToSpeech.convert(ELEVENLABS_PROFILE.voiceId,{text,modelId:ELEVENLABS_PROFILE.modelId,outputFormat:'mp3_44100_128',voiceSettings:{stability:0.5,similarityBoost:0.75}},{maxRetries:0,timeoutInSeconds:40,abortSignal:abort});
+  const client=await clientFactory(env.ELEVENLABS_API_KEY);
+  const audio=await client.textToSpeech.convert(ELEVENLABS_PROFILE.voiceId,{text,modelId:ELEVENLABS_PROFILE.modelId,outputFormat:'mp3_44100_128',voiceSettings:{stability:0.5,similarityBoost:0.75}},{maxRetries:0,timeoutInSeconds:40,abortSignal:abort});
   const reader=audio.getReader(),chunks=[];let size=0;
   try{while(true){const {value,done}=await reader.read();if(done)break;size+=value.byteLength;if(size>2000000)fail('ELEVENLABS_AUDIO_TOO_LARGE');chunks.push(value);}}finally{await reader.cancel().catch(()=>{});}
   if(size<44)fail('ELEVENLABS_AUDIO_INVALID');

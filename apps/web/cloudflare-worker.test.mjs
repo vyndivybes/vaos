@@ -95,13 +95,19 @@ test('Cloudflare app forwards explicit runtime bindings to API handlers', async 
 });
 
 
-test('Cloudflare app disables browser caching for workspace HTML and executable modules', async () => {
+test('Cloudflare workspace HTML stays no-store while browser modules revalidate instead of re-downloading', async () => {
   const app = createCloudflareApp({ apiHandlers: {}, assetFetcher });
-
-  for (const path of ['/skills', '/skills.html', '/workspace', '/workspace.mjs', '/command-router.mjs', '/mission-status.html']) {
+  for (const path of ['/skills', '/skills.html', '/workspace', '/mission-status.html']) {
     const response = await app.fetch(new Request(`https://vaos.example${path}`));
     assert.equal(response.status, 200);
     assert.equal(response.headers.get('Cache-Control'), 'no-store, max-age=0');
+  }
+  for (const path of ['/workspace.mjs', '/command-router.mjs']) {
+    const response = await app.fetch(new Request(`https://vaos.example${path}`));
+    assert.equal(response.status, 200);
+    assert.equal(response.headers.get('Cache-Control'), 'private, no-cache, must-revalidate');
+    assert.equal(response.headers.has('Pragma'), false);
+    assert.equal(response.headers.has('Expires'), false);
   }
 });
 
@@ -196,7 +202,7 @@ test('production voice and workforce pages ship their complete browser module de
  assert.ok(visited.has('lib/business-department-summary.mjs'));
 });
 
-test('workspace stylesheet is noncacheable just like HTML and browser JS',async()=>{
+test('workspace stylesheet is retained for conditional browser revalidation, not immutable caching',async()=>{
  const app=createCloudflareApp({apiHandlers:{},assetFetcher:req=>{
   const path=new URL(req.url).pathname;
   return new Response('asset:'+path,{status:200,headers:{
@@ -204,7 +210,7 @@ test('workspace stylesheet is noncacheable just like HTML and browser JS',async(
  }});
  const response=await app.fetch(new Request('https://vaos.example/workspace-saas.css'));
  assert.equal(response.status,200);
- assert.equal(response.headers.get('Cache-Control'),'no-store, max-age=0');
+ assert.equal(response.headers.get('Cache-Control'),'private, no-cache, must-revalidate');
 });
 
 test('founder workspace makes workforce outputs discoverable without presenting holds as passes',async()=>{
@@ -222,4 +228,23 @@ test('founder workspace makes workforce outputs discoverable without presenting 
  assert.match(script,/model\.agents\.map\(\(agent\)/);
  assert.doesNotMatch(script,/model\.agents\.slice\(/);
  assert.match(script,/visible-agent-count/);
+});
+
+test('static JS and CSS preserve server ETag validators but API data remains no-store', async () => {
+  const app = createCloudflareApp({
+    apiHandlers: {
+      '/api/private': (_req, res) => res.setHeader('Cache-Control','no-store').status(200).json({ok:true}),
+    },
+    assetFetcher: () => new Response('static-v1', {status: 200, headers: {
+      'ETag': '"static-v1"', 'Cache-Control': 'public, max-age=31536000, immutable',
+      'Content-Type': 'text/javascript',
+    }}),
+  });
+  for (const path of ['/workspace.mjs', '/workspace.css']) {
+    const response = await app.fetch(new Request('https://vaos.example'+path));
+    assert.equal(response.headers.get('ETag'), '"static-v1"');
+    assert.equal(response.headers.get('Cache-Control'), 'private, no-cache, must-revalidate');
+  }
+  const api = await app.fetch(new Request('https://vaos.example/api/private'));
+  assert.equal(api.headers.get('Cache-Control'), 'no-store');
 });

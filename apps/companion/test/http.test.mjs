@@ -11,6 +11,14 @@ test('companion authenticates, isolates origins, reviews skills, denies action r
  const {origin}=await app.listen(0);
  const request=async(path,method='GET',data,extra={})=>fetch(origin+path,{method,headers:{Authorization:'Bearer test-token','Content-Type':'application/json',...extra},body:data===undefined?undefined:JSON.stringify(data)});
  try{
+  const visited=new Set();
+  async function checkModule(path){
+   if(visited.has(path))return;visited.add(path);
+   const response=await fetch(origin+path);assert.equal(response.status,200,'Missing companion browser dependency '+path);assert.match(response.headers.get('Content-Type'),/javascript/);
+   const source=await response.text();
+   for(const match of source.matchAll(/\bimport\s+(?:[^;\n]+?\s+from\s*)?['"]([^'"]+)['"]/g))if(match[1].startsWith('.'))await checkModule(new URL(match[1],origin+path).pathname);
+  }
+  await checkModule('/skills.mjs');assert.ok(visited.has('/lib/elevenlabs-speech.mjs'));
   assert.equal((await fetch(origin+'/api/status')).status,401);
   assert.equal((await request('/api/status','GET',undefined,{Origin:'https://evil.example'})).status,403);
   assert.equal((await request('/api/status','GET',undefined,{Origin:'https://vaos.vayushastr.workers.dev'})).status,200);

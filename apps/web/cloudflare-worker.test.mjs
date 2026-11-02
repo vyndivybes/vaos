@@ -233,7 +233,7 @@ test('founder workspace makes workforce outputs discoverable without presenting 
 test('static JS and CSS preserve server ETag validators but API data remains no-store', async () => {
   const app = createCloudflareApp({
     apiHandlers: {
-      '/api/private': (_req, res) => res.status(200).set('Cache-Control','no-store').json({ok:true}),
+      '/api/private': (_req, res) => res.setHeader('Cache-Control','no-store').status(200).json({ok:true}),
     },
     assetFetcher: () => new Response('static-v1', {status: 200, headers: {
       'ETag': '"static-v1"', 'Cache-Control': 'public, max-age=31536000, immutable',

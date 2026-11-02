@@ -27,7 +27,9 @@ test('real Word, Excel, PDF, OCR, browser research/form/download and reviewed sk
  const fixture=http.createServer((req,res)=>{
   if(req.method==='POST'){effects++;res.end('saved');return;}
   if(req.url==='/download'){res.writeHead(200,{'Content-Disposition':'attachment; filename="report.txt"','Content-Type':'text/plain'});res.end('downloaded VAOS report');return;}
-  res.setHeader('Content-Type','text/html');res.end('<title>VAOS browser fixture</title><body><h1>VAOS TEST REPORT</h1><label>Project<input aria-label="Project"></label><button onclick="fetch(\'/effect\',{method:\'POST\'})">Save</button><a href="/download">Download report</a></body>');
+  // A native form gives click an observable navigation boundary. An unawaited
+  // fire-and-forget fetch could be aborted when the isolated context closes.
+  res.setHeader('Content-Type','text/html');res.end('<title>VAOS browser fixture</title><body><h1>VAOS TEST REPORT</h1><form method="post" action="/effect"><label>Project<input aria-label="Project"></label><button>Save</button></form><a href="/download">Download report</a></body>');
  });
  await new Promise(r=>fixture.listen(0,'127.0.0.1',r));
  const url='http://127.0.0.1:'+fixture.address().port;

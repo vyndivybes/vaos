@@ -8,7 +8,7 @@ const chromePath=process.env.VAOS_CHROME_PATH||[
  'C:/Program Files/Google/Chrome/Application/chrome.exe',
  'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
 ].find(existsSync);
-const app=await createCompanion({dataDir:resolve(process.env.VAOS_COMPANION_DATA||resolve(here,'.data')),chromePath,modelDir:process.env.VAOS_COMPANION_MODEL});
+const app=await createCompanion({dataDir:resolve(process.env.VAOS_COMPANION_DATA||resolve(here,'.data')),chromePath,modelDir:process.env.VAOS_COMPANION_MODEL,neuralModelDir:process.env.VAOS_COMPANION_NEURAL_MODEL,tenantId:process.env.VAOS_COMPANION_TENANT||'local-personal',subject:process.env.VAOS_COMPANION_SUBJECT||'local-owner'});
 const {origin,token}=await app.listen(Number(process.env.VAOS_COMPANION_PORT||47831));
 console.log('VAOS local companion: '+origin);
 if(process.argv.includes('--open')&&process.platform==='win32'){

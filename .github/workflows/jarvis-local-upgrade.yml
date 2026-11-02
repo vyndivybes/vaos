@@ -1,0 +1,52 @@
+name: JARVIS local voice and governed memory
+on:
+  push:
+    branches: [dev/jarvis-neural-governed-memory]
+  pull_request:
+    paths: ['apps/companion/**', 'apps/web/lib/local-neural-speech.mjs', 'apps/web/lib/conversation-memory-ui.mjs', 'apps/web/main-voice.mjs', 'apps/web/skills.mjs', '.github/workflows/jarvis-local-upgrade.yml']
+permissions:
+  contents: read
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: python -m pip install python-docx==1.2.0
+      - run: npm test
+      - name: Real browser and local tool acceptance
+        env:
+          VAOS_RUNTIME_ACCEPTANCE: '1'
+          VAOS_UI_ACCEPTANCE: '1'
+          VAOS_COMPANION_PYTHON: python
+          VAOS_CHROME_PATH: /usr/bin/google-chrome
+        run: npm run test:companion
+      - name: Worker bundle without deployment
+        run: npx wrangler deploy --dry-run --config wrangler.jsonc --outdir .wrangler-dry-run
+  neural-cpu:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: python -m pip install -r apps/companion/requirements-neural.txt
+      - run: python apps/companion/setup_neural.py --destination apps/companion/.data/models/kokoro
+      - name: Real local neural synthesis and cancellation
+        env:
+          VAOS_NEURAL_ACCEPTANCE: '1'
+          VAOS_COMPANION_PYTHON: python
+          VAOS_COMPANION_NEURAL_MODEL: apps/companion/.data/models/kokoro
+        run: node --test apps/companion/test/neural-runtime.test.mjs

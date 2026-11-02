@@ -1,0 +1,7 @@
+.conversation-history{min-width:0;max-width:100%;overflow-wrap:anywhere}
+.conversation-history pre{white-space:pre-wrap;overflow-wrap:anywhere;max-width:100%;max-height:28rem;overflow:auto;font:inherit;font-size:.85rem}
+.conversation-history article{margin:1rem 0;padding:.8rem;border:1px solid #64748b;border-radius:6px;min-width:0}
+.conversation-history input{max-width:100%;min-width:0}
+.conversation-history button{max-width:100%;white-space:normal;margin:.35rem .35rem .35rem 0}
+.conversation-history label{display:block;margin:.7rem 0}
+.conversation-history input[type=checkbox]{margin-left:.5rem}

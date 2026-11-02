@@ -15,7 +15,7 @@ export function splitVoiceText(value,max=180){
  return parts.slice(0,24);
 }
 export function createVoiceReadback({
- synthesis,UtteranceClass,language=()=> 'en-US',
+ synthesis,UtteranceClass,language=()=> 'en-US',startTimeout=5000,
  onState=()=>{},onError=()=>{},onFinished=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
 }={}){
@@ -64,7 +64,7 @@ export function createVoiceReadback({
     st.timer=schedule(()=>{
      if(active!==st||st.started)return;
      conclude(st,'ERROR','SPEECH_NOT_STARTED');
-    },5000);
+    },startTimeout);
     synthesis.speak(utterance);
     if(active===st)onState('QUEUED');
    }catch{

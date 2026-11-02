@@ -1,5 +1,7 @@
 # VAOS local skills companion
 
+JARVIS neural output and governed historical conversation recall are documented in [the local voice and memory upgrade guide](../../docs/jarvis-local-voice-memory-upgrade.md). English neural speech uses an explicitly installed Kokoro model, with no Windows TTS fallback. Historical imports, provenance, tenant scope, retention, deletion and local approval controls are separate from the personal notes tool described below.
+
 Original VAOS implementation. The hosted page is `/skills.html`; it also runs directly from the companion on `http://127.0.0.1:47831/`. The companion binds only to loopback. No external API key or subscription is needed for the implemented local tools.
 
 ## Start

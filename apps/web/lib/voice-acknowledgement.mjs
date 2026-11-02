@@ -15,7 +15,7 @@ export function voiceAcknowledgementText(phase,{founder=false}={}){
  return Object.hasOwn(cues,phase)?cues[phase]:'';
 }
 export function createVoiceAcknowledgement({
- synthesis,UtteranceClass,outputBusy=()=>false,isFounder=()=>false,onError=()=>{},onFinished=()=>{},
+ synthesis,UtteranceClass,outputBusy=()=>false,isFounder=()=>false,onError=()=>{},onFinished=()=>{},startTimeout=3800,
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id)
 }={}){
  let active=null;
@@ -54,7 +54,7 @@ export function createVoiceAcknowledgement({
    speech.onend=()=>finish(state,'SPEECH_FINISHED');
    speech.onerror=()=>finish(state,'ACK_AUDIO_UNAVAILABLE');
    active=state;
-   state.timer=schedule(()=>finish(state,'ACK_AUDIO_NOT_STARTED'),3800);
+   state.timer=schedule(()=>finish(state,'ACK_AUDIO_NOT_STARTED'),startTimeout);
    synthesis.speak(speech);
    return true;
   }catch{

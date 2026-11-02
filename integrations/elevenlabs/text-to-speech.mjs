@@ -1,3 +1,4 @@
+import {featureControl} from '../../apps/web/lib/feature-flags.mjs';
 async function sdkClient(key){
  const {ElevenLabsClient}=await import('@elevenlabs/elevenlabs-js');
  return new ElevenLabsClient({apiKey:key});
@@ -7,7 +8,7 @@ export const ELEVENLABS_SAMPLE='Hello. I am JARVIS, your VAOS assistant. This is
 const BUDGET_KEY='voice/elevenlabs/free-preview-budget-v1.json';
 const fail=(code,status=503)=>{throw Object.assign(Error(code),{status});};
 export function elevenLabsConfiguration(env){
- return {...ELEVENLABS_PROFILE,ready:env?.VAOS_ELEVENLABS_CONTROL==='free-personal-v1'&&!!env?.ELEVENLABS_API_KEY&&!!env?.VAOS_ARTIFACTS,
+ return {...ELEVENLABS_PROFILE,ready:featureControl(env,'VAOS_ELEVENLABS_CONTROL')==='free-personal-v1'&&!!env?.ELEVENLABS_API_KEY&&!!env?.VAOS_ARTIFACTS,
   configured:!!env?.ELEVENLABS_API_KEY,personalNoncommercialOnly:true,attribution:'Voice by ElevenLabs · elevenlabs.io',dailyCharacterLimit:1000};
 }
 async function providerJson(path,{key,fetcher,signal}){

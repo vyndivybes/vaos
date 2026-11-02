@@ -4,7 +4,7 @@ test('real PostgreSQL persistence, revision conflicts, server key, RBAC and brow
  try{
  await db.exec(`create role anon;create role authenticated;create role service_role;create schema vaos_private;
  create function vaos_private.assert_server_key(k text) returns void language plpgsql as $$begin if k is distinct from 'test-key' then raise exception 'VAOS_SERVER_KEY_INVALID';end if;end$$;`);
- await db.exec(await readFile(new URL('../../supabase/migrations/20261016192556_conversational_bi_definitions.sql',import.meta.url),'utf8'));
+ await db.exec(await readFile(new URL('../../supabase/migrations/20261102010526_conversational_bi_definitions.sql',import.meta.url),'utf8'));
  const definition={version:1,title:'Finance test definition',metric:'activity',chart:'bar',agents:['finance'],from:'2026-10-01',to:'2026-10-15'};
  const id='123e4567-e89b-42d3-a456-426614174000';
  const rpc=(action,revision=0,email='shyamsundhar1982@gmail.com',key='test-key',d=definition)=>db.query('select public.vaos_dashboard_definitions($1,$2,$3,$4,$5,$6,$7::jsonb) as data',[key,email,action,id,revision,'private',JSON.stringify(d)]);

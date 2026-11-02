@@ -7,7 +7,7 @@ on:
       - 'apps/web/bi-*.css'
       - 'apps/web/api/dashboards*.mjs'
       - 'platform/services/dashboard-definitions-postgres.test.mjs'
-      - 'supabase/migrations/20261016192556_conversational_bi_definitions.sql'
+      - 'supabase/migrations/20261102010526_conversational_bi_definitions.sql'
       - 'supabase/functions/vaos-control/index.ts'
       - 'package.json'
       - '.github/workflows/conversational-bi-qualification.yml'

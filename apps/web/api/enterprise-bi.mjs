@@ -4,6 +4,7 @@ import {createSupabaseControlStore} from '../../../platform/persistence/supabase
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createVyndiReadBridgeClient} from '../../../platform/execution/vyndi-read-bridge-client.mjs';
 
+import {businessDay} from '../bi-model.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
 const storeOf=env=>createSupabaseControlStore(resolveDurableControlConfig(env));
 const EMPLOYEES=new Set([
@@ -29,7 +30,7 @@ export function createEnterpriseBiHandler({
   let from,to,employeeId,limit,offset,sourceTable;
   try{
    const query=new URL(req.url).searchParams;
-   if([...query.keys()].some(k=>!['from','to','employee','limit','offset','source'].includes(k))||
+   if([...query.keys()].some(k=>!['from','to','employee','limit','offset','source','primary','crm'].includes(k))||
      [...query.keys()].some(k=>query.getAll(k).length!==1))throw Error();
    from=query.get('from');to=query.get('to');employeeId=query.get('employee')||'all';
    sourceTable=query.get('source');
@@ -38,7 +39,7 @@ export function createEnterpriseBiHandler({
    if(!/^\d+$/.test(rawLimit)||!/^\d+$/.test(rawOffset))throw Error();
    limit=Number(rawLimit);offset=Number(rawOffset);
    if(!validDay(from)||!validDay(to)||from>to||
-     to>new Date().toISOString().slice(0,10)||
+     to>businessDay()||
      Date.parse(to)-Date.parse(from)>366*86400000||
      (employeeId!=='all'&&!EMPLOYEES.has(employeeId))||
      !Number.isSafeInteger(limit)||limit<1||limit>100||
@@ -51,7 +52,7 @@ export function createEnterpriseBiHandler({
    const evidence=await client.execute({id:crypto.randomUUID(),intentId:crypto.randomUUID(),
     actionType:'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI',
     payload:{missionId:'founder:enterprise-bi',from,to,employeeId,limit,offset,
-     ...(sourceTable?{sourceTable}:{})}});
+     ...(sourceTable?{sourceTable}:{}),...(new URL(req.url).searchParams.get('primary')==='1'?{primaryOnly:true}:{}),...(new URL(req.url).searchParams.get('crm')==='1'?{crm:true}:{})}});
    const data=evidence?.data;
    if(data?.schemaVersion!=='VYNDI_ENTERPRISE_BI_V1'||data.readOnly!==true||
       data.period?.from!==from||data.period?.to!==to||data.scope!==employeeId||

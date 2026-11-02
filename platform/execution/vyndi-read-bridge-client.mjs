@@ -65,6 +65,8 @@ export function createVyndiReadBridgeClient({
           ...(job.actionType === 'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI'
             ? {
               employeeId: job.payload?.employeeId ?? 'all',
+              ...(job.payload?.primaryOnly===true?{primaryOnly:true}:{}),
+              ...(job.payload?.crm===true?{crm:true}:{}),
               from: job.payload?.from,
               to: job.payload?.to,
               offset: Number.isInteger(job.payload?.offset) ? job.payload.offset : 0,

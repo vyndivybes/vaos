@@ -16,6 +16,7 @@
     }
   ],
   "vars": {
+    "VAOS_ELEVENLABS_CONTROL": "free-personal-v1",
     "SUPABASE_URL": "https://jjzycduoujbmiegqfiud.supabase.co",
     "ACTIVEPIECES_SYNTHETIC_QUALIFY": "approved-20261009",
     "STIRLING_SYNTHETIC_QUALIFY": "approved-20261010",

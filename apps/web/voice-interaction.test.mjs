@@ -203,7 +203,7 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
   completeDocument(globalThis.document,root);
   globalThis.Audio=class{async play(){speech.utterances.push(this);this.onplaying?.();}pause(){speech.cancels++;}};
   const businessFetch=globalThis.fetch;
-  globalThis.fetch=async(url,options)=>String(url).includes('/api/voice/synthesize')?{ok:true,blob:async()=>new Blob([Buffer.alloc(48)],{type:'audio/wav'})}:businessFetch(url,options);
+  globalThis.fetch=async(url,options)=>String(url).includes('/api/voice/synthesize')?{ok:true,headers:{get:name=>name==='X-VAOS-Voice-Provider'?'kokoro-onnx':'vaos-cinematic-v1'},blob:async()=>new Blob([Buffer.alloc(48)],{type:'audio/wav'})}:businessFetch(url,options);
   localCompanion.connect('http://127.0.0.1:47831','test-neural-pairing');
   await import('./main-voice.mjs?g6-live-followup-after-voice-stop-20261015');
   await new Promise(resolve=>setTimeout(resolve,0));

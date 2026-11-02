@@ -1,6 +1,9 @@
 import {parseEngineeringMesh,compareEngineeringVertices} from './lib/engineering-mesh.mjs';
 import {planEngineeringViewerQuestion,describeEngineeringBounds} from './lib/engineering-viewer-intents.mjs';
+import {createNeuralSynthesis,NeuralUtterance,mountNeuralConnection} from './lib/local-neural-speech.mjs';
 const $=id=>document.getElementById(id);let current=null,yaw=.35,pitch=.15,zoom=1,drag=null,loadGeneration=0;
+const engineeringSpeech=createNeuralSynthesis();
+mountNeuralConnection(document.querySelector('main'));
 const hash=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
 async function read(file){if(!file||file.size>18000000)throw Error('Choose an artifact no larger than 18 MB.');const bytes=await file.arrayBuffer();return {name:file.name,sha256:await hash(bytes),mesh:parseEngineeringMesh(bytes,file.name)};}
 function provenance(){if(!current)return;$('mesh-provenance').textContent=JSON.stringify({source:current.name,sha256:current.sha256,declaredRevision:$('revision').value||null,declaredUnits:$('units').value,classification:'USER_UPLOADED_PROPOSED_ARTIFACT',representation:current.mesh.kind,bounds:current.mesh.bounds,notice:current.mesh.notice,engineeringReleaseGranted:false},null,2);}
@@ -17,12 +20,11 @@ $('compare').addEventListener('click',async()=>{try{if(!current||!$('revision').
 let activeEngineeringMic=null;
 function sayEngineeringAnswer(text){
  $('engineering-answer').textContent=text;
- if(document.visibilityState!=='visible'||typeof window.speechSynthesis?.speak!=='function'||typeof window.SpeechSynthesisUtterance!=='function')return;
+ if(document.visibilityState!=='visible')return;
  try{
-  window.speechSynthesis.cancel();
-  const utterance=new window.SpeechSynthesisUtterance(text.slice(0,850));
-  utterance.lang='en-IN';utterance.rate=.97;
-  window.speechSynthesis.speak(utterance);
+  const utterance=new NeuralUtterance(text.slice(0,600));
+  utterance.onerror=()=>$('mesh-status').textContent='Local neural voice unavailable. Connect the companion; the written explanation remains visible.';
+  engineeringSpeech.speak(utterance);
  }catch{/* Visible text remains the source of truth. */}
 }
 function answerEngineeringQuestion(){
@@ -68,7 +70,7 @@ $('engineering-mic').addEventListener('click',()=>{
 });
 function stopEngineeringMedia(){
  const mic=activeEngineeringMic;activeEngineeringMic=null;try{mic?.abort()}catch{}
- try{window.speechSynthesis?.cancel()}catch{}
+ engineeringSpeech.cancel();
 }
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')stopEngineeringMedia();});
 window.addEventListener('pagehide',stopEngineeringMedia);

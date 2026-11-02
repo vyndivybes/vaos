@@ -107,9 +107,7 @@ export function createVoicePilotController({
     if(utterance||playback||speechSynthesis.speaking===true||speechSynthesis.pending===true){
       stopSpeaking();
     }
-    // Match the independently audible short-speech test: let Chromium resolve
-    // its native en-US speech voice. Explicit voice objects can select a silent
-    // engine on devices that advertise dozens of language packs.
+    // The caller supplies local neural playback. No platform voice is selected.
     const playbackLang='en-US';
     const state={chunks:splitSpeech(content),index:0};
     playback=state;

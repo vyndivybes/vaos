@@ -4,6 +4,10 @@ import {createVoiceAudioDiagnostics} from './voice-audio-diagnostics.mjs';
 import {createOneShotVoiceConversation} from './lib/voice-one-shot.mjs';
 import {createVoiceMultiTurnSession} from './lib/voice-multiturn.mjs';
 import {formatFederatedVoiceEvidence,expandFollowup,classifyVoiceQuestion,unsupportedBusinessReadback,makeGroundedSuggestions} from './lib/federated-voice-report.mjs';
+import {createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,localCompanion} from './lib/local-neural-speech.mjs';
+
+const neuralSpeech=createNeuralSynthesis();
+mountNeuralConnection(document.querySelector('main'));
 
 const $ = id => document.getElementById(id);
 const autoAsk=$('vaos-auto-ask'),autoStop=$('vaos-auto-stop'),autoStatus=$('vaos-auto-status'),autoAnswer=$('vaos-auto-answer');
@@ -51,8 +55,8 @@ let aiFocusEnabled=false;
 
 const voice=createVoicePilotController({
   RecognitionClass:window.SpeechRecognition||window.webkitSpeechRecognition,
-  SpeechSynthesisUtteranceClass:window.SpeechSynthesisUtterance,
-  speechSynthesis:window.speechSynthesis,
+  SpeechSynthesisUtteranceClass:NeuralUtterance,
+  speechSynthesis:neuralSpeech,
   onStatus:message=>{status.textContent=message;},
   onListeningChanged:()=>{
     updateButtons();
@@ -145,17 +149,16 @@ function multiTurnBusy(){return ['LISTENING','READING'].includes(multiTurn.state
 function multiTurnOpen(){return !['IDLE','EXPIRED'].includes(multiTurn.state());}
 
 const audioDiagnostics=createVoiceAudioDiagnostics({
-  SpeechSynthesisUtteranceClass:window.SpeechSynthesisUtterance,
-  speechSynthesis:window.speechSynthesis,
+  SpeechSynthesisUtteranceClass:NeuralUtterance,
+  speechSynthesis:neuralSpeech,
+  describeProvider:()=> 'ElevenLabs personal/non-commercial test selected on hosted VAOS. Free credits only. No Windows TTS fallback.',
   AudioContextClass:window.AudioContext||window.webkitAudioContext,
   onStatus:message=>{diagnosticsStatus.textContent=message;},
 });
 function updateDiagnostics(){
   diagnosticsStatus.textContent=audioDiagnostics.describe();
 }
-if(typeof window.speechSynthesis?.addEventListener==='function'){
-  window.speechSynthesis.addEventListener('voiceschanged',updateDiagnostics);
-}
+localCompanion.subscribe(()=>{voice.stopSpeaking();audioDiagnostics.stopSpeech();updateDiagnostics();updateButtons();});
 
 function updateButtons() {
   autoAsk.disabled=!enabled||!voice.dictationAvailable||!voice.speechAvailable||voice.isListening();

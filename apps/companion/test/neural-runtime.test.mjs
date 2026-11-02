@@ -15,6 +15,7 @@ test('real CPU Kokoro service returns PCM WAV, cleans uploads, cancels work and 
   assert.equal(app.capabilities.neuralVoice,true);
   const start=performance.now(),response=await request('Good evening. I am VAOS. Your project history is available with source references. Every change remains under your control.');
   assert.equal(response.status,200,await (response.ok?Promise.resolve(''):response.text()));assert.equal(response.headers.get('Content-Type'),'audio/wav');
+  assert.equal(response.headers.get('X-VAOS-Voice-Provider'),'kokoro-onnx');assert.equal(response.headers.get('X-VAOS-Voice-Profile'),'vaos-cinematic-v1');
   const wav=Buffer.from(await response.arrayBuffer());assert.equal(wav.toString('ascii',0,4),'RIFF');assert.equal(wav.toString('ascii',8,12),'WAVE');assert.equal(wav.readUInt32LE(24),24000);assert.ok(wav.length>48000);
   const seconds=(wav.length-44)/48000;console.log(JSON.stringify({profile:'vaos-cinematic-v1',seconds,synthesisMs:Math.round(performance.now()-start),bytes:wav.length}));
   assert.deepEqual(await readdir(join(dir,'uploads')),[]);

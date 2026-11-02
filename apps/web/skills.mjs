@@ -1,7 +1,8 @@
-import {localCompanion,createNeuralSynthesis,NeuralUtterance} from './lib/local-neural-speech.mjs';
+import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection} from './lib/local-neural-speech.mjs';
 import {mountConversationMemory} from './lib/conversation-memory-ui.mjs';
 const $=id=>document.getElementById(id);
 const resultSpeech=createNeuralSynthesis();
+mountNeuralConnection(document.querySelector('#vaos-main-voice'));
 mountConversationMemory({container:document.querySelector('[data-view="memory"]')});
 const local=location.hostname==='127.0.0.1';
 let endpoint='',token='',capabilities={},timer=null,reviewedJob=null,currentArtifact=null,currentResult='',voiceGeneration=0,recording=null,mapView=null;

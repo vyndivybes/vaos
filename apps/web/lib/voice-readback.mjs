@@ -1,6 +1,6 @@
 /** Playback for verified, read-only VAOS answers.
- * Uses the previously audio-qualified native en-US voice (no forced voice
- * object) and reports errors rather than claiming queued audio was spoken.
+ * Uses the explicitly supplied playback adapter and reports actual audio
+ * events rather than claiming queued audio was spoken.
  */
 export function splitVoiceText(value,max=180){
  if(typeof value!=='string'||!value.trim()||value.length>5000)return [];
@@ -46,7 +46,7 @@ export function createVoiceReadback({
    let utterance;
    try{
     utterance=new UtteranceClass(st.chunks[index]);
-    utterance.lang=['en-US','en-IN','ta-IN','ml-IN','hi-IN'].includes(language())?language():'en-US';utterance.rate=1; // Chromium native voice is more reliable than en-IN on some Windows installs.
+    utterance.lang=['en-US','en-IN','ta-IN','ml-IN','hi-IN'].includes(language())?language():'en-US';utterance.rate=1;
     utterance.onstart=()=>{
      if(active!==st)return;
      st.started=true;clearTimer(st);onState('SPEAKING');

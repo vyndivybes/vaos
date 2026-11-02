@@ -47,6 +47,7 @@ import prelaunchWorkforce from './api/prelaunch-workforce.mjs';
 import prelaunchRecovery from './api/prelaunch-recovery.mjs';
 import founderConversation from './api/founder-conversation.mjs';
 import voiceCapabilities from './api/voice-capabilities.mjs';
+import voiceSpeech from './api/voice-speech.mjs';
 import voiceDiscover from './api/voice-discover.mjs';
 import voiceCommercial from './api/voice-commercial.mjs';
 import voiceInsight from './api/voice-insight.mjs';
@@ -128,6 +129,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/jarvis-project-memory': jarvisProjectMemory,
   '/api/founder-conversation': founderConversation,
   '/api/voice-capabilities': voiceCapabilities,
+  '/api/voice-speech': voiceSpeech,
   '/api/voice-discover': voiceDiscover,
   '/api/voice-commercial': voiceCommercial,
   '/api/voice-insight': voiceInsight,

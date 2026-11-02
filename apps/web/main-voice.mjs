@@ -11,7 +11,7 @@ import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone
 import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
 import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
 import {founderLoginGreeting} from './lib/founder-voice-identity.mjs';
-import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection} from './lib/local-neural-speech.mjs';
+import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady} from './lib/local-neural-speech.mjs';
 import {mountConversationMemory,historicalQuery,formatHistoricalAnswer} from './lib/conversation-memory-ui.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
@@ -292,7 +292,7 @@ function init(){
   ask.disabled=busy;
   if(wakeToggle)wakeToggle.disabled=!micState.mayListen;
   stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
-  speech.disabled=!lastAnswer||(!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!localCompanion.ready();};
+  speech.disabled=!lastAnswer||(!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!speechOutputReady();};
  localCompanion.subscribe(()=>{player.cancel();acknowledgement.cancel();state();});
  // One consented, local-only microphone at a time during synthesized speech.
  // Re-arm bounded short windows on long replies while playback is active.

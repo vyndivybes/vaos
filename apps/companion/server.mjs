@@ -41,7 +41,7 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
    if(req.headers.host!==new URL(localOrigin).host)throw error('HOST_DENIED',403);
    const origin=req.headers.origin;
    if(origin&&!trustedOrigins.has(origin)&&origin!==localOrigin)throw error('ORIGIN_DENIED',403);
-   if(origin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');}
+   if(origin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Expose-Headers','X-VAOS-Voice-Provider, X-VAOS-Voice-Profile');}
    if(req.method==='OPTIONS'){
     res.writeHead(204,{'Access-Control-Allow-Methods':'GET, POST, DELETE, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Private-Network':'true','Access-Control-Max-Age':'300'});res.end();return;
    }
@@ -74,12 +74,12 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
      throw error('NOT_FOUND',404);
     }
     if(!paired)throw error('PAIRING_REQUIRED',401);
-    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',capabilities,local:true,memoryScope:{tenantId,subject}});
+    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',capabilities,local:true,memoryScope:{tenantId,subject},voiceBackend:{provider:'kokoro-onnx',profile:'vaos-cinematic-v1',platformFallback:false}});
     if(req.method==='POST'&&path==='/api/voice/synthesize'){
      if(!capabilities.neuralVoice)throw error('NEURAL_SETUP_REQUIRED',503);
      const data=await body(req),abort=new AbortController();
      const closed=()=>{if(!res.writableEnded)abort.abort();};res.once('close',closed);
-     try{const audio=await neural.synthesize(data,abort.signal);if(!res.destroyed){res.writeHead(200,{'Content-Type':'audio/wav','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(audio);}}finally{res.removeListener('close',closed);}
+     try{const audio=await neural.synthesize(data,abort.signal);if(!res.destroyed){res.writeHead(200,{'Content-Type':'audio/wav','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-VAOS-Voice-Provider':'kokoro-onnx','X-VAOS-Voice-Profile':'vaos-cinematic-v1'});res.end(audio);}}finally{res.removeListener('close',closed);}
      return;
     }
     if(req.method==='POST'&&path==='/api/shutdown'){const data=await body(req);if(data.confirm!=='STOP COMPANION')throw error('STOP_CONFIRMATION_REQUIRED');json(res,200,{stopped:true});setImmediate(()=>void close());return;}

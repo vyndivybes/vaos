@@ -1,6 +1,6 @@
 # JARVIS local voice and governed conversation memory
 
-Development implementation, 2 November 2026. No production deployment, private conversation import, policy activation or restricted autonomy activation is part of this change.
+Initial development implementation, 2 November 2026. The user subsequently approved an ElevenLabs personal/non-commercial rollout with strictly zero-paid usage. See the [current ElevenLabs test-mode guide](jarvis-elevenlabs-personal-test.md) for that follow-up. No private history import or restricted autonomy activation is authorized by this voice change.
 
 ## Audit and scope
 
@@ -14,7 +14,7 @@ Baseline: `292f86f663cca6a68b9c19e3d4697d347bb8d463` on `main`.
 | `jarvis-project-memory.mjs` | Founder-only R2 object, up to eight short notes, 60-day read filtering | Existing hosted notes are not silently migrated or imported |
 | `g6-conversation.mjs` | Short-lived in-page follow-up context | Retained; historical recall is a separate explicit local read |
 
-The older qualification voice-pilot and other legacy browser voice tools remain separate. This changes current JARVIS readback and Skills results, not every experimental speech consumer in the repository. Existing business evidence/model routes, calendars and autonomy gates are unchanged. This implementation adds no paid model provider and invokes none during qualification.
+The follow-up also replaces the older qualification pilot, visual JARVIS, engineering viewer and diagnostics output bindings. All shipping browser consumers use an explicit neural adapter, with no platform TTS fallback. Hosted output uses the user-requested ElevenLabs free personal test; the standalone companion retains offline Kokoro. Existing business evidence/model routes, calendars and autonomy gates are unchanged.
 
 ## Run locally
 

@@ -45,3 +45,7 @@ cloudflare-worker.mjs
 !lib/founder-voice-identity.mjs
 
 !lib/engineering-viewer-intents.mjs
+
+!lib/local-neural-speech.mjs
+!lib/elevenlabs-speech.mjs
+!lib/conversation-memory-ui.mjs

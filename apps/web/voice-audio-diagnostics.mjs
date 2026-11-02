@@ -5,6 +5,7 @@ export function createVoiceAudioDiagnostics({
   speechSynthesis,
   AudioContextClass,
   onStatus=()=>{},
+  describeProvider=()=> 'Configured speech adapter',
 }={}) {
   const speechAvailable=typeof SpeechSynthesisUtteranceClass==='function'
     &&typeof speechSynthesis?.speak==='function'
@@ -17,14 +18,7 @@ export function createVoiceAudioDiagnostics({
     onStatus('Speech test stopped.');
   }
   function describe() {
-    let voices=[];
-    try{voices=speechSynthesis?.getVoices?.()||[];}catch{}
-    const english=voices.filter(v=>String(v?.lang||'').toLowerCase().startsWith('en')).length;
-    return 'Speech API: '+(speechAvailable?'available':'unavailable')
-      +'. Installed browser voices: '+voices.length+' (English: '+english+').'
-      +' Synth speaking: '+Boolean(speechSynthesis?.speaking)
-      +', pending: '+Boolean(speechSynthesis?.pending)
-      +', paused: '+Boolean(speechSynthesis?.paused)+'.';
+    return describeProvider()+'. Playback adapter: '+(speechAvailable?'available':'unavailable')+'.';
   }
   function testShortSpeech() {
     if(!speechAvailable){onStatus('Speech playback unavailable in this browser.');return false;}
@@ -34,13 +28,13 @@ export function createVoiceAudioDiagnostics({
       current.lang='en-US';
       current.rate=1;
       current.volume=1;
-      current.onstart=()=>{if(active===current)onStatus('Short speech STARTED. Check Windows audio output.');};
+      current.onstart=()=>{if(active===current)onStatus('Local neural speech STARTED. Confirm whether it is audible.');};
       current.onend=()=>{if(active===current){active=null;onStatus('Short speech COMPLETED. Confirm whether it was audible.');}};
       current.onerror=event=>{
         if(active!==current)return;
         active=null;
         const error=typeof event?.error==='string' && /^[a-z-]{1,50}$/.test(event.error)?event.error:'unknown';
-        onStatus('Short speech ERROR: '+error+'. Check installed voices, Chrome tab audio and Windows mixer.');
+        onStatus('Short speech ERROR: '+error+'. Check companion neural setup and browser audio output.');
       };
       active=current;
       speechSynthesis.speak(current);

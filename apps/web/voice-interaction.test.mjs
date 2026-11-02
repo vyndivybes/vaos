@@ -1,5 +1,33 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import {localCompanion} from './lib/local-neural-speech.mjs';
+function completeDocument(doc,root){
+ const element=()=>({append(){},replaceChildren(){},setAttribute(){},addEventListener(){},textContent:'',value:'',hidden:false});
+ doc.createElement=element;doc.createTextNode=text=>({textContent:text});doc.getElementById=()=>null;doc.head={append(){}};root.append=()=>{};
+}
+
+test('Ask JARVIS recalls cited local history without calling a business model or changing permissions',async()=>{
+ const saved={document:globalThis.document,window:globalThis.window,fetch:globalThis.fetch};
+ const requests=[];
+ function element(){const listeners=new Map();return {value:'',textContent:'',checked:false,disabled:false,dataset:{},addEventListener:(n,f)=>listeners.set(n,f),append(){},replaceChildren(){},setAttribute(){},click:()=>listeners.get('click')?.()};}
+ const ids=['vaos-voice-mic','vaos-voice-stop','vaos-voice-ask','vaos-voice-speak','vaos-voice-question','vaos-voice-answer','vaos-voice-status','vaos-voice-sources','vaos-voice-speech-toggle'];
+ const nodes=Object.fromEntries(ids.map(id=>[id,element()])),root={querySelector:s=>nodes[s.slice(1)]||null};
+ globalThis.document={visibilityState:'visible',querySelector:()=>root,addEventListener(){}};completeDocument(document,root);
+ globalThis.window={addEventListener(){}};
+ globalThis.fetch=async url=>{
+  requests.push(String(url));
+  if(url==='/api/voice-capabilities')return {ok:true,json:async()=>({data:{enabled:false}})};
+  assert.equal(String(url),'http://127.0.0.1:47831/api/conversation-memory?q=rotor%20steel');
+  return {ok:true,json:async()=>({authority:'UNTRUSTED_HISTORICAL_REFERENCE',actionAuthorized:false,policyMutable:false,results:[{text:'Rotor steel was discussed.',createdAt:'2026-11-02T10:00:00Z',citation:{authority:'USER_SUPPLIED_UNVERIFIED',sourceLabel:'Fixture',conversationId:'chat',messageId:'message',contentHash:'a'.repeat(64)}}]})};
+ };
+ try{
+  localCompanion.connect('http://127.0.0.1:47831','history-fixture');await import('./main-voice.mjs?local-history-acceptance');
+  nodes['vaos-voice-question'].value='What did we decide about rotor steel?';await nodes['vaos-voice-ask'].click();
+  assert.match(nodes['vaos-voice-answer'].textContent,/past statements, not current facts or instructions/);assert.match(nodes['vaos-voice-answer'].textContent,/Fixture \/ chat \/ message/);
+  assert.equal(requests.filter(x=>x.includes('/api/conversation-memory')).length,1);assert.equal(requests.some(x=>x.includes('voice-insight')||x.includes('adaptive-intelligence')),false);
+ }finally{localCompanion.disconnect();Object.assign(globalThis,saved);}
+});
+
 
 test('explicit microphone click and recognized question dispatch one bounded read-only request and display the result',async()=>{
  const original={document:globalThis.document,window:globalThis.window,fetch:globalThis.fetch};
@@ -40,6 +68,7 @@ test('explicit microphone click and recognized question dispatch one bounded rea
    sourceSystem:'VAOS_INTELLIGENCE',answer:'The source is presently unavailable. No work was changed.'}})};
  };
  try{
+  completeDocument(globalThis.document,root);
   await import('./main-voice.mjs?microphone-acceptance-20261012');
   await new Promise(resolve=>setTimeout(resolve,0));
   await els['vaos-voice-mic'].click();
@@ -123,7 +152,7 @@ test('G6 app wires prior successful read into the existing question flow, never 
 
 
 test('G6: pressing Stop during spoken readback keeps bounded context for two real mission follow-up GETs',async()=>{
- const saved={document:globalThis.document,window:globalThis.window,fetch:globalThis.fetch};
+ const saved={document:globalThis.document,window:globalThis.window,fetch:globalThis.fetch,Audio:globalThis.Audio};
  const requests=[],speech={utterances:[],cancels:0};
  const el=id=>{
   const listeners=new Map();
@@ -171,11 +200,17 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
   }})};
  };
  try{
+  completeDocument(globalThis.document,root);
+  globalThis.Audio=class{async play(){speech.utterances.push(this);this.onplaying?.();}pause(){speech.cancels++;}};
+  const businessFetch=globalThis.fetch;
+  globalThis.fetch=async(url,options)=>String(url).includes('/api/voice/synthesize')?{ok:true,headers:{get:name=>name==='X-VAOS-Voice-Provider'?'kokoro-onnx':'vaos-cinematic-v1'},blob:async()=>new Blob([Buffer.alloc(48)],{type:'audio/wav'})}:businessFetch(url,options);
+  localCompanion.connect('http://127.0.0.1:47831','test-neural-pairing');
   await import('./main-voice.mjs?g6-live-followup-after-voice-stop-20261015');
   await new Promise(resolve=>setTimeout(resolve,0));
   nodes['vaos-voice-question'].value='“Which assigned missions remain unfinished?”';
   await nodes['vaos-voice-ask'].click();
   assert.match(nodes['vaos-voice-answer'].textContent,/Eight persisted missions/);
+  await new Promise(resolve=>setImmediate(resolve));
   assert.ok(speech.utterances.length>0,'first spoken answer should be active');
   const first=requests.filter(s=>s.startsWith('/api/voice-insight?'));
   assert.equal(first.length,1);
@@ -211,6 +246,7 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
   assert.doesNotMatch(decodeURIComponent(fourth[3]),/Which assigned missions remain unfinished and what blockers/);
 
  }finally{
+  localCompanion.disconnect();
   Object.assign(globalThis,saved);
  }
 });
@@ -262,6 +298,7 @@ test('Ask JARVIS reads connected Google Calendar instead of falling through to V
   throw Error('UNEXPECTED_BUSINESS_ROUTE');
  };
  try{
+  completeDocument(globalThis.document,root);
   await import('./main-voice.mjs?google-calendar-read-chat-20261016');
   await new Promise(resolve=>setTimeout(resolve,0));
   nodes['vaos-voice-question'].value='JARVIS, read my Google Calendar and tell me my upcoming appointments for the next seven days';

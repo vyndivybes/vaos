@@ -12,7 +12,10 @@ def execute(request):
     data = request.get("input", {})
     if kind == "status":
         return {name: importlib.util.find_spec(name) is not None
-                for name in ("docx", "faster_whisper", "pyautogui")}
+                for name in ("docx", "faster_whisper", "pyautogui", "kokoro_onnx")}
+    if kind == "voice.synthesize":
+        from neural_voice import synthesize
+        return synthesize(data)
     if kind == "document.word":
         from docx import Document
         document = Document()

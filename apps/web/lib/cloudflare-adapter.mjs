@@ -85,6 +85,7 @@ export async function invokeCloudflareHandler(handler, request, runtimeEnv = und
     body: await readBody(request),
     url: request.url,
     env: runtimeEnv,
+    signal: request.signal,
   };
 
   const response = createResponseShim();

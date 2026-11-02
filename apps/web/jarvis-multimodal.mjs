@@ -3,7 +3,10 @@ import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {createGuidedVisualConversation} from './lib/guided-visual-conversation.mjs';
 import {createVisualSessionContext} from './lib/visual-session-context.mjs';
 import {createProjectNotes} from './lib/project-notes.mjs';
+import {createNeuralSynthesis,NeuralUtterance,mountNeuralConnection} from './lib/local-neural-speech.mjs';
 const $=id=>document.getElementById(id);
+const visualSpeech=createNeuralSynthesis();
+mountNeuralConnection(document.querySelector('main'));
 function showPresence(mode,detail=''){
  const modes={
   IDLE:['JARVIS is ready','Start JARVIS to begin a visual conversation.'],
@@ -123,8 +126,8 @@ const dictation=createQuestionDictation({
  onStatus:message=>{$('status').textContent=message;}
 });
 const voiceReadback=createVoiceReadback({
- synthesis:window.speechSynthesis,
- UtteranceClass:window.SpeechSynthesisUtterance,
+ synthesis:visualSpeech,
+ UtteranceClass:NeuralUtterance,startTimeout:125000,
  language:()=> 'en-US',
  onState:mode=>{if(mode==='SPEAKING'){showPresence('SPEAKING');$('status').textContent='JARVIS is speaking the displayed advisory explanation.';}},
  onError:code=>{

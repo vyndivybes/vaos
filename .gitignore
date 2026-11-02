@@ -1,4 +1,6 @@
 node_modules/
+.runtime-neural/
+.wrangler-dry-run/
 .env
 .env.*
 !.env.example

@@ -11,6 +11,8 @@ import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone
 import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
 import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
 import {founderLoginGreeting} from './lib/founder-voice-identity.mjs';
+import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady} from './lib/local-neural-speech.mjs';
+import {mountConversationMemory,historicalQuery,formatHistoricalAnswer} from './lib/conversation-memory-ui.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // This small home assistant deliberately performs no commands, approvals or writes.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
@@ -224,6 +226,7 @@ function init(){
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
  let pendingReminderTitle=null;
  let authenticatedFounder=false,loginWelcome='';
+ let lastExchange=null;
  const g5Timing=createG5ResponseTiming();
  // The paired local speech tool supplies a draft only. The user still presses
  // Ask, and the existing classifier and read-only routes retain authority.
@@ -233,6 +236,9 @@ function init(){
   input.value=transcript;voiceRequestPending=true;
  });
  const conversation=createG6Conversation();
+ const neuralSynthesis=createNeuralSynthesis();
+ mountNeuralConnection(root);
+ mountConversationMemory({container:root,getExchange:()=>lastExchange});
  // Show the authenticated welcome without requesting microphone or audio permission.
  document.addEventListener('vaos-authenticated',event=>{
   const signedEmail=event?.detail?.email;
@@ -259,7 +265,7 @@ function init(){
    :/\bretriev|\bchecking|\brequesting|\bthinking/i.test(message)?'working':'ready';
  };
  const player=createVoiceReadback({
-  synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
+  synthesis:neuralSynthesis,UtteranceClass:NeuralUtterance,startTimeout:125000,
   language:()=>({ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'}[answerLanguage]||'en-US'),
   onState:mode=>{if(mode==='QUEUED')setStatus('Voice queued; checking audio output.');
     if(mode==='SPEAKING'){setStatus('VAOS is speaking.');startInterruption();}},
@@ -267,7 +273,7 @@ function init(){
   onFinished:mode=>{stopInterruption();if(mode==='FINISHED')setStatus('Spoken answer completed.');wake?.resume();state();}
  });
  const acknowledgement=createVoiceAcknowledgement({
-  synthesis:window.speechSynthesis,UtteranceClass:window.SpeechSynthesisUtterance,
+  synthesis:neuralSynthesis,UtteranceClass:NeuralUtterance,startTimeout:125000,
   outputBusy:()=>player.active(),
   isFounder:()=>authenticatedFounder,
   onError:()=>setStatus('JARVIS acknowledgement could not play. Check browser audio; you can still type or use the microphone.'),
@@ -286,7 +292,8 @@ function init(){
   ask.disabled=busy;
   if(wakeToggle)wakeToggle.disabled=!micState.mayListen;
   stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
-  speech.disabled=!lastAnswer||(!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!window.speechSynthesis||!window.SpeechSynthesisUtterance;};
+  speech.disabled=!lastAnswer||(!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!speechOutputReady();};
+ localCompanion.subscribe(()=>{player.cancel();acknowledgement.cancel();state();});
  // One consented, local-only microphone at a time during synthesized speech.
  // Re-arm bounded short windows on long replies while playback is active.
  const ondeviceBarge=createG6BargeInListener({
@@ -407,6 +414,24 @@ function init(){
   if(busy)return;
   const requestCameFromVoice=voiceRequestPending;
   voiceRequestPending=false;
+  const historyWords=historicalQuery(input.value);
+  if(historyWords){
+   const question=input.value;
+   wake?.pause();cancel();busy=true;lastExchange=null;state();
+   const abort=new AbortController();controller=abort;
+   const timer=setTimeout(()=>abort.abort(),15000);
+   try{
+    const data=await localCompanion.request('/api/conversation-memory?q='+encodeURIComponent(historyWords),{signal:abort.signal});
+    if(controller!==abort||abort.signal.aborted)return;
+    lastAnswer=formatHistoricalAnswer(data);spokenAnswer=lastAnswer;answerLanguage='en';answer.textContent=lastAnswer;sources.replaceChildren();
+    lastExchange={question,answer:lastAnswer};setStatus('Historical reference retrieved. No current business facts or permissions inferred.');
+    if(voiceEnabled&&speakToggle?.checked)speakAnswer();
+   }catch{if(controller===abort){answer.textContent='Historical recall unavailable. Connect the local companion, check its memory policy, and try again.';lastAnswer='';spokenAnswer='';setStatus('History unavailable.');}}
+   finally{clearTimeout(timer);if(controller===abort){controller=null;busy=false;if(!player.active())wake?.resume();state();}}
+   return;
+  }
+  const exchangeQuestion=input.value;
+  lastExchange=null;
   const resolved=conversation.resolve(input.value);
   const directGoogleIntent=resolveFounderGoogleIntent(resolved.question);
   const calendarReadIntent=resolveFounderCalendarReadIntent(resolved.question);
@@ -448,6 +473,7 @@ function init(){
     if(data.reason==='GOOGLE_SCOPE_RECONNECT_REQUIRED'||data.reason==='GOOGLE_FOUNDER_CONSENT_REQUIRED'){
      const link=document.createElement('a');link.href='/api/google-workspace/start';link.textContent='Connect Google Workspace';sources.append(link);
     }
+    lastExchange={question:exchangeQuestion,answer:lastAnswer};
     answer.textContent=lastAnswer;spokenAnswer=lastAnswer.slice(0,450);setStatus(save?(data.saved?'Calendar event saved and confirmed.':'Calendar save not confirmed.')
      :readCalendar?(data.status==='PASS'?'Google Calendar appointments retrieved.':'Calendar read unavailable.')
      :'Google Workspace search complete.');
@@ -486,6 +512,7 @@ function init(){
    if(controller!==abort||abort.signal.aborted)return;
    conversation.remember(intent,normalized.status,{usedContext:resolved.usedContext});
    lastAnswer=normalized.answer;
+   lastExchange={question:exchangeQuestion,answer:normalized.answer};
    spokenAnswer=normalized.spokenAnswer||normalized.answer;
    answerLanguage=normalized.language||'en';
    answer.textContent=normalized.answer;

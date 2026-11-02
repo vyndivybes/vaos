@@ -1,4 +1,9 @@
+import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection} from './lib/local-neural-speech.mjs';
+import {mountConversationMemory} from './lib/conversation-memory-ui.mjs';
 const $=id=>document.getElementById(id);
+const resultSpeech=createNeuralSynthesis();
+mountNeuralConnection(document.querySelector('#vaos-main-voice'));
+mountConversationMemory({container:document.querySelector('[data-view="memory"]')});
 const local=location.hostname==='127.0.0.1';
 let endpoint='',token='',capabilities={},timer=null,reviewedJob=null,currentArtifact=null,currentResult='',voiceGeneration=0,recording=null,mapView=null;
 const handled=new Set(),voiceJobs=new Map();
@@ -57,19 +62,20 @@ async function connect(address,code){
  const url=new URL(address);
  if(url.protocol!=='http:'||url.hostname!=='127.0.0.1'||url.username||url.password||url.pathname!=='/'||url.search||url.hash)throw Error('Use an address such as http://127.0.0.1:47831');
  endpoint=url.origin;token=code.trim();
- try{const status=await api('/api/status');capabilities=status.capabilities;}catch(error){token='';throw error;}
+ let memoryScope;
+ try{const status=await api('/api/status');capabilities=status.capabilities;memoryScope=status.memoryScope;localCompanion.connect(endpoint,token);}catch(error){token='';localCompanion.disconnect();throw error;}
  $('connection-state').textContent='Local companion connected';$('connect-open').hidden=true;$('disconnect').hidden=false;
  $('copy-pair-code').hidden=!local;$('shutdown').hidden=false;
  $('capabilities').replaceChildren();
  for(const [name,value] of Object.entries(capabilities)){const ready=typeof value==='object'?Object.values(value).every(Boolean):value;const li=document.createElement('li');li.textContent=name+': '+(ready?'available':'setup needed');li.dataset.ready=String(ready);$('capabilities').append(li);}
- $('connect-dialog').close();message('Connected to your computer. Choose a skill to begin.');await refreshJobs();
+ $('connect-dialog').close();message('Connected to your computer. Memory profile: '+memoryScope.tenantId+' / '+memoryScope.subject+'. Choose a skill to begin.');await refreshJobs();
 }
 $('connect-open').addEventListener('click',()=>$('connect-dialog').showModal());
 $('connect-cancel').addEventListener('click',()=>$('connect-dialog').close());
 $('copy-pair-code').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(token);message('Pairing code copied. Open VAOS Skills, choose Connect computer, and paste it there.');}catch{message('Clipboard unavailable. Restart the companion without --open to display a session code in its terminal.');}});
-$('shutdown').addEventListener('click',async()=>{if(!confirm('Stop the companion, its running tasks and scheduled routines?'))return;try{await api('/api/shutdown','POST',{confirm:'STOP COMPANION'});void stopCapture(false);token='';clearTimeout(timer);$('connection-state').textContent='Companion stopped';$('shutdown').hidden=true;$('disconnect').hidden=true;$('copy-pair-code').hidden=true;$('connect-open').hidden=false;message('Companion stopped. Routines will resume only after you start it again.');}catch(error){failure(error);}});
+$('shutdown').addEventListener('click',async()=>{if(!confirm('Stop the companion, its running tasks and scheduled routines?'))return;try{await api('/api/shutdown','POST',{confirm:'STOP COMPANION'});void stopCapture(false);token='';localCompanion.disconnect();clearTimeout(timer);$('connection-state').textContent='Companion stopped';$('shutdown').hidden=true;$('disconnect').hidden=true;$('copy-pair-code').hidden=true;$('connect-open').hidden=false;message('Companion stopped. Routines will resume only after you start it again.');}catch(error){failure(error);}});
 bindForm('connect-form',async data=>{try{await connect(data.endpoint,data.token);$('connect-error').textContent='';}catch(error){$('connect-error').textContent=friendly[error.message]||error.message;}});
-$('disconnect').addEventListener('click',async()=>{try{await api('/api/revoke','POST',{});}catch{}stopCapture(false);window.speechSynthesis?.cancel();token='';capabilities={};clearTimeout(timer);$('connection-state').textContent='Companion disconnected';$('connect-open').hidden=false;$('disconnect').hidden=true;message('Pairing revoked. Reopen the companion for a new code.');});
+$('disconnect').addEventListener('click',async()=>{try{await api('/api/revoke','POST',{});}catch{}stopCapture(false);resultSpeech.cancel();token='';localCompanion.disconnect();capabilities={};clearTimeout(timer);$('connection-state').textContent='Companion disconnected';$('connect-open').hidden=false;$('disconnect').hidden=true;message('Pairing revoked. Reopen the companion for a new code.');});
 $('refresh-jobs').addEventListener('click',()=>void refreshJobs().catch(failure));
 $('approve-action').addEventListener('click',async()=>{if(!reviewedJob)return;try{await api('/api/jobs/'+reviewedJob.id+'/approve','POST',{hash:reviewedJob.hash,confirm:'RUN LOCAL ACTION'});$('review-dialog').close();reviewedJob=null;await refreshJobs();}catch(error){failure(error);}});
 $('reject-action').addEventListener('click',async()=>{if(reviewedJob)await api('/api/jobs/'+reviewedJob.id+'/stop','POST',{});reviewedJob=null;$('review-dialog').close();await refreshJobs();});
@@ -108,7 +114,7 @@ async function stopCapture(send){
 }
 $('record').addEventListener('click',async()=>{let pendingStream,pendingContext;try{
  if(!capabilities.voice)throw Error('VOICE_MODEL_NOT_INSTALLED');
- await stopCapture(false);window.speechSynthesis?.cancel();if(!$('vaos-voice-stop').disabled)$('vaos-voice-stop').click();
+ await stopCapture(false);resultSpeech.cancel();if(!$('vaos-voice-stop').disabled)$('vaos-voice-stop').click();
  const generation=++voiceGeneration,stream=pendingStream=await navigator.mediaDevices.getUserMedia({audio:true,video:false});
  if(generation!==voiceGeneration){stream.getTracks().forEach(t=>t.stop());return;}
  const context=pendingContext=new AudioContext(),analyser=context.createAnalyser();context.createMediaStreamSource(stream).connect(analyser);analyser.fftSize=256;
@@ -123,13 +129,13 @@ $('record').addEventListener('click',async()=>{let pendingStream,pendingContext;
  recorder.start();active.timeout=setTimeout(()=>void stopCapture(true),30000);$('record').disabled=true;$('record-stop').disabled=false;$('capture-state').textContent='Recording locally. Finish sends the audio; Stop audio discards it.';
 }catch(error){pendingStream?.getTracks().forEach(t=>t.stop());if(pendingContext)await pendingContext.close().catch(()=>{});failure(error);}});
 $('record-stop').addEventListener('click',()=>void stopCapture(true));
-$('audio-stop').addEventListener('click',()=>{void stopCapture(false);window.speechSynthesis?.cancel();for(const id of voiceJobs.keys())void api('/api/jobs/'+id+'/stop','POST',{}).catch(()=>{});if(!$('vaos-voice-stop').disabled)$('vaos-voice-stop').click();});
-function speak(text){if(!window.speechSynthesis||!window.SpeechSynthesisUtterance){message('Speech playback is unavailable in this browser.');return;}window.speechSynthesis.cancel();const utterance=new SpeechSynthesisUtterance(text.slice(0,5000));utterance.onerror=()=>message('Speech playback failed. Read the displayed result.');window.speechSynthesis.speak(utterance);}
+$('audio-stop').addEventListener('click',()=>{void stopCapture(false);resultSpeech.cancel();for(const id of voiceJobs.keys())void api('/api/jobs/'+id+'/stop','POST',{}).catch(()=>{});if(!$('vaos-voice-stop').disabled)$('vaos-voice-stop').click();});
+function speak(text){const utterance=new NeuralUtterance(text.slice(0,600));utterance.onerror=()=>message('Local neural playback unavailable. Connect the companion and install the English neural models.');resultSpeech.speak(utterance);}
 $('result-speak').addEventListener('click',()=>speak(currentResult));
 $('result-download').addEventListener('click',()=>{if(currentArtifact)void downloadArtifact(currentArtifact).catch(failure);});
 $('map-toggle').addEventListener('click',async()=>{const target=$('capability-map');target.hidden=!target.hidden;if(!target.hidden){try{if(!mapView){const {createSkillsMap}=await import('/skills-map.mjs');mapView=createSkillsMap(target,capabilities);}}catch{target.textContent='3D is unavailable here. The capability list above remains available.';}}});
-document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'){void stopCapture(false);window.speechSynthesis?.cancel();}});
-window.addEventListener('pagehide',()=>{void stopCapture(false);clearTimeout(timer);mapView?.dispose();});
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible'){void stopCapture(false);resultSpeech.cancel();}});
+window.addEventListener('pagehide',()=>{resultSpeech.dispose();localCompanion.disconnect();void stopCapture(false);clearTimeout(timer);mapView?.dispose();});
 if(local){$('vaos-voice-ask').disabled=true;$('vaos-voice-status').textContent='For authenticated business questions, copy the pairing code above, then ';const link=document.createElement('a');link.href='https://vaos.vayushastr.workers.dev/skills.html';link.target='_blank';link.rel='noopener noreferrer';link.textContent='open VAOS Skills and connect this computer.';$('vaos-voice-status').append(link);}
 else import('/main-voice.mjs').catch(()=>message('VAOS voice controls could not load. Refresh the page.'));
 const fragment=new URLSearchParams(location.hash.slice(1)),pair=fragment.get('pair');

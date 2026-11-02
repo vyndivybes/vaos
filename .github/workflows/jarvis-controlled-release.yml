@@ -9,6 +9,10 @@ on:
       - 'apps/web/api/adaptive-intelligence.mjs'
       - 'apps/web/lib/adaptive-intelligence.mjs'
       - 'apps/web/main-voice.mjs'
+      - 'apps/web/api/voice-speech.mjs'
+      - 'apps/web/lib/elevenlabs-speech.mjs'
+      - 'apps/web/lib/local-neural-speech.mjs'
+      - 'integrations/elevenlabs/**'
       - 'apps/web/api/jarvis-multimodal.mjs'
       - 'apps/web/api/jarvis-multimodal.test.mjs'
       - 'apps/web/lib/g7-source-evidence.mjs'
@@ -104,5 +108,13 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$EXPECTED_SHA"
+      - name: Install approved personal-test ElevenLabs credential
+        env:
+          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "$ELEVENLABS_API_KEY"
+          printf '%s' "$ELEVENLABS_API_KEY" | npx --yes wrangler@4.136.3 secret put ELEVENLABS_API_KEY --config wrangler.jsonc
       - name: Deploy existing Worker with governance controls retained
         run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc

@@ -10,6 +10,8 @@ import {createActions,text} from './actions.mjs';
 import {pythonOperation} from './python.mjs';
 import {proposeSkill,validateSkill,skillHash,testSkill} from './forge.mjs';
 import {lockDataDirectory} from './lock.mjs';
+import {createConversationMemory} from './conversation-memory.mjs';
+import {createNeuralVoice,cleanupNeuralAudio} from './neural-voice.mjs';
 
 const web=fileURLToPath(new URL('../web/',import.meta.url));
 const tokenEqual=(left,right)=>{const a=Buffer.from(left),b=Buffer.from(right);return a.length===b.length&&timingSafeEqual(a,b);};
@@ -20,14 +22,17 @@ async function body(req){
  for await(const chunk of req){size+=chunk.length;if(size>15000000)throw error('REQUEST_TOO_LARGE',413);chunks.push(chunk);}
  try{const data=JSON.parse(Buffer.concat(chunks));if(!data||typeof data!=='object'||Array.isArray(data))throw Error();return data;}catch{throw error('JSON_INVALID');}
 }
-export async function createCompanion({dataDir,token=randomBytes(32).toString('base64url'),python,modelDir=resolve(dataDir,'models','tiny.en'),chromePath,run,allowLoopbackForTests=false}={}){
+export async function createCompanion({dataDir,token=randomBytes(32).toString('base64url'),python,modelDir=resolve(dataDir,'models','tiny.en'),neuralModelDir=resolve(dataDir,'models','kokoro'),tenantId='local-personal',subject='local-owner',memoryPrincipals=[],chromePath,run,allowLoopbackForTests=false}={}){
  for(const part of ['','artifacts','uploads','ocr-cache'])await mkdir(resolve(dataDir,part),{recursive:true});
  const releaseLock=lockDataDirectory(dataDir);
  let store;try{store=openStore(resolve(dataDir,'companion.sqlite'));}catch(error){releaseLock();throw error;}
+ let memory;try{await cleanupNeuralAudio(dataDir);memory=createConversationMemory(store.db);memory.getPolicy({tenantId,subject,role:'owner'});}catch(error){store.close();releaseLock();throw error;}
+ const neural=createNeuralVoice({dataDir,python,modelDir:neuralModelDir});
+ const localOwner={tenantId,subject,role:'owner'};
  const actions=run||createActions({dataDir,store,python,modelDir,chromePath,allowLoopbackForTests});
  const jobs=createJobs({store,run:actions}),scheduler=createScheduler({store,jobs});
  let pythonStatus={};try{pythonStatus=await pythonOperation('status',{}, {python,timeout:10000});}catch{}
- const capabilities={documents:{xlsx:true,pdf:true,docx:!!pythonStatus.docx},ocr:true,browser:!!chromePath&&existsSync(chromePath),desktop:process.platform==='win32'&&!!pythonStatus.pyautogui,voice:!!pythonStatus.faster_whisper&&existsSync(resolve(modelDir,'model.bin')),memory:true,routines:true,forge:true};
+ const capabilities={documents:{xlsx:true,pdf:true,docx:!!pythonStatus.docx},ocr:true,browser:!!chromePath&&existsSync(chromePath),desktop:process.platform==='win32'&&!!pythonStatus.pyautogui,voice:!!pythonStatus.faster_whisper&&existsSync(resolve(modelDir,'model.bin')),neuralVoice:!!pythonStatus.kokoro_onnx&&['manifest.json','kokoro-v1.0.onnx','voices-v1.0.bin'].every(f=>existsSync(resolve(neuralModelDir,f))),conversationMemory:true,memory:true,routines:true,forge:true};
  const trustedOrigins=new Set(['https://vaos.vayushastr.workers.dev']);
  let localOrigin;
  const json=(res,status,data)=>{res.writeHead(status,{'Content-Type':'application/json','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'});res.end(JSON.stringify(data));};
@@ -36,16 +41,49 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
    if(req.headers.host!==new URL(localOrigin).host)throw error('HOST_DENIED',403);
    const origin=req.headers.origin;
    if(origin&&!trustedOrigins.has(origin)&&origin!==localOrigin)throw error('ORIGIN_DENIED',403);
-   if(origin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');}
+   if(origin){res.setHeader('Access-Control-Allow-Origin',origin);res.setHeader('Vary','Origin');res.setHeader('Access-Control-Expose-Headers','X-VAOS-Voice-Provider, X-VAOS-Voice-Profile');}
    if(req.method==='OPTIONS'){
     res.writeHead(204,{'Access-Control-Allow-Methods':'GET, POST, DELETE, OPTIONS','Access-Control-Allow-Headers':'Authorization, Content-Type','Access-Control-Allow-Private-Network':'true','Access-Control-Max-Age':'300'});res.end();return;
    }
    const url=new URL(req.url,localOrigin),path=url.pathname;
    if(path.startsWith('/api/')){
-    if(!tokenEqual(req.headers.authorization||'','Bearer '+token))throw error('PAIRING_REQUIRED',401);
-    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',capabilities,local:true});
+    const authorization=req.headers.authorization||'';
+    const paired=tokenEqual(authorization,'Bearer '+token);
+    const principal=paired?localOwner:memoryPrincipals.find(p=>tokenEqual(authorization,'Bearer '+p.token));
+    if(path.startsWith('/api/conversation-memory')){
+     if(!principal)throw error('PAIRING_REQUIRED',401);
+     if(req.method==='GET'&&path==='/api/conversation-memory')return json(res,200,memory.recall(principal,url.searchParams.get('q')||''));
+     if(req.method==='GET'&&path==='/api/conversation-memory/policy')return json(res,200,memory.getPolicy(principal));
+     if(req.method==='GET'&&path==='/api/conversation-memory/audit')return json(res,200,memory.audit(principal));
+     if(req.method==='GET'&&path==='/api/conversation-memory/reviews')return json(res,200,memory.reviews(principal));
+     if(req.method==='POST'){
+      const data=await body(req);
+      if(path==='/api/conversation-memory/import/prepare')return json(res,200,memory.prepareImport(principal,data));
+      if(path==='/api/conversation-memory/policy/prepare')return json(res,200,memory.preparePolicy(principal,data));
+      if(path==='/api/conversation-memory/approve'){
+       if(!paired||origin!==localOrigin)throw error('LOCAL_MEMORY_APPROVAL_REQUIRED',403);
+       return json(res,200,memory.approve(principal,data));
+      }
+      if(path==='/api/conversation-memory/clear'){
+       if(data.confirm!=='DELETE SAVED CONVERSATIONS')throw error('MEMORY_CONFIRMATION_REQUIRED');
+       return json(res,200,memory.clear(principal));
+      }
+     }
+     const match=path.match(/^\/api\/conversation-memory\/([a-f0-9-]{36})$/);
+     if(match&&req.method==='DELETE')return json(res,200,memory.remove(principal,match[1]));
+     throw error('NOT_FOUND',404);
+    }
+    if(!paired)throw error('PAIRING_REQUIRED',401);
+    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',capabilities,local:true,memoryScope:{tenantId,subject},voiceBackend:{provider:'kokoro-onnx',profile:'vaos-cinematic-v1',platformFallback:false}});
+    if(req.method==='POST'&&path==='/api/voice/synthesize'){
+     if(!capabilities.neuralVoice)throw error('NEURAL_SETUP_REQUIRED',503);
+     const data=await body(req),abort=new AbortController();
+     const closed=()=>{if(!res.writableEnded)abort.abort();};res.once('close',closed);
+     try{const audio=await neural.synthesize(data,abort.signal);if(!res.destroyed){res.writeHead(200,{'Content-Type':'audio/wav','Cache-Control':'no-store','X-Content-Type-Options':'nosniff','X-VAOS-Voice-Provider':'kokoro-onnx','X-VAOS-Voice-Profile':'vaos-cinematic-v1'});res.end(audio);}}finally{res.removeListener('close',closed);}
+     return;
+    }
     if(req.method==='POST'&&path==='/api/shutdown'){const data=await body(req);if(data.confirm!=='STOP COMPANION')throw error('STOP_CONFIRMATION_REQUIRED');json(res,200,{stopped:true});setImmediate(()=>void close());return;}
-    if(req.method==='POST'&&path==='/api/revoke'){jobs.stopAll();token=randomBytes(32).toString('base64url');return json(res,200,{revoked:true});}
+    if(req.method==='POST'&&path==='/api/revoke'){jobs.stopAll();neural.cancel();token=randomBytes(32).toString('base64url');return json(res,200,{revoked:true});}
     if(req.method==='GET'&&path==='/api/jobs')return json(res,200,jobs.list());
     if(req.method==='POST'&&path==='/api/jobs'){
      const data=await body(req);return json(res,202,jobs.submit(data.kind,data.input));
@@ -109,20 +147,20 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
     throw error('NOT_FOUND',404);
    }
    const asset=path==='/'?'/skills.html':path;
-   const allowed=new Set(['/skills.html','/skills.mjs','/skills.css','/skills-map.mjs','/assets/vayu-shastr-original.webp','/vendor/three.module.min.js','/vendor/three.core.min.js']);
+   const allowed=new Set(['/skills.html','/skills.mjs','/skills.css','/skills-map.mjs','/conversation-memory.css','/lib/local-neural-speech.mjs','/lib/elevenlabs-speech.mjs','/lib/conversation-memory-ui.mjs','/assets/vayu-shastr-original.webp','/vendor/three.module.min.js','/vendor/three.core.min.js']);
    if(req.method!=='GET'||!allowed.has(asset))throw error('NOT_FOUND',404);
    const data=await readFile(resolve(web,'.'+asset));
    res.writeHead(200,{'Content-Type':{'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.webp':'image/webp'}[extname(asset)],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; connect-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; media-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'"});res.end(data);
   }catch(e){json(res,e.status||400,{error:/^[A-Z][A-Z0-9_]{2,90}$/.test(e.message)?e.message:'REQUEST_FAILED'});}
  });
- let timer,closing;
+ let timer,memoryTimer,closing;
  function close(){
-  if(!closing)closing=(async()=>{clearInterval(timer);jobs.stopAll();await jobs.idle();await new Promise(r=>server.close(r));store.close();releaseLock();})();
+  if(!closing)closing=(async()=>{clearInterval(timer);clearInterval(memoryTimer);neural.cancel();jobs.stopAll();await jobs.idle();await new Promise(r=>server.close(r));store.close();releaseLock();})();
   return closing;
  }
  return {
   server,store,jobs,scheduler,capabilities,
-  async listen(port=47831){try{await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);});}catch(error){store.close();releaseLock();throw error;}localOrigin='http://127.0.0.1:'+server.address().port;timer=setInterval(()=>{try{scheduler.tick();}catch{}},1000);return {origin:localOrigin,token};},
+  async listen(port=47831){try{await new Promise((ok,fail)=>{server.once('error',fail);server.listen(port,'127.0.0.1',ok);});}catch(error){store.close();releaseLock();throw error;}localOrigin='http://127.0.0.1:'+server.address().port;timer=setInterval(()=>{try{scheduler.tick();}catch{}},1000);memoryTimer=setInterval(()=>{try{memory.sweep();}catch{console.error('MEMORY_RETENTION_SWEEP_FAILED');}},60000);return {origin:localOrigin,token};},
   close
  };
 }

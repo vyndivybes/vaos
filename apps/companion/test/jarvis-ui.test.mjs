@@ -16,6 +16,11 @@ test('local history UI reviews exact text, approves, recalls citations, fits mob
  try{
   await page.goto(origin+'/#pair=history-ui');await page.getByText('Local companion connected',{exact:true}).waitFor();await page.locator('[data-panel="memory"]').click();
   await page.getByText('Conversation history on this computer',{exact:true}).click();
+  await page.getByRole('button',{name:'Disconnect memory in this tab',exact:true}).click();
+  await page.getByLabel('Local memory address',{exact:true}).fill(origin);
+  await page.getByLabel('Local memory pairing code',{exact:true}).fill('history-ui');
+  await page.getByRole('button',{name:'Connect local memory',exact:true}).click();
+  await page.getByText('Memory connected to local-personal / local-owner.',{exact:true}).waitFor();
   const archive={schemaVersion:1,messages:[{conversationId:'fixture',messageId:'decision',role:'user',text:'Rotor material decision <img src=x onerror=alert(1)> uses steel.',createdAt:new Date().toISOString()}]};
   await page.getByLabel('Authorized conversation export JSON').setInputFiles({name:'authorized-fixture.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(archive))});
   await page.getByRole('button',{name:'Review authorized export',exact:true}).click();await page.locator('details pre').filter({hasText:'reviewHash'}).count();

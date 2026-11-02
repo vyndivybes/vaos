@@ -41,7 +41,17 @@ export function mountConversationMemory({container,getExchange=()=>null}={}){
  const recall=document.createElement('input');recall.type='checkbox';recall.checked=true;
  const imports=document.createElement('input');imports.type='checkbox';imports.checked=true;
  function label(text,input){const l=document.createElement('label');l.append(document.createTextNode(text),input);return l;}
- details.append(notice,query,button('Recall history',search),button('Review saving this exchange',async()=>{
+ const memoryAddress=document.createElement('input');memoryAddress.value='http://127.0.0.1:47831';memoryAddress.setAttribute('aria-label','Local memory address');
+ const memoryCode=document.createElement('input');memoryCode.type='password';memoryCode.autocomplete='off';memoryCode.setAttribute('aria-label','Local memory pairing code');
+ const pairingNote=document.createElement('p');pairingNote.textContent='Memory stays on your paired computer. This connection is separate from hosted ElevenLabs speech. The pairing code stays in this tab only.';
+ details.append(notice,pairingNote,label('Local memory address',memoryAddress),label('Local memory pairing code',memoryCode),button('Connect local memory',async()=>{
+  try{
+   localCompanion.connect(memoryAddress.value,memoryCode.value);memoryCode.value='';
+   const data=await localCompanion.request('/api/status');
+   if(data.capabilities?.conversationMemory!==true||typeof data.memoryScope?.tenantId!=='string'||typeof data.memoryScope?.subject!=='string')throw Error('MEMORY_SERVICE_UNAVAILABLE');
+   status.textContent='Memory connected to '+data.memoryScope.tenantId+' / '+data.memoryScope.subject+'.';
+  }catch(e){memoryCode.value='';localCompanion.disconnect();throw e;}
+ }),button('Disconnect memory in this tab',()=>{localCompanion.disconnect();status.textContent='Memory disconnected in this tab. Saved history remains on the computer.';}),query,button('Recall history',search),button('Review saving this exchange',async()=>{
   const exchange=getExchange();if(!exchange?.question||!exchange?.answer)throw Error('No current question and answer to save.');
   const conversationId=crypto.randomUUID(),createdAt=new Date().toISOString();
   showProposal(await request('/import/prepare','POST',{sourceLabel:'Explicitly saved VAOS exchange',archive:{schemaVersion:1,messages:[{conversationId,messageId:crypto.randomUUID(),role:'user',text:exchange.question,createdAt},{conversationId,messageId:crypto.randomUUID(),role:'assistant',text:exchange.answer,createdAt}]}}));

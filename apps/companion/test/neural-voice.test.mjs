@@ -4,7 +4,7 @@ import {mkdtemp,mkdir,readdir,rm,writeFile} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {createNeuralVoice,cleanupNeuralAudio} from '../neural-voice.mjs';
-import {createNeuralSynthesis,NeuralUtterance} from '../../web/lib/local-neural-speech.mjs';
+import {createNeuralSynthesis,NeuralUtterance,neuralSpeechFailureMessage} from '../../web/lib/local-neural-speech.mjs';
 import {historicalQuery,formatHistoricalAnswer} from '../../web/lib/conversation-memory-ui.mjs';
 
 test('historical questions select bounded local keyword recall and label excerpts without asserting current facts',()=>{
@@ -39,4 +39,19 @@ test('neural browser playback reports actual playing, blocks stale synthesis and
  const utterance=new NeuralUtterance('Hello');utterance.onstart=()=>started++;utterance.onend=()=>ended++;
  player.speak(utterance);player.cancel();respond(new Blob([Buffer.alloc(48)],{type:'audio/wav'}));await new Promise(r=>setImmediate(r));assert.equal(audio,undefined);assert.equal(started,0);
  player.speak(utterance);respond(new Blob([Buffer.alloc(48)],{type:'audio/wav'}));await new Promise(r=>setImmediate(r));assert.equal(started,0);audio.onplaying();assert.equal(started,1);audio.onended();assert.equal(ended,1);assert.deepEqual(revoked,['blob:test']);player.dispose();
+});
+
+test('neural preview preserves safe provider failures and distinguishes browser playback permission',async()=>{
+ for(const [failure,expected] of [[Error('ELEVENLABS_ACCOUNT_UNAVAILABLE'),'ELEVENLABS_ACCOUNT_UNAVAILABLE'],[Error('provider response with a private key'),'NEURAL_SPEECH_UNAVAILABLE']]){
+  let observed;
+  const player=createNeuralSynthesis({transport:{request:async()=>{throw failure;}}});
+  const u=new NeuralUtterance('Hello');u.onerror=e=>observed=e;
+  player.speak(u);await new Promise(r=>setImmediate(r));
+  assert.equal(observed.code,expected);assert.ok(!JSON.stringify(observed).includes('private key'));
+  assert.match(neuralSpeechFailureMessage(observed.code),expected==='ELEVENLABS_ACCOUNT_UNAVAILABLE'?/account check/i:/unavailable/i);player.dispose();
+ }
+ let observed;
+ const player=createNeuralSynthesis({transport:{request:async()=>new Blob([Buffer.alloc(48)],{type:'audio/mpeg'})},makeAudio:()=>({play:async()=>{throw Object.assign(Error('not permitted'),{name:'NotAllowedError'});},pause(){}}),urls:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}}});
+ const u=new NeuralUtterance('Hello');u.onerror=e=>observed=e;
+ player.speak(u);await new Promise(r=>setImmediate(r));assert.equal(observed.code,'NEURAL_PLAYBACK_BLOCKED');assert.match(neuralSpeechFailureMessage(observed.code),/browser blocked/i);player.dispose();
 });

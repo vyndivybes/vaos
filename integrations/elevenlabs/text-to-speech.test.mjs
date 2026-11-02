@@ -41,3 +41,18 @@ test('daily preview budget is durable and caps free-credit consumption across re
  await assert.rejects(createElevenLabsSpeech(t.dependencies),/DAILY_LIMIT/);
  assert.ok(t.env.VAOS_ARTIFACTS.record().used<=1000);
 });
+
+test('provider preflight uses Workers-supported manual redirects and never follows a credential-bearing redirect',async()=>{
+ const t=setup(),fetcher=t.dependencies.fetcher;
+ t.dependencies.fetcher=async(url,init)=>{
+  // workerd rejects redirect:error before sending any request.
+  if(!['manual','follow'].includes(init.redirect))throw TypeError('Invalid redirect value');
+  assert.equal(init.redirect,'manual','never follow a provider redirect with the API key');
+  return fetcher(url,init);
+ };
+ assert.equal((await createElevenLabsSpeech(t.dependencies)).length,100);
+ const blocked=setup();let requests=0;
+ blocked.dependencies.fetcher=async(_url,init)=>{requests++;assert.equal(init.redirect,'manual');return new Response(null,{status:302,headers:{Location:'https://untrusted.example/'}});};
+ await assert.rejects(createElevenLabsSpeech(blocked.dependencies),/ELEVENLABS_ACCOUNT_UNAVAILABLE/);
+ assert.equal(requests,1);assert.equal(blocked.conversions(),0);assert.equal(blocked.env.VAOS_ARTIFACTS.record(),null);
+});

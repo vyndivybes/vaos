@@ -12,7 +12,9 @@ export function elevenLabsConfiguration(env){
   configured:!!env?.ELEVENLABS_API_KEY,personalNoncommercialOnly:true,attribution:'Voice by ElevenLabs · elevenlabs.io',dailyCharacterLimit:1000};
 }
 async function providerJson(path,{key,fetcher,signal}){
- const r=await fetcher('https://api.elevenlabs.io'+path,{headers:{'xi-api-key':key},redirect:'error',signal});
+ // workerd supports manual/follow only. Reject every non-2xx response below;
+ // never forward this credential to a redirect destination.
+ const r=await fetcher('https://api.elevenlabs.io'+path,{headers:{'xi-api-key':key},redirect:'manual',signal});
  if(!r.ok)fail('ELEVENLABS_ACCOUNT_UNAVAILABLE');
  return r.json();
 }

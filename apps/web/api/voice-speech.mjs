@@ -16,7 +16,11 @@ export function createVoiceSpeechHandler({getSession=req=>verifySessionToken(par
   try{
    const bytes=await synthesize({env:req.env,text:b.text,language:b.language,signal:req.signal});
    return new Response(bytes,{headers:{'Content-Type':'audio/mpeg','Cache-Control':'private, no-store','X-Content-Type-Options':'nosniff','X-VAOS-Voice-Provider':'elevenlabs','X-VAOS-Voice-Profile':'George-eleven-v4-free-personal'}});
-  }catch(e){return json(e.status||503,{error:/^ELEVENLABS_[A-Z_]+$/.test(e.message)?e.message:'ELEVENLABS_UNAVAILABLE'});}
+  }catch(e){
+   const error=/^ELEVENLABS_[A-Z_]+$/.test(e.message)?e.message:'ELEVENLABS_UNAVAILABLE';
+   console.warn('VAOS_VOICE_REQUEST_FAILED',error);
+   return json(e.status||503,{error});
+  }
  };
 }
 export default createVoiceSpeechHandler();

@@ -27,6 +27,26 @@ export const localCompanion={
  }
 };
 export class NeuralUtterance{constructor(text){this.text=text;this.lang='en-US';}}
+const speechFailures=Object.freeze({
+ ELEVENLABS_NOT_CONFIGURED:'ElevenLabs is not configured on the server.',
+ ELEVENLABS_ACCOUNT_UNAVAILABLE:'ElevenLabs account check failed on the server.',
+ ELEVENLABS_ZERO_COST_POLICY_REQUIRED:'The account does not meet the free-only, no-overage policy.',
+ ELEVENLABS_FREE_CREDITS_EXHAUSTED:'The included free credits are exhausted.',
+ ELEVENLABS_VOICE_NOT_QUALIFIED:'The selected ElevenLabs voice could not be verified.',
+ ELEVENLABS_BUDGET_UNAVAILABLE:'The server could not access the voice quota ledger.',
+ ELEVENLABS_BUSY:'Another voice request is active. Wait before trying again.',
+ ELEVENLABS_DAILY_LIMIT:'The daily free voice limit has been reached.',
+ ELEVENLABS_SYNTHESIS_UNAVAILABLE:'ElevenLabs did not return usable speech.',
+ ELEVENLABS_AUDIO_TOO_LARGE:'The returned voice audio exceeded the size limit.',
+ ELEVENLABS_AUDIO_INVALID:'The returned voice audio was invalid.',
+ ELEVENLABS_TEXT_INVALID:'The text cannot be spoken within the current limits.',
+ ELEVENLABS_LANGUAGE_UNAVAILABLE:'This test voice supports English only.',
+ NEURAL_PLAYBACK_BLOCKED:'Your browser blocked audio playback. Allow sound for this site and try again.',
+ NEURAL_AUDIO_INVALID:'The server did not return valid voice audio.',
+ NEURAL_PROVIDER_UNVERIFIED:'The audio provider could not be verified.',
+ NEURAL_SPEECH_UNAVAILABLE:'ElevenLabs preview unavailable.'
+});
+export function neuralSpeechFailureMessage(code){return (speechFailures[code]||speechFailures.NEURAL_SPEECH_UNAVAILABLE)+' ['+(Object.hasOwn(speechFailures,code)?code:'NEURAL_SPEECH_UNAVAILABLE')+'] No Windows voice was substituted.';}
 export function mountNeuralConnection(container){
  if(!container||container.querySelector?.('[data-neural-connection]'))return;
  if(hostedSpeech())return mountElevenLabsVoice(container);
@@ -65,7 +85,7 @@ function mountElevenLabsVoice(container){
  const stop=document.createElement('button');stop.type='button';stop.textContent='Stop voice preview';
  const speech=createNeuralSynthesis({transport:elevenLabsSpeech});
  check.addEventListener('click',async()=>{try{const {data}=await elevenLabsSpeech.request();play.disabled=data?.ready!==true;status.textContent=data?.ready?'ElevenLabs / George / Eleven v4 configured for your personal test. Up to 1,000 characters per day within the remaining free allowance. No paid requests are allowed.':'ElevenLabs personal test is not activated. No Windows voice will be substituted.';}catch{play.disabled=true;status.textContent='ElevenLabs connection unavailable. Sign in and check server configuration.';}});
- play.addEventListener('click',()=>{const u=new NeuralUtterance(ELEVENLABS_SAMPLE);status.textContent='Requesting the fixed ElevenLabs audition using free credits only.';u.onstart=()=>status.textContent='ElevenLabs / George / Eleven v4 is playing. Please confirm what you hear.';u.onend=()=>status.textContent='ElevenLabs preview completed. Human listening acceptance is still required.';u.onerror=()=>status.textContent='ElevenLabs preview unavailable. No Windows voice was substituted.';speech.speak(u);});
+ play.addEventListener('click',()=>{const u=new NeuralUtterance(ELEVENLABS_SAMPLE);status.textContent='Requesting the fixed ElevenLabs audition using free credits only.';u.onstart=()=>status.textContent='ElevenLabs / George / Eleven v4 is playing. Please confirm what you hear.';u.onend=()=>status.textContent='ElevenLabs preview completed. Human listening acceptance is still required.';u.onerror=e=>status.textContent=neuralSpeechFailureMessage(e.code);speech.speak(u);});
  stop.addEventListener('click',()=>{speech.cancel();status.textContent='ElevenLabs preview stopped.';});
  details.append(notice,check,play,stop,status);container.append(details);
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')speech.cancel();});window.addEventListener('pagehide',()=>speech.dispose(),{once:true});
@@ -75,7 +95,7 @@ export function createNeuralSynthesis({transport=hostedSpeech()?elevenLabsSpeech
  function cancel(){const st=current;current=null;if(!st)return;st.abort.abort();clear(st.timer);st.audio?.pause();if(st.url)urls.revokeObjectURL(st.url);}
  function speak(utterance){
   cancel();const st={abort:new AbortController(),audio:null,url:null,timer:null};current=st;
-  function finish(error){if(current!==st)return;cancel();if(error)utterance.onerror?.({error});else utterance.onend?.();}
+  function finish(error,code){if(current!==st)return;cancel();if(error)utterance.onerror?.({error,code:code||'NEURAL_SPEECH_UNAVAILABLE'});else utterance.onend?.();}
   st.timer=schedule(()=>finish('synthesis-failed'),180000);
   void (async()=>{
    try{
@@ -86,7 +106,7 @@ export function createNeuralSynthesis({transport=hostedSpeech()?elevenLabsSpeech
     st.audio.onplaying=()=>{if(current===st)utterance.onstart?.();};
     st.audio.onended=()=>finish();st.audio.onerror=()=>finish('audio-hardware');
     await st.audio.play();
-   }catch(e){if(current===st)finish(e.message==='NEURAL_LANGUAGE_UNAVAILABLE'?'language-unavailable':'synthesis-unavailable');}
+   }catch(e){if(current===st)finish(e.message==='NEURAL_LANGUAGE_UNAVAILABLE'?'language-unavailable':'synthesis-unavailable',e.name==='NotAllowedError'?'NEURAL_PLAYBACK_BLOCKED':Object.hasOwn(speechFailures,e.message)?e.message:'NEURAL_SPEECH_UNAVAILABLE');}
   })();
  }
  const unsubscribe=transport.subscribe?.(()=>cancel());

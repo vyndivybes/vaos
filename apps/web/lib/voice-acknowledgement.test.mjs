@@ -71,11 +71,11 @@ test('silently stalled wake playback exits safely rather than keeping the microp
  assert.equal(ack.active(),false);
 });
 
-test('founder login greeting is enthusiastic, time-aware and strictly gated by server-authenticated founder email',async()=>{
+test('founder login greeting is brief, time-aware and strictly gated by server-authenticated founder email',async()=>{
  const {founderLoginGreeting}=await import('./founder-voice-identity.mjs');
- assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:8}),/^Good morning, Sir!/);
- assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:14}),/^Good afternoon, Sir!/);
- assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:20}),/^Good evening, Sir!/);
+ assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:8}),/^Good morning, Sir\./);
+ assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:14}),/^Good afternoon, Sir\./);
+ assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:20}),/^Good evening, Sir\./);
  assert.match(founderLoginGreeting({email:'shyamsundhar1982@gmail.com',hour:8}),/welcome back/i);
  assert.equal(founderLoginGreeting({email:'other@example.com',hour:8}),'');
  assert.equal(founderLoginGreeting({email:undefined,hour:8}),'');

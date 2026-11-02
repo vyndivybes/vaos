@@ -170,9 +170,19 @@ function uncachedWorkspaceAsset(path, response) {
   if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;
 
   const headers = new Headers(response.headers);
-  headers.set('Cache-Control', 'no-store, max-age=0');
-  headers.set('Pragma', 'no-cache');
-  headers.set('Expires', '0');
+  if (isWorkspaceHtml) {
+    // Sensitive or version-selecting HTML is always fetched fresh.
+    headers.set('Cache-Control', 'no-store, max-age=0');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
+  } else {
+    // Browser may retain bytes but MUST validate before reusing JS/CSS after
+    // a deployment. Preserve the origin ETag / Last-Modified validators.
+    // No max-age or immutable caching for unversioned workspace imports.
+    headers.set('Cache-Control', 'private, no-cache, must-revalidate');
+    headers.delete('Pragma');
+    headers.delete('Expires');
+  }
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,

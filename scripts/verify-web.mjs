@@ -118,7 +118,7 @@ assert.match(workspace, /Type a VAOS command or module name/);
 assert.match(workspaceApp, /data-command-query/);
 assert.match(workspaceApp, /executeVAOSCommand\(commandQuery\.dataset\.commandQuery\)/);
 assert.match(workspaceApp, /controlPlaneStatus/);
-assert.match(workspaceApp, /Control plane online/);
+assert.match(workspaceApp, /Workspace ready/);
 assert.match(workspaceApp, /Control plane unavailable/);
 assert.match(workspaceApp, /from ['"]\.\/command-router\.mjs\?v=20261008-q2-workforce['"]/);
 assert.doesNotMatch(workspaceApp, /from ['"]\.\/lib\/command-router\.mjs(?:\?[^'"]*)?['"]/);

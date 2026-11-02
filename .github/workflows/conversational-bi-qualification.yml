@@ -1,0 +1,29 @@
+name: Conversational BI isolated qualification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/bi-*.mjs'
+      - 'apps/web/bi-*.css'
+      - 'apps/web/api/dashboards*.mjs'
+      - 'platform/services/dashboard-definitions-postgres.test.mjs'
+      - 'supabase/migrations/20261016192556_conversational_bi_definitions.sql'
+      - 'supabase/functions/vaos-control/index.ts'
+      - 'package.json'
+      - '.github/workflows/conversational-bi-qualification.yml'
+permissions:
+  contents: read
+jobs:
+  owner-privacy-and-revision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install locked free-tier dependencies
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Run BI model, owner-RBAC, revision and PGlite migration tests
+        run: npm run test:bi

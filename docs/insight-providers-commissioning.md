@@ -6,8 +6,8 @@ This branch replaces six catalog-only listings with **four read-only protocol ad
 
 | Provider | Function | Prepared boundary | Production |
 | --- | --- | --- | --- |
-| Metabase | BI | Allowlisted saved card results only; dedicated-tenant instances, read-only API key | OFF |
-| Qdrant | Semantic retrieval | Allowlisted collection / vector dimension limits / mandatory tenant filter | OFF |
+| Metabase | BI | Allowlisted saved-card `POST /api/card/{id}/query` result rows; dedicated-tenant instance, database read-only principal | OFF |
+| Qdrant | Semantic retrieval | Allowlisted collection / **exact configured vector dimension** / mandatory tenant filter | OFF |
 | Meilisearch | Full text | Allowlisted index / tenant filter / read-only search key | OFF |
 | Typesense | Full text | Allowlisted collection / tenant filter / search-only key | OFF |
 | Apromore | Process mining | **Offline CSV event log export**, *not* live API integration | OFF |
@@ -20,6 +20,8 @@ This branch replaces six catalog-only listings with **four read-only protocol ad
 - **Admission:** the exact v1-form registry must show `enabled: true`, state `qualified` and the exact qualified capability. Release approval and qualified evidence are separate tasks. The checked-in v2 manifests are intentionally disabled.
 - **Transport:** pass `createGovernedHttpTransport({allowedOrigins:[config.baseUrl], ...})`, enforcing HTTPS, non-redirecting requests, request/response limits and timeouts.
 - **Secrets:** use `createCredentialBroker()` with per-provider and per-capability scoped encrypted bindings. API keys never enter the frontend, source code or result object.
+- **Metabase compatibility:** use authenticated `POST /api/card/{card-id}/query` with an empty `parameters` array. Parse `data.cols` and `data.rows` into allowlisted records; never call free-form SQL. A read-only DB identity and tenant-dedicated saved question must be independently verified against the actual pinned Metabase API version before deployment.
+- **Qdrant compatibility:** the embedding model must produce exactly `vectorDimensions` values for each pinned collection; model/vector metadata and tenant payload index must be validated with a real synthetic query.
 - **Tenant isolation:** every operation pins a `resourceKey` to configured `tenantId` and `remoteId`. Search filters are added server-side and returned tenant IDs are checked. Metabase cards *must* be dedicated-tenant, read-only saved questions; never allow arbitrary SQL or shared cards.
 - **Output:** at most 20 results, configured scalar fields only, declared `sourceAuthority`, `canonicalStateUpdated: false`, and `independentlyVerified: false`. An API read is not independent evidence of business truth.
 - **No writes:** no create/upsert/index mutations, scans, arbitrary queries, bulk data ingestion or multi-tenant metadata leakage. Neither adapter is placed into the business-effect execution registry or public API routes in this release.
@@ -35,7 +37,7 @@ const adapter = createInsightReadAdapter({
     baseUrl: 'https://your-approved-host',
     secretBindingRef: 'secret:qdrant:read-only',
     resources: {
-      engineering: { tenantId: 'approved-tenant', remoteId: 'approved_collection',
+      engineering: { tenantId: 'approved-tenant', remoteId: 'approved_collection', vectorDimensions: 2,
         fields: ['tenant_id','title'] }
     }
   }

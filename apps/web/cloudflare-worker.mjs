@@ -64,6 +64,7 @@ import engineeringKnowledge from './api/engineering-knowledge.mjs';
 import groupPortfolio from './api/group-portfolio.mjs';
 import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
 import federatedKnowledge from './api/federated-knowledge.mjs';
+import neuralKnowledge from './api/neural-knowledge.mjs';
 import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
@@ -146,6 +147,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/group-portfolio': groupPortfolio,
   '/api/voice-evidence-ai': voiceEvidenceAi,
   '/api/federated-knowledge': federatedKnowledge,
+  '/api/neural-knowledge': neuralKnowledge,
   '/api/voice-ai-focus': voiceAiFocus,
 });
 

@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "great-expectations",
+  "displayName": "Great Expectations",
+  "adapterVersion": "0.1.0",
+  "description": "GX Core validation result evidence ingestion only; external GX runtime not provisioned",
+  "capabilities": [
+    "data.quality"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "candidate",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "not-applicable",
+    "dataEgress": "none",
+    "authModes": [
+      "local"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "unknown",
+    "verificationStrategy": "artifact-hash",
+    "healthProbe": "not-applicable",
+    "rollbackMethod": "disable-provider-and-revoke-scoped-credentials"
+  },
+  "operations": {
+    "retentionClass": "validation-summary-only",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "zero-cost-only-no-auto-provisioning"
+  },
+  "licensing": {
+    "model": "Apache-2.0 GX Core offline runtime",
+    "redistributionReviewRequired": false,
+    "notes": "Independently confirm actual running deployment, entitlements and licenses before production approval."
+  },
+  "notes": "Candidate and disabled. No auto-activation, no raw business mutations. Documentation: docs/insight-providers-commissioning.md"
+}

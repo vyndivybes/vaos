@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "apromore",
+  "displayName": "Apromore",
+  "adapterVersion": "0.1.0",
+  "description": "Offline CSV event-log interoperability only; deprecated Apromore Core has no supported live connector here",
+  "capabilities": [
+    "process.mine"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "candidate",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "not-applicable",
+    "dataEgress": "none",
+    "authModes": [
+      "local"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "unknown",
+    "verificationStrategy": "artifact-hash",
+    "healthProbe": "not-applicable",
+    "rollbackMethod": "disable-provider-and-revoke-scoped-credentials"
+  },
+  "operations": {
+    "retentionClass": "local-source-bound-event-export",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "zero-cost-only-no-auto-provisioning"
+  },
+  "licensing": {
+    "model": "Deprecated LGPL-3.0 Apromore Core; export-only, no Enterprise API assumed",
+    "redistributionReviewRequired": true,
+    "notes": "Independently confirm actual running deployment, entitlements and licenses before production approval."
+  },
+  "notes": "Candidate and disabled. No auto-activation, no raw business mutations. Documentation: docs/insight-providers-commissioning.md"
+}

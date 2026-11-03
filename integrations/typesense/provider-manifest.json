@@ -1,0 +1,59 @@
+{
+  "schemaVersion": "vaos.provider.v2",
+  "providerId": "typesense",
+  "displayName": "Typesense",
+  "adapterVersion": "0.1.0",
+  "description": "Read-only full-text query with mandatory tenant filter and allowlisted collection",
+  "capabilities": [
+    "search.fulltext"
+  ],
+  "deploymentModes": [
+    "self-hosted"
+  ],
+  "enabled": false,
+  "qualification": {
+    "state": "candidate",
+    "qualifiedCapabilities": [],
+    "evidenceRefs": [],
+    "validUntil": null
+  },
+  "routing": {
+    "dataClassifications": [
+      "internal",
+      "confidential"
+    ],
+    "riskClasses": [
+      "low",
+      "medium"
+    ],
+    "licensingAllowed": true
+  },
+  "security": {
+    "secretBinding": "required",
+    "dataEgress": "controlled",
+    "authModes": [
+      "api-key"
+    ],
+    "callbackVerification": "none"
+  },
+  "execution": {
+    "idempotency": "not-supported",
+    "retrySemantics": "unknown",
+    "verificationStrategy": "provider-readback",
+    "healthProbe": "required",
+    "rollbackMethod": "disable-provider-and-revoke-scoped-credentials"
+  },
+  "operations": {
+    "retentionClass": "ephemeral-fulltext-search",
+    "dataResidency": [
+      "policy-bound"
+    ],
+    "costControl": "zero-cost-only-no-auto-provisioning"
+  },
+  "licensing": {
+    "model": "Community/open-source edition or verified free tier only",
+    "redistributionReviewRequired": false,
+    "notes": "Independently confirm actual running deployment, entitlements and licenses before production approval."
+  },
+  "notes": "Candidate and disabled. No auto-activation, no raw business mutations. Documentation: docs/insight-providers-commissioning.md"
+}

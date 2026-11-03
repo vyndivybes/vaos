@@ -332,3 +332,23 @@ test('evidence read failures are redacted and cannot be presented as completed d
  assert.equal(v.result.code,503);
  assert.doesNotMatch(JSON.stringify(v.result.body),/private-secret/);
 });
+
+
+test('Wave 1 Security: unrelated authenticated identities cannot observe or mutate enterprise mission records', async () => {
+  const f = fixture();
+  const unprivileged = 'reviewer-not-authorized@example.net';
+  const attempts = [
+    ['GET', { url: 'https://vaos.example/api/missions?missionId=mission-001', email: unprivileged }],
+    ['POST', { body: { operation: 'PLAN', missionId: 'mission-001',
+      objective: 'Prepare read-only source verification',
+      requestedJobs: ['SECURITY.ASSESS_ACCESS'] }, email: unprivileged }],
+    ['POST', { body: { operation: 'DISPATCH', missionId: 'mission-001', maxAssignments: 1 }, email: unprivileged }],
+    ['POST', { body: { operation: 'RUN_SAFE', missionId: 'mission-001', maxHandoffs: 1 }, email: unprivileged }],
+  ];
+  for (const [method, options] of attempts) {
+    const r = response();
+    await f.handler(req(method, options), r.res);
+    assert.equal(r.result.code, 403, method + ' ' + (options.body?.operation || 'SNAPSHOT'));
+  }
+  assert.deepEqual(f.calls, [], 'no mission service read, scheduling or durable effects may occur');
+});

@@ -336,7 +336,7 @@ test('evidence read failures are redacted and cannot be presented as completed d
 
 test('Wave 1 Security: unrelated authenticated identities cannot observe or mutate enterprise mission records', async () => {
   const f = fixture();
-  const unprivileged = 'reviewer-not-authorized@example.net';
+  const unprivileged = 'kaaviyam1519@gmail.com'; // existing valid signed-in non-founder test identity
   const attempts = [
     ['GET', { url: 'https://vaos.example/api/missions?missionId=mission-001', email: unprivileged }],
     ['POST', { body: { operation: 'PLAN', missionId: 'mission-001',

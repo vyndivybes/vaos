@@ -12,7 +12,7 @@
   <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/login-cinematic.css" />
 <link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/vaos-interface.css"/></head>
-<body class="va-premium login-body cinematic-login">
+<body data-app-page="login" class="va-premium login-body cinematic-login">
   <div class="cinematic-scene" id="cinematic-scene" aria-hidden="true">
     <div class="cinematic-scene__art" data-parallax-art>
       <img class="cinematic-scene__image" src="/assets/vayu-shastr-cinematic.webp"
@@ -28,25 +28,25 @@
 
   <header class="cinematic-chrome" aria-label="Vāyū Shastr secure access">
     <span class="cinematic-chrome__wordmark"><img class="cinematic-chrome__logo" src="/assets/vayu-shastr-original.webp" alt="" decoding="async" /> VĀYŪ SHASTR <em>/</em> VAOS</span>
-    <span class="cinematic-chrome__node">VAOS Agentic AI Autonomous Ecosystem <span>● SECURE GATEWAY</span></span>
+    <span class="cinematic-chrome__node">VAOS Agentic AI Autonomous Ecosystem <span>Private workspace</span></span>
   </header>
 
   <main class="cinematic-layout">
     <section class="cinematic-identity" aria-label="Vāyū Shastr Pvt Ltd">
-      <span class="cinematic-identity__tag"><i></i> CARBON / INTELLIGENCE / GOVERNANCE</span>
+      <span class="cinematic-identity__tag"><i></i> Built for the work ahead.</span>
       <div class="cinematic-identity__baseline"><span>01 — AUTHORITY</span><span>02 — EXECUTION</span><span>03 — EVIDENCE</span></div>
     </section>
 
     <section class="access-console" id="access-console" aria-labelledby="signin-title">
       <div class="access-console__scan" aria-hidden="true"></div>
       <header class="access-console__head">
-        <div><span class="access-console__indicator" aria-hidden="true"></span><span>VAOS // AGENTIC ACCESS</span></div>
-        <span class="access-console__edition">SYS.01 / PRIVATE</span>
+        <div><span class="access-console__indicator" aria-hidden="true"></span><span>VAOS sign in</span></div>
+        <span class="access-console__edition">Private workspace</span>
       </header>
       <div class="access-console__titleblock">
-        <span class="access-console__eyebrow">ENCRYPTED ACCESS TERMINAL</span>
-        <h1 id="signin-title">Authorize <em>entry.</em></h1>
-        <p>Enter your authorised identity to access the VAOS Agentic AI Autonomous Ecosystem.</p>
+        <span class="access-console__eyebrow">YOUR WORKSPACE</span>
+        <h1 id="signin-title">Welcome <em>back.</em></h1>
+        <p>Sign in with your VYNDI account to open your workspace.</p>
       </div>
       <div class="access-console__telemetry" aria-label="System safeguards">
         <div><span>AUTHORITY</span><strong>GOVERNED</strong></div>
@@ -54,11 +54,11 @@
         <div><span>EVIDENCE</span><strong>TRACEABLE</strong></div>
       </div>
       <form id="login-form" class="login-form cinematic-form" novalidate>
-        <label for="email"><span>01 / IDENTITY EMAIL</span>
+        <label for="email"><span>Email</span>
           <input id="email" name="email" type="email" autocomplete="email" inputmode="email"
             placeholder="operator@organisation.com" required />
         </label>
-        <label for="password"><span>02 / ACCESS CREDENTIAL</span>
+        <label for="password"><span>Password</span>
           <input id="password" name="password" type="password" autocomplete="current-password"
             placeholder="••••••••••••" minlength="8" required />
         </label>
@@ -68,12 +68,12 @@
         </div>
         <button type="submit" class="cinematic-authorize" id="submit-button">
           <span class="cinematic-authorize__icon" aria-hidden="true">⌁</span>
-          <span>AUTHORIZE &amp; ENTER</span>
+          <span>Sign in</span>
           <span aria-hidden="true">↗</span>
         </button>
         <p class="login-status" id="login-status" role="status" aria-live="polite"></p>
       </form>
-      <footer class="access-console__footer"><span>●</span> SECURE SESSION · 8H DEVELOPMENT ACCESS <span class="access-console__footer-mark"><img class="access-console__brandmark" src="/assets/vayu-shastr-original.webp" alt="" loading="lazy" /></span></footer>
+      <footer class="access-console__footer"><span>●</span> Private session · 8-hour development access <span class="access-console__footer-mark"><img class="access-console__brandmark" src="/assets/vayu-shastr-original.webp" alt="" loading="lazy" /></span></footer>
     </section>
   </main>
 
@@ -88,7 +88,7 @@
     <p class="cinematic-portal__kicker">AUTHORITY VERIFIED · SESSION ESTABLISHED</p>
     <h2>ENTERING <em>VAOS</em></h2>
     <div class="cinematic-portal__bar" aria-hidden="true"><span></span></div>
-    <p class="cinematic-portal__status" id="portal-status">Preparing governed workspace…</p>
+    <p class="cinematic-portal__status" id="portal-status">Opening your workspace…</p>
   </div>
 
   <script type="module" src="/app.mjs?v=20261011-cinematic-access"></script>

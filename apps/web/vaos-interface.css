@@ -1,9 +1,9 @@
 /* VAOS product interface: shared navigation, working layouts and readable evidence. */
 body.va-premium{
- --p-bg:#f4f3ee;--p-surface:#fffefa;--p-raised:#ecece5;--p-ink:#232823;--p-muted:#646c63;--p-line:#dcded4;--p-accent:#a44029;--p-deep:#eee0d5;
+ --p-bg:#f6f7f3;--p-surface:#fffefa;--p-raised:#edf1e8;--p-ink:#28352f;--p-muted:#68736c;--p-line:#dee3dc;--p-accent:#315b49;--p-deep:#e6ede1;
  --workspace-ink:var(--p-ink);--workspace-muted:var(--p-muted);--workspace-gold:var(--p-accent);--workspace-gold-bright:var(--p-accent);--workspace-rim:var(--p-line);
  --vayu-muted:var(--p-muted);--vayu-silver:var(--p-ink);--vayu-gold:var(--p-accent);--vayu-gold-bright:var(--p-accent);--vayu-gold-soft:var(--p-accent);
- color-scheme:light;background:var(--p-bg);color:var(--p-ink);font-size:15px;line-height:1.65;
+ color-scheme:light;background:var(--p-bg);color:var(--p-ink);font-family:'Segoe UI Variable','Segoe UI',Arial,sans-serif;font-size:15px;line-height:1.65;
 }
 body.va-premium :is(p,li,label){font-size:14px;line-height:1.65}
 body.va-premium :is(h1,h2,h3,h4){color:var(--p-ink);font-weight:600;letter-spacing:-.045em}
@@ -11,8 +11,8 @@ body.va-premium h1{font-size:clamp(30px,3.3vw,48px);line-height:1.13}
 body.va-premium h2{font-size:25px}body.va-premium h3{font-size:18px}
 body.va-premium :is(input,select,textarea){background:#fffefa!important;color:var(--p-ink)!important;border:1px solid #d4d8cd!important;border-radius:8px;font-size:14px!important;padding:11px 13px;min-height:44px}
 body.va-premium textarea{line-height:1.7;resize:vertical}
-body.va-premium :is(button,.va-button,.primary,.launch-cta){background:#a44029;color:#fffefa;border-radius:8px;padding:11px 17px;font-size:13px;font-weight:600;box-shadow:none}
-body.va-premium button:hover{background:#87351f;color:#fff}
+body.va-premium :is(button,.va-button,.primary,.launch-cta){background:#315b49;color:#fffefa;border-radius:6px;padding:11px 17px;font-size:13px;font-weight:600;box-shadow:none;transition:background-color .15s ease,border-color .15s ease}
+body.va-premium button:hover{background:#254737;color:#fff}
 body.va-premium :is(button,.va-button):disabled{background:#e4e6de;color:#72796e;opacity:1;cursor:not-allowed}
 body.va-premium :is(.secondary,.va-button--outline,.founder-back,.mission-link){background:transparent;color:var(--p-ink);border:1px solid var(--p-line)}
 body.va-premium :is(pre,code){background:#eeeee7;color:#3d483a;border-color:var(--p-line);font-size:12px;white-space:pre-wrap;overflow-wrap:anywhere}
@@ -230,6 +230,28 @@ body.va-premium.workspace-body :is(.domain-summary,.operational-summary){gap:13p
 @media(max-width:720px){body.va-premium.workspace-body :is(.va-focused-dashboard>header,.va-group-hero){padding:20px}body.va-premium.workspace-body :is(.va-focused-dashboard>header h2,.va-group-hero h2){font-size:25px}}
 
 /* Workspace home: a compact working overview, with the conversation beside its sources. */
+body.va-premium [hidden]{display:none!important}
+body.va-premium :is(button,a,input,select,textarea,summary):focus-visible{outline:2px solid #315b49;outline-offset:4px}
+.va-app-brand>img{width:32px;height:32px;object-fit:contain;border-radius:6px;flex:none}
+.va-app-header{min-height:72px;padding-block:12px}
+body.va-premium .va-ops-explain{background:#eef2e9;border-left:2px solid #a7b99a;padding:18px 22px}
+body.va-premium .va-ops-explain>summary{background:transparent;font-size:13px;padding:6px 0}
+body.va-premium :is(.mission-intro,.founder-intro,.launch-head>p){max-width:68ch;line-height:1.7}
+body.va-premium :is(.va-eyebrow,.eyebrow,.premium-eyebrow,.wa-kicker){letter-spacing:.04em}
+body.va-premium :is(.mission-table-scroll,.table-wrap,.table-container){max-width:100%;overflow:auto}
+body.va-premium :is(.mission-shell,.founder-shell,.wa-main,.shell,main,.panel,.wa-panel,.employee,.source,.rail){min-width:0}
+body.va-premium :is(.mission-panel,.founder-panel,.panel,.wa-panel,.employee,.source){border-radius:8px;box-shadow:none}
+body.va-premium[data-app-page="slack-qualification"]{display:block;min-height:100dvh}
+body.va-premium[data-app-page="slack-qualification"]>main{margin:32px auto;background:var(--p-surface);color:var(--p-ink);border-color:var(--p-line)}
+body.va-premium[data-app-page="slack-qualification"]>main p{color:var(--p-muted)}
+body.va-premium.login-body :is(.access-console__telemetry,.access-console__scan,.cinematic-identity__baseline){display:none}
+body.va-premium.login-body .access-console__titleblock h1{font-size:38px;letter-spacing:-.035em}
+body.va-premium.login-body .access-console__head{font-size:12px;letter-spacing:0;text-transform:none}
+body.va-premium.login-body .cinematic-authorize{background:#315b49!important;color:#fffefa!important;border:0!important;box-shadow:none!important}
+body.va-premium.login-body .cinematic-authorize span{color:inherit;letter-spacing:0}
+body.va-premium.login-body .cinematic-form label>span{text-transform:none;letter-spacing:0;font-size:13px}
+@media(max-width:720px){.va-app-header{padding:14px 18px;flex-wrap:wrap;gap:12px}.va-app-header .va-product-nav{flex:0 0 100%;gap:4px}.va-app-header .va-product-nav>a,.va-app-header .va-tools-menu>summary{padding:8px 6px;font-size:11px!important}.va-app-brand small{font-size:9px;margin-left:6px}.va-tools-menu>div{max-width:calc(100vw - 36px)}body.va-premium.login-body .access-console{padding:24px!important}body.va-premium .va-ops-explain{padding:16px 18px}}
+@media(prefers-reduced-motion:reduce){body.va-premium *{scroll-behavior:auto!important;transition:none!important}}
 body.va-premium.workspace-body{font-family:'Segoe UI Variable','Segoe UI',Arial,sans-serif;--p-accent:#315b49;--p-ink:#28352f;--p-muted:#68736c;--p-line:#dee3dc;--p-bg:#f6f7f3}
 body.va-premium.workspace-body .control-main{max-width:1540px;padding:32px clamp(24px,3vw,48px) 64px}
 body.va-premium.workspace-body .control-header{min-height:72px;padding-block:12px}
@@ -305,3 +327,14 @@ body.va-premium.workspace-body :is(button,a,input,select,summary):focus-visible{
 @media(max-width:1100px){body.va-premium.workspace-body .fc-intro{align-items:start;flex-direction:column}body.va-premium.workspace-body .fc-domain{grid-template-columns:1fr}body.va-premium.workspace-body .fc-domain .fc-status{grid-row:2}body.va-premium.workspace-body .fc-domain-actions{grid-row:3}}
 @media(max-width:900px){body.va-premium.workspace-body #command-view{grid-template-columns:1fr}body.va-premium.workspace-body #command-view>*{order:initial}body.va-premium.workspace-body #command-view>:is(.fc-intro,.fc-metrics,#vaos-main-voice,.fc-business,.fc-workforce,.fc-runtime-details){grid-column:1;grid-row:auto}body.va-premium.workspace-body .fc-team-charts{grid-template-columns:1fr}}
 @media(max-width:720px){body.va-premium.workspace-body .control-shell{display:block}body.va-premium.workspace-body .control-sidebar{height:auto;top:auto}body.va-premium.workspace-body .control-main{padding:16px 18px 40px}body.va-premium.workspace-body #command-view{display:grid;gap:24px}body.va-premium.workspace-body .fc-intro{flex-direction:column;align-items:start}body.va-premium.workspace-body .fc-intro h2{font-size:21px}body.va-premium.workspace-body .fc-metrics{grid-template-columns:1fr 1fr}body.va-premium.workspace-body .fc-metrics>*{padding:16px 12px!important}body.va-premium.workspace-body .fc-metrics>*:nth-child(2){border-right:0!important}body.va-premium.workspace-body .fc-metrics>*:nth-child(n+3){border-top:1px solid #dce2da!important}body.va-premium.workspace-body #vaos-main-voice{padding:20px}body.va-premium.workspace-body .fc-domain{grid-template-columns:minmax(0,1fr) auto}body.va-premium.workspace-body .fc-domain .fc-status{grid-row:1;grid-column:2}body.va-premium.workspace-body .fc-domain-actions{grid-row:2}body.va-premium.workspace-body .fc-domain h3{font-size:15px!important}body.va-premium.workspace-body .fc-domain p{font-size:12px!important}body.va-premium.workspace-body .va-voice-widget__intro{display:block}body.va-premium.workspace-body .va-voice-badge{display:inline-block;margin-top:8px}}
+/* Keep long action identifiers and summary figures readable on narrow phones. */
+body.va-premium.workspace-body :is(.workspace-view small,.workspace-view strong){overflow-wrap:anywhere}
+body.va-premium.workspace-body .domain-summary-card{min-width:0}
+body.va-premium.workspace-body .domain-summary-card>div{min-width:0}
+body.va-premium.workspace-body .domain-summary-card>span{flex-shrink:0}
+@media(max-width:380px){body.va-premium.workspace-body .domain-summary{grid-template-columns:minmax(0,1fr)}}
+/* Sign-in controls are available immediately, without the theatrical entrance. */
+body.va-premium.login-body :is(.access-console,.cinematic-chrome,.cinematic-legal,.cinematic-identity__tag,.cinematic-scene__image){animation:none!important;opacity:1;transform:none;filter:none}
+body.va-premium.login-body :is(.cinematic-scene__dust,.cinematic-scene__glow){display:none}
+body.va-premium.login-body .cinematic-chrome{font-family:inherit;letter-spacing:.04em;color:#68736c}
+body.va-premium.login-body .access-console__titleblock h1 em{color:#315b49}

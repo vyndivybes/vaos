@@ -11,19 +11,19 @@
   <link rel="stylesheet" href="/mission-status.css" />
   <link rel="stylesheet" href="/operations-refresh.css" />
 <link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/vaos-interface.css"/></head>
-<body class="va-premium mission-status-body"><header class="va-app-header"><a class="va-app-brand" href="/workspace"><span>V</span>VAOS<small>VĀYŪ SHASTR</small></a><nav class="va-product-nav" aria-label="Main navigation"><a href="/workspace">Overview</a><a href="/workforce-analytics">Intelligence</a><a href="/mission-status.html">Missions</a><a href="/founder-console.html">Command</a><details class="va-tools-menu"><summary>Tools</summary><div><a href="/agent-supervision.html">Agent monitoring</a><a href="/skills.html">JARVIS skills</a><a href="/prelaunch-workspace.html">Company startup</a><a href="/engineering-viewer.html">Engineering viewer</a><a href="/jarvis-multimodal.html">File intelligence</a><a href="/founder-console.html#g3-intelligence-panel">JARVIS qualification</a><a href="/slack-qualification.html">Slack qualification</a></div></details></nav></header>
+<body data-app-page="mission-status" class="va-premium mission-status-body"><header class="va-app-header"><a class="va-app-brand" href="/workspace"><img src="/assets/vayu-shastr-original.webp" alt="" width="32" height="32" />VAOS<small>VĀYŪ SHASTR</small></a><nav class="va-product-nav" aria-label="Main navigation"><a href="/workspace">Overview</a><a href="/workforce-analytics">Insights</a><a href="/mission-status.html">Missions</a><a href="/founder-console.html">Command</a><details class="va-tools-menu"><summary>Tools</summary><div><a href="/agent-supervision.html">Agent monitoring</a><a href="/skills.html">JARVIS skills</a><a href="/prelaunch-workspace.html">Company startup</a><a href="/engineering-viewer.html">Engineering viewer</a><a href="/jarvis-multimodal.html">Camera &amp; files</a><a href="/founder-console.html#g3-intelligence-panel">JARVIS checks</a><a href="/slack-qualification.html">Slack connection</a></div></details></nav></header>
 
   <details class="va-page-links"><summary>Related workspaces</summary><nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
   <a href="/workspace">Dashboard &amp; voice</a>
   <a href="/mission-status.html" aria-current="page">Mission tracking</a>
   <a href="/agent-supervision.html" >Agent monitoring</a>
-  <a href="/founder-console.html" >Founder command lab</a>
+  <a href="/founder-console.html" >Founder Command</a>
 </nav></details>
 <main class="mission-shell">
 <details class="va-ops-explain"><summary>About this workspace</summary><p>See what a VAOS mission has completed, which work packages remain blocked, who independently reviewed them, and which evidence exists. It is a read-only accountability view—not a second dashboard or a shortcut around approvals. For a quick spoken question, use <a href="/workspace">Ask VAOS on the home screen</a>.</p></details>
-    <div class="mission-overline">GOVERNED OPERATIONS / LIVE EVIDENCE</div>
+    <div class="mission-overline">MISSION TRACKING</div>
     <h1>Mission status</h1>
-    <p class="mission-intro">Read-only progress sourced from the authenticated VAOS mission service. This screen cannot approve work or close a mission.</p>
+    <p class="mission-intro">See completed work, open tasks and review evidence for a mission. You can inspect progress here; approvals and mission closure happen separately.</p>
     <form id="mission-lookup" class="mission-lookup">
       <label for="mission-id">Mission ID</label>
       <div class="mission-lookup-row">
@@ -34,7 +34,7 @@
     </form>
     <section class="mission-report" id="mission-report" hidden aria-label="Mission verification report">
       <div class="mission-report-heading">
-        <div><small>AUTHORITATIVE MISSION</small><h2 id="mission-title"></h2></div>
+        <div><small>MISSION RECORD</small><h2 id="mission-title"></h2></div>
         <span id="mission-state" class="mission-state"></span>
       </div>
       <div class="mission-stats">
@@ -44,7 +44,7 @@
       </div>
       <progress id="mission-progress" max="100" value="0" aria-label="Independently verified work percentage"></progress>
       <p id="mission-warning" class="mission-warning" hidden></p>
-      <h3>Work packages and independent reviewers</h3>
+      <h3>Tasks and independent reviewers</h3>
       <div class="mission-table-scroll">
         <table class="mission-table">
           <thead><tr><th>Job</th><th>Owner</th><th>State</th><th>Verifier</th><th>Evidence reference</th></tr></thead>
@@ -52,7 +52,7 @@
         </table>
       </div>
       <details id="g4-handoff-audit" class="g4-evidence" hidden>
-        <summary><strong>G4 · Handoff evidence trail</strong> <span>Recorded events, dissent and acceptance holds</span></summary>
+        <summary><strong>Handoff history</strong> <span>Events, reviewer feedback and open holds</span></summary>
         <p id="g4-handoff-category" class="g4-evidence-category"></p>
         <div class="g4-evidence-stats">
           <div><small>Recorded chains</small><strong id="g4-chain-count">—</strong></div>

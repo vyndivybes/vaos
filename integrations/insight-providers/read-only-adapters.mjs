@@ -15,12 +15,15 @@ function configFor(id,c){
  const resources=Object.create(null);
  for(const [key,r] of Object.entries(c.resources)){
   if(!SAFE_ID.test(key)||!r||!SAFE_ID.test(r.tenantId||''))throw deny('CONFIG_INVALID');
+  if(typeof r.remoteId!=='string'&&typeof r.remoteId!=='number')throw deny('CONFIG_INVALID');
   const remoteId=String(r.remoteId);
   if(!SAFE_ID.test(remoteId))throw deny('CONFIG_INVALID');
+  const vectorDimensions=r.vectorDimensions;
+  if(id==='qdrant'&&(!Number.isInteger(vectorDimensions)||vectorDimensions<1||vectorDimensions>2048))throw deny('CONFIG_INVALID');
   if(id==='metabase'&&(!/^\d+$/.test(remoteId)||r.dedicatedTenant!==true))throw deny('TENANT_ISOLATION_REQUIRED');
   const fields=r.fields===undefined?['tenant_id'] : r.fields;
   if(!Array.isArray(fields)||fields.length===0||fields.length>20||fields.some(f=>!SAFE_ID.test(f))||!fields.includes('tenant_id'))throw deny('CONFIG_INVALID');
-  resources[key]=Object.freeze({tenantId:r.tenantId,remoteId,fields:Object.freeze([...fields])});
+  resources[key]=Object.freeze({tenantId:r.tenantId,remoteId,fields:Object.freeze([...fields]),...(id==='qdrant'?{vectorDimensions}:{})});
  }
  if(Object.keys(resources).length===0)throw deny('CONFIG_INVALID');
  return Object.freeze({baseUrl,secretBindingRef:c.secretBindingRef,resources:Object.freeze(resources)});
@@ -35,7 +38,7 @@ function validJob(job,cfg,id){
  let query=null;
  if(id==='qdrant'){
   const v=job?.payload?.vector;
-  if(!Array.isArray(v)||v.length<1||v.length>2048||!v.every(x=>typeof x==='number'&&Number.isFinite(x)))throw deny('QUERY_INVALID');
+  if(!Array.isArray(v)||v.length!==resource.vectorDimensions||!v.every(x=>typeof x==='number'&&Number.isFinite(x)))throw deny('QUERY_INVALID');
   query=[...v];
  } else if(id!=='metabase'){
   query=text(job?.payload?.query,256);
@@ -55,7 +58,8 @@ function makeRequest(id,cfg,j,credential){
  if(credential.kind!=='api-key')throw deny('CREDENTIAL_INVALID');
  if(id==='metabase'){
   head['X-API-Key']=credential.value;
-  return{url:cfg.baseUrl+'/api/card/'+idPath+'/query/json',method:'GET',headers:head};
+  // Saved question execution uses the documented POST query endpoint; no arbitrary SQL is accepted.
+  return{url:cfg.baseUrl+'/api/card/'+idPath+'/query',method:'POST',headers:head,body:{parameters:[]}};
  }
  if(id==='qdrant'){
   head['api-key']=credential.value;
@@ -67,7 +71,17 @@ function makeRequest(id,cfg,j,credential){
  return{url:cfg.baseUrl+'/collections/'+idPath+'/documents/search?'+params.toString(),method:'GET',headers:head};
 }
 function rowsFor(id,body){
- if(id==='metabase')return body;
+ if(id==='metabase'){
+  const cols=body?.data?.cols;
+  const sourceRows=body?.data?.rows;
+  if(!Array.isArray(cols)||!Array.isArray(sourceRows)||cols.length<1||cols.length>200)throw deny('RESPONSE_INVALID');
+  const names=cols.map(c=>c?.name);
+  if(names.some(n=>typeof n!=='string'||!SAFE_ID.test(n))||new Set(names).size!==names.length)throw deny('RESPONSE_INVALID');
+  return sourceRows.slice(0,21).map(row=>{
+   if(!Array.isArray(row)||row.length!==names.length)throw deny('RESPONSE_INVALID');
+   return Object.fromEntries(names.map((name,i)=>[name,row[i]]));
+  });
+ }
  if(id==='qdrant')return body?.result?.points?.map(p=>p?.payload);
  if(id==='meilisearch')return body?.hits;
  return body?.hits?.map(h=>h?.document);
@@ -76,7 +90,8 @@ function readRows(id,r,j){
  const rows=rowsFor(id,r?.body);
  if(!Array.isArray(rows))throw deny('RESPONSE_INVALID');
  const out=[];
- for(const entry of rows.slice(0,20)){
+ if(rows.length>20)throw deny('RESPONSE_TOO_LARGE');
+ for(const entry of rows){
   if(!entry||typeof entry!=='object'||Array.isArray(entry)||entry.tenant_id!==j.tenantId)throw deny('TENANT_READBACK_MISMATCH');
   const row=Object.create(null);
   for(const name of j.resource.fields){

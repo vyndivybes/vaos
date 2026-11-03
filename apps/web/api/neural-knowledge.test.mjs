@@ -5,7 +5,7 @@ import {createNeuralKnowledgeHandler} from './neural-knowledge.mjs';
 import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 const email='shyamsundhar1982@gmail.com';
 const pin='a'.repeat(40);
-const graph={schemaVersion:'VYNDI_VEDM_AUTHORITY_READ_V1',sourceRepository:'vayu-shastr/veloxis-engineering-design-manual',sourceCommit:pin,asOfDate:'2026-11-03',readOnly:true,actionAuthorized:false,currentRuntimeAuthorityVerified:false,releaseReady:false,
+const graph={schemaVersion:'VYNDI_VEDM_AUTHORITY_READ_V1',sourceRepository:'vayu-shastr/veloxis-engineering-design-manual',sourceCommit:pin,sourceAuthority:'compileVedmAuthorityGraph',asOfDate:'2026-11-03',readOnly:true,actionAuthorized:false,currentRuntimeAuthorityVerified:false,releaseReady:false,
  nodes:[{id:'VEDM-1',title:'Geometry',kind:'document_revision',sourceRef:'VEDM',releaseEffect:'none'},{id:'G5',title:'Gate',kind:'release_gate',sourceRef:'G5',releaseEffect:'none'}],edges:[{from:'VEDM-1',to:'G5',relation:'BLOCKED_BY'}]};
 function request({who=email,source='vyndi-vedm',method='GET',env={}}={}){
  const cookie=who?SESSION_COOKIE+'='+createSessionToken(who):'';
@@ -18,7 +18,7 @@ test('route registered, founder-only, and never permits mutation or unapproved f
  let called=false;
  const handler=createNeuralKnowledgeHandler({getVyndiReader:()=>{called=true;throw Error('unused')}});
  assert.equal((await invoke(request({who:null}),handler)).status,401);
- assert.equal((await invoke(request({who:'other@example.com'}),handler)).status,403);
+ assert.equal((await invoke(request({who:'kaaviyam1519@gmail.com'}),handler)).status,403);
  assert.equal((await invoke(request({method:'POST'}),handler)).status,405);
  assert.equal((await invoke(request({env:{VAOS_NEURAL_KNOWLEDGE_CONTROL:'off'}}),handler)).status,409);
  assert.equal((await invoke(request({source:'../../settings'}),handler)).status,422);

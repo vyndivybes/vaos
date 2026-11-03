@@ -97,9 +97,10 @@ export function createInsightReadAdapter({providerId,capabilityRegistry,credenti
  return Object.freeze({
   id:providerId+'.insight-read.v1',providerId,capability,
   async execute(job){
-   const j=validJob(job,cfg,providerId);
+   // Enforce provider authorization before parsing provider-specific query input.
    const manifest=capabilityRegistry.get(providerId);
    if(!manifest||manifest.enabled!==true||manifest.qualification?.state!=='qualified'||!manifest.qualification.qualifiedCapabilities?.includes(capability))throw deny('PROVIDER_NOT_QUALIFIED');
+   const j=validJob(job,cfg,providerId);
    const response=await credentialBroker.withCredential({bindingRef:cfg.secretBindingRef,providerId,capability,executionJobId:j.jobId,intentId:j.intentId},async credential=>{
     const req=makeRequest(providerId,cfg,j,credential);
     // Safe when injected transport is createGovernedHttpTransport({allowedOrigins:[cfg.baseUrl]})

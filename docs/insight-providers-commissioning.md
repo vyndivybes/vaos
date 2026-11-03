@@ -23,8 +23,9 @@ This branch replaces six catalog-only listings with **four read-only protocol ad
 - **Metabase compatibility:** use authenticated `POST /api/card/{card-id}/query` with an empty `parameters` array. Parse `data.cols` and `data.rows` into allowlisted records; never call free-form SQL. A read-only DB identity and tenant-dedicated saved question must be independently verified against the actual pinned Metabase API version before deployment.
 - **Qdrant compatibility:** the embedding model must produce exactly `vectorDimensions` values for each pinned collection; model/vector metadata and tenant payload index must be validated with a real synthetic query.
 - **Tenant isolation:** every operation pins a `resourceKey` to configured `tenantId` and `remoteId`. Search filters are added server-side and returned tenant IDs are checked. Metabase cards *must* be dedicated-tenant, read-only saved questions; never allow arbitrary SQL or shared cards.
-- **Output:** at most 20 results, configured scalar fields only, declared `sourceAuthority`, `canonicalStateUpdated: false`, and `independentlyVerified: false`. An API read is not independent evidence of business truth.
-- **No writes:** no create/upsert/index mutations, scans, arbitrary queries, bulk data ingestion or multi-tenant metadata leakage. Neither adapter is placed into the business-effect execution registry or public API routes in this release.
+- **Output:** at most 20 results, configured scalar fields only, declared `sourceAuthority`, `canonicalStateUpdated: false`, and `independentlyVerified: false`. The `verification.verified: true` flag means only that the selected provider response, shape and tenant scope passed validation; it **never** certifies independently verified enterprise truth.
+- **Governed runtime:** opt-in `createInsightProviderFactories({configurations,credentialBroker})` returns adapter factories for the existing `createProviderRuntime` selected-provider interface. That runtime first checks the authoritative v2 provider control plane, qualifications, current health and explicit enablement. The factory does not register itself and cannot activate the provider. `createGovernedHttpTransport` is the default transport, pinned to each provider's HTTPS origin. It accepts only the exact read capability. No public API route is added here.
+- **No writes:** no create/upsert/index mutations, scans, arbitrary queries, bulk data ingestion or multi-tenant metadata leakage. The read-only provider runtime is separate from the business-effect execution registry.
 
 Minimal call, once a service is independently commissioned:
 
@@ -61,7 +62,7 @@ This demonstrates the adapter interface only; the credentials, service origin, c
 
 ## Qualification gates
 
-1. `npm run test:insight-providers` then full `npm test`, exact commit SHA evidence.
+1. `npm run test:insight-providers` then full `npm test`, exact commit SHA evidence. Test synthetic ProviderRuntime admission and denial independently of business effects.
 2. Explicit zero-cost runtime/hosting assessment (not automatically provisioned). Use one full-text engine as primary; the other as optional, to avoid duplicated hosting.
 3. Provision each service from a reviewed open-source/free plan and least-privilege identity; ensure encrypted credentials and allowlisted HTTPS origin.
 4. Test each provider against synthetic data; negative tests for cross-tenant response, unauthorized resource, failed auth, redirect, 429, large response, data egress, prompt injection and credential leakage.

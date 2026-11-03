@@ -142,6 +142,23 @@ export function createMissionsHandler({
     const session = verifySessionToken(parseCookies(req.headers?.cookie || '')[SESSION_COOKIE]);
     if (!session) return res.status(401).json(apiError('UNAUTHENTICATED', 'Authentication required'));
 
+    // No per-mission tenant/role authority is supplied to the operating
+    // service. Fail closed for non-founder sessions until a verified scoped
+    // permission and mission-owner contract is commissioned.
+    if (session.email !== FOUNDER_EMAIL) {
+      return res.status(403).json(apiError('FOUNDER_ONLY', 'Founder mission authorization required'));
+    }
+    if (req.method === 'POST') {
+      let requestOrigin;
+      try { requestOrigin = new URL(req.url).origin; } catch { requestOrigin = null; }
+      if (!requestOrigin || req.headers?.origin !== requestOrigin) {
+        return res.status(403).json(apiError('ORIGIN_DENIED', 'Same-origin mission operation required'));
+      }
+      if (!/^application\/json(?:\s*;|$)/i.test(req.headers?.['content-type'] || '')) {
+        return res.status(415).json(apiError('CONTENT_TYPE_DENIED', 'JSON request required'));
+      }
+    }
+
     if (req.method === 'GET') {
       let missionId,view;
       try {

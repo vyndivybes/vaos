@@ -15,7 +15,7 @@ function response() {
   return { res, result };
 }
 
-function req(method, { body, url = 'https://vaos.example/api/missions', authenticated = true, email = 'kaaviyam1519@gmail.com', origin = 'https://vaos.example' } = {}) {
+function req(method, { body, url = 'https://vaos.example/api/missions', authenticated = true, email = 'shyamsundhar1982@gmail.com', origin = 'https://vaos.example' } = {}) {
   return {
     method,
     url,
@@ -247,7 +247,7 @@ test('founder routing rejects unrecorded instructions, spoofed input and non-fou
     getService: () => ({ async planMission() { calls.push('PLAN'); } }),
   });
   for (const [options, expected] of [
-    [{ body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }, 403],
+    [{ email: 'kaaviyam1519@gmail.com', body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }, 403],
     [{ email: founder, origin: 'https://evil.example', body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }, 403],
     [{ email: founder, body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId, requestedJobs: ['FINANCE.PREPARE_PAYMENT'] } }, 422],
     [{ email: founder, body: { operation: 'ROUTE_FOUNDER_INSTRUCTION', messageId: sourceId } }, 409],
@@ -331,4 +331,39 @@ test('evidence read failures are redacted and cannot be presented as completed d
  await h(req('GET',{email:founder,url:'https://vaos.example/api/missions?missionId=mission-001&view=results'}),v.res);
  assert.equal(v.result.code,503);
  assert.doesNotMatch(JSON.stringify(v.result.body),/private-secret/);
+});
+
+
+test('Wave 1 Security: unrelated authenticated identities cannot observe or mutate enterprise mission records', async () => {
+  const f = fixture();
+  const unprivileged = 'kaaviyam1519@gmail.com'; // existing valid signed-in non-founder test identity
+  const attempts = [
+    ['GET', { url: 'https://vaos.example/api/missions?missionId=mission-001', email: unprivileged }],
+    ['POST', { body: { operation: 'PLAN', missionId: 'mission-001',
+      objective: 'Prepare read-only source verification',
+      requestedJobs: ['SECURITY.ASSESS_ACCESS'] }, email: unprivileged }],
+    ['POST', { body: { operation: 'DISPATCH', missionId: 'mission-001', maxAssignments: 1 }, email: unprivileged }],
+    ['POST', { body: { operation: 'RUN_SAFE', missionId: 'mission-001', maxHandoffs: 1 }, email: unprivileged }],
+  ];
+  for (const [method, options] of attempts) {
+    const r = response();
+    await f.handler(req(method, options), r.res);
+    assert.equal(r.result.code, 403, method + ' ' + (options.body?.operation || 'SNAPSHOT'));
+  }
+  assert.deepEqual(f.calls, [], 'no mission service read, scheduling or durable effects may occur');
+});
+
+
+test('Wave 1 Orchestrator: founder direct mission POST rejects cross-origin requests before any service activity', async () => {
+  const f = fixture();
+  for (const body of [
+    {operation: 'PLAN',missionId: 'mission-001',objective: 'Source-backed safety evaluation',requestedJobs: ['SECURITY.ASSESS_ACCESS']},
+    {operation: 'DISPATCH',missionId: 'mission-001',maxAssignments: 1},
+    {operation: 'RUN_SAFE',missionId: 'mission-001',maxHandoffs: 1},
+  ]) {
+    const r = response();
+    await f.handler(req('POST',{email: 'shyamsundhar1982@gmail.com',origin: 'https://unexpected.example',body}),r.res);
+    assert.equal(r.result.code,403,body.operation);
+  }
+  assert.deepEqual(f.calls,[], 'cross-origin request must not reach mission service');
 });

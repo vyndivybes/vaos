@@ -2,7 +2,7 @@
 
 > **Evidence status: READ-ONLY SNAPSHOT. Not an individual qualification certificate, live agent invocation, human review, or authority change.**
 >
-> Source: connected VAOS Supabase `vaos_private` workforce, assessment, mission, activity and handoff records queried on 3 November 2026. Scoped code baseline `vyndivybes/vaos` main `7460ac4feffd4585f40cab803a43973c863fc991`. Deployment of that source was observed through connected Cloudflare Worker version metadata (version `8d79ea3a-a4b5-45c9-9005-0acd01639b8b`); this **does not** establish authenticated browser or individual agent acceptance. Controlling issue [#280](https://github.com/vyndivybes/vaos/issues/280).
+> Source: connected VAOS Supabase `vaos_private` workforce, assessment, mission, activity and handoff records queried on 3 November 2026. Scoped code baseline `vyndivybes/vaos` main `7460ac4feffd4585f40cab803a43973c863fc991`. Connected Cloudflare metadata confirmed a VAOS Worker version (`8d79ea3a-a4b5-45c9-9005-0acd01639b8b`) receiving 100% deployment traffic; a matching exact source SHA and authenticated browser/agent acceptance were **not** independently established by this source inspection. Controlling issue [#280](https://github.com/vyndivybes/vaos/issues/280).
 
 ## Structural read-only results — not runtime qualification
 

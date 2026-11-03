@@ -15,6 +15,12 @@ function text(v,max=180){return typeof v==='string'&&v.trim()&&v.length<=max&&!/
 function id(v){return typeof v==='string'&&IDENTIFIER.test(v)?v:null}
 function iso(value){if(typeof value!=='string'||!Number.isFinite(Date.parse(value))||!/^\d{4}-\d\d-\d\dT/.test(value))return null;return new Date(value).toISOString()}
 function array(rows,max){if(!Array.isArray(rows)||rows.length>max)fail('SIZE_DENIED');return rows}
+function optionalText(value,max){if(value==null)return null;const out=text(value,max);if(!out)fail('PROVENANCE_INVALID');return out}
+function dateOnly(value){
+ if(value==null)return null;
+ if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)||!Number.isFinite(Date.parse(value+'T00:00:00Z'))||new Date(value+'T00:00:00Z').toISOString().slice(0,10)!==value)fail('PROVENANCE_INVALID');
+ return value;
+}
 function node(x,source,kindKey,titleKey){
  if(!x||typeof x!=='object'||Array.isArray(x))fail('NODE_INVALID');
  const key=id(x.id),label=text(x[titleKey],140);
@@ -23,7 +29,12 @@ function node(x,source,kindKey,titleKey){
  if(HIDDEN.has(kind.toLowerCase()))return null;
  const ref=text(source==='vyndi-vedm'?x.sourceRef:source==='llm-wiki'?x.sourceRef:key,180);
  if(!ref)fail('NODE_INVALID');
- return Object.freeze({id:key,label,kind,sourceRef:ref,authorityClass:CLASS[source],...(source==='vyndi-vedm'?{releaseEffect:text(x.releaseEffect,40)||'none'}:{})});
+ return Object.freeze({id:key,label,kind,sourceRef:ref,authorityClass:CLASS[source],...(source==='vyndi-vedm'?{
+  releaseEffect:text(x.releaseEffect,40)||'none',
+  revision:optionalText(x.revision,80),lifecycle:optionalText(x.lifecycle,50),
+  gateStatus:optionalText(x.gateStatus,50),evidenceState:optionalText(x.evidenceState,50),
+  effectiveFrom:dateOnly(x.effectiveFrom),effectiveTo:dateOnly(x.effectiveTo),
+ }:{})});
 }
 function edge(x,source,allowed){
  if(!x||typeof x!=='object'||Array.isArray(x))fail('EDGE_INVALID');
@@ -82,6 +93,11 @@ export function normalizeNeutralGraph(input,{integrityVerified=false}={}){
   integrityVerified:integrityVerified===true,
   // Do not treat source graph snapshots or inferred associations as release authority.
   releaseAuthorized:false,
+  ...(source==='vyndi-vedm'?{
+   asOfDate:dateOnly(raw.asOfDate),sourceReleaseReady:raw.releaseReady===true,
+   blockingGateIds:Object.freeze(array(raw.blockingGateIds??[],40).map(value=>{const out=id(value);if(!out)fail('PROVENANCE_INVALID');return out})),
+   issueCodes:Object.freeze(array(raw.issueCodes??[],40).map(value=>{const out=text(value,80);if(!out)fail('PROVENANCE_INVALID');return out})),
+  }:{}),
   nodes:Object.freeze(filtered),edges:Object.freeze(edges),
  });
 }

@@ -24,6 +24,23 @@ test('normalize signed VYNDI source without inventing current release authority'
  assert.equal(graph.integrityVerified,true);
  assert.equal(graph.sourceRevision,pin);
 });
+test('VEDM open gates retain their hold status, revision and effective evidence context',()=>{
+ const input=structuredClone(vedm);
+ Object.assign(input.payload,{blockingGateIds:['G10'],issueCodes:['OPEN_GATE'],graphValid:true});
+ Object.assign(input.payload.nodes[1],{releaseEffect:'release_authority',gateStatus:'open',lifecycle:'candidate',evidenceState:'missing',revision:'R1',effectiveFrom:'2026-09-28',effectiveTo:null});
+ const graph=normalizeNeutralGraph(input);
+ assert.equal(graph.asOfDate,'2026-11-03');
+ assert.deepEqual(graph.blockingGateIds,['G10']);
+ assert.deepEqual(graph.issueCodes,['OPEN_GATE']);
+ assert.equal(graph.sourceReleaseReady,false);
+ assert.equal(graph.nodes[1].gateStatus,'open');
+ assert.equal(graph.nodes[1].lifecycle,'candidate');
+ assert.equal(graph.nodes[1].evidenceState,'missing');
+ assert.equal(graph.nodes[1].revision,'R1');
+ assert.equal(graph.nodes[1].effectiveFrom,'2026-09-28');
+ assert.equal(graph.nodes[1].effectiveTo,null);
+ assert.equal(graph.releaseAuthorized,false);
+});
 test('Graphify and Brain Atlas preserve only curated node/edge metadata, not text bodies or contacts',()=>{
  for(const sourceType of ['graphify','brain-atlas']){
   const a=base(sourceType,{nodes:[{id:'a',title:'Engineering design',type:'project',body:'SECRET ORIGINAL BODY'},{id:'b',title:'QA revision',type:'document'},{id:'c',type:'contact',title:'Private person'}],edges:[{source:'a',target:'b',type:'LINKS_TO'},{source:'b',target:'c',type:'RELATES'}]});

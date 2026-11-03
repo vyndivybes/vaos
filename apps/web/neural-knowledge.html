@@ -60,11 +60,11 @@ function render(result){
   const p=positions.get(n.id),g=svgElement('g',{class:'node',tabindex:'0',role:'button','aria-label':n.label});
   g.append(svgElement('circle',{cx:p.x,cy:p.y,r:5.5}));
   if(nodes.length<=50){const text=svgElement('text',{x:p.x+10,y:p.y+4});text.textContent=n.label.slice(0,25);g.append(text)}
-  const show=()=>{document.getElementById('selected-title').textContent=n.label;setPairs(details,[['Type',n.kind],['Source reference',n.sourceRef],['Authority',n.authorityClass],['Release effect',n.releaseEffect||'Not applicable']])};
+  const show=()=>{document.getElementById('selected-title').textContent=n.label;setPairs(details,[['Type',n.kind],['Source reference',n.sourceRef],['Authority',n.authorityClass],['Gate status',n.gateStatus],['Release effect',n.releaseEffect||'Not applicable'],['Lifecycle',n.lifecycle],['Evidence state',n.evidenceState],['Revision',n.revision],['Effective from',n.effectiveFrom],['Effective to',n.effectiveTo]])};
   g.addEventListener('click',show);g.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();show()}});circles.append(g)
  }canvas.append(circles);
  setPairs(lineage,[['Source',result.source],['Source revision',result.sourceRevision],
- ['Observed',result.observedAt],['Nodes',result.nodes.length],['Edges',result.edges.length],
+ ['Observed',result.observedAt],['Source as of',result.asOfDate],['Blocking gates',(result.blockingGateIds||[]).join(', ')||'None reported'],['Source release ready',result.source==='vyndi-vedm'?(result.sourceReleaseReady?'Yes (reference only)':'No'):'Not applicable'],['Nodes',result.nodes.length],['Edges',result.edges.length],
  ['Independent verification','No'],['Current business truth','Not certified'],['Action authorized','No']]);
  status.textContent='Observed '+result.nodes.length+' nodes and '+result.edges.length+' edges. Displaying up to 90 nodes. Source lineage is advisory unless separately verified.';
 }

@@ -38,7 +38,7 @@
     "test:workforce-local-login": "node --test platform/qualification/workforce-local-login-training.test.mjs",
     "test:prelaunch": "node --test intelligence/prelaunch-workforce.test.mjs apps/web/api/prelaunch-workforce.test.mjs",
     "companion": "node apps/companion/cli.mjs --open",
-    "test:insight-providers": "node --test integrations/insight-providers/read-only-adapters.test.mjs",
+    "test:insight-providers": "node --test integrations/insight-providers/*.test.mjs",
     "test:elevenlabs": "node --test integrations/elevenlabs/text-to-speech.test.mjs apps/web/api/voice-speech.test.mjs apps/web/platform-tts-disabled.test.mjs",
     "elevenlabs:preview": "node --env-file=.env.local scripts/elevenlabs-preview.mjs",
     "prepare:companion": "node scripts/sync-companion-assets.mjs",

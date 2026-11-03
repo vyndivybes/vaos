@@ -1,4 +1,10 @@
 export const SPEECH_LOCALES=Object.freeze({en:'en-IN',ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'});
+// A remote browser recognizer is a separate opt-in, never an automatic fallback.
+export async function chooseConversationSpeech(local,{RecognitionClass,language='en',consent=async()=>false}={}){
+ if(local?.status==='LOCAL_READY')return local;
+ if(typeof RecognitionClass!=='function'||await consent()!==true)return {status:'LOCAL_UNAVAILABLE'};
+ return {status:'BROWSER_READY',locale:SPEECH_LOCALES[language]||SPEECH_LOCALES.en};
+}
 export function interimTranscript(event){
  const rows=event?.results;if(!rows||!Number.isInteger(rows.length))return '';
  let text='';for(let i=Math.max(0,event.resultIndex||0);i<rows.length;i++)if(rows[i]?.isFinal!==true&&typeof rows[i]?.[0]?.transcript==='string')text+=rows[i][0].transcript+' ';

@@ -111,7 +111,7 @@ test('current voice handoff module and wake listener use distinct cache-busted p
 test('main voice offering distinguishes the two controls in accessible copy',async()=>{
  const {readFile}=await import('node:fs/promises');
  const markup=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
- assert.match(markup,/Enable hands-free voice/);
+ assert.match(markup,/Start conversation/);
  assert.match(markup,/title="Ask once, then stop listening"/);
  assert.match(markup,/“Hey VAOS” is optional/);
 });

@@ -86,7 +86,7 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
     if(req.method==='POST'&&path==='/api/revoke'){jobs.stopAll();neural.cancel();token=randomBytes(32).toString('base64url');return json(res,200,{revoked:true});}
     if(req.method==='GET'&&path==='/api/jobs')return json(res,200,jobs.list());
     if(req.method==='POST'&&path==='/api/jobs'){
-     const data=await body(req);return json(res,202,jobs.submit(data.kind,data.input));
+     const data=await body(req);return json(res,202,jobs.submit(data.kind,data.input,{requireReview:data.requireReview===true}));
     }
     const jobMatch=path.match(/^\/api\/jobs\/([a-f0-9-]{36})(?:\/(approve|stop))?$/);
     if(jobMatch){

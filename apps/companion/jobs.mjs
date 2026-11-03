@@ -1,5 +1,5 @@
 import {randomUUID,createHash} from 'node:crypto';
-export const supportedKinds=new Set(['document.create','image.ocr','voice.transcribe','browser.research','browser.workflow','desktop.action','memory.briefing','skill.run']);
+export const supportedKinds=new Set(['document.create','image.ocr','voice.transcribe','browser.research','browser.search','browser.workflow','desktop.action','memory.briefing','skill.run']);
 export const routineKinds=new Set(['document.create','memory.briefing','skill.run']);
 export function createJobs({store,run,clock=Date.now}={}){
  const jobs=new Map(),queue=[];let running=false;
@@ -25,12 +25,12 @@ export function createJobs({store,run,clock=Date.now}={}){
    }
   }finally{running=false;}
  }
- function submit(kind,input,{id=randomUUID()}={}){
+ function submit(kind,input,{id=randomUUID(),requireReview=false}={}){
   if(!supportedKinds.has(kind))throw Error('OPERATION_NOT_SUPPORTED');
   if([...jobs.values()].filter(j=>['queued','running','review'].includes(j.state)).length>=10)throw Error('QUEUE_FULL');
   const copy=JSON.parse(JSON.stringify(input||{}));
   if(jobs.size>=200){for(const [key,old] of jobs){if(!['queued','running','review'].includes(old.state)){jobs.delete(key);break;}}}
-  const job={id,kind,input:copy,state:['desktop.action','browser.workflow'].includes(kind)?'review':'queued',created:clock(),events:[],controller:new AbortController()};
+  const job={id,kind,input:copy,state:requireReview||['desktop.action','browser.workflow'].includes(kind)?'review':'queued',created:clock(),events:[],controller:new AbortController()};
   job.hash=createHash('sha256').update(JSON.stringify({kind,input:copy})).digest('hex');
   jobs.set(job.id,job);event(job,job.state==='review'?'Review the exact action before it can run.':'Queued');
   if(job.state==='queued')queue.push(job);

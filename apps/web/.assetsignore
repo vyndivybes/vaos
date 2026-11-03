@@ -49,3 +49,6 @@ cloudflare-worker.mjs
 !lib/local-neural-speech.mjs
 !lib/elevenlabs-speech.mjs
 !lib/conversation-memory-ui.mjs
+
+!lib/jarvis-tools.mjs
+!lib/jarvis-tools-ui.mjs

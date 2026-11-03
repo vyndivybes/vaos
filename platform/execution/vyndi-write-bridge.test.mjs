@@ -14,9 +14,9 @@ const expectedEmployees=new Set([
   'maintenance','finance','people','engineering-configuration','project','orchestrator',
 ]);
 
-test('bridge retains original routes plus signed read-only enterprise BI, project and finance statement actions',()=>{
-  assert.equal(VYNDI_BRIDGE_ROUTES.length,26);
-  assert.equal(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.actionType)).size,26);
+test('bridge retains original routes plus signed read-only knowledge graph authority',()=>{
+  assert.equal(VYNDI_BRIDGE_ROUTES.length,27);
+  assert.equal(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.actionType)).size,27);
   assert.deepEqual(new Set(VYNDI_BRIDGE_ROUTES.map(r=>r.employeeId)),expectedEmployees);
   for(const route of VYNDI_BRIDGE_ROUTES){
     assert.ok(route.verificationRefs.length>0,route.actionType);
@@ -28,17 +28,21 @@ test('bridge retains original routes plus signed read-only enterprise BI, projec
   }
 });
 
-test('read commissioning has eleven controlled read routes and keeps all fifteen mutations disabled',()=>{
+test('read commissioning has twelve controlled read routes and keeps all fifteen mutations disabled',()=>{
   const readiness=getVyndiBridgeReadiness();
   assert.equal(readiness.executionEnabled,true);
-  assert.equal(readiness.routeCount,26);
-  assert.equal(readiness.readReady,11);
+  assert.equal(readiness.routeCount,27);
+  assert.equal(readiness.readReady,12);
   assert.equal(readiness.writePrepared,15);
   assert.deepEqual(readiness.gaps,[]);
   const reads=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.READ);
   const writes=VYNDI_BRIDGE_ROUTES.filter(r=>r.effectClass===VYNDI_BRIDGE_EFFECT.MUTATION);
-  assert.equal(reads.length,11);
+  assert.equal(reads.length,12);
   assert.ok(reads.every(r=>r.state===VYNDI_BRIDGE_ROUTE_STATE.READ_READY && r.executionEnabled===true));
+  const knowledge=getVyndiBridgeRoute('KNOWLEDGE.OBSERVE_VEDM_GRAPH');
+  assert.equal(knowledge.effectClass,VYNDI_BRIDGE_EFFECT.READ);
+  assert.equal(knowledge.authority,'compileVedmAuthorityGraph');
+  assert.equal(knowledge.employeeId,'engineering-configuration');
   assert.equal(writes.length,15);
   assert.ok(writes.every(r=>r.executionEnabled===false));
 });

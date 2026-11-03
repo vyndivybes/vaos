@@ -41,7 +41,8 @@
     "test:elevenlabs": "node --test integrations/elevenlabs/text-to-speech.test.mjs apps/web/api/voice-speech.test.mjs apps/web/platform-tts-disabled.test.mjs",
     "elevenlabs:preview": "node --env-file=.env.local scripts/elevenlabs-preview.mjs",
     "prepare:companion": "node scripts/sync-companion-assets.mjs",
-    "test:companion": "node --test --test-concurrency=1 apps/companion/test/*.test.mjs"
+    "test:companion": "node --test --test-concurrency=1 apps/companion/test/*.test.mjs",
+    "test:neural-knowledge": "node --test integrations/neural-knowledge/*.test.mjs apps/web/api/neural-knowledge.test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.9",

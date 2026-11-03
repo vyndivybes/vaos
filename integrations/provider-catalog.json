@@ -191,8 +191,10 @@
         "analytics.bi"
       ],
       "tier": "B",
-      "implementation": "catalog",
-      "priority": "secondary"
+      "implementation": "adapter-implemented",
+      "priority": "secondary",
+      "subscriptionPolicy": "zero-cost-open-source-or-verified-free-tier-only",
+      "productionRouting": "disabled-pending-independent-qualification"
     },
     {
       "providerId": "camunda",
@@ -211,8 +213,10 @@
         "process.mine"
       ],
       "tier": "C",
-      "implementation": "catalog",
-      "priority": "secondary"
+      "implementation": "offline-evidence-bridge",
+      "priority": "secondary",
+      "subscriptionPolicy": "zero-cost-open-source-or-verified-free-tier-only",
+      "productionRouting": "disabled-pending-independent-qualification"
     },
     {
       "providerId": "qdrant",
@@ -221,8 +225,10 @@
         "search.semantic"
       ],
       "tier": "C",
-      "implementation": "catalog",
-      "priority": "secondary"
+      "implementation": "adapter-implemented",
+      "priority": "secondary",
+      "subscriptionPolicy": "zero-cost-open-source-or-verified-free-tier-only",
+      "productionRouting": "disabled-pending-independent-qualification"
     },
     {
       "providerId": "meilisearch",
@@ -231,8 +237,10 @@
         "search.fulltext"
       ],
       "tier": "C",
-      "implementation": "catalog",
-      "priority": "secondary"
+      "implementation": "adapter-implemented",
+      "priority": "secondary",
+      "subscriptionPolicy": "zero-cost-open-source-or-verified-free-tier-only",
+      "productionRouting": "disabled-pending-independent-qualification"
     },
     {
       "providerId": "typesense",
@@ -241,8 +249,10 @@
         "search.fulltext"
       ],
       "tier": "C",
-      "implementation": "catalog",
-      "priority": "secondary"
+      "implementation": "adapter-implemented",
+      "priority": "secondary",
+      "subscriptionPolicy": "zero-cost-open-source-or-verified-free-tier-only",
+      "productionRouting": "disabled-pending-independent-qualification"
     },
     {
       "providerId": "formbricks",
@@ -312,8 +322,10 @@
         "data.quality"
       ],
       "tier": "C",
-      "implementation": "catalog",
-      "priority": "secondary"
+      "implementation": "offline-evidence-bridge",
+      "priority": "secondary",
+      "subscriptionPolicy": "zero-cost-open-source-or-verified-free-tier-only",
+      "productionRouting": "disabled-pending-independent-qualification"
     },
     {
       "providerId": "google-apps-script",

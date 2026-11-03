@@ -77,16 +77,16 @@ export function mountNeuralConnection(container){
  window.addEventListener('pagehide',()=>sampleSpeech.dispose(),{once:true});
 }
 function mountElevenLabsVoice(container){
- const details=document.createElement('details'),summary=document.createElement('summary');details.setAttribute('data-neural-connection','');summary.textContent='ElevenLabs personal test voice';details.append(summary);
- const notice=document.createElement('p');notice.textContent='Voice by ElevenLabs · elevenlabs.io. Personal/non-commercial use only, with free credits and no overages. Text you choose to speak is sent to ElevenLabs under its retention policy. VAOS memory deletion does not delete ElevenLabs speech history. Windows TTS and automatic provider fallback are disabled.';
+ const details=document.createElement('details'),summary=document.createElement('summary');details.setAttribute('data-neural-connection','');summary.textContent='Voice connection · ElevenLabs';details.append(summary);
+ const notice=document.createElement('p');notice.textContent='Voice by ElevenLabs · elevenlabs.io. Personal/non-commercial use only, with free credits and no overages. Spoken text is sent to ElevenLabs under its retention policy. Deleting VAOS memories does not remove their speech history. There is no Windows voice fallback.';
  const status=document.createElement('p');status.setAttribute('role','status');
- const check=document.createElement('button');check.type='button';check.textContent='Check ElevenLabs connection';
- const play=document.createElement('button');play.type='button';play.textContent='Test ElevenLabs voice';play.disabled=true;
- const stop=document.createElement('button');stop.type='button';stop.textContent='Stop voice preview';
+ const check=document.createElement('button');check.type='button';check.textContent='Check connection';
+ const play=document.createElement('button');play.type='button';play.textContent='Play a sample';play.disabled=true;
+ const stop=document.createElement('button');stop.type='button';stop.textContent='Stop sample';
  const speech=createNeuralSynthesis({transport:elevenLabsSpeech});
- check.addEventListener('click',async()=>{try{const {data}=await elevenLabsSpeech.request();play.disabled=data?.ready!==true;status.textContent=data?.ready?'ElevenLabs / George / Eleven v4 configured for your personal test. Up to 1,000 characters per day within the remaining free allowance. No paid requests are allowed.':'ElevenLabs personal test is not activated. No Windows voice will be substituted.';}catch{play.disabled=true;status.textContent='ElevenLabs connection unavailable. Sign in and check server configuration.';}});
- play.addEventListener('click',()=>{const u=new NeuralUtterance(ELEVENLABS_SAMPLE);status.textContent='Requesting the fixed ElevenLabs audition using free credits only.';u.onstart=()=>status.textContent='ElevenLabs / George / Eleven v4 is playing. Please confirm what you hear.';u.onend=()=>status.textContent='ElevenLabs preview completed. Human listening acceptance is still required.';u.onerror=e=>status.textContent=neuralSpeechFailureMessage(e.code);speech.speak(u);});
- stop.addEventListener('click',()=>{speech.cancel();status.textContent='ElevenLabs preview stopped.';});
+ check.addEventListener('click',async()=>{try{const {data}=await elevenLabsSpeech.request();play.disabled=data?.ready!==true;status.textContent=data?.ready?'George by ElevenLabs is configured. Play a sample to check the sound. Free personal use is limited to 1,000 characters a day.':'Voice is not configured yet. No Windows voice will be substituted.';}catch{play.disabled=true;status.textContent='Could not check the voice connection. Sign in and try again.';}});
+ play.addEventListener('click',()=>{const u=new NeuralUtterance(ELEVENLABS_SAMPLE);status.textContent='Preparing your sample…';u.onstart=()=>status.textContent='Playing George by ElevenLabs…';u.onend=()=>status.textContent='Sample finished.';u.onerror=e=>status.textContent=neuralSpeechFailureMessage(e.code);speech.speak(u);});
+ stop.addEventListener('click',()=>{speech.cancel();status.textContent='Sample stopped.';});
  details.append(notice,check,play,stop,status);container.append(details);
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')speech.cancel();});window.addEventListener('pagehide',()=>speech.dispose(),{once:true});
 }

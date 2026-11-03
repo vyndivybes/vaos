@@ -12,13 +12,14 @@ export function initializeFounderCockpit(model){
  const button=document.querySelector('#cockpit-refresh');
  function render(){
   const domains=cockpitSources(sources);
-  document.querySelector('#cockpit-domains').innerHTML=domains.map((d,i)=>`<article class="fc-domain">
-   <div class="fc-domain-top"><span class="fc-index">${String(i+1).padStart(2,'0')}</span><span class="fc-status ${d.observed?'fc-status--connected':''}">${esc(d.status)}</span></div>
-   <h3>${esc(d.label)}</h3><p>${esc(d.note)}</p>
-   <div class="fc-domain-actions">${d.view?`<button type="button" data-view="${esc(d.view)}">Review records →</button>`:''}<a href="${erpDestination(d)}" target="_blank" rel="noopener noreferrer">Open ${d.id==='inventory'?'inventory':'source'} ↗</a>${d.id==='engineering'?'<a href="/engineering-viewer.html">VEDM evidence ↗</a>':''}</div></article>`).join('');
+  document.querySelector('#cockpit-domains').innerHTML=domains.map(d=>`<article class="fc-domain">
+   <div class="fc-domain-copy"><h3>${esc(d.label)}</h3><p>${esc(d.note)}</p></div>
+   <span class="fc-status ${d.observed?'fc-status--connected':'fc-status--setup'}">${esc(d.status)}</span>
+   <div class="fc-domain-actions">${d.view?`<button type="button" data-view="${esc(d.view)}">View records</button>`:''}<a href="${erpDestination(d)}" target="_blank" rel="noopener noreferrer" aria-label="Open ${esc(d.label)} in VYNDI">Open VYNDI ↗</a>${d.id==='engineering'?'<a href="/engineering-viewer.html">Engineering evidence ↗</a>':''}</div></article>`).join('');
   document.querySelector('#cockpit-source-count').textContent=sources?domains.filter(d=>d.observed).length+'/8':'—';
   document.querySelector('#cockpit-employee-count').textContent=employees().length||'—';
   document.querySelector('#cockpit-decision-count').textContent=model.approvals.length;
+  document.querySelector('#cockpit-decision-note').textContent=model.approvals.length?'Review approvals →':'Nothing waiting for approval';
   document.querySelector('#cockpit-source-chart').innerHTML=sources?chartSvg([
    {label:'Connected',value:domains.filter(d=>d.observed).length},
    {label:'Setup / verify',value:domains.filter(d=>!d.observed).length},
@@ -42,16 +43,16 @@ export function initializeFounderCockpit(model){
  async function refresh(){
   if(busy)return;
   busy=true;button.disabled=true;button.textContent='Checking sources…';
-  sourceStatus.textContent='Checking signed source reads…';workforceStatus.textContent='Checking workforce evidence…';
+  sourceStatus.textContent='Checking connections…';workforceStatus.textContent='Checking team records…';
   // Independent protected reads. Failure in either never hides the working cockpit.
   await Promise.allSettled([
    read('/api/group-portfolio').then(data=>{
     sources=data;
-    sourceStatus.textContent='Source observation: '+(data.generatedAt?new Date(data.generatedAt).toLocaleString():'time unavailable')+'. Connectivity is not operational performance.';
+    sourceStatus.textContent=data.generatedAt?'Last checked '+new Date(data.generatedAt).toLocaleString(): 'Check time unavailable';
    }).catch(error=>{sources=null;sourceStatus.textContent=error.message+'. Open the source workspace to complete setup.';}),
    read('/api/workforce-analytics').then(data=>{
     if(data.schemaVersion!=='VAOS_FOUNDER_ANALYTICS_V1'||data.actionAuthorized!==false||!Array.isArray(data.employees)||data.employees.length!==16)throw new Error('Workforce evidence unavailable');
-    analytics=data;workforceStatus.textContent='Protected workforce evidence loaded. Lifecycle and audit status do not establish runtime liveness.';
+    analytics=data;workforceStatus.textContent='Team records loaded. Registration and audit history do not confirm live activity.';
    }).catch(error=>{analytics=null;workforceStatus.textContent=error.message+'. Showing the authenticated registry only; work and audit metrics are unavailable.';}),
   ]);
   const select=document.querySelector('#cockpit-lifecycle');

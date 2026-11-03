@@ -3,13 +3,13 @@
 <meta name="theme-color" content="#101318"/><meta name="description" content="VAOS governed founder command drafting and agent monitoring"/>
 <link rel="manifest" href="/manifest.webmanifest"/><link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp"/>
 <link rel="stylesheet" href="/styles.css"/><link rel="stylesheet" href="/founder-console.css"/><link rel="stylesheet" href="/operations-refresh.css"/><link rel="stylesheet" href="/jarvis-data-agent.css"/><link rel="stylesheet" href="/jarvis-qualification.css?v=20261013-g31e-v1"/>
-<title>VAOS · Founder Command</title><link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/vaos-interface.css"/></head><body class="va-premium founder-body"><header class="va-app-header"><a class="va-app-brand" href="/workspace"><span>V</span>VAOS<small>VĀYŪ SHASTR</small></a><nav class="va-product-nav" aria-label="Main navigation"><a href="/workspace">Overview</a><a href="/workforce-analytics">Intelligence</a><a href="/mission-status.html">Missions</a><a href="/founder-console.html">Command</a><details class="va-tools-menu"><summary>Tools</summary><div><a href="/agent-supervision.html">Agent monitoring</a><a href="/skills.html">JARVIS skills</a><a href="/prelaunch-workspace.html">Company startup</a><a href="/engineering-viewer.html">Engineering viewer</a><a href="/jarvis-multimodal.html">File intelligence</a><a href="/founder-console.html#g3-intelligence-panel">JARVIS qualification</a><a href="/slack-qualification.html">Slack qualification</a></div></details></nav></header>
+<title>VAOS · Founder Command</title><link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/vaos-interface.css"/></head><body data-app-page="founder-console" class="va-premium founder-body"><header class="va-app-header"><a class="va-app-brand" href="/workspace"><img src="/assets/vayu-shastr-original.webp" alt="" width="32" height="32" />VAOS<small>VĀYŪ SHASTR</small></a><nav class="va-product-nav" aria-label="Main navigation"><a href="/workspace">Overview</a><a href="/workforce-analytics">Insights</a><a href="/mission-status.html">Missions</a><a href="/founder-console.html">Command</a><details class="va-tools-menu"><summary>Tools</summary><div><a href="/agent-supervision.html">Agent monitoring</a><a href="/skills.html">JARVIS skills</a><a href="/prelaunch-workspace.html">Company startup</a><a href="/engineering-viewer.html">Engineering viewer</a><a href="/jarvis-multimodal.html">Camera &amp; files</a><a href="/founder-console.html#g3-intelligence-panel">JARVIS checks</a><a href="/slack-qualification.html">Slack connection</a></div></details></nav></header>
 
 <details class="va-page-links"><summary>Related workspaces</summary><nav class="va-ops-header-nav" aria-label="VAOS operations navigation">
   <a href="/workspace">Dashboard &amp; voice</a>
   <a href="/mission-status.html" >Mission tracking</a>
   <a href="/agent-supervision.html" >Agent monitoring</a>
-  <a href="/founder-console.html" aria-current="page">Founder command lab</a>
+  <a href="/founder-console.html" aria-current="page">Founder Command</a>
   <a href="/prelaunch-workspace.html">Company startup - 16 roles</a>
   <a href="/engineering-viewer.html">Engineering artifact viewer</a>
   <a href="#data-agent-panel">JARVIS Data Agent</a>
@@ -17,9 +17,9 @@
   <a href="/jarvis-multimodal.html">JARVIS file intelligence (preview)</a>
 </nav></details><main class="founder-shell" id="founder-shell" hidden>
  <details class="va-ops-explain"><summary>About this workspace</summary><p>Issue a founder instruction to assign eligible AI employees and execute one bounded safe pass immediately. Saved departmental results appear below; unfinished work continues through the existing scheduler. Report requests and override proposals remain separately governed. Day-to-day questions belong in <a href="/workspace">Ask VAOS on the main dashboard</a>; payments, purchases and production releases retain their independent controls.</p></details>
-<section class="va-command-intro"><p class="premium-eyebrow">JARVIS / GOVERNED OPERATIONS</p><h1>Founder command.</h1><p>Assign a mission, explore business evidence or inspect qualification.</p><a href="/workforce-analytics">Open employee analytics ↗</a></section><nav class="va-command-tabs" aria-label="Command workspaces"><button type="button" data-command-tab="instruct" aria-pressed="true">Missions &amp; reports</button><button type="button" data-command-tab="analysis" aria-pressed="false">Data analysis</button><button type="button" data-command-tab="qualification" aria-pressed="false">Qualification</button></nav>
+<section class="va-command-intro"><p class="premium-eyebrow">WORK WITH YOUR TEAM</p><h1>Founder Command</h1><p>Prepare work for your team, explore your records or review readiness.</p><a href="/workforce-analytics">Open employee analytics ↗</a></section><nav class="va-command-tabs" aria-label="Command workspaces"><button type="button" data-command-tab="instruct" aria-pressed="true">Missions &amp; reports</button><button type="button" data-command-tab="analysis" aria-pressed="false">Data analysis</button><button type="button" data-command-tab="qualification" aria-pressed="false">Qualification</button></nav>
 <div data-command-view="analysis" hidden> <section class="founder-panel data-agent-panel" id="data-agent-panel" aria-labelledby="data-agent-title">
- <p class="founder-hint">JARVIS · Native data intelligence</p>
+ <p class="founder-hint">Your business records</p>
  <h2 id="data-agent-title">Ask JARVIS about business data</h2>
  <p>Ask a read-only question across finance, procurement, inventory, production, sales or the 16 digital employees.
  This uses existing authorized data gateways and produces charts with source references. No new subscription, arbitrary SQL, model-made quantities or business writes.</p>
@@ -33,12 +33,12 @@
  <label for="data-agent-question">Your business question</label>
  <textarea id="data-agent-question" minlength="5" maxlength="300" rows="3" required
  placeholder="Why is production delayed? Analyse shortages, stock, job cards and engineering release."></textarea>
- <button type="submit">Analyse live source records</button>
+ <button type="submit">Find an answer</button>
  </form>
  <p id="data-agent-status" role="status" aria-live="polite">No data requested.</p>
  <section id="data-agent-visuals" class="data-agent-visuals" aria-label="JARVIS Insight Studio visual analysis">
   <div class="data-agent-visual-intro">
-   <div><p class="founder-hint">INSIGHT STUDIO · SOURCE-BOUND ANALYTICS</p><h3>Visual intelligence</h3></div>
+   <div><p class="founder-hint">EXPLORE YOUR RECORDS</p><h3>Charts &amp; analysis</h3></div>
    <p>Interactive views generated only from observed data. Unavailable values remain unknown.</p>
   </div>
   <div id="data-agent-insight-summary" class="data-agent-insight-summary" aria-live="polite">
@@ -68,7 +68,7 @@
    <ol id="data-agent-brief-steps" class="data-agent-brief-steps"></ol>
  </section>
  <details id="data-agent-technical" class="data-agent-technical" open>
-  <summary>Technical source observations and retrieval details</summary>
+  <summary>Source details</summary>
   <pre id="data-agent-answer" aria-label="JARVIS evidence-based answer"></pre>
  </details>
 
@@ -82,7 +82,7 @@
   <div id="data-agent-employees"></div>
  </details>
  <details class="data-agent-source-records">
-  <summary>Source provenance and interpretation limits</summary>
+  <summary>Where this information comes from</summary>
   <h3>Data provenance</h3>
   <ul id="data-agent-sources"></ul>
   <h3>Interpretation limits</h3>

@@ -244,11 +244,11 @@ function init(){
   const signedEmail=event?.detail?.email;
   authenticatedFounder=typeof signedEmail==='string'&&signedEmail.toLowerCase()==='shyamsundhar1982@gmail.com';
   const founderGreeting=founderLoginGreeting({email:signedEmail,hour:new Date().getHours()});
-  const welcome=founderGreeting||'Welcome back. I am JARVIS, your VAOS assistant. I am ready to discuss your company, projects, engineering and today\'s priorities. To start a continuous spoken conversation, enable hands-free voice once. Say Stop whenever you want me to stop listening.';
+  const welcome=founderGreeting||'Welcome back. I am JARVIS. What would you like to work on?';
   if(!busy&&!lastAnswer){
    loginWelcome=welcome;
    lastAnswer=welcome;spokenAnswer=welcome;answer.textContent=welcome;
-   setStatus(authenticatedFounder?'Welcome back, Sir! JARVIS is ready.':'JARVIS online · Type below or enable hands-free for a continuing conversation.');
+   setStatus(authenticatedFounder?'Ready when you are.':'Type a question, or turn on hands-free to talk.');
    state();
    // Signed-in founder requested a spoken greeting. No microphone/camera is opened.
    // A browser may block automatic audio; Replay answer remains available.

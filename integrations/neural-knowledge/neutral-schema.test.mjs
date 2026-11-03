@@ -38,8 +38,8 @@ test('Graphify and Brain Atlas preserve only curated node/edge metadata, not tex
 test('Graphiti temporal facts preserve validity/invalidation and do not confer causality',()=>{
  const a=base('graphiti',{entities:[{id:'a',name:'Frame Rev 5.4'},{id:'b',name:'Candidate'}],facts:[{source:'a',target:'b',relation:'RELATED_TO',valid_at:'2026-10-01T00:00:00Z',invalid_at:'2026-11-01T00:00:00Z'}]});
  const out=normalizeNeutralGraph(a);
- assert.equal(out.edges[0].validFrom,'2026-10-01T00:00:00Z');
- assert.equal(out.edges[0].validTo,'2026-11-01T00:00:00Z');
+ assert.equal(out.edges[0].validFrom,'2026-10-01T00:00:00.000Z');
+ assert.equal(out.edges[0].validTo,'2026-11-01T00:00:00.000Z');
  assert.equal(out.causalRelationshipsVerified,false);
  assert.equal(out.nodes[0].authorityClass,'model-derived');
 });

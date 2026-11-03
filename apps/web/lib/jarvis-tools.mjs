@@ -39,25 +39,28 @@ export async function runJarvisTool(plan,{request,review=async()=>false,signal,w
  // Only plans produced through this interface can be sent; the local server is
  // still the execution and approval authority for the immutable payload.
  if(!['browser.search','browser.research','browser.workflow','desktop.action','document.create'].includes(plan?.kind))throw Error('TOOL_NOT_SUPPORTED');
+ const call=(path,options={})=>request(path,{...options,signal:AbortSignal.any([...(options.signal?[options.signal]:[]),AbortSignal.timeout(15000)])});
  let job,jobId;
  try{
   aborted(signal);
+  const status=await call('/api/status',{signal});aborted(signal);
+  if(status.conversationToolProtocol!==1||status.reviewedDocuments!==true)throw Error('COMPANION_UPDATE_REQUIRED');
   // Receive the identifier even if Stop happens during creation, so the server draft can be cancelled.
-  job=await request('/api/jobs',{method:'POST',data:{...plan,requireReview:plan.kind==='document.create'}});jobId=job.id;aborted(signal);onState(job);
+  job=await call('/api/jobs',{method:'POST',data:{...plan,requireReview:plan.kind==='document.create'}});jobId=job.id;aborted(signal);onState(job);
   if(job.state==='review'){
    const allowed=await review(job,signal);aborted(signal);
-   if(!allowed){await request('/api/jobs/'+job.id+'/stop',{method:'POST',data:{}});return {...job,state:'stopped'};}
-   await request('/api/jobs/'+job.id+'/approve',{method:'POST',data:{confirm:'RUN LOCAL ACTION',hash:job.hash},signal});aborted(signal);
+   if(!allowed){await call('/api/jobs/'+job.id+'/stop',{method:'POST',data:{}});return {...job,state:'stopped'};}
+   await call('/api/jobs/'+job.id+'/approve',{method:'POST',data:{confirm:'RUN LOCAL ACTION',hash:job.hash},signal});aborted(signal);
   }
   const started=Date.now();
   while(!['succeeded','failed','stopped','interrupted'].includes(job.state)){
    if(Date.now()-started>200000)throw Error('TOOL_TIMEOUT');
    await wait(700,signal);aborted(signal);
-   job=await request('/api/jobs/'+job.id,{signal});aborted(signal);onState(job);
+   job=await call('/api/jobs/'+job.id,{signal});aborted(signal);onState(job);
   }
   return job;
  }catch(error){
-  if(jobId)await request('/api/jobs/'+jobId+'/stop',{method:'POST',data:{}}).catch(()=>{});
+  if(jobId)await call('/api/jobs/'+jobId+'/stop',{method:'POST',data:{}}).catch(()=>{});
   throw error;
  }
 }

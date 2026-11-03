@@ -11,6 +11,7 @@ test('paired conversation creates a document only after exact approval; other or
  const {origin,token}=await app.listen(0);
  const request=(path,method='GET',data,from='https://vaos.vayushastr.workers.dev')=>fetch(origin+path,{method,headers:{Authorization:'Bearer '+token,Origin:from,...(data?{'Content-Type':'application/json'}:{})},body:data?JSON.stringify(data):undefined});
  try{
+  const status=await (await request('/api/status')).json();assert.equal(status.conversationToolProtocol,1);assert.equal(status.reviewedDocuments,true);
   let response=await request('/api/jobs','POST',{kind:'document.create',input:{format:'pdf',title:'Fixture',body:'Reviewed content'},requireReview:true});
   assert.equal(response.status,202);const draft=await response.json();assert.equal(draft.state,'review');
   assert.equal((await (await request('/api/artifacts')).json()).length,0);

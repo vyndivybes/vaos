@@ -56,7 +56,7 @@ export function mountJarvisTools(root){
     receipt.textContent=formatToolReceipt(job);artifact=job.result?.artifact||null;download.hidden=!artifact;
     status.textContent='Task '+job.state+'.';
     return {text:receipt.textContent,spoken:job.state==='succeeded'?'Your '+(plan.kind.startsWith('browser.')?'web result is ready. Read the source text below.':'computer task is complete. Check the result below.'):'The task did not complete. Check the status below.'};
-   }finally{signal?.removeEventListener('abort',cancel);abortReview();if(active===abort)active=null;}
+   }catch(e){if(e.message==='COMPANION_UPDATE_REQUIRED')throw Error('Update and restart your local companion. No task was started.');throw e;}finally{signal?.removeEventListener('abort',cancel);abortReview();if(active===abort)active=null;}
   },
  };
 }

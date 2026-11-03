@@ -74,7 +74,7 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
      throw error('NOT_FOUND',404);
     }
     if(!paired)throw error('PAIRING_REQUIRED',401);
-    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',capabilities,local:true,memoryScope:{tenantId,subject},voiceBackend:{provider:'kokoro-onnx',profile:'vaos-cinematic-v1',platformFallback:false}});
+    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',conversationToolProtocol:1,reviewedDocuments:true,capabilities,local:true,memoryScope:{tenantId,subject},voiceBackend:{provider:'kokoro-onnx',profile:'vaos-cinematic-v1',platformFallback:false}});
     if(req.method==='POST'&&path==='/api/voice/synthesize'){
      if(!capabilities.neuralVoice)throw error('NEURAL_SETUP_REQUIRED',503);
      const data=await body(req),abort=new AbortController();

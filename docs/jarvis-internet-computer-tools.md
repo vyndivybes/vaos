@@ -9,7 +9,7 @@ JARVIS can route explicit typed or spoken requests to the paired local companion
 3. Enter the local address and pairing code printed by the companion. The code stays in this tab, is cleared from its input after pairing, and is never placed in a URL by this interface.
 4. Type a request or select **Start conversation**. The browser asks for microphone permission. On-device recognition is preferred. Browser-provider recognition requires a separate consent prompt when local recognition is unavailable.
 
-The companion must be running on the computer being controlled. An update to the hosted website does not install or start a service on somebody else's computer. Windows Word/desktop dependencies are documented in `apps/companion/README.md`. PDF, spreadsheet and RSS search do not require a Python model. Public-page browser tasks require Chrome or Edge configured through the existing companion launcher.
+The companion must be updated and running on the computer being controlled. A protocol check blocks all conversation tools before job creation if an older companion does not support reviewed documents. An update to the hosted website does not install or start a service on somebody else's computer. Windows Word/desktop dependencies are documented in `apps/companion/README.md`. PDF, spreadsheet and RSS search do not require a Python model. Public-page browser tasks require Chrome or Edge configured through the existing companion launcher.
 
 ## Supported requests
 

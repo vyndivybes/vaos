@@ -7,6 +7,7 @@ import {PDFDocument,StandardFonts,rgb} from 'pdf-lib';
 import {createWorker} from 'tesseract.js';
 import {pythonOperation} from './python.mjs';
 import {runBrowser} from './browser.mjs';
+import {searchWeb} from './search.mjs';
 import {runSkill,skillHash} from './forge.mjs';
 
 const require=createRequire(import.meta.url);
@@ -65,9 +66,10 @@ export function createActions({dataDir,store,python,modelDir,chromePath,allowLoo
    try{return await pythonOperation(kind,{audio:path,model:modelDir},{python,signal,timeout:180000});}
    finally{await unlink(path).catch(()=>{});}
   }
+  if(kind==='browser.search')return searchWeb(input.query,{signal});
   if(kind==='browser.research'||kind==='browser.workflow'){
    const id=randomUUID()+'.bin',path=resolve(dataDir,'artifacts',id);
-   const result=await runBrowser({...input,steps:kind==='browser.research'?[]:input.steps},{signal,artifactPath:path,artifactId:id,executablePath:chromePath,allowLoopbackForTests});
+   const result=await runBrowser({...input,steps:kind==='browser.workflow'?input.steps:[]},{signal,artifactPath:path,artifactId:id,executablePath:chromePath,allowLoopbackForTests});
    if(result.download){const size=(await stat(path)).size;if(size>10000000){await unlink(path);throw Error('DOWNLOAD_TOO_LARGE');}result.artifact=store.saveArtifact({...result.download,bytes:size});}
    return result;
   }

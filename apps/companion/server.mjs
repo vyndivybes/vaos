@@ -74,7 +74,7 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
      throw error('NOT_FOUND',404);
     }
     if(!paired)throw error('PAIRING_REQUIRED',401);
-    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',capabilities,local:true,memoryScope:{tenantId,subject},voiceBackend:{provider:'kokoro-onnx',profile:'vaos-cinematic-v1',platformFallback:false}});
+    if(req.method==='GET'&&path==='/api/status')return json(res,200,{version:'0.1.0',conversationToolProtocol:1,reviewedDocuments:true,capabilities,local:true,memoryScope:{tenantId,subject},voiceBackend:{provider:'kokoro-onnx',profile:'vaos-cinematic-v1',platformFallback:false}});
     if(req.method==='POST'&&path==='/api/voice/synthesize'){
      if(!capabilities.neuralVoice)throw error('NEURAL_SETUP_REQUIRED',503);
      const data=await body(req),abort=new AbortController();
@@ -86,7 +86,7 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
     if(req.method==='POST'&&path==='/api/revoke'){jobs.stopAll();neural.cancel();token=randomBytes(32).toString('base64url');return json(res,200,{revoked:true});}
     if(req.method==='GET'&&path==='/api/jobs')return json(res,200,jobs.list());
     if(req.method==='POST'&&path==='/api/jobs'){
-     const data=await body(req);return json(res,202,jobs.submit(data.kind,data.input));
+     const data=await body(req);return json(res,202,jobs.submit(data.kind,data.input,{requireReview:data.requireReview===true}));
     }
     const jobMatch=path.match(/^\/api\/jobs\/([a-f0-9-]{36})(?:\/(approve|stop))?$/);
     if(jobMatch){

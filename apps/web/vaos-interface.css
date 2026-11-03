@@ -338,3 +338,7 @@ body.va-premium.login-body :is(.access-console,.cinematic-chrome,.cinematic-lega
 body.va-premium.login-body :is(.cinematic-scene__dust,.cinematic-scene__glow){display:none}
 body.va-premium.login-body .cinematic-chrome{font-family:inherit;letter-spacing:.04em;color:#68736c}
 body.va-premium.login-body .access-console__titleblock h1 em{color:#315b49}
+body.va-premium [data-jarvis-tools] .va-tool-receipt{max-height:360px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}
+body.va-premium [data-jarvis-tools]>input{display:block;width:100%;margin:8px 0}
+body.va-premium [data-jarvis-tools] ul{list-style:none;padding:0;display:grid;gap:6px}
+body.va-premium [data-jarvis-tools] li>button{max-width:100%;text-align:left;overflow-wrap:anywhere}

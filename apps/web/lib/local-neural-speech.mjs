@@ -14,6 +14,12 @@ export const localCompanion={
  },
  disconnect(){connection=null;for(const fn of listeners)fn();},
  subscribe(fn){listeners.add(fn);return ()=>listeners.delete(fn);},
+ async download(path){
+  if(!connection)throw Error('PAIRING_REQUIRED');
+  if(!/^\/api\/artifacts\/[a-f0-9-]+\.(?:pdf|xlsx|docx|bin)$/.test(path))throw Error('ARTIFACT_PATH_INVALID');
+  const response=await fetch(connection.endpoint+path,{headers:{Authorization:'Bearer '+connection.token},credentials:'omit',referrerPolicy:'no-referrer',signal:AbortSignal.timeout(15000)});
+  if(!response.ok)throw Error('DOWNLOAD_FAILED');return response.blob();
+ },
  async request(path,{method='GET',data,signal,binary=false}={}){
   if(!connection)throw Error('PAIRING_REQUIRED');
   if(!path.startsWith('/api/'))throw Error('LOCAL_PATH_INVALID');

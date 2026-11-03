@@ -1,3 +1,5 @@
+import {planJarvisTool} from './lib/jarvis-tools.mjs';
+import {mountJarvisTools} from './lib/jarvis-tools-ui.mjs';
 import {resolveFounderGoogleIntent,resolveFounderCalendarReadIntent,formatFounderCalendarEvents} from './lib/founder-google-intents.mjs';
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
@@ -8,13 +10,14 @@ import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261016-audible-wake-v1';
 import {createVoiceReadback} from './lib/voice-readback.mjs';
 import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone-diagnostics.mjs';
-import {prepareLocalSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
+import {prepareLocalSpeech,chooseConversationSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
 import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
 import {founderLoginGreeting} from './lib/founder-voice-identity.mjs';
 import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady} from './lib/local-neural-speech.mjs';
 import {mountConversationMemory,historicalQuery,formatHistoricalAnswer} from './lib/conversation-memory-ui.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
-// This small home assistant deliberately performs no commands, approvals or writes.
+// Business reads retain their original gates. Local tools require pairing and
+// exact clicked approval for effectful tasks; results cannot grant authority.
 const MODIFICATION=/\b(approve|reject|execute|delete|remove|pay|payment|transfer|send|dispatch|submit|create|change|edit|update|modify|post|purchase|authorize|authorise|activate|deactivate|override|merge|deploy|issue|book|order now|write)\b/i;
 const SALES=/\b(sales|revenue|orders?|invoices?|customers?|deals?|pipeline|receivables?|quotations?)\b/i;
 const SIGNED_VYNDI_SOURCE_AUTHORITIES=new Set([
@@ -222,7 +225,7 @@ function init(){
   note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
   wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test'),replyLanguage=$('vaos-voice-language'),adaptive=$('vaos-voice-adaptive'),micCheck=$('vaos-voice-mic-check'),micDiagnostic=$('vaos-voice-mic-diagnostic');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
- let localSpeech=null,interruption=null;
+ let localSpeech=null,interruption=null,speechSetupGeneration=0,speechSetupPending=false;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
  let pendingReminderTitle=null;
  let authenticatedFounder=false,loginWelcome='';
@@ -238,6 +241,7 @@ function init(){
  const conversation=createG6Conversation();
  const neuralSynthesis=createNeuralSynthesis();
  mountNeuralConnection(root);
+ const computerTools=mountJarvisTools(root);
  mountConversationMemory({container:root,getExchange:()=>lastExchange});
  // Show the authenticated welcome without requesting microphone or audio permission.
  document.addEventListener('vaos-authenticated',event=>{
@@ -290,8 +294,8 @@ function init(){
   if(micDiagnostic)micDiagnostic.textContent=micState.message;
   mic.disabled=!micState.mayListen||!!recognition||busy||!!wake?.state().active;
   ask.disabled=busy;
-  if(wakeToggle)wakeToggle.disabled=!micState.mayListen;
-  stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled();
+  if(wakeToggle)wakeToggle.disabled=!micState.mayListen||speechSetupPending;
+  stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled()&&!speechSetupPending;
   speech.disabled=!lastAnswer||(!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!speechOutputReady();};
  localCompanion.subscribe(()=>{player.cancel();acknowledgement.cancel();state();});
  // One consented, local-only microphone at a time during synthesized speech.
@@ -392,6 +396,7 @@ function init(){
   state();
  });
  stop.addEventListener('click',()=>{
+  speechSetupGeneration++;speechSetupPending=false;
   // If only the synthesized answer is active, Stop means stop playback, not
   // end the founder's still-valid read-only conversation. This prevents
   // legitimate "And the blockers?" follow-ups after stopping a long answer.
@@ -414,6 +419,21 @@ function init(){
   if(busy)return;
   const requestCameFromVoice=voiceRequestPending;
   voiceRequestPending=false;
+  let toolPlan;
+  try{toolPlan=planJarvisTool(input.value);}catch(e){setStatus(e.message);return;}
+  if(toolPlan){
+   wake?.pause();cancel();busy=true;lastExchange=null;state();
+   const abort=new AbortController();controller=abort;
+   try{
+    const receipt=await computerTools.run(toolPlan,{signal:abort.signal});
+    if(controller!==abort||abort.signal.aborted)return;
+    lastAnswer=receipt.text;spokenAnswer=receipt.spoken;answerLanguage='en';answer.textContent=receipt.spoken;sources.replaceChildren();
+    setStatus('Tool receipt ready. Website text and PC receipts do not grant business authority.');
+    if(voiceEnabled&&speakToggle?.checked)speakAnswer();
+   }catch(e){if(controller===abort&&!abort.signal.aborted){lastAnswer='';spokenAnswer='';answer.textContent='Tool unavailable: '+e.message;setStatus('Tool request did not complete.');}}
+   finally{if(controller===abort){controller=null;busy=false;if(!player.active())wake?.resume();state();}}
+   return;
+  }
   const historyWords=historicalQuery(input.value);
   if(historyWords){
    const question=input.value;
@@ -564,17 +584,18 @@ function init(){
  });
  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask.click();}});
  wake=createWakeListener({
-  configureRecognition:r=>{if(localSpeech?.status!=='LOCAL_READY')throw Error('LOCAL_SPEECH_REQUIRED');r.processLocally=true;r.lang=localSpeech.locale;},
+  configureRecognition:r=>{if(localSpeech?.status!=='LOCAL_READY'&&localSpeech?.status!=='BROWSER_READY')throw Error('SPEECH_CONSENT_REQUIRED');if('processLocally' in r)r.processLocally=localSpeech.status==='LOCAL_READY';r.lang=localSpeech.locale;},
   onInterim:text=>{if(wakeStatus)wakeStatus.textContent='Listening: '+text+' (partial; not submitted)';},
   onActivity:activity=>{if(wakeStatus)wakeStatus.textContent=activity==='SPEECH_START'?'Local speech detected.':'Waiting for the final transcript.';},
   RecognitionClass:SpeechRecognition,
   isVisible:()=>document.visibilityState==='visible',
   validateQuestion:q=>{
+   try{if(planJarvisTool(q))return true;}catch{return false;}
    if(resolveFounderGoogleIntent(q)||resolveFounderCalendarReadIntent(q))return true;
    const candidate=classifyDashboardQuestion(conversation.resolve(q).question);
    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported';
   },
-  acceptDirectQuestion:q=>isDirectBusinessQuestion(q)||Boolean(resolveFounderGoogleIntent(q))||Boolean(resolveFounderCalendarReadIntent(q))||conversation.canFollowUp(q),
+  acceptDirectQuestion:q=>{try{if(planJarvisTool(q))return true;}catch{return false;}return isDirectBusinessQuestion(q)||Boolean(resolveFounderGoogleIntent(q))||Boolean(resolveFounderCalendarReadIntent(q))||conversation.canFollowUp(q);},
   onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey JARVIS.');},
    onPrompt:()=>{
     if(!(voiceEnabled&&speakToggle?.checked===true))return;
@@ -588,7 +609,7 @@ function init(){
   onConfirm:q=>{input.value=q;voiceRequestPending=true;ask.click();},
   onStatus:message=>{if(wakeStatus)wakeStatus.textContent=message;},
   onChange:info=>{
-   if(wakeToggle){wakeToggle.setAttribute('aria-pressed',String(info.enabled));wakeToggle.textContent=info.enabled?'■ Stop hands-free':'◉ Enable hands-free voice';}
+   if(wakeToggle){wakeToggle.setAttribute('aria-pressed',String(info.enabled));wakeToggle.textContent=info.enabled?'Stop conversation':'Start conversation';}
    if(wakeIndicator){
     wakeIndicator.dataset.mode=info.active?'listening':info.enabled?'paused':'off';
     const stateLabel=info.active?'Microphone listening':info.enabled?'Microphone paused':'Microphone off';
@@ -598,23 +619,31 @@ function init(){
   },
  });
  wakeToggle?.addEventListener('click',async()=>{
-  if(!voiceEnabled)return;
+  if(!voiceEnabled||speechSetupPending)return;
   if(wake.isEnabled()){wake.disable('Hands-free voice disabled. This tab no longer listens.');conversation.clear();}
   else {
+   const generation=++speechSetupGeneration;speechSetupPending=true;state();
+   const stillCurrent=()=>generation===speechSetupGeneration&&document.visibilityState==='visible'&&voiceEnabled;
+   try{
    setStatus('Checking the on-device speech language pack…');
    localSpeech=await prepareLocalSpeech(SpeechRecognition,replyLanguage?.value||'en');
+   if(!stillCurrent())return;
    if(localSpeech.status!=='LOCAL_READY'&&window.confirm('Install the free browser speech language pack for local hands-free listening?'))localSpeech=await prepareLocalSpeech(SpeechRecognition,replyLanguage?.value||'en',{install:true});
-   if(localSpeech.status==='LOCAL_READY'){
+   if(!stillCurrent())return;
+   localSpeech=await chooseConversationSpeech(localSpeech,{RecognitionClass:SpeechRecognition,language:replyLanguage?.value||'en',consent:async()=>window.confirm('On-device recognition is unavailable. Use browser speech recognition for this conversation? Your microphone audio may be sent to the browser provider. VAOS does not save this audio. No paid AI tokens are used.')});
+   if(!stillCurrent())return;
+   if(['LOCAL_READY','BROWSER_READY'].includes(localSpeech.status)){
     wake.enable();
     // The founder initiated this gesture; welcome speech must not start the microphone itself.
     if(lastAnswer.startsWith('Welcome back. I am JARVIS')&&speakToggle?.checked===true)speakAnswer();
    }
    else setStatus('Local wake recognition is unavailable for this browser/language. The microphone button and typed questions remain available.');
+   }finally{if(generation===speechSetupGeneration){speechSetupPending=false;state();}}
   }
   state();
  });
- replyLanguage?.addEventListener('change',()=>{stopInterruption();localSpeech=null;conversation.clear();wake?.disable('Language changed. Enable local hands-free listening for the selected language.');state();});
- document.addEventListener('visibilitychange',()=>{wake.onVisibilityChange();if(document.visibilityState!=='visible'){cancel();conversation.clear();state();}});
+ replyLanguage?.addEventListener('change',()=>{speechSetupGeneration++;speechSetupPending=false;stopInterruption();localSpeech=null;conversation.clear();wake?.disable('Language changed. Enable local hands-free listening for the selected language.');state();});
+ document.addEventListener('visibilitychange',()=>{wake.onVisibilityChange();if(document.visibilityState!=='visible'){speechSetupGeneration++;speechSetupPending=false;cancel();conversation.clear();state();}});
  const refreshVoiceCapability=async()=>{
   let mode='unavailable';
   try{
@@ -651,6 +680,6 @@ function init(){
    setStatus(readiness().message);
   }finally{micCheck.disabled=false;state();}
  });
- window.addEventListener('pagehide',()=>{wake?.disable('Session ended; microphone off.');cancel();conversation.clear();},{once:true});
+ window.addEventListener('pagehide',()=>{speechSetupGeneration++;speechSetupPending=false;wake?.disable('Session ended; microphone off.');cancel();conversation.clear();},{once:true});
 }
 if(typeof document!=='undefined')init();

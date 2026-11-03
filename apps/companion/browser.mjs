@@ -74,6 +74,7 @@ export async function runBrowser(input,{signal,artifactPath,artifactId,executabl
    }
   }
   if(new URL(page.url()).origin!==url.origin)throw Error('BROWSER_REDIRECT_DENIED');
-  return {title:await page.title(),url:page.url(),text:(await page.locator('body').innerText()).slice(0,16000),download:downloadResult,stepsCompleted:steps.length,permissions:{origin:url.origin,writePaths,credentials:'ISOLATED_SESSION',sourceAuthority:'UNTRUSTED_PAGE_CONTENT'}};
+  const links=await page.locator('a[href]').evaluateAll(anchors=>anchors.map(a=>({title:(a.innerText||'').trim().slice(0,160),url:a.href})).filter(a=>a.title&&/^https?:\/\//i.test(a.url)).slice(0,30));
+  return {title:await page.title(),url:page.url(),text:(await page.locator('body').innerText()).slice(0,16000),links,download:downloadResult,stepsCompleted:steps.length,permissions:{origin:url.origin,writePaths,credentials:'ISOLATED_SESSION',sourceAuthority:'UNTRUSTED_PAGE_CONTENT'}};
  }finally{signal?.removeEventListener('abort',abort);await browser.close();}
 }

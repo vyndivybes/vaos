@@ -3,6 +3,7 @@
  * without founder voice qualification and explicit in-page user gesture.
  */
 const WAKE=/^(?:hey[ ,.!?]+)?(?:jarvis|vaos|v[ .-]?a[ .-]?o[ .-]?s|vay[ .-]?os|vay[ .-]?us)(?=$|[ ,.!?:-])/i;
+const COMMAND_END=/^(?:(?:hey )?jarvis[, ]+)?(?:stop listening|end conversation|stop conversation)[.! ]*$/i;
 const COMMAND_CONFIRM=/^(?:confirm|yes confirm|confirm question)[.! ]*$/i;
 const COMMAND_CANCEL=/^(?:cancel|stop|never mind|no cancel)[.! ]*$/i;
 const initial=()=>({mode:'WAKE',pending:null});
@@ -82,6 +83,7 @@ export function createWakeListener({
    if(current!==next||!enabled||paused||generation!==g||!isVisible())return;
    const transcript=extractFinalTranscript(event);
    if(!transcript){const rows=event?.results;let text='';if(rows)for(let i=0;i<rows.length;i++)if(rows[i]?.isFinal!==true)text+=rows[i]?.[0]?.transcript||'';if(text)onInterim(text.slice(0,300));return;}
+   if(COMMAND_END.test(transcript)){disable('Conversation ended. Microphone off.');return;}
    const result=advanceWakeTurn(turn,transcript,validateQuestion,{acceptDirectQuestion});
    onHeard(result.event);
    turn=result.state;
@@ -97,7 +99,7 @@ export function createWakeListener({
    else if(result.event==='CANCELLED'){tell('Question cancelled. Listening for Hey VAOS.');}
    else if(result.event==='SUBMIT'){
     transientFailures=0;onDraft(result.question);
-    tell('Business question recognized: '+result.question+'. Retrieving an authorized read-only answer.');
+    tell('Request recognized: '+result.question+'. Checking the connected tools and existing permissions.');
     // Pause BEFORE dispatch so only one GET is sent and VAOS does not
     // recognize its own reply as a new question.
     pause();

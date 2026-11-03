@@ -122,6 +122,19 @@
             <button type="button" data-jarvis-question="Show engineering verification evidence">Engineering evidence</button>
             <a href="/jarvis-multimodal.html" title="Permission-controlled live camera and source inspection">Open JARVIS camera &amp; files ↗</a>
           </div>
+          <div class="va-wake-controls">
+            <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>Start conversation</button>
+            <div class="va-wake-readiness">
+              <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Wake-word microphone is off">Microphone off</span>
+              <span class="va-wake-instructions">Tap the microphone for one question, or start a hands-free conversation for repeated questions. In hands-free mode ask “What is our production status?” directly; “Hey VAOS” is optional.</span>
+            </div>
+          </div>
+          <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Hands-free listening is off.</p>
+          <div class="va-voice-toolbar">
+            <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
+            <div><button id="vaos-voice-test" type="button">◉ Test speaker</button><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
+              <button id="vaos-voice-stop" type="button" disabled>■ Stop</button></div>
+          </div>
           <details class="fc-voice-settings"><summary>Voice &amp; answer preferences</summary>
           <label class="va-adaptive-toggle" for="vaos-voice-adaptive">
             <input id="vaos-voice-adaptive" type="checkbox" checked />
@@ -142,20 +155,7 @@
             <button type="button" id="vaos-voice-mic-check" class="va-mic-diagnostic__button">Check microphone access</button>
             <span id="vaos-voice-mic-diagnostic" role="status" aria-live="polite">Checking microphone readiness…</span>
           </div>
-          <div class="va-wake-controls">
-            <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>◉ Enable hands-free voice</button>
-            <div class="va-wake-readiness">
-              <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Wake-word microphone is off">Microphone off</span>
-              <span class="va-wake-instructions">Tap the microphone for one question, or enable hands-free for repeated questions. In hands-free mode ask “What is our production status?” directly; “Hey VAOS” is optional.</span>
-            </div>
-          </div>
-          <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Hands-free listening is off.</p>
-          <div class="va-voice-toolbar">
-            <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
-            <div><button id="vaos-voice-test" type="button">◉ Test speaker</button><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
-              <button id="vaos-voice-stop" type="button" disabled>■ Stop</button></div>
-          </div>
-          <p class="va-voice-privacy">Microphone is OFF by default. Hands-free listens only after you explicitly enable it, while this VAOS tab remains visible. The single microphone button listens for one question only. Read-only business questions may be asked directly in hands-free mode; “Hey VAOS” is optional. Stop disables listening. Browser speech recognition may use a vendor service; business actions remain blocked. No business writes, approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
+          <p class="va-voice-privacy">Microphone is OFF by default. Hands-free listens only after you explicitly enable it, while this VAOS tab remains visible. The single microphone button listens for one question only. Business questions and paired computer tool requests may be asked directly in hands-free mode; “Hey VAOS” is optional. Say “stop listening” or select Stop to end the conversation. Browser speech recognition may use a vendor service; business actions remain blocked. PC actions and document creation require a separate clicked approval. No business approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
           </details>
           <a class="va-button va-button--outline" id="jarvis-google-calendar-connect" href="/api/google-workspace/start" aria-label="Connect Google Calendar to JARVIS">Connect Google Calendar ↗</a>
           <a class="fc-command-link" href="/founder-console.html">Need to make a change? Review it in Founder Command ↗</a>

@@ -147,7 +147,7 @@ export async function createCompanion({dataDir,token=randomBytes(32).toString('b
     throw error('NOT_FOUND',404);
    }
    const asset=path==='/'?'/skills.html':path;
-   const allowed=new Set(['/skills.html','/skills.mjs','/skills.css','/skills-map.mjs','/conversation-memory.css','/lib/local-neural-speech.mjs','/lib/elevenlabs-speech.mjs','/lib/conversation-memory-ui.mjs','/assets/vayu-shastr-original.webp','/vendor/three.module.min.js','/vendor/three.core.min.js']);
+   const allowed=new Set(['/skills.html','/skills.mjs','/skills.css','/skills-map.mjs','/premium.css','/vaos-interface.css','/vaos-interface.mjs','/conversation-memory.css','/lib/local-neural-speech.mjs','/lib/elevenlabs-speech.mjs','/lib/conversation-memory-ui.mjs','/assets/vayu-shastr-original.webp','/vendor/three.module.min.js','/vendor/three.core.min.js']);
    if(req.method!=='GET'||!allowed.has(asset))throw error('NOT_FOUND',404);
    const data=await readFile(resolve(web,'.'+asset));
    res.writeHead(200,{'Content-Type':{'.html':'text/html','.mjs':'text/javascript','.js':'text/javascript','.css':'text/css','.webp':'image/webp'}[extname(asset)],'Cache-Control':'no-store','X-Content-Type-Options':'nosniff','Content-Security-Policy':"default-src 'self'; connect-src 'self'; img-src 'self' blob:; style-src 'self'; script-src 'self'; media-src 'self' blob:; object-src 'none'; frame-ancestors 'none'; base-uri 'none'"});res.end(data);

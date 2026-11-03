@@ -13,7 +13,7 @@ const app=await createCompanion({dataDir:resolve(process.env.VAOS_COMPANION_DATA
 const {origin,token}=await app.listen(Number(process.env.VAOS_COMPANION_PORT||47831));
 console.log('VAOS local companion: '+origin);
 if(process.argv.includes('--open')&&process.platform==='win32'){
- spawn('rundll32.exe',['url.dll,FileProtocolHandler',origin+'/#pair='+token],{shell:false,windowsHide:true,stdio:'ignore'});
+ spawn('rundll32.exe',['url.dll,FileProtocolHandler',origin+'/skills.html#pair='+token],{shell:false,windowsHide:true,stdio:'ignore'});
 }else console.log('Pairing code for this session: '+token);
 console.log('Microphone, screen capture and desktop actions start only from explicit user controls. Close this process to stop routines.');
 for(const event of ['SIGINT','SIGTERM'])process.once(event,async()=>{await app.close();process.exit(0);});

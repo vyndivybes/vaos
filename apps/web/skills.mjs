@@ -5,6 +5,14 @@ const resultSpeech=createNeuralSynthesis();
 mountNeuralConnection(document.querySelector('#vaos-main-voice'));
 mountConversationMemory({container:document.querySelector('[data-view="memory"]')});
 const local=location.hostname==='127.0.0.1';
+// Keep the launcher tab alive while opening hosted workspaces elsewhere.
+if(local)for(const link of document.querySelectorAll('.va-app-header a,.rail>a')){
+ const destination=new URL(link.href,location.origin);
+ if(destination.origin!==location.origin)continue;
+ if(destination.pathname==='/skills.html'){link.href='#skill-workspace';continue;}
+ link.href='https://vaos.vayushastr.workers.dev'+destination.pathname+destination.search+destination.hash;
+ link.target='_blank';link.rel='noopener noreferrer';
+}
 let endpoint='',token='',capabilities={},timer=null,reviewedJob=null,currentArtifact=null,currentResult='',voiceGeneration=0,recording=null,mapView=null;
 const handled=new Set(),voiceJobs=new Map();
 let browserSteps=[];
@@ -72,7 +80,7 @@ async function connect(address,code){
 }
 $('connect-open').addEventListener('click',()=>$('connect-dialog').showModal());
 $('connect-cancel').addEventListener('click',()=>$('connect-dialog').close());
-$('copy-pair-code').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(token);message('Pairing code copied. Open VAOS Skills, choose Connect computer, and paste it there.');}catch{message('Clipboard unavailable. Restart the companion without --open to display a session code in its terminal.');}});
+$('copy-pair-code').addEventListener('click',async()=>{try{await navigator.clipboard.writeText(token);message('Pairing code copied. Open the hosted JARVIS workspace, expand Internet & computer tools, paste the code and choose Connect computer. Keep this launcher tab open.');}catch{message('Clipboard unavailable. Restart the companion without --open to display a session code in its terminal.');}});
 $('shutdown').addEventListener('click',async()=>{if(!confirm('Stop the companion, its running tasks and scheduled routines?'))return;try{await api('/api/shutdown','POST',{confirm:'STOP COMPANION'});void stopCapture(false);token='';localCompanion.disconnect();clearTimeout(timer);$('connection-state').textContent='Companion stopped';$('shutdown').hidden=true;$('disconnect').hidden=true;$('copy-pair-code').hidden=true;$('connect-open').hidden=false;message('Companion stopped. Routines will resume only after you start it again.');}catch(error){failure(error);}});
 bindForm('connect-form',async data=>{try{await connect(data.endpoint,data.token);$('connect-error').textContent='';}catch(error){$('connect-error').textContent=friendly[error.message]||error.message;}});
 $('disconnect').addEventListener('click',async()=>{try{await api('/api/revoke','POST',{});}catch{}stopCapture(false);resultSpeech.cancel();token='';localCompanion.disconnect();capabilities={};clearTimeout(timer);$('connection-state').textContent='Companion disconnected';$('connect-open').hidden=false;$('disconnect').hidden=true;message('Pairing revoked. Reopen the companion for a new code.');});
@@ -140,3 +148,4 @@ if(local){$('vaos-voice-ask').disabled=true;$('vaos-voice-status').textContent='
 else import('/main-voice.mjs').catch(()=>message('VAOS voice controls could not load. Refresh the page.'));
 const fragment=new URLSearchParams(location.hash.slice(1)),pair=fragment.get('pair');
 if(pair){history.replaceState(null,'',location.pathname);if(local)void connect(location.origin,pair).catch(failure);}
+else if(local){$('connect-open').textContent='Enter an existing code';message('This tab was opened without a pairing code. Use the companion launcher tab that opened when the app started; it has Copy pairing code. Opening this address manually or refreshing clears its in-memory connection. If that tab was closed, restart the companion with --open.');}

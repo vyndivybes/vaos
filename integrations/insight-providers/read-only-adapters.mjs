@@ -107,14 +107,23 @@ function readRows(id,r,j){
 export function createInsightReadAdapter({providerId,capabilityRegistry,credentialBroker,transport,config}={}){
  const capability=CAPABILITIES[providerId];
  if(!capability)throw deny('PROVIDER_INVALID');
- if(typeof capabilityRegistry?.get!=='function'||typeof credentialBroker?.withCredential!=='function'||typeof transport?.request!=='function')throw deny('DEPENDENCY_REQUIRED');
+ if((typeof capabilityRegistry?.get!=='function'&&typeof capabilityRegistry?.resolve!=='function')||typeof credentialBroker?.withCredential!=='function'||typeof transport?.request!=='function')throw deny('DEPENDENCY_REQUIRED');
  const cfg=configFor(providerId,config);
  return Object.freeze({
   id:providerId+'.insight-read.v1',providerId,capability,
   async execute(job){
    // Enforce provider authorization before parsing provider-specific query input.
-   const manifest=capabilityRegistry.get(providerId);
-   if(!manifest||manifest.enabled!==true||manifest.qualification?.state!=='qualified'||!manifest.qualification.qualifiedCapabilities?.includes(capability))throw deny('PROVIDER_NOT_QUALIFIED');
+   // Standalone callers use the explicit provider manifest; governed ProviderRuntime
+   // passes its selected-provider gate after control-plane qualification and health checks.
+   let admitted=false;
+   if(typeof capabilityRegistry.get==='function'){
+    const manifest=capabilityRegistry.get(providerId);
+    admitted=manifest?.enabled===true&&manifest.qualification?.state==='qualified'&&manifest.qualification.qualifiedCapabilities?.includes(capability)===true;
+   }else{
+    const selected=capabilityRegistry.resolve(capability,{allowedProviderIds:[providerId]});
+    admitted=selected?.providerId===providerId;
+   }
+   if(!admitted)throw deny('PROVIDER_NOT_QUALIFIED');
    const j=validJob(job,cfg,providerId);
    const response=await credentialBroker.withCredential({bindingRef:cfg.secretBindingRef,providerId,capability,executionJobId:j.jobId,intentId:j.intentId},async credential=>{
     const req=makeRequest(providerId,cfg,j,credential);
@@ -124,7 +133,9 @@ export function createInsightReadAdapter({providerId,capabilityRegistry,credenti
    });
    if(!Number.isInteger(response?.status)||response.status<200||response.status>=300)throw deny('PROVIDER_HTTP_ERROR');
    const records=readRows(providerId,response,j);
-   return Object.freeze({status:'OBSERVED',providerId,capability,tenantId:j.tenantId,resourceKey:j.resourceKey,sourceAuthority:providerId+'.api.read',canonicalStateUpdated:false,records,verification:Object.freeze({sourceRead:true,independentlyVerified:false,sourceRef:providerId+':'+j.resource.remoteId,executionJobId:j.jobId,intentId:j.intentId})});
+   return Object.freeze({status:'OBSERVED',providerId,capability,tenantId:j.tenantId,resourceKey:j.resourceKey,sourceAuthority:providerId+'.api.read',canonicalStateUpdated:false,records,
+    effect:Object.freeze({effectType:'INSIGHT.READ_OBSERVED',resourceType:'EXTERNAL_INSIGHT_READ',resourceId:providerId+':'+j.resource.remoteId,canonicalStateUpdated:false}),
+    verification:Object.freeze({verified:true,verificationScope:'response-schema-and-tenant-only',sourceRead:true,independentlyVerified:false,sourceRef:providerId+':'+j.resource.remoteId,executionJobId:j.jobId,intentId:j.intentId})});
   }
  });
 }

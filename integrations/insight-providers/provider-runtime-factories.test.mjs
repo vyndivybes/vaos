@@ -49,6 +49,6 @@ test('runtime provider gate is scoped to selected provider and read-only capabil
  let called=0;
  const factories=createInsightProviderFactories({configurations:{qdrant:config},credentialBroker:{async withCredential(){called++;throw Error('should not request secret')}},transportFactory:()=>({async request(){called++}})});
  const runtime=createProviderRuntime({controlPlane:{resolve(){return{providerId:'qdrant'}}},adapterFactories:factories});
- await assert.rejects(()=>runtime.execute({capability:'search.fulltext',dataClassification:'internal',riskClass:'low',executionJob:job}),/PROVIDER_NOT_QUALIFIED|PROVIDER_RUNTIME_ADAPTER_MISMATCH|PROVIDER_RUNTIME_NOT_AVAILABLE/);
+ await assert.rejects(()=>runtime.execute({capability:'search.fulltext',dataClassification:'internal',riskClass:'low',executionJob:job}),/INSIGHT_FACTORY_CAPABILITY_DENIED|PROVIDER_NOT_QUALIFIED|PROVIDER_RUNTIME_ADAPTER_MISMATCH|PROVIDER_RUNTIME_NOT_AVAILABLE/);
  assert.equal(called,0);
 });

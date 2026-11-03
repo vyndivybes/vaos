@@ -39,6 +39,13 @@ export const VYNDI_BRIDGE_EFFECT=EFFECT;
 
 export const VYNDI_BRIDGE_ROUTES=freeze([
   route({
+    actionType:'KNOWLEDGE.OBSERVE_VEDM_GRAPH',employeeId:'engineering-configuration',
+    effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/vaos-knowledge-graph-export.ts',authority:'compileVedmAuthorityGraph',
+    verificationRefs:['vyndios:vedm-authority-graph','VEDM_SOURCE_COMMIT'],
+    description:'Signed read-only repository-pinned VEDM engineering authority graph; not current ERP release authorization.'
+  }),
+  route({
     actionType:'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI',employeeId:'orchestrator',effectClass:EFFECT.READ,
     state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/vaos-enterprise-bi-read.ts',authority:'getEnterpriseBusinessIntelligence',

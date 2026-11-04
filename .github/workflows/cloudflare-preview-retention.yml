@@ -39,6 +39,8 @@ jobs:
     needs: test
     if: github.ref == 'refs/heads/main' && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
+    # Restrict this environment to the main branch (no reviewers: it runs on a schedule).
+    environment: cloudflare-maintenance
     timeout-minutes: 10
     env:
       GITHUB_TOKEN: ${{ github.token }}

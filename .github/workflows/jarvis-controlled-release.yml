@@ -65,6 +65,16 @@ on:
       - 'apps/web/lib/founder-mission-results.test.mjs'
       - 'apps/web/api/missions.test.mjs'
       - 'apps/web/cloudflare-worker.mjs'
+      - 'apps/web/lib/auth.mjs'
+      - 'apps/web/lib/auth-secure-defaults.test.mjs'
+      - 'apps/web/lib/auth-hardening.test.mjs'
+      - 'apps/web/lib/login-throttle.mjs'
+      - 'apps/web/lib/login-throttle.test.mjs'
+      - 'apps/web/api/login.mjs'
+      - 'apps/web/api/slack-agent-status.mjs'
+      - 'apps/web/api/stirling-qualification.mjs'
+      - 'apps/web/api/login-throttle.test.mjs'
+      - 'apps/web/api-auth-coverage.test.mjs'
       - 'package.json'
       - '.github/workflows/jarvis-controlled-release.yml'
   workflow_dispatch:
@@ -79,9 +89,38 @@ concurrency:
   group: vaos-controlled-worker-deploy
   cancel-in-progress: false
 jobs:
-  verify-and-deploy:
+  # Runs repository code (tests, dependency install) with NO secrets in scope.
+  verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      EXPECTED_SHA: ${{ inputs.expected_sha || github.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Require exact reviewed main
+        shell: bash
+        run: |
+          set -euo pipefail
+          [[ "$EXPECTED_SHA" =~ ^[a-f0-9]{40}$ ]]
+          test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Full regression before release
+        run: npm test
+
+  # The only job that can reach Cloudflare. The `production-deploy` environment must
+  # have required reviewers and be restricted to the main branch (repo Settings ->
+  # Environments); CLOUDFLARE_API_TOKEN and ELEVENLABS_API_KEY belong in that
+  # environment's secrets, not repository secrets.
+  deploy:
+    needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production-deploy
     env:
       CLOUDFLARE_ACCOUNT_ID: e20ce7032f6475caaf1197b09d3fe164
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -101,8 +140,6 @@ jobs:
           test "$(git rev-parse HEAD)" = "$EXPECTED_SHA"
           test -n "$CLOUDFLARE_API_TOKEN"
       - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Full regression before release
-        run: npm test
       - name: Recheck main before deployment
         shell: bash
         run: |
@@ -115,6 +152,6 @@ jobs:
         run: |
           set -euo pipefail
           test -n "$ELEVENLABS_API_KEY"
-          printf '%s' "$ELEVENLABS_API_KEY" | npx --yes wrangler@4.136.3 secret put ELEVENLABS_API_KEY --config wrangler.jsonc
+          printf '%s' "$ELEVENLABS_API_KEY" | npx --yes wrangler@4.157.0 secret put ELEVENLABS_API_KEY --config wrangler.jsonc
       - name: Deploy existing Worker with governance controls retained
-        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
+        run: npx --yes wrangler@4.157.0 deploy --config wrangler.jsonc

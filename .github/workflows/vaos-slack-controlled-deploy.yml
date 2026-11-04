@@ -81,4 +81,4 @@ jobs:
       - name: Verify founder-scoped mission authorization and role denial before deployment
         run: node --test apps/web/api/missions.test.mjs apps/web/lib/auth.test.mjs
       - name: Deploy code with existing variables and secrets preserved
-        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
+        run: npx --yes wrangler@4.157.0 deploy --config wrangler.jsonc

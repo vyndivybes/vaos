@@ -1,4 +1,5 @@
 import { buildSessionCookie, createSessionToken, verifyDevelopmentCredential } from "../lib/auth.mjs";
+import { loginIdentity, loginThrottle } from "../lib/login-throttle.mjs";
 
 function parseBody(req) {
   if (req.body && typeof req.body === "object") return req.body;
@@ -16,9 +17,17 @@ export default function handler(req, res) {
   }
 
   const { email, password } = parseBody(req);
+  const identity = loginIdentity(req, email);
+  const gate = loginThrottle.check(identity);
+  if (!gate.allowed) {
+    res.setHeader("Retry-After", String(gate.retryAfterSeconds));
+    return res.status(429).json({ error: "too_many_attempts" });
+  }
   if (!verifyDevelopmentCredential(email, password)) {
+    loginThrottle.recordFailure(identity);
     return res.status(401).json({ error: "invalid_credentials" });
   }
+  loginThrottle.recordSuccess(identity);
 
   const normalizedEmail = String(email).trim().toLowerCase();
   let token;

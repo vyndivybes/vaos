@@ -5,6 +5,9 @@ on:
     paths:
       - 'platform/qualification/workforce-prelaunch-drills.test.mjs'
       - 'platform/runtime/policy-engine.mjs'
+      - 'agents/workforce/**'
+      - 'platform/qualification/workforce-exercise-cases.mjs'
+      - 'apps/web/api/workforce-exercise*'
       - '.github/workflows/workforce-prelaunch-qualification.yml'
 permissions:
   contents: read
@@ -18,4 +21,5 @@ jobs:
         with:
           node-version: '22'
       - name: Verify all sixteen agents in isolated dry-run, no live actuation
-        run: node --test platform/qualification/workforce-prelaunch-drills.test.mjs
+        run: node --test platform/qualification/workforce-prelaunch-drills.test.mjs agents/workforce/prepare-executor.test.mjs apps/web/api/workforce-exercise.test.mjs
+

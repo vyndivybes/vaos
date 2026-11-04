@@ -45,6 +45,7 @@ import jarvisMultimodal from './api/jarvis-multimodal.mjs';
 import jarvisProjectMemory from './api/jarvis-project-memory.mjs';
 import prelaunchWorkforce from './api/prelaunch-workforce.mjs';
 import prelaunchRecovery from './api/prelaunch-recovery.mjs';
+import workforceExercise from './api/workforce-exercise.mjs';
 import founderConversation from './api/founder-conversation.mjs';
 import voiceCapabilities from './api/voice-capabilities.mjs';
 import voiceSpeech from './api/voice-speech.mjs';
@@ -103,6 +104,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
     '/api/missions': missions,
     '/api/prelaunch-workforce': prelaunchWorkforce,
     '/api/prelaunch-recovery': prelaunchRecovery,
+    '/api/workforce-exercise': workforceExercise,
   '/api/project-schedule': projectSchedule,
   '/api/windmill-runtime-status': windmillRuntimeStatus,
   '/api/windmill-scoped-run': windmillScopedRun,
@@ -397,3 +399,4 @@ export default {
     }).fetch(request);
   },
 };
+

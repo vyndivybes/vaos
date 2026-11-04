@@ -6,7 +6,10 @@ import {prepareVyndiBridgeEnvelope,createVyndiWriteBridgeAdapter} from '../execu
 const pilot={employeeId:'procurement',actionType:'PROCUREMENT.CREATE_PO',missionId:'FRAME-PROTOTYPES-2',intentId:'SANDBOX-001',idempotencyKey:'P2P-001',approvalRef:'REVIEW-001',input:{model:'VYNDI Altitude',variants:[{size:'M',qty:1},{size:'L',qty:1}]}};
 test('VYNDI bridge remains restricted: all write routes are disabled',()=>{
  const r=getVyndiBridgeReadiness();
- assert.equal(r.routeCount,24);assert.equal(r.readReady,9);assert.equal(r.writePrepared,15);
+ // The enterprise BI, project schedule and finance statements additions are read-only.
+ assert.equal(r.routeCount,27);
+ assert.equal(r.readReady,12);
+ assert.equal(r.writePrepared,15);
  assert.deepEqual(r.gaps,[]);
  assert.equal(VYNDI_BRIDGE_ROUTES.filter(x=>x.effectClass==='mutation'&&x.executionEnabled).length,0);
 });

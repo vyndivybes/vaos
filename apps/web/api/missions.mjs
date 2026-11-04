@@ -2,6 +2,7 @@ import { parseCookies, SESSION_COOKIE, verifySessionToken } from '../lib/auth.mj
 import { apiError } from '../lib/api-contracts.mjs';
 import { getEightAgentOperatingService } from '../lib/operating-provider.mjs';
 import { createMissionConsumer } from '../../../platform/execution/mission-consumer.mjs';
+import { runReadOnlyMissionStep } from '../../../platform/execution/mission-step.mjs';
 import { VAOS_JOB_CATALOG, routeJob } from '../../../platform/runtime/vaos-eight-operating-model.mjs';
 import { getFounderInboxStore } from '../lib/founder-inbox-provider.mjs';
 import { readMissionDepartment } from '../lib/mission-department-reader.mjs';
@@ -299,10 +300,8 @@ export function createMissionsHandler({
       try {
         const service = getService(req.env);
         const consumer = createConsumer({ service, readDepartment: input => readMissionDepartment({ ...input, env: req.env }) });
-        const options = { maxHandoffs: body.maxHandoffs ?? 4 };
-        const consumed = await consumer.consume(body.missionId, options);
-        const reviewed = await consumer.review(body.missionId, options);
-        return res.status(200).json({ data: { consumed, reviewed } });
+        const data=await runReadOnlyMissionStep({service,consumer,missionId:body.missionId});
+        return res.status(200).json({data});
       } catch {
         return res.status(503).json(apiError('MISSION_CONSUMER_UNAVAILABLE', 'Safe mission execution did not complete'));
       }
@@ -316,3 +315,4 @@ export function createMissionsHandler({
 }
 
 export default createMissionsHandler();
+

@@ -282,9 +282,21 @@ function handoffOwner(handoff) { return prop(handoff, 'to_agent_id', 'toAgentId'
 function handoffAction(handoff) { return prop(handoff, 'requested_job', 'requestedJob'); }
 function handoffWorkPackage(handoff) { return prop(handoff, 'work_package_id', 'workPackageId'); }
 function handoffEvidence(handoff) { return prop(handoff, 'evidence_refs', 'evidenceRefs') || []; }
+export function currentSubmissionEvidence(handoff,events=[]){
+ const refs=handoffEvidence(handoff);
+ if(!Array.isArray(refs)||refs.some(x=>typeof x!=='string'))return [];
+ const reports=[...new Set(refs.filter(x=>!x.startsWith('REVIEWED:')))];
+ if(reports.length<=1)return reports;
+ // Evidence lineage is append-only. Correction must select the latest actual
+ // SUBMIT event, never discard historical reports or infer the newest ID.
+ const last=events.filter(e=>prop(e,'handoff_id','handoffId')===handoff.id&&e.outcome==='SUBMIT')
+  .sort((a,b)=>Number(a.id)-Number(b.id)).at(-1);
+ const submitted=prop(last,'evidence_refs','evidenceRefs');
+ return Array.isArray(submitted)&&submitted.length===1&&reports.includes(submitted[0])?submitted:[];
+}
 function packageHumanApproval(item) { return prop(item, 'human_approval_required', 'humanApprovalRequired') === true; }
 
-function safeJobValidated(handoff, item) {
+export function safeJobValidated(handoff, item) {
   const actionType = handoffAction(handoff);
   if (!SAFE.has(actionType) || !item || item.id !== handoffWorkPackage(handoff)) return false;
   const route = routeJob(actionType);
@@ -435,7 +447,7 @@ export function createMissionConsumer({ service, readDepartment } = {}) {
         const wp = snap.workPackages.find((item) => item.id === handoffWorkPackage(handoff));
         if (!safeJobValidated(handoff, wp)) { unsupported += 1; continue; }
         const role = reviewer(handoffAction(handoff), handoffOwner(handoff));
-        const refs = handoffEvidence(handoff);
+        const refs = currentSubmissionEvidence(handoff,snap.handoffEvents||[]);
         let valid = refs.length === 1;
         let record;
         if (valid) {
@@ -466,3 +478,4 @@ export function createMissionConsumer({ service, readDepartment } = {}) {
     },
   });
 }
+

@@ -235,6 +235,14 @@ async function loadFounderMission(id,{quiet=false}={}){
   return false;
  }
 }
+$('continue-mission').addEventListener('click',async()=>{
+ const button=$('continue-mission'),id=$('mission-id').value.trim();button.disabled=true;
+ try{const result=await runFounderMissionSafe({missionId:id,request:fetch});
+  message.textContent='Read-only continuation: '+result.submitted+' submitted, '+result.verified+' independently reviewed, '+result.held+' source holds.';
+  await loadFounderMission(id);
+ }catch{message.textContent='Read-only continuation unconfirmed. Existing mission and evidence retained; inspect the snapshot before retrying.';}
+ finally{button.disabled=false;}
+});
 $('mission-form').addEventListener('submit',async event=>{
  event.preventDefault();
  await loadFounderMission($('mission-id').value.trim());
@@ -339,3 +347,4 @@ setInterval(()=>{
  if(!id||id!==new URL(window.location.href).searchParams.get('missionId'))return;
  void loadFounderMission(id,{quiet:true});
 },60_000);
+

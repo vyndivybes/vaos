@@ -1,0 +1,13 @@
+# Hosted workforce qualification recovery
+
+The authenticated 32-case exercise passed on production revision 398e9acf851283419b0def08672f70b3625980fc. All source hashes matched the separate catalog. Security request 04470275-2b5b-48b0-a4ca-682006f3c626 was interrupted by browser reload after persistence and successfully reconciled with its original ID and timestamp.
+
+The subsequent read-only mission founder-341024db47374a04bbb14579b1d8c87b assigned fifteen departments, but its initial eight-handoff invocation stopped before review. The old consume-plus-review path reproducibly exceeds a 50-subrequest budget. Cloudflare's documented Free limit is 50 external subrequests per invocation: https://developers.cloudflare.com/workers/platform/limits/#subrequests . No platform exception log was available, so the hosted limit diagnosis is supported by the persisted interruption boundary and deterministic budget reproduction rather than a captured exception message.
+
+The correction processes one bounded maker/checker unit per HTTP invocation, prioritizes existing submitted work, and provides explicit continuation of the same mission without another founder instruction. Returned safe read-only work is resubmitted through the governed state machine and version check before recalculation. Effectful and approval-required work cannot enter this recovery path. Scheduled production batches are also reduced to one mission/one handoff.
+
+A second regression was exposed by the correction test: append-only handoff references retain rejected reports, but the reviewer and result projection previously rejected every multi-report lineage. They now select the exact latest SUBMIT event when multiple reports exist, requiring that event's reference to be present in the immutable handoff lineage. Historical evidence remains intact; ambiguous or missing submission lineage fails closed.
+
+Focused validation: 83 tests passed, including the old budget failure reproduction, fifteen completed handoffs below twenty service calls per request, rejected-evidence correction with preserved history, stopped source-outage continuation, authorization checks and the prior sixteen-role case suite. Mission API and Founder Command syntax checks and git diff --check passed. Full repository API/build checks are delegated to the existing exact-revision CI because this workspace contains a fetched source subset.
+
+This change does not issue certificates, grant operational write authority, execute business transactions or remove engineering HOLDs. Live mission readback after deployment remains the acceptance gate.

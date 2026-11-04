@@ -101,37 +101,27 @@ test('invalid mission report and excessive job list fail closed without displayi
 
 test('one successful founder instruction triggers existing bounded RUN_SAFE action, not an effectful job',async()=>{
  const calls=[];
- const data={consumed:{missionId,submitted:2,unsupported:0,returned:0,holds:[]},
-  reviewed:{missionId,verified:2,returned:0,unsupported:0}};
+ const data={consumed:{missionId,submitted:1,unsupported:0,returned:0,holds:[]},
+  reviewed:{missionId,verified:1,returned:0,unsupported:0},remaining:0,resubmitted:0};
  const result=await runFounderMissionSafe({missionId,request:async(url,options)=>{
   calls.push({url,options});return response(data);
  }});
  assert.deepEqual(calls.map(x=>x.url),['/api/missions']);
- assert.deepEqual(JSON.parse(calls[0].options.body),{operation:'RUN_SAFE',missionId,maxHandoffs:4});
+ assert.deepEqual(JSON.parse(calls[0].options.body),{operation:'RUN_SAFE',missionId,maxHandoffs:1});
  assert.equal(calls[0].options.credentials,'same-origin');
- assert.deepEqual(result,{submitted:2,verified:2,returned:0,held:0});
+ assert.deepEqual(result,{submitted:1,verified:1,returned:0,held:0});
 });
-test('fifteen assigned departments get two existing bounded safe execution passes with no business writes',async()=>{
+test('fifteen departments use separate free-tier-safe requests and stop on confirmed completion',async()=>{
  const calls=[];
- const responsePackets=[
-  {consumed:{missionId,submitted:8,returned:0,holds:[]},reviewed:{missionId,verified:8,returned:0}},
-  {consumed:{missionId,submitted:7,returned:0,holds:[{code:'SOURCE_UNAVAILABLE'}]},reviewed:{missionId,verified:7,returned:0}},
- ];
- const result=await runFounderMissionSafe({
-  missionId,assignedWorkPackages:15,
-  request:async(url,opts)=>{
-   calls.push({url,opts});
-   return response(responsePackets[calls.length-1]);
-  },
- });
- assert.deepEqual(calls.map(x=>JSON.parse(x.opts.body)),[
-  {operation:'RUN_SAFE',missionId,maxHandoffs:8},
-  {operation:'RUN_SAFE',missionId,maxHandoffs:8},
- ]);
- assert.ok(calls.every(x=>x.opts.credentials==='same-origin'));
- assert.deepEqual(result,{submitted:15,verified:15,returned:0,held:1});
- await assert.rejects(runFounderMissionSafe({missionId,assignedWorkPackages:16,request:async()=>response({})}),
-  /FOUNDER_MISSION_EXECUTION_INVALID/);
+ const result=await runFounderMissionSafe({missionId,assignedWorkPackages:15,request:async(url,opts)=>{
+  calls.push(JSON.parse(opts.body));return response({consumed:{missionId,submitted:1,returned:0,holds:[]},reviewed:{missionId,verified:1,returned:0},remaining:15-calls.length,resubmitted:0});
+ }});
+ assert.equal(calls.length,15);assert.ok(calls.every(x=>x.maxHandoffs===1));
+ assert.deepEqual(result,{submitted:15,verified:15,returned:0,held:0});
+});
+test('unavailable source stops continuation without a blind retry loop',async()=>{
+ let calls=0;await runFounderMissionSafe({missionId,request:async()=>{calls++;return response({consumed:{missionId,submitted:0,returned:0,holds:[{code:'SOURCE_UNAVAILABLE'}]},reviewed:{missionId,verified:0,returned:0},remaining:1,resubmitted:0});}});
+ assert.equal(calls,1);
 });
 
 test('initial safe run fails closed without falsely claiming results or changing mission identity',async()=>{
@@ -148,3 +138,4 @@ test('initial safe run fails closed without falsely claiming results or changing
  await assert.rejects(runFounderMissionSafe({missionId,request:async()=>response({},false)}),
   /FOUNDER_MISSION_EXECUTION_UNCONFIRMED/);
 });
+

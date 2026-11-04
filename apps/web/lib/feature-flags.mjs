@@ -7,6 +7,7 @@ const NAMES = new Set([
   'VAOS_SLACK_AGENT_CONTROL',
   'VAOS_MULTIMODAL_CONTROL',
   'VAOS_ELEVENLABS_CONTROL',
+  'VAOS_NEURAL_KNOWLEDGE_CONTROL',
 ]);
 
 export function featureControl(env, name) {

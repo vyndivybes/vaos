@@ -51,3 +51,15 @@ test('registry reports source types without falsely claiming live commissioned c
  assert.equal(result.body.data.sources.length,5);
  assert.ok(result.body.data.sources.every(x=>x.status!=='LIVE_VERIFIED'));
 });
+test('existing bounded feature bundle commissions only the founder read and direct disable retains precedence',async()=>{
+ const handler=createNeuralKnowledgeHandler();
+ const bundled={VAOS_NEURAL_KNOWLEDGE_CONTROL:undefined,VAOS_FEATURE_FLAGS:JSON.stringify({VAOS_NEURAL_KNOWLEDGE_CONTROL:'founder-readonly-v1'})};
+ assert.equal((await invoke(request({source:'registry',env:bundled}),handler)).status,200);
+ assert.equal((await invoke(request({source:'registry',env:{...bundled,VAOS_NEURAL_KNOWLEDGE_CONTROL:'off'}}),handler)).status,409);
+ for(const raw of ['not-json','[]',JSON.stringify({VAOS_NEURAL_KNOWLEDGE_CONTROL:true}),JSON.stringify({VAOS_NEURAL_KNOWLEDGE_CONTROL:'founder-readonly-v1',padding:'x'.repeat(4096)})]){
+  assert.equal((await invoke(request({source:'registry',env:{...bundled,VAOS_FEATURE_FLAGS:raw}}),handler)).status,409);
+ }
+ assert.equal((await invoke(request({who:null,source:'registry',env:bundled}),handler)).status,401);
+ assert.equal((await invoke(request({who:'kaaviyam1519@gmail.com',source:'registry',env:bundled}),handler)).status,403);
+ assert.equal((await invoke(request({method:'POST',source:'registry',env:bundled}),handler)).status,405);
+});

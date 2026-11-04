@@ -39,3 +39,9 @@ test('ElevenLabs personal control uses the existing bundle without adding a bill
  assert.equal(featureControl(config.vars,'VAOS_ELEVENLABS_CONTROL'),'free-personal-v1');
  for(const [name,value] of Object.entries(flags))assert.equal(featureControl(config.vars,name),value);
 });
+test('neural founder read can use the existing bundle but stays off in the checked-in deployment defaults',async()=>{
+ const config=JSON.parse(await readFile(new URL('../../../wrangler.jsonc',import.meta.url),'utf8'));
+ assert.equal(Object.hasOwn(config.vars,'VAOS_NEURAL_KNOWLEDGE_CONTROL'),false);
+ assert.equal(featureControl(config.vars,'VAOS_NEURAL_KNOWLEDGE_CONTROL'),undefined);
+ assert.equal(featureControl({VAOS_FEATURE_FLAGS:JSON.stringify({VAOS_NEURAL_KNOWLEDGE_CONTROL:'founder-readonly-v1'})},'VAOS_NEURAL_KNOWLEDGE_CONTROL'),'founder-readonly-v1');
+});

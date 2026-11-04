@@ -18,7 +18,9 @@ No new service or paid inference subscription; no automatic migration of the per
 `/neural-knowledge.html` — Founder Brain Graph; interactive nodes/edges, source inspector, provenance, source registry and explicit HOLD messages. No synthetic demo results. The authenticated read route is `GET /api/neural-knowledge?source=` with one of:
 `vyndi-vedm`, `graphify`, `graphiti`, `llm-wiki`, `brain-atlas`, `registry`.
 
-The gateway is **off unless** `VAOS_NEURAL_KNOWLEDGE_CONTROL=founder-readonly-v1` is explicitly provisioned. It requires a founder session, refuses non-GET and arbitrary query parameters, returns no-store JSON, and masks upstream failures. It never accepts source bodies or arbitrary URLs from a client.
+The gateway is **off unless** `VAOS_NEURAL_KNOWLEDGE_CONTROL=founder-readonly-v1` is explicitly provisioned. Prefer adding that exact string key/value to the existing bounded `VAOS_FEATURE_FLAGS` JSON bundle: production already uses all 64 free-tier variable slots, so a new direct binding would require a paid upgrade. Preserve every other bundle entry. A legacy direct binding, if present, takes precedence (including an explicit `off`). Checked-in defaults do not activate the gateway. It requires a founder session, refuses non-GET and arbitrary query parameters, returns no-store JSON, and masks upstream failures. It never accepts source bodies or arbitrary URLs from a client.
+
+Record source SHA through the reviewed Git tree, build provenance and Worker version annotations; do not consume a new environment-variable slot solely for a release label. For rollback, remove only the neural key from the bundle or set it to `off`, retaining all other controls, and restore the recorded flag-OFF Worker version if needed.
 
 ## Source admission & cost controls
 

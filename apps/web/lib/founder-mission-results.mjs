@@ -3,7 +3,7 @@
  * A result is verified only if its persisted handoff has a different named checker,
  * a paired REVIEWED:evidence reference and matching immutable report readback.
  */
-import {verifyReadOnlyMissionAudit,isMissionBridgeReadAction} from '../../../platform/execution/mission-consumer.mjs';
+import {verifyReadOnlyMissionAudit,isMissionBridgeReadAction,currentSubmissionEvidence} from '../../../platform/execution/mission-consumer.mjs';
 
 const MAX_JOBS=32;
 const get=(item,snake,camel)=>item?.[snake]??item?.[camel];
@@ -49,10 +49,11 @@ function persistedStatus(handoff,record){
  if(handoff.status==='RETURNED')return 'RETURNED_FOR_CORRECTION';
  return handoff.status||'UNKNOWN';
 }
-function evidenceRefs(handoff){
+function evidenceRefs(handoff,events){
  const refs=get(handoff,'evidence_refs','evidenceRefs');
  if(!Array.isArray(refs)||refs.some(x=>typeof x!=='string'))return null;
- const reportIds=[...new Set(refs.filter(x=>!x.startsWith('REVIEWED:')))];
+ const reportIds=currentSubmissionEvidence(handoff,events);
+ if(handoff.status!=='ACCEPTED'&&refs.some(x=>!x.startsWith('REVIEWED:'))&&reportIds.length===0)return null;
  return {reportIds,refs};
 }
 
@@ -85,9 +86,9 @@ export async function loadFounderMissionResults({snapshot,getWorkEvidence}={}){
   const action=get(handoff,'requested_job','requestedJob');
   if(owner!==base.ownerAgentId||action!==base.actionType)
    return {...base,resultStatus:'OWNER_OR_JOB_MISMATCH'};
-  const refs=evidenceRefs(handoff);
+  const refs=evidenceRefs(handoff,snapshot.handoffEvents||[]);
   if(!refs||refs.reportIds.length>1)return {...base,resultStatus:'EVIDENCE_REFERENCE_CONFLICT'};
-  const evidenceId=refs.reportIds[0]||null;
+  const evidenceId=handoff.status==='ACCEPTED'?null:refs.reportIds[0]||null;
   let evidence=null;
   // ACCEPTED is the precise interrupted-recording recovery state. The
   // locator looks up the immutable (handoff, version) key, with no write.
@@ -141,3 +142,4 @@ export async function loadFounderMissionResults({snapshot,getWorkEvidence}={}){
   ],
  });
 }
+

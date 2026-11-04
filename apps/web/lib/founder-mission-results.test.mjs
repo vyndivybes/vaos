@@ -44,6 +44,15 @@ test('completed with no paired independent review never counts verified',async()
  assert.equal(data.summary.verified,0);
  assert.equal(data.jobs[0].resultStatus,'VERIFICATION_CHAIN_INCOMPLETE');
 });
+test('corrected submission selects exact latest SUBMIT evidence while retaining rejected history',async()=>{
+ const snap=fixture();snap.handoffs[0].evidence_refs=['vaos-evidence:rejected',id,'REVIEWED:'+id];
+ snap.handoffEvents=[{id:1,handoff_id:'hand-1',outcome:'SUBMIT',evidence_refs:['vaos-evidence:rejected']},
+  {id:2,handoff_id:'hand-1',outcome:'SUBMIT',evidence_refs:[id]}];
+ const data=await loadFounderMissionResults({snapshot:snap,getWorkEvidence:async key=>{assert.equal(key,id);return saved;}});
+ assert.equal(data.summary.verified,1);assert.equal(snap.handoffs[0].evidence_refs.length,3);
+ delete snap.handoffEvents;
+ assert.equal((await loadFounderMissionResults({snapshot:snap,getWorkEvidence:async()=>saved})).summary.verified,0);
+});
 test('submitted evidence remains awaiting checker, not complete',async()=>{
  const data=await loadFounderMissionResults({snapshot:fixture('SUBMITTED'),getWorkEvidence:async()=>saved});
  assert.equal(data.summary.verified,0);
@@ -90,3 +99,4 @@ test('unknown missions, too many jobs and duplicate handoffs are rejected before
  await assert.rejects(()=>loadFounderMissionResults({snapshot:dup,getWorkEvidence:getter}),/HANDOFF_INVALID/);
  assert.equal(reads,0);
 });
+

@@ -259,8 +259,8 @@ export default {
     // Keep the existing mission sweep independent from Infisical health dispatch.
     const mission = Promise.resolve().then(() => runScheduledMissionSweep({
       service: getEightAgentOperatingService(env),
-      maxMissions: 4,
-      maxHandoffs: 4,
+      maxMissions: 1,
+      maxHandoffs: 1,
       readDepartment: input => readMissionDepartment({ ...input, env }),
     })).then((summary) => {
       console.log('VAOS_SAFE_MISSION_SWEEP', JSON.stringify(summary));

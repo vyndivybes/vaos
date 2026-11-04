@@ -137,7 +137,7 @@ test('unauthenticated mission access is refused before any durable side effect',
 test('authenticated RUN_SAFE uses bounded consumer and independent review, without agent impersonation fields', async () => {
   const called = [];
   const handler = createMissionsHandler({
-    getService: () => ({}),
+    getService: () => ({async snapshot(){return {mission:{id:'mission-001',status:'ACTIVE'},handoffs:[],workPackages:[]};}}),
     createConsumer: () => ({
       async consume(missionId, options) {
         called.push(['consume', missionId, options.maxHandoffs]);
@@ -158,8 +158,8 @@ test('authenticated RUN_SAFE uses bounded consumer and independent review, witho
   assert.equal(yes.result.code, 200);
   assert.equal(yes.result.body.data.consumed.submitted, 1);
   assert.deepEqual(called, [
-    ['consume', 'mission-001', 2],
-    ['review', 'mission-001', 2],
+    ['consume', 'mission-001', 1],
+    ['review', 'mission-001', 1],
   ]);
 
   const no = response();
@@ -367,3 +367,4 @@ test('Wave 1 Orchestrator: founder direct mission POST rejects cross-origin requ
   }
   assert.deepEqual(f.calls,[], 'cross-origin request must not reach mission service');
 });
+

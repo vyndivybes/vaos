@@ -61,12 +61,10 @@ export async function runFounderMissionSafe({missionId,request,assignedWorkPacka
      ||assignedWorkPackages<0||assignedWorkPackages>15))){
   throw Error('FOUNDER_MISSION_EXECUTION_INVALID');
  }
- // A 15-department founder instruction takes two existing, sequential
- // eight-handoff passes. Pending first-time work is prioritized by the
- // consumer, so a held read never starves the remaining departments.
- // Smaller missions keep the original four-item bounded execution.
- const totalPasses=assignedWorkPackages>8?2:1;
- const batchSize=totalPasses===2?8:4;
+ // Each request independently stays within the free-tier fetch budget.
+ // Continue only while durable work advances, with a strict correction bound.
+ const totalPasses=Math.min(68,4*(assignedWorkPackages||16)+4);
+ const batchSize=1;
  const combined={submitted:0,verified:0,returned:0,held:0};
  for(let pass=0;pass<totalPasses;pass++){
   const result=await request('/api/missions',{
@@ -82,13 +80,17 @@ export async function runFounderMissionSafe({missionId,request,assignedWorkPacka
    ||!Number.isSafeInteger(reviewed.verified)||reviewed.verified<0||reviewed.verified>batchSize
    ||!Number.isSafeInteger(consumed.returned)||consumed.returned<0||consumed.returned>batchSize
    ||!Number.isSafeInteger(reviewed.returned)||reviewed.returned<0||reviewed.returned>batchSize
-   ||!Array.isArray(consumed.holds)||consumed.holds.length>batchSize){
+   ||!Array.isArray(consumed.holds)||consumed.holds.length>batchSize
+   ||!Number.isSafeInteger(data.remaining)||data.remaining<0||data.remaining>32
+   ||!Number.isSafeInteger(data.resubmitted)||data.resubmitted<0||data.resubmitted>1){
    throw Error('FOUNDER_MISSION_EXECUTION_UNCONFIRMED');
   }
   combined.submitted+=consumed.submitted;
   combined.verified+=reviewed.verified;
   combined.returned+=consumed.returned+reviewed.returned;
   combined.held+=consumed.holds.length;
+  if(data.remaining===0)break;
+  if(consumed.submitted+consumed.returned+reviewed.verified+reviewed.returned+data.resubmitted===0)break;
  }
  return Object.freeze(combined);
 }
@@ -136,3 +138,4 @@ export function formatFounderMissionResults(record,id){
   '\n\nDepartmental results (persisted, read-only)\n'+rows.join('\n')+
   '\n\nReceipts are bounded observations, not company-wide totals or engineering releases.';
 }
+

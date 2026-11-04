@@ -4,24 +4,25 @@ import {createMissionConsumer} from './mission-consumer.mjs';
 import {runReadOnlyMissionStep} from './mission-step.mjs';
 
 function fixture(count=8){
- let calls=0,events=0;const reports=new Map();
+ let calls=0,events=0,missionStatus='ACTIVE';const reports=new Map();
  const handoffs=Array.from({length:count},(_,i)=>({id:'h-'+i,mission_id:'qual-mission',work_package_id:'wp-'+i,to_agent_id:'project',from_agent_id:'orchestrator',requested_job:'PROJECT.TRACK_DEPENDENCY',status:'PENDING',version:1,evidence_refs:[]}));
  const packages=handoffs.map(h=>({id:h.work_package_id,status:'READY',action_type:h.requested_job,owner_agent_id:h.to_agent_id,depends_on:[],human_approval_required:false,authority:1,execution_mode:'ANALYSE'}));
  const history=[];
  const request=()=>{if(++calls>50)throw Error('Too many subrequests');};
  const service={
-  async snapshot(){request();return structuredClone({mission:{id:'qual-mission',status:'ACTIVE'},workPackages:packages,handoffs,handoffEvents:history});},
+  async snapshot(){request();return structuredClone({mission:{id:'qual-mission',status:missionStatus},workPackages:packages,handoffs,handoffEvents:history});},
   async transitionHandoff(x){request();const h=handoffs.find(h=>h.id===x.handoffId);assert.equal(h.version,x.expectedVersion);
    const old=h.status;const states={ACCEPT:'ACCEPTED',SUBMIT:'SUBMITTED',VERIFY:'COMPLETED',REJECT_VERIFICATION:'RETURNED',RETURN_FOR_CORRECTION:'RETURNED',RESUBMIT:'PENDING'};
    assert.ok(states[x.outcome]);if(x.outcome==='VERIFY')assert.equal(x.byAgentId,'orchestrator');
    if(x.outcome==='RESUBMIT')assert.equal(x.byAgentId,history.filter(e=>e.handoff_id===h.id).at(-1).outcome==='REJECT_VERIFICATION'?'project':'orchestrator');
    h.status=states[x.outcome];h.version++;h.evidence_refs=[...new Set([...h.evidence_refs,...x.evidenceRefs])];
-   packages.find(w=>w.id===h.work_package_id).status=h.status==='COMPLETED'?'COMPLETED':'IN_PROGRESS';
+   packages.find(w=>w.id===h.work_package_id).status=h.status==='COMPLETED'?'COMPLETED':h.status==='RETURNED'?'BLOCKED':h.status==='PENDING'?'READY':'IN_PROGRESS';
+   missionStatus=h.status==='RETURNED'?'HOLD':missionStatus==='HOLD'?'ACTIVE':missionStatus;
    history.push({id:++events,handoff_id:h.id,outcome:x.outcome,to_status:h.status,from_status:old,evidence_refs:[...x.evidenceRefs]});return {handoff:structuredClone(h)};},
   async recordWorkEvidence(x){request();const id='ev:'+x.handoffId+':'+x.expectedVersion;reports.set(id,{id,handoff_id:x.handoffId,author_agent_id:x.byAgentId,handoff_version:x.expectedVersion,report:structuredClone(x.report)});return {evidenceId:id};},
   async getWorkEvidence(id){request();return structuredClone(id.startsWith('handoff-version:')?[...reports.values()].find(r=>id===`handoff-version:${r.handoff_id}:${r.handoff_version}`):reports.get(id));},
  };
- return {service,handoffs,packages,history,reports,reset:()=>{calls=0;},calls:()=>calls};
+ return {service,handoffs,packages,history,reports,reset:()=>{calls=0;},hold:()=>{missionStatus='HOLD';},calls:()=>calls};
 }
 test('old eight-handoff invocation reproduces the free-tier subrequest failure',async()=>{
  const f=fixture(),consumer=createMissionConsumer({service:f.service});
@@ -49,4 +50,10 @@ test('unsupported or approval-required returns cannot be automatically resubmitt
  const f=fixture(1);f.handoffs[0].status='RETURNED';f.packages[0].human_approval_required=true;
  const r=await runReadOnlyMissionStep({service:f.service,consumer:createMissionConsumer({service:f.service}),missionId:'qual-mission'});
  assert.equal(r.resubmitted,0);assert.equal(f.history.length,0);
+});
+
+test('unattributed mission HOLD and approval-required blocker stay held',async()=>{
+ const f=fixture(1);f.hold();
+ await assert.rejects(runReadOnlyMissionStep({service:f.service,consumer:createMissionConsumer({service:f.service}),missionId:'qual-mission'}),/MISSION_HOLD_REQUIRES_REVIEW/);
+ assert.equal(f.history.length,0);
 });

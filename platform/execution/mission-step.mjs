@@ -31,7 +31,9 @@ export async function runReadOnlyMissionStep({service,consumer,missionId}={}){
   reviewed=await consumer.review(missionId,{maxHandoffs:1});
  }else{
    consumed=await consumer.consume(missionId,{maxHandoffs:1});
-   reviewed=await consumer.review(missionId,{maxHandoffs:1});
+   // A correction return has already put SQL into HOLD. The next bounded
+   // step must resubmit it before any ACTIVE-only checker invocation.
+   if(!consumed.returned)reviewed=await consumer.review(missionId,{maxHandoffs:1});
  }
  const current=await service.snapshot(missionId);
  if(current?.mission?.id!==missionId||!Array.isArray(current.workPackages))throw Error('MISSION_STEP_READBACK_INVALID');

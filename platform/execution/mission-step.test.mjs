@@ -57,3 +57,12 @@ test('unattributed mission HOLD and approval-required blocker stay held',async()
  await assert.rejects(runReadOnlyMissionStep({service:f.service,consumer:createMissionConsumer({service:f.service}),missionId:'qual-mission'}),/MISSION_HOLD_REQUIRES_REVIEW/);
  assert.equal(f.history.length,0);
 });
+
+test('source-change return completes its checkpoint without invoking ACTIVE-only review',async()=>{
+ const f=fixture(1);let reviewed=false;
+ const consumer={consume:async()=>{await f.service.transitionHandoff({handoffId:'h-0',expectedVersion:1,byAgentId:'project',outcome:'RETURN_FOR_CORRECTION',evidenceRefs:[]});return {submitted:0,returned:1};},review:async()=>{reviewed=true;throw Error('MISSION_NOT_ACTIVE');}};
+ const r=await runReadOnlyMissionStep({service:f.service,consumer,missionId:'qual-mission'});
+ assert.equal(r.consumed.returned,1);assert.equal(reviewed,false);assert.equal(r.remaining,1);
+ const recovery=await runReadOnlyMissionStep({service:f.service,consumer,missionId:'qual-mission'});
+ assert.equal(recovery.resubmitted,1);
+});

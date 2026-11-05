@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {runInNewContext} from 'node:vm';
+import {project13WeekCash} from './lib/cash-scenario.mjs';
 
 class Element {
  constructor(tag='div'){this.tag=tag;this.children=[];this.handlers={};this.style={};this.textContent='';this.value='';}
@@ -27,7 +28,12 @@ async function setup(fetch,module='enterprise-bi.mjs'){
  get('wa-period-from').value='2026-10-01';get('wa-period-to').value='2026-10-15';
  const context={document:{getElementById:get,createElement:tag=>new Element(tag),addEventListener(){}},
   fetch,URLSearchParams,location:{assign(){throw Error('unexpected redirect');}}};
- runInNewContext(await readFile(new URL('./'+module,import.meta.url),'utf8'),context);
+ // vm.Script cannot parse ESM imports; inject the real pure helper for the browser fixture.
+ const source=await readFile(new URL('./'+module,import.meta.url),'utf8');
+ const script=module==='financial-performance.mjs'
+  ?source.replace(/^import \{project13WeekCash\} from '\.\/lib\/cash-scenario\.mjs';\r?\n/,'')
+  :source;
+ runInNewContext(script,{...context,project13WeekCash});
  return {context,get};
 }
 test('all recorded statuses stay visible and source pages request the scoped next offset',async()=>{

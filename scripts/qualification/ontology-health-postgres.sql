@@ -3,6 +3,7 @@
 \i supabase/migrations/20261105083000_ontology_source_health_v1.sql
 \i supabase/migrations/20261105100000_ontology_source_health_projection_drift_v2.sql
 \i supabase/migrations/20261105123500_ontology_source_health_demand_lineage_v3.sql
+\i supabase/migrations/20261105130000_ontology_source_health_unknown_po_v4.sql
 
 do $$
 declare r jsonb;
@@ -102,6 +103,14 @@ begin
     or health->>'agentUsable'<>'false'
     or health->>'productionWriteAuthorized'<>'false'
  then raise exception 'SOURCE_CANCELLED_DRAFT_SUMMARY_INCORRECT: %',po; end if;
- raise notice 'Cancelled-origin draft aggregation and non-authority PASS';
+ -- A corrupted PO projection cannot return apparently classified draft counts.
+ update vaos_private.ontology_source_watermarks
+    set observed_count=3 where source_kind='purchaseOrders';
+ health:=public.vaos_ontology_source_health_v1('test-only-server-key');
+ po:=health->'sources'->2;
+ if po->>'status'<>'HOLD' or po->>'reason'<>'PROJECTION_DRIFT'
+    or po ? 'cancelledOriginDraftCount' or po ? 'otherObservedOrderCount'
+ then raise exception 'DRIFTED_PO_SUMMARY_FABRICATED: %',po; end if;
+ raise notice 'Cancelled-origin draft aggregation, missing-receipt and drift HOLD PASS';
 end $$;
 rollback;

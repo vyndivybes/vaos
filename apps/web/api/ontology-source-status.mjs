@@ -20,9 +20,8 @@ export function createOntologySignedReader(env,store=createSupabaseControlStore(
 function hold(reason,kind){return {status:'HOLD',reason,sourceKind:kind,
  readOnly:true,sourceCompletenessVerified:false,durableHydrationVerified:false,
  actionAuthorized:false,approvalGranted:false,productionWriteAuthorized:false};}
-export function readOntologySession(req){return verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE]);}
 export function createOntologySourceStatusHandler({getReader=createOntologySignedReader,
- getSession=readOntologySession}={}){
+ getSession=req=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE])}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   res.setHeader('X-Content-Type-Options','nosniff');

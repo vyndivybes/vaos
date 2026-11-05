@@ -4,14 +4,16 @@ import {featureControl} from '../lib/feature-flags.mjs';
 import {createSupabaseControlStore} from '../../../platform/persistence/supabase-store.mjs';
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createDurableReceiptIngestor} from '../../../platform/ontology/durable-receipt-ingestor.mjs';
-import {ONTOLOGY_SOURCE_ACTIONS,createOntologySignedReader,readOntologySession} from './ontology-source-status.mjs';
+import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
+import {ONTOLOGY_SOURCE_ACTIONS,createOntologySignedReader} from './ontology-source-status.mjs';
 
 const hold=reason=>({status:'HOLD',reason,readOnly:true,durableReceiptStored:false,
  sourceCompletenessVerified:false,agentUsable:false,actionAuthorized:false,productionWriteAuthorized:false});
 
 export function createOntologyIngestCanaryHandler({
  getStore=env=>createSupabaseControlStore(resolveDurableControlConfig(env)),
- getReader=createOntologySignedReader,getSession=readOntologySession,
+ getReader=createOntologySignedReader,
+ getSession=req=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE]),
 }={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');

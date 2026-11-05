@@ -234,6 +234,7 @@ export const VAOS_JOB_CATALOG = Object.freeze({
   ]),
   procurement: Object.freeze([
     j('procurement', 'PROCUREMENT.OBSERVE_SHORTAGE', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { verifierAgentIds: ['inventory'], monitoring: true, executionMode: 'ANALYSE', kpis: ['shortage_freshness', 'material_risk_visibility'] }),
+    j('procurement', 'PROCUREMENT.OBSERVE_OPEN_POS', AUTHORITY.AUTONOMOUS_EXECUTION, 'low', 1, { verifierAgentIds: ['inventory'], monitoring: true, executionMode: 'ANALYSE', kpis: ['po_freshness', 'procurement_visibility'] }),
     j('procurement', 'PROCUREMENT.CREATE_PO', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['inventory', 'risk'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['po_preparation_accuracy', 'supplier_control_compliance'] }),
     j('procurement', 'PROCUREMENT.CHANGE_PO', AUTHORITY.APPROVED_EXECUTION, 'high', 2, { verifierAgentIds: ['inventory', 'risk'], humanApprovalRequired: true, executionMode: 'PREPARE', kpis: ['po_revision_traceability', 'reapproval_compliance'] }),
   ]),

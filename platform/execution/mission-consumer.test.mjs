@@ -62,7 +62,7 @@ test('only approved deterministic read-only job types are supported', () => {
   assert.deepEqual([...SAFE_MISSION_JOBS].sort(), [
     'COMMERCIAL.OBSERVE_PIPELINE', 'ENGINEERING.ASSESS_REQUIREMENT', 'ENGINEERING.OBSERVE_CONFIGURATION', 'FINANCE.OBSERVE_LEDGER',
     'INVENTORY.OBSERVE_STOCK', 'KNOWLEDGE.DETECT_GAP', 'MAINTENANCE.OBSERVE_ASSET', 'ORCHESTRATOR.CONSOLIDATE_RESULT', 'ORCHESTRATOR.INTAKE_MISSION', 'ORCHESTRATOR.MONITOR_MISSION',
-    'PEOPLE.OBSERVE_WORKFORCE', 'PROCUREMENT.OBSERVE_SHORTAGE', 'PRODUCTION.OBSERVE_WIP', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY',
+    'PEOPLE.OBSERVE_WORKFORCE', 'PROCUREMENT.OBSERVE_OPEN_POS', 'PROCUREMENT.OBSERVE_SHORTAGE', 'PRODUCTION.OBSERVE_WIP', 'PROJECT.DETECT_DELAY', 'PROJECT.TRACK_DEPENDENCY',
     'QA.AUDIT_EVIDENCE', 'RELEASE.CHECK_OPEN_ITEMS', 'RISK.IDENTIFY', 'SECURITY.ASSESS_ACCESS',
   ]);
 });
@@ -372,7 +372,7 @@ test('a readback outage retains the accepted handoff for restart recovery',async
 
 
 const readActions = [
- 'COMMERCIAL.OBSERVE_PIPELINE', 'PROCUREMENT.OBSERVE_SHORTAGE',
+ 'COMMERCIAL.OBSERVE_PIPELINE', 'PROCUREMENT.OBSERVE_SHORTAGE', 'PROCUREMENT.OBSERVE_OPEN_POS',
  'INVENTORY.OBSERVE_STOCK', 'PRODUCTION.OBSERVE_WIP',
  'MAINTENANCE.OBSERVE_ASSET', 'FINANCE.OBSERVE_LEDGER',
  'PEOPLE.OBSERVE_WORKFORCE', 'ENGINEERING.OBSERVE_CONFIGURATION'
@@ -484,4 +484,27 @@ test('a bridge read job cannot execute if the work package tries approval-only o
  const result=await consumer.consume('mission-1');
  assert.equal(result.unsupported,1);assert.equal(calls,0);
  assert.deepEqual(f.events,[]);
+});
+
+test('commissioned open-PO read can complete an autonomous signed mission without PO write authority', async()=>{
+ const {routeJob}=await import('../runtime/vaos-eight-operating-model.mjs');
+ const {isMissionBridgeReadAction}=await import('./mission-consumer.mjs');
+ const {getVyndiBridgeRoute}=await import('../../packages/contracts/vyndi-write-bridge.mjs');
+ const action='PROCUREMENT.OBSERVE_OPEN_POS';
+ const route=routeJob(action);
+ const bridge=getVyndiBridgeRoute(action);
+ assert.ok(SAFE_MISSION_JOBS.includes(action));
+ assert.equal(isMissionBridgeReadAction(action),true);
+ assert.equal(route.ownerAgentId,'procurement');
+ assert.equal(route.authority,5);
+ assert.equal(route.executionMode,'ANALYSE');
+ assert.equal(route.humanApprovalRequired,false);
+ assert.equal(bridge.effectClass,'read');
+ assert.equal(bridge.state,'READ_READY');
+ assert.equal(bridge.executionEnabled,true);
+ for (const mutation of ['PROCUREMENT.CREATE_PO','PROCUREMENT.CHANGE_PO']) {
+  assert.equal(SAFE_MISSION_JOBS.includes(mutation),false);
+  assert.equal(isMissionBridgeReadAction(mutation),false);
+  assert.equal(getVyndiBridgeRoute(mutation).executionEnabled,false);
+ }
 });

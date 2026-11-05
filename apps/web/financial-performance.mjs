@@ -1,9 +1,62 @@
+import {project13WeekCash} from './lib/cash-scenario.mjs';
 // Founder-only financial scorecard. Values shown ONLY when supplied by a complete,
 // reconciled, signed VYNDI OS posted-ledger financial statement response.
 const $=id=>document.getElementById(id);
 const MONEY=new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2});
 const val=v=>typeof v==='number'&&Number.isFinite(v);
-let request=0;
+let request=0,qualifiedStatement=null;
+function clearCashScenario(message){
+ qualifiedStatement=null;
+ $('wa-cash-scenario-results').replaceChildren();
+ $('wa-cash-scenario-status').textContent=message;
+}
+function acceptCashStatement(packet){
+ qualifiedStatement=packet;
+ $('wa-cash-scenario-results').replaceChildren();
+ $('wa-cash-scenario-status').textContent=packet.status==='POSTED_ACTUALS'&&val(packet.closingCashInr)
+  ?'Signed closing ledger cash available as of '+packet.to+'. Enter your assumptions and select Calculate. No projection is certified.'
+  :'Qualified closing cash is unavailable. No hypothetical scenario can be calculated.';
+}
+function drawCashScenario(){
+ const host=$('wa-cash-scenario-results'),status=$('wa-cash-scenario-status');
+ host.replaceChildren();
+ if(!qualifiedStatement){status.textContent='Qualified financial actuals are required before planning.';return;}
+ const ids=['wa-cash-weekly-receipts','wa-cash-weekly-payments','wa-cash-weekly-capex','wa-cash-shock'];
+ if(ids.some(id=>$(id).value.trim()==='')){status.textContent='Enter all four hypothetical assumptions.';return;}
+ const assumptions={
+  weeklyReceiptsInr:Number($(ids[0]).value),weeklyOperatingPaymentsInr:Number($(ids[1]).value),
+  weeklyCapexInr:Number($(ids[2]).value),shockPct:Number($(ids[3]).value),
+ };
+ let projection;
+ try{projection=project13WeekCash({statement:qualifiedStatement,assumptions});}
+ catch{status.textContent='Invalid assumptions: use non-negative INR amounts and a sensitivity from 0 to 100%.';return;}
+ if(projection.status!=='ILLUSTRATIVE_ONLY'){status.textContent=projection.reason;return;}
+ status.textContent='ILLUSTRATIVE ONLY · Signed opening cash '+MONEY.format(projection.openingCashInr)+
+  ' as of '+projection.sourceThrough+'; all future receipts, payments and CAPEX are your manual assumptions.';
+ const summary=el('div',undefined,'wa-stats');
+ for(const scenario of projection.scenarios){
+  const card=el('div',undefined,'wa-stat');
+  card.append(el('small',scenario.id+' · ending week 13'),el('strong',MONEY.format(scenario.endingCashInr)),
+   el('small',scenario.firstDeficitWeek===null?'No assumed deficit in 13 weeks':
+    scenario.firstDeficitWeek===0?'Opening cash already negative':'Assumed deficit at week '+scenario.firstDeficitWeek));
+  summary.append(card);
+ }
+ const scroll=el('div',undefined,'wa-scroll'),table=el('table');
+ table.append(el('caption','Hypothetical closing cash in INR by week; no actual future balances'));
+ const head=el('thead'),headRow=el('tr');
+ for(const name of ['Week ending','Base','Downside','Upside'])headRow.append(el('th',name));
+ head.append(headRow);table.append(head);
+ const body=el('tbody');
+ for(let i=0;i<13;i++){
+  const row=el('tr');
+  row.append(el('td',projection.scenarios[0].rows[i].weekEnding));
+  for(const scenario of projection.scenarios)row.append(el('td',MONEY.format(scenario.rows[i].closingInr)));
+  body.append(row);
+ }
+ table.append(body);scroll.append(table);
+ host.append(summary,scroll,el('p',projection.limitations,'wa-period-note'));
+}
+$('wa-cash-scenario-form').addEventListener('submit',event=>{event.preventDefault();drawCashScenario();});
 const el=(tag,value,cls)=>{const n=document.createElement(tag);if(value!==undefined)n.textContent=String(value);if(cls)n.className=cls;return n;};
 function render(packet){
  const host=$('wa-financial-kpis'),chart=$('wa-financial-chart');
@@ -50,11 +103,13 @@ function render(packet){
   ' · manufacturing cost snapshots '+packet.costSnapshotCount+
   ' · observed '+new Date(packet.observedAt).toLocaleString()+
   '. Source: '+packet.source+'. Cash CAPEX is direct asset-bank evidence only; indicative FCF and turnover-day proxies are not certified totals.';
+ acceptCashStatement(packet);
 }
 async function refresh(){
  const from=$('wa-period-from').value,to=$('wa-period-to').value,button=$('wa-financial-refresh');
  const ticket=++request;
  $('wa-financial-kpis').replaceChildren();$('wa-financial-chart').replaceChildren();
+ clearCashScenario('Awaiting current, reconciled closing cash. Prior scenario cleared.');
  button.disabled=false;
  if(!from||!to||from>to){$('wa-financial-status').textContent='Select a valid reporting period above.';return;}
  button.disabled=true;
@@ -71,6 +126,7 @@ async function refresh(){
  }catch{
   if(ticket!==request)return;
   $('wa-financial-kpis').replaceChildren();$('wa-financial-chart').replaceChildren();
+  clearCashScenario('Financial source unavailable. Hypothetical scenarios are withheld.');
   $('wa-financial-status').textContent='Financial statements not connected or not reconciled. Revenue, profit and cash are not estimated from status counts.';
  }finally{if(ticket===request)button.disabled=false;}
 }

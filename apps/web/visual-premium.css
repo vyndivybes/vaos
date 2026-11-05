@@ -138,6 +138,7 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;opacity:.13;z
 .av-dashboard-card[data-span='wide'] .av-plot{height:300px;max-height:300px}
 .av-dashboard-chart .av-chart-note,
 .av-dashboard-chart .av-scroll{display:none}
+.av-dashboard-chart[data-chart-mode='heatmap'] .av-scroll{display:block;overflow-x:auto;margin:0}
 .av-dashboard-chart .av-heatmap{border-collapse:separate;border-spacing:3px;table-layout:fixed}
 .av-dashboard-chart .av-heatmap th{font-size:10px;overflow:hidden;text-overflow:ellipsis}
 .av-dashboard-chart .av-heatmap td{font-size:10px;border-radius:4px;height:33px;border:none}

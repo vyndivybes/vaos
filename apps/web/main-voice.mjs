@@ -59,6 +59,8 @@ export function classifyDashboardQuestion(value){
 export function shouldUseAdaptiveAnswer(intent,selected){
  if(selected!==true||!intent||intent.kind==='DENY'||intent.kind==='STARTUP')return false;
  if(intent.domain==='conversation')return false;
+ // Public news/trend questions use the source-attributed RSS advisor, even with Adaptive selected.
+ if(intent.kind==='ADVISORY'&&/\b(?:news|(?:market|industry|sector)\s+(?:trends?|outlook))\b/i.test(intent.question||''))return false;
  if(['governance','missions'].includes(intent.domain)||intent.domain==='engineering')return false;
  if(intent.kind==='ADVISORY'||intent.domain==='group')return true;
  if(/\b(?:weather|rain|temperature|snow|humidity|storm)\b/i.test(intent.question||''))return true;

@@ -9,6 +9,7 @@ lib/*
 !lib/federated-voice-report.mjs
 !lib/group-portfolio.mjs
 !lib/dashboard-charts.mjs
+!lib/cash-scenario.mjs
 !lib/insight-studio.mjs
 !lib/workforce-period-report.mjs
 !lib/business-department-summary.mjs

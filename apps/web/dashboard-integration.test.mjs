@@ -30,3 +30,15 @@ test('founder workforce dashboard supports employee search, collapsible reports 
  assert.match(js,/wa-chart-donut/);
  assert.match(js,/wa-graph-columns/);
 });
+
+test('13-week cash scenarios are wired only to the signed financial scorecard and require manual inputs',async()=>{
+ const html=await source('./workforce-analytics.html');
+ const js=await source('./financial-performance.mjs');
+ assert.match(html,/id="wa-cash-scenario-form"/);
+ for(const id of ['wa-cash-weekly-receipts','wa-cash-weekly-payments','wa-cash-weekly-capex','wa-cash-shock',
+  'wa-cash-scenario-status','wa-cash-scenario-results'])assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(js,/project13WeekCash/);
+ assert.match(js,/qualifiedStatement/);
+ assert.match(js,/clearCashScenario\('/);
+ assert.doesNotMatch(js,/innerHTML\s*=/);
+});

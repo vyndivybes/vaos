@@ -266,8 +266,15 @@ export default {
     // Dedicated signed-reader cron cannot dispatch any existing hourly mission or watchdog.
     if (_controller?.cron===ONTOLOGY_REFRESH_CRON) {
       const task=runScheduledOntologyRefresh({env,scheduledTime:_controller.scheduledTime})
-       .then(result=>{
-        console.log('VAOS_ONTOLOGY_SCHEDULED_REFRESH',JSON.stringify(result));
+       .then(async result=>{
+        // Persist bounded codes only: no ERP rows, receipt bytes or credentials.
+        const safe={checkedAt:new Date().toISOString(),status:result.status,
+          reason:result.reason||null,sources:result.sources,
+          agentUsable:false,actionAuthorized:false,productionWriteAuthorized:false};
+        try{await env.VAOS_ARTIFACTS?.put('runtime/ontology/last-refresh.json',
+          JSON.stringify(safe),{httpMetadata:{contentType:'application/json'}});}
+        catch{console.warn('VAOS_ONTOLOGY_DIAGNOSTIC_STORE_UNAVAILABLE');}
+        console.log('VAOS_ONTOLOGY_SCHEDULED_REFRESH',JSON.stringify(safe));
         if(result.status==='HOLD')throw Error('VAOS_ONTOLOGY_REFRESH_HOLD');
        });
       if(ctx?.waitUntil)ctx.waitUntil(task);

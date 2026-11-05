@@ -248,3 +248,24 @@ test('static JS and CSS preserve server ETag validators but API data remains no-
   const api = await app.fetch(new Request('https://vaos.example/api/private'));
   assert.equal(api.headers.get('Cache-Control'), 'no-store');
 });
+
+test('Ontology founder canary is explicit, source-scoped and read-only in the workspace',async()=>{
+ const [configText,html,script]=await Promise.all([
+  readFile(new URL('../../wrangler.jsonc',import.meta.url),'utf8'),
+  readFile(new URL('./workspace.html',import.meta.url),'utf8'),
+  readFile(new URL('./ontology-health.mjs',import.meta.url),'utf8'),
+ ]);
+ const flags=JSON.parse(JSON.parse(configText).vars.VAOS_FEATURE_FLAGS);
+ assert.equal(flags.VAOS_ONTOLOGY_SOURCE_CONTROL,'founder-readonly-v1');
+ assert.equal(flags.VAOS_ONTOLOGY_INGEST_CONTROL,'founder-canary-v1');
+ for(const source of ['inventory','shortages','purchaseOrders']){
+  assert.match(html,new RegExp('data-ontology-canary="'+source+'"[^>]*disabled'));
+ }
+ assert.match(script,/addEventListener\('click'/);
+ assert.match(script,/\/api\/ontology\/ingest-canary\?source=/);
+ assert.match(script,/method:'POST'/);
+ assert.match(script,/credentials:'same-origin'/);
+ assert.match(script,/durableReceiptStored/);
+ assert.match(script,/productionWriteAuthorized/);
+ assert.match(html,/id="ontology-capture-status"/);
+});

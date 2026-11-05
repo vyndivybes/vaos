@@ -177,3 +177,35 @@ test('founder performance question composes authorized ERP samples with bounded 
  assert.ok(x.body.data.answer.length<7500);
  assert.ok(x.body.data.spokenAnswer.length<450);
 });
+
+test('hands-free industry brief speaks source-attributed fresh headlines, never invented benchmarks',async()=>{
+ const feed='<?xml version="1.0"?><rss><channel>'+
+  '<item><title>Avionics industry qualification bulletin</title><link>https://news.google.com/rss/articles/aab321</link><pubDate>Thu, 05 Nov 2026 02:00:00 GMT</pubDate><source>Industry Review</source></item>'+
+  '<item><title>Aircraft MRO suppliers report new expansion</title><link>https://news.google.com/rss/articles/bbc321</link><pubDate>Wed, 04 Nov 2026 02:00:00 GMT</pubDate><source>Aviation Press</source></item>'+
+  '</channel></rss>';
+ let requestedUrl;
+ const h=createBusinessAdvisorHandler({getReader:()=>sources(),
+  now:()=>new Date('2026-11-05T06:00:00.000Z'),
+  fetchImpl:async url=>{requestedUrl=String(url);return new Response(feed,{headers:{'Content-Type':'application/rss+xml'}});}});
+ const {res,x}=capture();
+ await h(mk('What is the latest aerospace avionics industry news?'),res);
+ assert.equal(x.code,200);
+ assert.equal(new URL(requestedUrl).searchParams.get('q'),'India aerospace avionics and aircraft maintenance industry');
+ assert.equal(x.body.data.publicResearch.items.length,2);
+ assert.match(x.body.data.spokenAnswer,/Avionics industry qualification bulletin/);
+ assert.match(x.body.data.spokenAnswer,/Aircraft MRO suppliers report/);
+ assert.match(x.body.data.spokenAnswer,/unverified/i);
+ assert.equal(x.body.data.actionAuthorized,false);
+ assert.equal(x.body.data.publicResearch.verifiedMarketBenchmark,false);
+ assert.equal(x.body.data.publicResearch.verifiedSupplierPrice,false);
+ assert.ok(x.body.data.spokenAnswer.length<=450);
+});
+test('unavailable market RSS is spoken as unavailable, never synthesized as current fact',async()=>{
+ const h=createBusinessAdvisorHandler({getReader:()=>sources(),
+  fetchImpl:async()=>{throw Error('provider down');}});
+ const {res,x}=capture();
+ await h(mk('What is the latest aerospace industry news?'),res);
+ assert.equal(x.code,200);
+ assert.match(x.body.data.spokenAnswer,/no current|could not|unavailable/i);
+ assert.doesNotMatch(x.body.data.spokenAnswer,/2026 market grew|verified market share/i);
+});

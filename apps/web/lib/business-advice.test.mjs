@@ -59,3 +59,16 @@ test('read-only operational diagnostics accept cross-domain question without pla
  assert.equal(isAdvisoryQuestion('Why are our prototype delivery dates slipping because of suppliers, build readiness and cash flow?'),true);
  assert.equal(isAdvisoryQuestion('Approve our supplier purchase'),false);
 });
+
+test('voice market research uses fixed public industry topics, never private wording',()=>{
+ assert.equal(externalTopic('Hey Jarvis what is the latest aerospace avionics industry news?'),
+  'India aerospace avionics and aircraft maintenance industry');
+ assert.equal(externalTopic('What are recent carbon fibre composites market trends?'),
+  'India carbon fiber composites materials industry');
+ assert.equal(externalTopic('How is the supermarket retail automation industry changing?'),
+  'India supermarket retail automation industry');
+ assert.equal(externalTopic('Compare the AI SaaS software market outlook'),
+  'India small business software market');
+ assert.equal(externalTopic('Compare our secret customer pricing with web'),
+  'India bicycle manufacturing market');
+});

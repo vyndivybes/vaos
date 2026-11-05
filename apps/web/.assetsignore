@@ -10,6 +10,7 @@ lib/*
 !lib/group-portfolio.mjs
 !lib/dashboard-charts.mjs
 !lib/cash-scenario.mjs
+!lib/executive-intelligence.mjs
 !lib/insight-studio.mjs
 !lib/workforce-period-report.mjs
 !lib/business-department-summary.mjs

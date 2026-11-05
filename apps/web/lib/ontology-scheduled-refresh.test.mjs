@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 import {runScheduledOntologyRefresh,ONTOLOGY_REFRESH_CRON} from './ontology-scheduled-refresh.mjs';
 
 const flags=enabled=>({VAOS_FEATURE_FLAGS:JSON.stringify({
@@ -14,9 +15,9 @@ async function signedObservation(kind){
  const info={
   inventory:{actionType:'INVENTORY.OBSERVE_STOCK',sourceAuthority:'getAuthoritativeInventory',
    sourceScope:'vyndi_inventory_balance:all',records:[{quantity_balance:3,sku:'F1',unit:'pcs'}]},
-  shortages:{actionType:'PROCUREMENT.OBSERVE_SHORTAGE',sourceAuthority:'getAuthoritativeProcurement',
+  shortages:{actionType:'PROCUREMENT.OBSERVE_SHORTAGE',sourceAuthority:'source-checked-in-contract',
    sourceScope:'vyndi_live_job_card_requirements:released_in_progress_positive_shortage',records:[]},
-  purchaseOrders:{actionType:'PROCUREMENT.OBSERVE_OPEN_POS',sourceAuthority:'getAuthoritativeProcurement',
+  purchaseOrders:{actionType:'PROCUREMENT.OBSERVE_OPEN_POS',sourceAuthority:'source-checked-in-contract',
    sourceScope:'vyndi_purchase_orders:open_status_v1',records:[{demand_lineage_state:'CANCELLED_UPSTREAM_DEMAND',id:'PO1',status:'draft'}]},
  }[kind];
  if(!info)throw Error('unexpected source');
@@ -24,7 +25,7 @@ async function signedObservation(kind){
  const input={sourceKind:kind,sourceScope:info.sourceScope,sourceCount,records:info.records};
  const bytes=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(digestCanonical(input)));
  const sourceRevision=Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
- return {actionType:info.actionType,sourceAuthority:info.sourceAuthority,
+ return {actionType:info.actionType,sourceAuthority:getVyndiBridgeRoute(info.actionType).authority,
   effectClass:'read',readOnly:true,sourceReceiptChecked:true,sourceCompletenessVerified:false,
   actionAuthorized:false,productionWriteAuthorized:false,
   data:{...input,schemaVersion:'VYNDI_ONTOLOGY_READ_RECEIPT_V1',sourceRevision,

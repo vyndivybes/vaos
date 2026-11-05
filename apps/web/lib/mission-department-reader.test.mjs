@@ -58,3 +58,42 @@ test('department reader refuses write contracts, wrong source authorities and in
  }})});
  await assert.rejects(broken({...work,actionType}),/SOURCE_SCHEMA_UNVERIFIED/);
 });
+
+test('governed open-PO mission reads an exact signed content receipt without exposing PO rows',async()=>{
+ const action='PROCUREMENT.OBSERVE_OPEN_POS';
+ const records=[{id:'PO-PRIVATE-11',status:'draft',record_revision:1,supplier_name:'PRIVATE SUPPLIER'}];
+ const sourceKind='purchaseOrders',sourceScope='vyndi_purchase_orders:open_status_v1',sourceCount=1;
+ const stable=x=>Array.isArray(x)?x.map(stable):x&&typeof x==='object'
+  ?Object.fromEntries(Object.entries(x).sort(([a],[b])=>a.localeCompare(b)).map(([k,v])=>[k,stable(v)])):x;
+ const canonical=JSON.stringify(stable({records,sourceCount,sourceKind,sourceScope}));
+ const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical));
+ const sourceRevision=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
+ const data={records,sourceCount,sourceKind,sourceScope,sourceRevision,
+  schemaVersion:'VYNDI_ONTOLOGY_READ_RECEIPT_V1',
+  sourceRevisionAuthority:'CONTENT_DIGEST_ONLY',sourceCompletenessVerified:false,
+  asOf:'2026-11-05T12:00:00.000Z',asOfAuthority:'EXTRACT_TIME_NOT_SOURCE_CHANGE_TIME',
+  complete:true,hasMore:false,readOnly:true,actionAuthorized:false,productionWriteAuthorized:false};
+ const valid={actionType:action,sourceAuthority:getVyndiBridgeRoute(action).authority,
+  nonce:'a'.repeat(32),bodySha256:'b'.repeat(64),readOnly:true,effectClass:'read',
+  sourceReceiptChecked:true,sourceCompletenessVerified:false,
+  actionAuthorized:false,productionWriteAuthorized:false,data};
+ const calls=[];
+ const readerFor=payload=>createMissionDepartmentReader({getReader:()=>({async execute(job){
+  calls.push(job);return payload;
+ }})});
+ const observed=await readerFor(valid)({...work,actionType:action});
+ assert.equal(calls.at(-1).actionType,action);
+ assert.equal(observed.status,'OBSERVED');
+ assert.equal(observed.recordsObserved,1);
+ assert.equal(observed.sourceAuthority,valid.sourceAuthority);
+ assert.equal(JSON.stringify(observed).includes('PRIVATE'),false);
+ assert.equal(JSON.stringify(observed).includes('PO-PRIVATE-11'),false);
+ for(const payload of [
+  {...valid,sourceReceiptChecked:false},
+  {...valid,actionAuthorized:true},
+  {...valid,data:{...data,records:[{...records[0],status:'approved'}]}},
+  {...valid,data:{...data,complete:false,hasMore:true}},
+  {...valid,data:{...data,sourceScope:'vyndi_purchase_orders:all'}},
+ ])await assert.rejects(readerFor(payload)({...work,actionType:action}),
+  /DEPARTMENT_READ_SOURCE_INVALID|VYNDI_SOURCE_RECEIPT_INVALID/);
+});

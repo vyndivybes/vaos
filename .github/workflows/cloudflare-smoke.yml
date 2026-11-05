@@ -42,7 +42,7 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
 
       - name: Test Cloudflare compatibility adapter
-        run: node --test apps/web/cloudflare-worker.test.mjs apps/web/lib/cloudflare-adapter.test.mjs apps/web/api/zapier-webhook.test.mjs
+        run: node --test apps/web/cloudflare-worker.test.mjs apps/web/lib/cloudflare-adapter.test.mjs apps/web/api/zapier-webhook.test.mjs apps/web/lib/ontology-scheduled-refresh.test.mjs
 
       - name: Check Founder and Workforce chart regression
         run: node --test apps/web/founder-cockpit.test.mjs apps/web/workforce-analytics.test.mjs apps/web/lib/dashboard-charts.test.mjs apps/web/lib/workforce-period-report.test.mjs

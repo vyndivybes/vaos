@@ -1,5 +1,5 @@
 -- This is intentionally independent of the live VAOS database.
-\i supabase/migrations/20261105060000_ontology_receipt_persistence_v1.sql
+\i scripts/qualification/ontology-receipt-postgres.sql
 \i supabase/migrations/20261105083000_ontology_source_health_v1.sql
 
 do $$

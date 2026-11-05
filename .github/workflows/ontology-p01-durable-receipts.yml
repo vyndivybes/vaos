@@ -3,13 +3,16 @@ on:
   pull_request:
     paths:
       - 'supabase/migrations/*ontology_receipt_persistence*'
+      - 'supabase/migrations/*ontology_source_health*'
       - 'platform/ontology/durable-receipt-*'
       - 'apps/web/api/ontology-ingest-canary.*'
+      - 'apps/web/api/ontology-health.*'
       - 'apps/web/api/ontology-source-status.mjs'
       - 'apps/web/lib/feature-flags.mjs'
       - 'platform/persistence/supabase-store.mjs'
       - 'supabase/functions/vaos-control/index.ts'
       - 'scripts/qualification/ontology-receipt-postgres.sql'
+      - 'scripts/qualification/ontology-health-postgres.sql'
       - '.github/workflows/ontology-p01-durable-receipts.yml'
   workflow_dispatch:
 permissions:
@@ -37,7 +40,7 @@ jobs:
       - name: Verify fail-closed adapter and private migration contract
         run: node --test platform/ontology/durable-receipt-ingestor.test.mjs
       - name: Founder-only canary, source observation and store tests
-        run: node --test apps/web/api/ontology-ingest-canary.test.mjs apps/web/api/ontology-source-status.test.mjs platform/persistence/supabase-store.test.mjs
+        run: node --test apps/web/api/ontology-ingest-canary.test.mjs apps/web/api/ontology-source-status.test.mjs apps/web/api/ontology-health.test.mjs platform/persistence/supabase-store.test.mjs
       - name: PostgreSQL 16 isolated receipt / watermark / ACL acceptance
         env:
           PGHOST: localhost
@@ -45,4 +48,4 @@ jobs:
           PGDATABASE: vaos_ontology_qualification
           PGUSER: postgres
           PGPASSWORD: qualification-only
-        run: psql -v ON_ERROR_STOP=1 -f scripts/qualification/ontology-receipt-postgres.sql
+        run: psql -v ON_ERROR_STOP=1 -f scripts/qualification/ontology-health-postgres.sql

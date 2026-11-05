@@ -26,6 +26,23 @@
   <div id="wa-financial-kpis" class="wa-stats" aria-label="Qualified financial KPIs"></div>
   <div id="wa-financial-chart" class="wa-viz-bars" role="region" aria-label="Revenue, cost of goods sold, gross profit, and net profit"></div>
   <p class="wa-period-note">Unqualified amounts remain unavailable. Source and reconciliation details accompany each statement.</p>
+  <details class="wa-accordion" id="wa-cash-scenario">
+   <summary>13-week cash scenarios · manual assumptions</summary>
+   <p>What-if planning only, not a certified forecast. Uses qualified closing ledger cash as the opening position; no assumptions are imported or saved. Available only when the statement ends within the previous 14 days.</p>
+   <form id="wa-cash-scenario-form" class="wa-period-controls">
+    <label for="wa-cash-weekly-receipts">Assumed weekly receipts (INR)
+     <input id="wa-cash-weekly-receipts" type="number" inputmode="decimal" min="0" max="10000000000" step="0.01" required></label>
+    <label for="wa-cash-weekly-payments">Assumed weekly operating payments (INR)
+     <input id="wa-cash-weekly-payments" type="number" inputmode="decimal" min="0" max="10000000000" step="0.01" required></label>
+    <label for="wa-cash-weekly-capex">Assumed weekly cash CAPEX (INR)
+     <input id="wa-cash-weekly-capex" type="number" inputmode="decimal" min="0" max="10000000000" step="0.01" required></label>
+    <label for="wa-cash-shock">Downside/upside sensitivity (%)
+     <input id="wa-cash-shock" type="number" inputmode="decimal" min="0" max="100" step="1" value="20" required></label>
+    <button type="submit">Calculate 13 weeks</button>
+   </form>
+   <p id="wa-cash-scenario-status" role="status" aria-live="polite">Awaiting qualified ledger cash. No scenario calculated.</p>
+   <div id="wa-cash-scenario-results" role="region" aria-label="Hypothetical weekly cash scenarios"></div>
+  </details>
  </section><section class="wa-panel" aria-labelledby="wa-business-title"><h2 id="wa-business-title">Approved plan and closed actuals</h2><div id="wa-business-comparison" role="region" aria-label="Approved demand plan compared with closed actuals"></div>
 <p>Open Departments for all 16 reports, source coverage and records. Select an employee to inspect its business records alongside verified work, audits and approved plans.</p>
  <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>

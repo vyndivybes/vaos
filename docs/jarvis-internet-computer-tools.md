@@ -46,3 +46,11 @@ PC actions, browser workflows and conversation-created documents require a click
 ## Verification
 
 `npm run test:web` covers routing, consent, cancellation and existing voice/business regressions. `npm run test:companion` covers real reviewed PDF creation/download, exact-hash approval, origin isolation and search parsing/limits, alongside existing companion controls. Browser acceptance should pair through the interface, search/read a public source, reject a PC draft, approve/download a document, and exercise conversation resume and Stop on desktop and phone widths. Simulated recognition is not proof of physical microphone or audible speech acceptance.
+
+## Hosted JARVIS industry news without a local companion
+
+In the signed-in VAOS workspace, choose **Start conversation** to opt into foreground hands-free listening, then ask **“Hey JARVIS, what is the latest aerospace industry news?”**, **“What are recent carbon fibre composites market trends?”** or **“How is supermarket retail automation changing?”**. The existing read-only business-advisor route retrieves a small fresh Google News RSS sample from fixed public industry topics. The spoken reply includes headline titles and publishers only when fresh sources qualify; links remain visible for independent review.
+
+This hosted news path needs neither a paired PC nor paid model tokens. It is distinct from the companion-only browser.search and browser.research tools. No raw founder question, private ERP data or token is sent to the public news provider. Headlines are unverified discovery context, not confirmed prices, market share, approval or procurement advice. If the public provider fails, JARVIS reports no verified current coverage.
+
+Listening still requires an explicit gesture and microphone permission. It stops when the tab is hidden or the conversation is ended. No autonomous background recording or VAOS/VYNDI write is enabled.

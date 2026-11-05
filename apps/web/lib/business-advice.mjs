@@ -38,7 +38,11 @@ export function chooseAdviceSources(question){
 export function externalTopic(question){
  // A strict, public topic: never send founder questions, prices, project
  // names or any ERP data to unauthenticated internet services.
- if(/software|saas|agentic|erp|cloud|ai service/i.test(question||''))return 'India small business software market';
+ const q=question||'';
+ if(/\b(software|saas|agentic|erp|cloud|ai service)\b/i.test(q))return 'India small business software market';
+ if(/\b(aerospace|aviation|avionics|aircraft|mro|airlines?)\b/i.test(q))return 'India aerospace avionics and aircraft maintenance industry';
+ if(/\b(composites?|carbon fiber|carbon fibre|prepreg|resin systems?)\b/i.test(q))return 'India carbon fiber composites materials industry';
+ if(/\b(supermarket|grocery retail|retail automation)\b/i.test(q))return 'India supermarket retail automation industry';
  return 'India bicycle manufacturing market';
 }
 export function extractScenario(q){

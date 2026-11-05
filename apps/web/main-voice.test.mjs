@@ -332,3 +332,13 @@ test('authenticated workspace offers a JARVIS welcome without automatically open
  assert.match(js,/speakAnswer\(\)/);
  assert.match(js,/wake\?\.disable\('Hey VAOS switched off/);
 });
+
+test('hands-free JARVIS accepts market and industry questions but rejects market writes',()=>{
+ for(const s of ['Hey Jarvis, what is the latest aerospace avionics industry news?',
+  'What are current carbon fiber composites market trends?',
+  'Tell me the latest supermarket retail automation industry news']){
+  assert.equal(classifyDashboardQuestion(s).kind,'ADVISORY',s);
+  assert.equal(isDirectBusinessQuestion(s.replace(/^Hey Jarvis, /,'')),true,s);
+ }
+ assert.equal(classifyDashboardQuestion('Hey Jarvis, approve a purchase order now').kind,'DENY');
+});

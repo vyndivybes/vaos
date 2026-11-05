@@ -134,6 +134,16 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
   const decisionSupport=buildOperatingDecisionSupport({question,observations,engineering});
   report.answer+='\n\n'+decisionSupport.answer;
   report.spokenAnswer=decisionSupport.spokenAnswer;
+  // Public headlines are unverified context, not facts or action instructions.
+  // Speak attributable headlines rather than an unrelated ERP plan.
+  if(headlinesNeeded.test(question)){
+   report.spokenAnswer=publicResearch.items.length
+    ?'Unverified public headlines: '+publicResearch.items.slice(0,2)
+       .map(x=>x.title.slice(0,100)+'; '+x.publisher.slice(0,65)+'.')
+       .join(' ')+' Check the linked sources before acting.'
+    :'No current attributable market headlines were available. I cannot verify an industry conclusion.';
+   report.spokenAnswer=report.spokenAnswer.slice(0,450);
+  }
   const planGates=planningCycle.holds.length?planningCycle.holds.join(', '):'No missing sampled-domain sources; underlying reconciliation is still a human gate';
   report.answer+='\n\nPLAN GATES — '+planningCycle.state+'. '+planGates+
     '. Next: '+planningCycle.steps[0].instruction;

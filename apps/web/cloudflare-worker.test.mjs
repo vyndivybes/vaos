@@ -269,3 +269,14 @@ test('Ontology founder canary is explicit, source-scoped and read-only in the wo
  assert.match(script,/productionWriteAuthorized/);
  assert.match(html,/id="ontology-capture-status"/);
 });
+
+test('Ontology evidence and workspace directory occupy separate desktop grid rows',async()=>{
+ const css=await readFile(new URL('./vaos-interface.css',import.meta.url),'utf8');
+ // Regression: PR #470 introduced a second .fc-business into a fixed grid row.
+ assert.doesNotMatch(css,/#command-view>\\.fc-business\\s*\\{grid-column:2;grid-row:3/);
+ assert.match(css,/#command-view>#cockpit-business\\s*\\{grid-column:2;grid-row:3/);
+ assert.match(css,/#command-view>#ontology-evidence\\s*\\{grid-column:1\\/-1;grid-row:4/);
+ assert.match(css,/#command-view>\\.fc-workforce\\s*\\{grid-column:1\\/-1;grid-row:5/);
+ assert.match(css,/#ontology-health-sources\\s*\\{[^}]*display:grid/);
+ assert.match(css,/@media\\(max-width:720px\\)[^{]*\\{[^}]*#ontology-health-sources/);
+});

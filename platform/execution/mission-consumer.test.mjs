@@ -485,3 +485,26 @@ test('a bridge read job cannot execute if the work package tries approval-only o
  assert.equal(result.unsupported,1);assert.equal(calls,0);
  assert.deepEqual(f.events,[]);
 });
+
+test('commissioned open-PO read can complete an autonomous signed mission without PO write authority', async()=>{
+ const {routeJob}=await import('../runtime/vaos-eight-operating-model.mjs');
+ const {isMissionBridgeReadAction}=await import('./mission-consumer.mjs');
+ const {getVyndiBridgeRoute}=await import('../../packages/contracts/vyndi-write-bridge.mjs');
+ const action='PROCUREMENT.OBSERVE_OPEN_POS';
+ const route=routeJob(action);
+ const bridge=getVyndiBridgeRoute(action);
+ assert.ok(SAFE_MISSION_JOBS.includes(action));
+ assert.equal(isMissionBridgeReadAction(action),true);
+ assert.equal(route.ownerAgentId,'procurement');
+ assert.equal(route.authority,5);
+ assert.equal(route.executionMode,'ANALYSE');
+ assert.equal(route.humanApprovalRequired,false);
+ assert.equal(bridge.effectClass,'read');
+ assert.equal(bridge.state,'READ_READY');
+ assert.equal(bridge.executionEnabled,true);
+ for (const mutation of ['PROCUREMENT.CREATE_PO','PROCUREMENT.CHANGE_PO']) {
+  assert.equal(SAFE_MISSION_JOBS.includes(mutation),false);
+  assert.equal(isMissionBridgeReadAction(mutation),false);
+  assert.equal(getVyndiBridgeRoute(mutation).executionEnabled,false);
+ }
+});

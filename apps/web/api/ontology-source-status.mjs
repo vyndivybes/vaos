@@ -9,6 +9,7 @@ const FOUNDER='shyamsundhar1982@gmail.com';
 const ALLOWED=Object.freeze({
  inventory:Object.freeze({actionType:'INVENTORY.OBSERVE_STOCK',sourceAuthority:'getAuthoritativeInventory'}),
  shortages:Object.freeze({actionType:'PROCUREMENT.OBSERVE_SHORTAGE',sourceAuthority:'getConfiguredDemandShortages'}),
+ purchaseOrders:Object.freeze({actionType:'PROCUREMENT.OBSERVE_OPEN_POS',sourceAuthority:'listOpenPurchaseOrders'}),
 });
 function makeReader(env){return createVyndiReadBridgeClient({
  signer:createSupabaseControlStore(resolveDurableControlConfig(env)),
@@ -35,7 +36,7 @@ export function createOntologySourceStatusHandler({getReader=makeReader,
    if([...query.keys()].length!==1||query.getAll('source').length!==1||
      !Object.hasOwn(ALLOWED,query.get('source')||''))throw Error();
    kind=query.get('source');
-  }catch{return res.status(422).json(apiError('SOURCE_INVALID','Choose inventory or shortages'));}
+  }catch{return res.status(422).json(apiError('SOURCE_INVALID','Choose inventory, shortages or purchaseOrders'));}
   const expected=ALLOWED[kind];
   let result;
   try{

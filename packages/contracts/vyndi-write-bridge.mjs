@@ -83,6 +83,11 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
     verificationRefs:['master_inventory_items','epr_production_job_cards'],description:'Read governed configured-demand shortages.'
   }),
   route({
+    actionType:'PROCUREMENT.OBSERVE_OPEN_POS',employeeId:'procurement',effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/purchase-draft-authority.ts',authority:'listOpenPurchaseOrders',
+    verificationRefs:['vyndi_purchase_orders'],description:'Signed bounded open/draft PO observation; no procurement commitment or approval.'
+  }),
+  route({
     actionType:'PROCUREMENT.CREATE_PO',employeeId:'procurement',effectClass:EFFECT.MUTATION,state:ROUTE_STATE.WRITE_PREPARED,
     sourceFile:'src/lib/purchase-draft-authority.ts',authority:'submitDraftPurchaseOrder',
     verificationRefs:['vyndi_purchase_orders'],description:'Prepare a canonical draft purchase order; downstream approval remains VYNDI-owned.'

@@ -7,14 +7,15 @@ const pilot={employeeId:'procurement',actionType:'PROCUREMENT.CREATE_PO',mission
 test('VYNDI bridge remains restricted: all write routes are disabled',()=>{
  const r=getVyndiBridgeReadiness();
  // The enterprise BI, project schedule and finance statements additions are read-only.
- assert.equal(r.routeCount,27);
- assert.equal(r.readReady,12);
+ assert.equal(r.routeCount,28);
+ assert.equal(r.readReady,13);
  assert.equal(r.writePrepared,15);
  assert.deepEqual(r.gaps,[]);
  assert.equal(VYNDI_BRIDGE_ROUTES.filter(x=>x.effectClass==='mutation'&&x.executionEnabled).length,0);
 });
 test('Procurement can observe shortages but not execute PO writes',async()=>{
  assert.equal(getVyndiBridgeRoute('PROCUREMENT.OBSERVE_SHORTAGE').executionEnabled,true);
+ assert.equal(getVyndiBridgeRoute('PROCUREMENT.OBSERVE_OPEN_POS').executionEnabled,true);
  assert.equal(getVyndiBridgeRoute('PROCUREMENT.CREATE_PO').executionEnabled,false);
  assert.equal(getVyndiBridgeRoute('PROCUREMENT.CHANGE_PO').executionEnabled,false);
  let calls=0;

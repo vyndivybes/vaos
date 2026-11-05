@@ -29,3 +29,19 @@ test('content digest is checked and cannot be promoted to independent certificat
  await assert.rejects(()=>readerFor({...rec,sourceRevision:'f'.repeat(64)}).execute(job),e=>e.code==='VYNDI_SOURCE_RECEIPT_INVALID');
  await assert.rejects(()=>readerFor({...rec,sourceCompletenessVerified:true}).execute(job),e=>e.code==='VYNDI_SOURCE_RECEIPT_INVALID');
 });
+
+test('purchase-order content receipt uses exact typed scope and rejects tampered hashes',async()=>{
+ const canonical={sourceKind:'purchaseOrders',sourceScope:'vyndi_purchase_orders:open_status_v1',
+  sourceCount:1,records:[{id:'PO-11',status:'draft',record_revision:1}]};
+ const text=JSON.stringify({records:[{id:'PO-11',record_revision:1,status:'draft'}],sourceCount:1,sourceKind:canonical.sourceKind,sourceScope:canonical.sourceScope});
+ const h=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text))),x=>x.toString(16).padStart(2,'0')).join('');
+ const data={schemaVersion:'VYNDI_ONTOLOGY_READ_RECEIPT_V1',...canonical,sourceRevision:h,
+  asOf:'2026-11-05T05:00:00.000Z',complete:true,hasMore:false,
+  sourceRevisionAuthority:'CONTENT_DIGEST_ONLY',sourceCompletenessVerified:false,
+  asOfAuthority:'EXTRACT_TIME_NOT_SOURCE_CHANGE_TIME',readOnly:true,
+  actionAuthorized:false,productionWriteAuthorized:false};
+ const {checkVyndiSourceReceipt}=await import('./vyndi-source-receipt.mjs');
+ assert.equal(await checkVyndiSourceReceipt('PROCUREMENT.OBSERVE_OPEN_POS',data),true);
+ await assert.rejects(()=>checkVyndiSourceReceipt('PROCUREMENT.OBSERVE_OPEN_POS',{...data,records:[{id:'PO-11',status:'issued',record_revision:1}]}),
+ e=>e.code==='VYNDI_SOURCE_RECEIPT_INVALID');
+});

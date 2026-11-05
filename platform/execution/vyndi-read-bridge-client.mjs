@@ -1,3 +1,4 @@
+import {checkVyndiSourceReceipt} from './vyndi-source-receipt.mjs';
 import { getVyndiBridgeRoute } from '../../packages/contracts/vyndi-write-bridge.mjs';
 
 export const VYNDI_BRIDGE_KEY_ID = 'vyndi-primary-p256-v1';
@@ -124,8 +125,14 @@ export function createVyndiReadBridgeClient({
       if (payload.actionType !== job.actionType || payload.sourceAuthority !== route.authority) {
         throw terminalError('VYNDI_BRIDGE_AUTHORITY_MISMATCH');
       }
+      if (payload.effectClass !== undefined && payload.effectClass !== 'read') {
+        throw terminalError('VYNDI_BRIDGE_RESPONSE_INVALID');
+      }
+      const sourceReceiptChecked=await checkVyndiSourceReceipt(job.actionType,payload.data);
 
       return Object.freeze({
+        readOnly:true,effectClass:'read',sourceReceiptChecked,
+        sourceCompletenessVerified:false,actionAuthorized:false,productionWriteAuthorized:false,
         actionType: job.actionType,
         employeeId: route.employeeId,
         sourceAuthority: route.authority,

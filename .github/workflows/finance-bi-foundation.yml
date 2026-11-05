@@ -7,6 +7,9 @@ on:
       - 'intelligence/financial-scorecard.test.mjs'
       - 'intelligence/financial-intelligence.test.mjs'
       - 'apps/web/financial-performance.mjs'
+      - 'apps/web/lib/cash-scenario.mjs'
+      - 'apps/web/lib/cash-scenario.test.mjs'
+      - 'apps/web/workforce-analytics.html'
       - '.github/workflows/finance-bi-foundation.yml'
 permissions:
   contents: read
@@ -20,4 +23,4 @@ jobs:
         with:
           node-version: '24'
       - name: Signed and reconciled finance projection tests
-        run: node --test intelligence/financial-scorecard.test.mjs intelligence/financial-intelligence.test.mjs
+        run: node --test intelligence/financial-scorecard.test.mjs intelligence/financial-intelligence.test.mjs apps/web/lib/cash-scenario.test.mjs

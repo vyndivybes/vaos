@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8" />
+ <meta name="viewport" content="width=device-width,initial-scale=1" />
+ <meta name="theme-color" content="#08111b" />
+ <title>VAOS · Advanced Visual Intelligence</title>
+ <meta name="description" content="Sankey diagrams, 3D factory scenario, predictive simulations, heatmaps, waterfall, funnel, Gantt and logistics visualizations." />
+ <link rel="icon" href="/assets/vayu-shastr-original.webp" type="image/webp" />
+ <link rel="stylesheet" href="/visual-intelligence.css" />
+</head>
+<body>
+ <a class="av-skip" href="#av-display">Skip to visualization</a>
+ <header class="av-top">
+  <a class="av-home" href="/visual-command.html"><img src="/assets/vayu-shastr-original.webp" width="36" height="36" alt="" /><span><strong>VAOS</strong><small>JARVIS · VISUAL INTELLIGENCE</small></span></a>
+  <nav><a href="/visual-command.html">Visual Command</a><a href="/workspace">Workspace</a><a href="/workforce-analytics.html">Governed BI</a></nav>
+ </header>
+ <div id="av-session-status" role="status" class="av-session">Verifying your VAOS session…</div>
+ <main id="av-main" hidden>
+  <section class="av-intro">
+   <div><p class="av-kicker">ADVANCED VISUAL INTELLIGENCE · V1</p><h1>Explore complex operations. <em>Never confuse a model with actuals.</em></h1>
+   <p>Every chart below works locally with an explicit synthetic example or a user-provided scenario. Real machine telemetry, approved plans, financial postings and delivery routes require independently qualified source connections.</p></div>
+   <div class="av-status-block"><strong id="av-provenance">SYNTHETIC DEMO</strong><span id="av-provenance-desc">Illustration only — not VAOS business actuals.</span></div>
+  </section>
+  <nav class="av-tabs" aria-label="Advanced visualizations">
+   <button type="button" data-viz="sankey">Sankey flow</button>
+   <button type="button" data-viz="factory">3D factory</button>
+   <button type="button" data-viz="simulation">Monte Carlo</button>
+   <button type="button" data-viz="heatmap">Heatmap</button>
+   <button type="button" data-viz="waterfall">Waterfall</button>
+   <button type="button" data-viz="funnel">CRM funnel</button>
+   <button type="button" data-viz="timeline">Gantt</button>
+   <button type="button" data-viz="logistics">Logistics sketch</button>
+  </nav>
+  <section class="av-panel" aria-labelledby="av-heading">
+   <div class="av-panel-head">
+    <div><p class="av-kicker" id="av-kind">SCENARIO</p><h2 id="av-heading">Sankey flow</h2><p id="av-description">Material flow across workstations in a synthetic supply chain.</p></div>
+    <a href="/visual-command.html?visual=bi">Inspect governed BI sources</a>
+   </div>
+   <p class="av-integrity" role="status" id="av-status" aria-live="polite">Ready to display illustration. No live business data is implied.</p>
+   <section id="av-display" class="av-display" aria-label="Advanced visualization" tabindex="-1"></section>
+   <section id="av-simulation-controls" class="av-simulation-controls" hidden aria-label="Monte Carlo scenario assumptions">
+    <div class="av-simulation-heading"><h3>Hypothetical unit-economics assumptions</h3><button type="button" id="av-load-assumptions">Load illustrative assumptions</button></div>
+    <p>These numbers are never imported from company financial statements. Model demand uncertainty and monthly cash after fixed costs and CAPEX; tax, financing and working capital are excluded.</p>
+    <form id="av-simulation-form">
+     <div class="av-fields">
+      <label>Monthly demand (units)<input required name="demand" type="number" min="0" max="1000000" step="any" placeholder="Enter assumption" /></label>
+      <label>Monthly capacity (units)<input required name="capacity" type="number" min="0" max="1000000" step="any" placeholder="Enter assumption" /></label>
+      <label>Unit selling price<input required name="price" type="number" min="0" max="1000000000" step="any" placeholder="Enter assumption" /></label>
+      <label>Unit variable cost<input required name="unitCost" type="number" min="0" max="1000000000" step="any" placeholder="Enter assumption" /></label>
+      <label>Monthly fixed costs<input required name="fixedCost" type="number" min="0" max="10000000000" step="any" placeholder="Enter assumption" /></label>
+      <label>Opening cash<input required name="openingCash" type="number" step="any" placeholder="Enter assumption" /></label>
+      <label>Monthly CAPEX<input required name="capex" type="number" min="0" max="10000000000" step="any" placeholder="Enter assumption" /></label>
+      <label>Demand volatility (%)<input required name="volatilityPct" type="number" min="0" max="200" step="any" placeholder="Enter assumption" /></label>
+      <label>Months<input required name="horizonMonths" type="number" min="1" max="24" step="1" placeholder="1–24" /></label>
+      <label>Monte Carlo iterations<input required name="iterations" type="number" min="100" max="5000" step="1" placeholder="100–5000" /></label>
+      <label>Reproducible seed<input required name="seed" type="number" min="0" max="4294967295" step="1" placeholder="Integer" /></label>
+     </div>
+     <button type="submit" class="av-primary">Run local scenario simulation</button>
+    </form>
+   </section>
+  </section>
+  <details class="av-import" id="av-import">
+   <summary>Import or export an unverified scenario (JSON)</summary>
+   <p>Paste your own data with the schema below, or inspect the current example. Imported records stay in this browser session and are never approved or certified by VAOS. JSON is processed client-side and is not sent to any server.</p>
+   <textarea id="av-json" rows="9" spellcheck="false" aria-label="Scenario JSON"></textarea>
+   <div class="av-actions"><button type="button" id="av-apply">Apply JSON locally</button><button type="button" id="av-copy">Copy current example</button><button type="button" id="av-reset">Reset to SYNTHETIC DEMO</button></div>
+   <p id="av-import-status" role="status" aria-live="polite">No scenario uploaded.</p>
+  </details>
+  <aside class="av-evidence">
+   <h3>Operational evidence boundary</h3>
+   <p>These graphics render synthetic or user-supplied, unverified scenarios. They cannot independently certify asset uptime, real inventory, approved budgets, CRM conversions, orders or shipment ETAs. Financial and operational actuals remain in existing governed VAOS/VYNDI OS source workspaces.</p>
+   <button type="button" id="av-source-check">Check signed VYNDI source reachability</button>
+   <p id="av-source-status" role="status" aria-live="polite">Not checked. Source reachability is not a digital twin or financial reconciliation.</p>
+  </aside>
+  <footer><span>VAOS Advanced Visual Intelligence v1 · Zero-cost rendering</span><span>Scenario engine only · original source authority retained</span></footer>
+ </main>
+ <script type="module" src="/visual-intelligence.mjs"></script>
+</body>
+</html>

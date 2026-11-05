@@ -26,7 +26,13 @@ async function update(){
    const count=item.observedCount===null?'No signed receipt':
      item.observedCount+' extracted rows (not independently verified)';
    const time=item.lastExtractedAt?' · extracted '+item.lastExtractedAt:'';
-   detail.textContent=item.status+' — '+item.reason+' · '+count+time;
+   const lineage=item.sourceKind==='purchaseOrders'&&
+     Number.isSafeInteger(item.cancelledOriginDraftCount)&&
+     Number.isSafeInteger(item.otherObservedOrderCount)
+       ? ' · '+item.cancelledOriginDraftCount+' cancelled-origin drafts (historical; not commitments)'+
+         ' · '+item.otherObservedOrderCount+' other POs (unverified, not authorized)'
+       : '';
+   detail.textContent=item.status+' — '+item.reason+' · '+count+time+lineage;
   }
   healthVerified=true;
   status.textContent='Governance HOLD: observations are not independently verified and cannot authorize actions.';

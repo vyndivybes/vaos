@@ -301,7 +301,7 @@ body.va-premium.workspace-body .va-voice-widget>details[open]>summary{margin-bot
 body.va-premium.workspace-body .va-voice-widget>details button{margin:3px;padding:9px 12px;background:#eef2e9;color:#36523e;border:1px solid #dbe2d6}
 body.va-premium.workspace-body #jarvis-google-calendar-connect{background:transparent;border:0;padding:12px 0;font-size:12px;color:#435b49}
 body.va-premium.workspace-body .fc-command-link{font-size:12px;color:#435b49;margin-bottom:16px}
-body.va-premium.workspace-body #command-view>.fc-business{grid-column:2;grid-row:3;border:0;padding:0;margin:0}
+body.va-premium.workspace-body #command-view>#cockpit-business{grid-column:2;grid-row:3;border:0;padding:0;margin:0}
 body.va-premium.workspace-body .fc-domain-grid{grid-template-columns:1fr;gap:0;border-top:1px solid #dce2da}
 body.va-premium.workspace-body .fc-domain{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:4px 14px;background:transparent;border:0;border-bottom:1px solid #dce2da;border-radius:0;padding:17px 0}
 body.va-premium.workspace-body .fc-domain h3{font-size:15px;margin:0 0 3px;font-weight:600;letter-spacing:-.015em}
@@ -312,7 +312,17 @@ body.va-premium.workspace-body .fc-domain :is(button,a):hover{text-decoration:un
 body.va-premium.workspace-body .fc-status{background:transparent;color:#697462;font-size:10px;padding:0;white-space:nowrap}
 body.va-premium.workspace-body .fc-status::before{content:'';display:inline-block;width:5px;height:5px;background:#ac8753;border-radius:50%;margin-right:6px;vertical-align:middle}
 body.va-premium.workspace-body .fc-status--connected::before{background:#537756}
-body.va-premium.workspace-body #command-view>.fc-workforce{grid-column:1/-1;grid-row:4;border-top:1px solid #dce2da;padding-top:28px}
+body.va-premium.workspace-body #command-view>.fc-workforce{grid-column:1/-1;grid-row:5;border-top:1px solid #dce2da;padding-top:28px}
+/* Founder evidence is a separate grid section; never overlay the source directory. */
+body.va-premium.workspace-body #command-view>#ontology-evidence{grid-column:1/-1;grid-row:4;min-width:0;border-top:1px solid #dce2da;padding:24px 0 0}
+body.va-premium.workspace-body #ontology-health-sources{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:12px 0;padding:0;list-style:none}
+body.va-premium.workspace-body #ontology-health-sources>li{display:flex;flex-direction:column;align-items:flex-start;gap:8px;min-width:0;padding:16px;background:#fffefa;border:1px solid #dce2da;border-radius:9px}
+body.va-premium.workspace-body #ontology-health-sources>li>small{display:block;flex:1;max-width:100%;overflow-wrap:anywhere;font-size:12px;line-height:1.5;color:#68736c}
+body.va-premium.workspace-body #ontology-health-sources>li>button{max-width:100%;min-height:40px;padding:8px 12px;border:1px solid #315b49;border-radius:6px;background:#315b49;color:#fff;cursor:pointer}
+body.va-premium.workspace-body #ontology-health-sources>li>button:disabled{opacity:.5;cursor:not-allowed}
+body.va-premium.workspace-body #ontology-capture-status{font-size:12px;line-height:1.5;color:#68736c}
+@media(max-width:1100px){body.va-premium.workspace-body #ontology-health-sources{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:720px){body.va-premium.workspace-body #ontology-health-sources{grid-template-columns:1fr}body.va-premium.workspace-body #ontology-evidence .fc-section-head{align-items:flex-start;flex-direction:column}}
 body.va-premium.workspace-body .fc-section-head h2{font-size:21px!important;letter-spacing:-.025em}
 body.va-premium.workspace-body .fc-section-head .va-small-link{background:transparent;color:#315b49;padding:6px 0}
 body.va-premium.workspace-body .fc-team-charts{display:grid;grid-template-columns:1fr 1fr;gap:24px}

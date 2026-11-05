@@ -10,7 +10,7 @@ const blank={status:'HOLD',sources:[
  {sourceKind:'inventory',objectType:'InventoryItem',status:'HOLD',reason:'NO_SIGNED_RECEIPT',observedCount:null,projectionCount:0,lastExtractedAt:null,receiptAgeSeconds:null,sloSeconds:900},
  {sourceKind:'shortages',objectType:'Shortage',status:'HOLD',reason:'NO_SIGNED_RECEIPT',observedCount:null,projectionCount:0,lastExtractedAt:null,receiptAgeSeconds:null,sloSeconds:900},
  {sourceKind:'purchaseOrders',objectType:'PurchaseOrder',status:'HOLD',reason:'NO_SIGNED_RECEIPT',observedCount:null,projectionCount:0,lastExtractedAt:null,receiptAgeSeconds:null,sloSeconds:3600}
-],sourceCompletenessVerified:false,agentUsable:false,actionAuthorized:false,productionWriteAuthorized:false};
+],readOnly:true,sourceCompletenessVerified:false,agentUsable:false,actionAuthorized:false,productionWriteAuthorized:false};
 
 test('founder-only GET denies before touching private store',async()=>{
  let calls=0;const getStore=()=>{calls++;return {getOntologySourceHealth:async()=>blank}};

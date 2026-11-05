@@ -1,6 +1,8 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {probeSlackFounderAgent} from '../../../platform/execution/slack-founder-agent.mjs';
 import slackAgentStatus from './slack-agent-status.mjs';
+import {createSessionToken,SESSION_COOKIE} from '../lib/auth.mjs';
+const sessionCookie=()=>SESSION_COOKIE+'='+encodeURIComponent(createSessionToken('shyamsundhar1982@gmail.com'));
 
 function fetcher(payload){
  return async()=>new Response(JSON.stringify(payload),{status:200,headers:{'content-type':'application/json'}});
@@ -15,8 +17,8 @@ test('missing Slack history scope is safely classified',async()=>{
  const result=await probeSlackFounderAgent({env,fetchImpl:fetcher({ok:false,error:'missing_scope'})});
  assert.equal(result.status,'HOLD');assert.equal(result.reason,'SLACK_SCOPE_MISSING');
 });
-test('public status endpoint returns no message content or credentials',async()=>{
- const req={method:'GET',env:{VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',SLACK_BOT_TOKEN:'xoxb-test'}};
+test('status endpoint returns no message content or credentials',async()=>{
+ const req={method:'GET',headers:{cookie:sessionCookie()},env:{VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',SLACK_BOT_TOKEN:'xoxb-test'}};
  const original=globalThis.fetch;
  globalThis.fetch=fetcher({ok:true,messages:[{type:'message',user:'U0C0XHRUFGE',text:'secret-looking user text'}]});
  try{
@@ -27,7 +29,20 @@ test('public status endpoint returns no message content or credentials',async()=
 });
 
 test('status endpoint reports HOLD as HTTP 200 without leaking provider data',async()=>{
- const req={method:'GET',env:{VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',SLACK_BOT_TOKEN:'xoxb-test'}};
+ const req={method:'GET',headers:{cookie:sessionCookie()},env:{VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',SLACK_BOT_TOKEN:'xoxb-test'}};
  const original=globalThis.fetch;globalThis.fetch=fetcher({ok:false,error:'missing_scope'});
  try{const response=await slackAgentStatus(req);const body=await response.json();assert.equal(response.status,200);assert.equal(body.status,'HOLD');assert.equal(body.reason,'SLACK_SCOPE_MISSING');}finally{globalThis.fetch=original}
+});
+
+test('status endpoint rejects unauthenticated callers and makes NO Slack call',async()=>{
+ const original=globalThis.fetch;let calls=0;globalThis.fetch=async()=>{calls++;return new Response('{}')};
+ try{
+  const env={VAOS_SLACK_AGENT_CONTROL:'founder-readonly-v1',SLACK_BOT_TOKEN:'xoxb-test'};
+  for(const headers of [undefined,{},{cookie:''},{cookie:SESSION_COOKIE+'=forged.token'},{cookie:'%'}]){
+   const response=await slackAgentStatus({method:'GET',headers,env});
+   assert.equal(response.status,401);
+   assert.equal((await response.json()).error.code,'UNAUTHENTICATED');
+  }
+  assert.equal(calls,0,'unauthenticated requests must never reach Slack');
+ }finally{globalThis.fetch=original}
 });

@@ -45,17 +45,23 @@ test("development credential uses VAOS_DEV_LOGIN_PASSWORD_SHA256 when configured
   }
 });
 
-test("session tokens use the configured development password hash for signing", () => {
-  const previous = process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+test("session signing key is independent of the password hash", () => {
+  const previousHash = process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+  const previousKey = process.env.VAOS_SESSION_HMAC_KEY;
+  process.env.VAOS_SESSION_HMAC_KEY = "ab".repeat(32);
   process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = sha256("session-secret-one");
 
   try {
     const token = createSessionToken("shyamsundhar1982@gmail.com", 60, 1_000_000);
     process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = sha256("session-secret-two");
+    assert.equal(verifySessionToken(token, 1_001_000)?.email, "shyamsundhar1982@gmail.com");
+    process.env.VAOS_SESSION_HMAC_KEY = "cd".repeat(32);
     assert.equal(verifySessionToken(token, 1_001_000), null);
   } finally {
-    if (previous === undefined) delete process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
-    else process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = previous;
+    if (previousHash === undefined) delete process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256;
+    else process.env.VAOS_DEV_LOGIN_PASSWORD_SHA256 = previousHash;
+    if (previousKey === undefined) delete process.env.VAOS_SESSION_HMAC_KEY;
+    else process.env.VAOS_SESSION_HMAC_KEY = previousKey;
   }
 });
 

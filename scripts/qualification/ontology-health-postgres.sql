@@ -2,6 +2,7 @@
 \i scripts/qualification/ontology-receipt-postgres.sql
 \i supabase/migrations/20261105083000_ontology_source_health_v1.sql
 \i supabase/migrations/20261105100000_ontology_source_health_projection_drift_v2.sql
+\i supabase/migrations/20261105123500_ontology_source_health_demand_lineage_v3.sql
 
 do $$
 declare r jsonb;

@@ -1,0 +1,41 @@
+name: ontology-p01-durable-receipt-qualification
+on:
+  pull_request:
+    paths:
+      - 'supabase/migrations/*ontology_receipt_persistence*'
+      - 'platform/ontology/durable-receipt-*'
+      - 'scripts/qualification/ontology-receipt-postgres.sql'
+      - '.github/workflows/ontology-p01-durable-receipts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  receipt-qualification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: qualification-only
+          POSTGRES_DB: vaos_ontology_qualification
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd="pg_isready -U postgres -d vaos_ontology_qualification"
+          --health-interval=5s --health-timeout=5s --health-retries=12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify fail-closed adapter and private migration contract
+        run: node --test platform/ontology/durable-receipt-ingestor.test.mjs
+      - name: PostgreSQL 16 isolated receipt / watermark / ACL acceptance
+        env:
+          PGHOST: localhost
+          PGPORT: 5432
+          PGDATABASE: vaos_ontology_qualification
+          PGUSER: postgres
+          PGPASSWORD: qualification-only
+        run: psql -v ON_ERROR_STOP=1 -f scripts/qualification/ontology-receipt-postgres.sql

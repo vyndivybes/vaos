@@ -1,5 +1,5 @@
 /** Verify internal source-content consistency only. A digest is NOT a signed DB revision. */
-const SCOPES=Object.freeze({
+export const VYNDI_SOURCE_RECEIPT_ROUTES=Object.freeze({
  'INVENTORY.OBSERVE_STOCK':Object.freeze({kind:'inventory',scope:'vyndi_inventory_balance:all'}),
  'PROCUREMENT.OBSERVE_SHORTAGE':Object.freeze({kind:'shortages',scope:'vyndi_live_job_card_requirements:released_in_progress_positive_shortage'}),
  'PROCUREMENT.OBSERVE_OPEN_POS':Object.freeze({kind:'purchaseOrders',scope:'vyndi_purchase_orders:open_status_v1'}),
@@ -15,7 +15,7 @@ function iso(s){
  const ms=Date.parse(s);return Number.isFinite(ms)&&new Date(ms).toISOString()===s.replace(/(?:\.([0-9]{1,3}))?Z$/,(_m,f)=>'.'+(f||'').padEnd(3,'0')+'Z');
 }
 export async function checkVyndiSourceReceipt(actionType,data){
- const expected=SCOPES[actionType];
+ const expected=VYNDI_SOURCE_RECEIPT_ROUTES[actionType];
  if(!expected||!data||typeof data!=='object'||data.schemaVersion===undefined)return false;
  if(data.schemaVersion!=='VYNDI_ONTOLOGY_READ_RECEIPT_V1'||
    data.sourceKind!==expected.kind||data.sourceScope!==expected.scope||

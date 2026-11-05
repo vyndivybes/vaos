@@ -11,3 +11,7 @@ Tests: `node --test platform/execution/vyndi-read-bridge-client.test.mjs platfor
 ## Founder-only source status (disabled by default)
 
 `GET /api/ontology/source-status?source=inventory|shortages` is registered in the VAOS Worker but disabled unless `VAOS_ONTOLOGY_SOURCE_CONTROL=founder-readonly-v1` is provisioned after read source qualification. It uses the existing signed VYNDI bridge, never accepts a caller URL, and never returns ERP row bodies. An internally consistent bounded extract is reported `SOURCE_UNVERIFIED` (not agent action authority). Missing, malformed or partial receipts produce `HOLD`. No POST handler, production hydration writer, PO preparation or autonomous action is enabled.
+
+## Open Purchase Order observation — P0.1 extension
+
+`PROCUREMENT.OBSERVE_OPEN_POS` is an explicit thirteenth signed read route (28 total bridge routes; 15 mutations still disabled). Its source scope is `vyndi_purchase_orders:open_status_v1`, with supplier/PO revision provenance and bounded page completeness. The existing founder endpoint may now accept `?source=purchaseOrders`; it never returns PO rows or authorizes any mutation. The read receiver validates the canonical content digest and source scope, but the receipt is **not independently certified**, and the source-status endpoint stays disabled until separately commissioned. No changes to production writes or digital employee qualification.

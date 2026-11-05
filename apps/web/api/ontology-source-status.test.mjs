@@ -13,7 +13,7 @@ test('founder GET + explicit flag and allowed source required before transport',
  const b=response();await createOntologySourceStatusHandler({getSession:()=>({email:'other@example.com'}),getReader})(req(),b);assert.equal(b.code,403);
  const c=response();await createOntologySourceStatusHandler({getSession:founder,getReader})(req({method:'POST'}),c);assert.equal(c.code,405);
  const d=response();await createOntologySourceStatusHandler({getSession:founder,getReader})(req({flag:'off'}),d);assert.equal(d.code,409);
- for(const query of ['','?source=../../credentials','?source=inventory&url=http://evil','?source=inventory&source=shortages','?source=purchaseOrders']){
+ for(const query of ['','?source=../../credentials','?source=inventory&url=http://evil','?source=inventory&source=shortages','?source=unknown']){
  const e=response();await createOntologySourceStatusHandler({getSession:founder,getReader})(req({query}),e);assert.equal(e.code,422);
  }assert.equal(calls,0);
 });
@@ -29,6 +29,18 @@ test('incomplete pages and unqualified receipts remain HOLD',async()=>{
  const h=createOntologySourceStatusHandler({getSession:founder,getReader:()=>({execute:async()=>invalid})});
  const r=response();await h(req(),r);assert.equal(r.code,409);assert.equal(r.body.data.status,'HOLD');
  }
+});
+test('open POs are a typed read-only source, with no exposed PO records',async()=>{
+ const po={...observed,actionType:'PROCUREMENT.OBSERVE_OPEN_POS',sourceAuthority:'listOpenPurchaseOrders',
+  data:{...observed.data,sourceKind:'purchaseOrders',sourceScope:'vyndi_purchase_orders:open_status_v1',
+   sourceCount:47,records:[{id:'CONFIDENTIAL-PO'}],complete:true,hasMore:false}};
+ let request;
+ const h=createOntologySourceStatusHandler({getSession:founder,getReader:()=>({execute:async job=>{request=job;return po}})});
+ const r=response();await h(req({query:'?source=purchaseOrders'}),r);
+ assert.equal(r.code,200);assert.equal(request.actionType,'PROCUREMENT.OBSERVE_OPEN_POS');
+ assert.equal(r.body.data.sourceCount,47);
+ assert.equal(r.body.data.productionWriteAuthorized,false);
+ assert.ok(!JSON.stringify(r.body).includes('CONFIDENTIAL-PO'));
 });
 test('upstream errors are masked without inventing zero inventory',async()=>{
  const h=createOntologySourceStatusHandler({getSession:founder,getReader:()=>({execute:async()=>{throw Error('private DB secret')}})});

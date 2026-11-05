@@ -2,6 +2,7 @@
 const SCOPES=Object.freeze({
  'INVENTORY.OBSERVE_STOCK':Object.freeze({kind:'inventory',scope:'vyndi_inventory_balance:all'}),
  'PROCUREMENT.OBSERVE_SHORTAGE':Object.freeze({kind:'shortages',scope:'vyndi_live_job_card_requirements:released_in_progress_positive_shortage'}),
+ 'PROCUREMENT.OBSERVE_OPEN_POS':Object.freeze({kind:'purchaseOrders',scope:'vyndi_purchase_orders:open_status_v1'}),
 });
 function bad(){const e=Error('VYNDI_SOURCE_RECEIPT_INVALID');e.code='VYNDI_SOURCE_RECEIPT_INVALID';throw e;}
 function stable(x){

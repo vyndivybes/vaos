@@ -209,3 +209,33 @@ test('unavailable market RSS is spoken as unavailable, never synthesized as curr
  assert.match(x.body.data.spokenAnswer,/no current|could not|unavailable/i);
  assert.doesNotMatch(x.body.data.spokenAnswer,/2026 market grew|verified market share/i);
 });
+
+test('public aerospace news does not invoke business ERP or fill the result with business review',async()=>{
+ let businessReads=0;
+ const feed='<?xml version="1.0"?><rss><channel><item><title>Aircraft MRO industry developments</title><link>https://news.google.com/rss/articles/abcd123</link><pubDate>Thu, 05 Nov 2026 02:00:00 GMT</pubDate><source>Industry Journal</source></item></channel></rss>';
+ const h=createBusinessAdvisorHandler({
+  getReader:()=>{businessReads++;throw Error('No ERP required for external news');},
+  now:()=>new Date('2026-11-05T06:00:00Z'),
+  fetchImpl:async()=>new Response(feed,{headers:{'content-type':'application/rss+xml'}}),
+ });
+ const {res,x}=capture();await h(mk('Hey JARVIS, what is the latest aerospace and avionics industry news?'),res);
+ assert.equal(x.code,200);assert.equal(businessReads,0);
+ assert.equal(x.body.data.sourceSystem,'BUSINESS_ADVISORY');
+ assert.equal(x.body.data.status,'OBSERVED');
+ assert.equal(x.body.data.actionAuthorized,false);
+ assert.match(x.body.data.answer,/Aircraft MRO industry developments/);
+ assert.doesNotMatch(x.body.data.answer,/production-critical shortage|SIX-MONTH OPERATING OUTLOOK|KEY EVIDENCE/);
+ assert.equal(x.body.data.webSources.length,1);
+});
+test('when news feed is unreachable JARVIS reports an external research HOLD, not a VYNDI PO recommendation',async()=>{
+ let businessReads=0;
+ const h=createBusinessAdvisorHandler({getReader:()=>{businessReads++;throw Error('Do not read ERP');},
+  fetchImpl:async()=>{throw Error('public news provider unavailable');}});
+ const {res,x}=capture();await h(mk('What is the latest aerospace and avionics industry news?'),res);
+ assert.equal(x.code,200);assert.equal(businessReads,0);
+ assert.equal(x.body.data.status,'HOLD');
+ assert.match(x.body.data.answer,/public|industry|research/i);
+ assert.match(x.body.data.answer,/unavailable|no current/i);
+ assert.doesNotMatch(x.body.data.answer,/clear production-critical shortage lines/i);
+ assert.equal(x.body.data.actionAuthorized,false);
+});

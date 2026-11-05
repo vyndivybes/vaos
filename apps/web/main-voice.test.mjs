@@ -357,3 +357,10 @@ test('screenshot regression: selected Adaptive does not hijack public industry n
  const privateAnalysis=classifyDashboardQuestion('Why are suppliers delaying production and increasing costs?');
  assert.equal(shouldUseAdaptiveAnswer(privateAnalysis,true),true);
 });
+
+test('site.open stays a local browser navigation and never calls the companion',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const source=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
+ assert.match(source,/toolPlan\?\.kind==='site\.open'/);
+ assert.match(source,/window\.location\.assign\(toolPlan\.input\.url\)/);
+});

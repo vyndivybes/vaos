@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+ <meta charset="utf-8" />
+ <meta name="viewport" content="width=device-width,initial-scale=1" />
+ <meta name="theme-color" content="#080e18" />
+ <meta name="description" content="VAOS governed visual command centre: charts, reports, graphs, engineering and agent supervision." />
+ <title>VAOS · JARVIS Visual Command</title>
+ <link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp" />
+ <link rel="stylesheet" href="/visual-command.css" />
+</head>
+<body>
+ <a class="vc-skip" href="#vc-stage">Skip to visual display</a>
+ <header class="vc-topbar">
+  <a class="vc-brand" href="/workspace" aria-label="VAOS workspace"><img src="/assets/vayu-shastr-original.webp" width="38" height="38" alt="" /><span><strong>VAOS</strong><small>VĀYÚ SHASTR</small></span></a>
+  <nav aria-label="Primary"><a href="/workspace">Workspace</a><a href="/founder-console.html">Founder Command</a><a href="/mission-status.html">Missions</a></nav>
+ </header>
+ <div id="vc-auth-status" class="vc-auth-status" role="status" aria-live="polite">Verifying authenticated VAOS session…</div>
+ <main id="vc-main" hidden>
+  <section class="vc-hero" aria-labelledby="vc-heading">
+   <div><p class="vc-eyebrow"><span class="vc-pulse" aria-hidden="true"></span> JARVIS · GOVERNED VISUAL INTELLIGENCE</p>
+    <h1 id="vc-heading">One command centre.<br /><em>Every verified perspective.</em></h1>
+    <p>Switch between source-linked BI, neural relationships, engineering geometry and supervised operations. Views reflect existing permissions, not inferred business results.</p>
+   </div>
+   <aside class="vc-assurance" aria-label="Evidence safeguards"><strong>Read-only navigation</strong><span>No execution from this console</span><span>Unverified values are withheld</span><span>Existing VAOS access gates apply</span></aside>
+  </section>
+  <form id="vc-command-form" class="vc-command" autocomplete="off">
+   <label for="vc-command-input">Ask JARVIS to open a visual workspace</label>
+   <div class="vc-command-row"><input id="vc-command-input" type="text" maxlength="240" placeholder="Show the brain graph, production status or cash-flow dashboard…" />
+   <button type="submit" class="vc-primary">Show visual</button><button type="button" id="vc-mic" class="vc-mic" aria-label="Use microphone for read-only visual navigation">Microphone</button></div>
+   <p id="vc-message" role="status" aria-live="polite">Voice navigation uses the browser’s speech recognition when available. It never approves or executes actions.</p>
+  </form>
+  <section class="vc-layout" aria-label="Visual workspaces">
+   <nav class="vc-menu" id="vc-menu" aria-label="Select visual workspace"></nav>
+   <section id="vc-stage" class="vc-stage" aria-labelledby="vc-view-title">
+    <div class="vc-stage-heading"><div><p id="vc-view-kicker" class="vc-eyebrow">SELECT A PERSPECTIVE</p><h2 id="vc-view-title">Business intelligence</h2><p id="vc-view-description"></p></div>
+    <a id="vc-open-view" href="/workforce-analytics.html" target="_self">Open full workspace</a></div>
+    <p class="vc-integrity">Displayed records depend on current signed source reads. Connection status is not business performance; unknown is never zero.</p>
+    <div id="business-intelligence" class="vc-bi-host" hidden></div>
+    <div id="vc-frame-shell" class="vc-frame-shell" hidden><iframe id="vc-frame" loading="lazy" title="Selected VAOS visual workspace" referrerpolicy="same-origin"></iframe><p>Embedded source view. If your browser blocks embedding, use “Open full workspace”.</p></div>
+    <div id="vc-link-shell" class="vc-link-shell" hidden><h3>Governed operational workspace</h3><p>This domain is opened in the existing VAOS workspace, preserving its authorized navigation, records and action controls. No synthetic dashboard is displayed here.</p><a id="vc-link" href="/workspace">Open selected module</a></div>
+   </section>
+  </section>
+  <footer class="vc-footer"><span>VAOS · Visual command v1</span><span>Existing renderers · no paid visualization service · source-first evidence</span></footer>
+ </main>
+ <script type="module" src="/visual-command.mjs"></script>
+</body>
+</html>

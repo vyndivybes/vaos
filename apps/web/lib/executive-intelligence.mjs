@@ -34,7 +34,9 @@ export function projectExecutiveIntelligence(enterprise,finance=null,{conversion
   crm:{...hold,prospectCustomers:null,activeCustomers:null,overdueFollowups:null,illustrativeConverts:null,forecastQualified:false},
   hr:{...hold,approvedPersonnelRecords:null,absentObservations:null,payrollHoldRecords:null},
   logistics:{...hold,shipmentsRecorded:null,awaitingInvoice:null,deliveryOtipQualified:false},
-  finance:{...hold,companyRevenueInr:null,groupRevenueInr:null,groupConsolidationQualified:false}};
+  finance:{...hold,companyRevenueInr:null,groupRevenueInr:null,groupConsolidationQualified:false},
+  dataReadiness:Object.fromEntries(['crm','hr','logistics','finance','groupConsolidation']
+   .map(id=>[id,{status:'HOLD',reason:'Signed executive source unavailable.'}]))};
  const customers=source(enterprise,'crmCustomers'),followups=source(enterprise,'crmFollowups');
  const staff=source(enterprise,'hrWorkforce'),attendance=source(enterprise,'hrAttendance'),
   payroll=source(enterprise,'hrPayrollReadiness'),dispatch=source(enterprise,'dispatch');
@@ -45,6 +47,28 @@ export function projectExecutiveIntelligence(enterprise,finance=null,{conversion
   finance?.from===enterprise.period.from&&finance?.to===enterprise.period.to&&
   [finance.revenueInr,finance.netProfitInr,finance.closingCashInr].every(money);
  const activeSources=[crmReady,hrReady,dispatch!==null,financeReady].filter(Boolean).length;
+ const crmRows=crmReady?count(customers,()=>true):null;
+ const attendanceRows=hrReady?count(attendance,()=>true):null;
+ const payrollRows=hrReady?count(payroll,()=>true):null;
+ const payrollHolds=hrReady?count(payroll,r=>/hold|blocked|pending/i.test(r.status)):null;
+ const dispatchRows=dispatch?count(dispatch,()=>true):null;
+ // Source connection is not enough for an operational forecast or certification.
+ const dataReadiness={
+  crm:{status:'HOLD',reason:!crmReady?'CRM source unavailable or incomplete.':
+   !crmRows?'No CRM customer and conversion history for a predictive forecast.':
+   'CRM win/loss history and dated conversion calibration are not available in this aggregate source.'},
+  hr:{status:'HOLD',reason:!hrReady?'HR attendance and payroll sources unavailable or unqualified.':
+   !attendanceRows||!payrollRows?'No attendance and payroll readiness evidence sufficient for HR qualification.':
+   payrollHolds?'Payroll readiness holds prevent qualified HR operations.':
+   'Attendance and payroll sources are connected; reconciled payroll actuals and human workforce denominators remain unqualified.'},
+  logistics:{status:'HOLD',reason:dispatchRows===null?'Dispatch source unavailable or incomplete.':
+   !dispatchRows?'No dispatch history; carrier delivery and routing evidence unavailable.':
+   'Carrier delivery timestamps, lane costs and route performance evidence are unavailable in the signed dispatch source.'},
+  finance:{status:financeReady?'OBSERVED':'HOLD',reason:financeReady?
+   'Reconciled posted company-wide ledger actuals are available for this reporting period.':
+   'Reconciled posted company-wide ledger actuals are unavailable for this reporting period.'},
+  groupConsolidation:{status:'HOLD',reason:'Approved division-level journal attribution and independently reconciled inter-unit eliminations are not supplied.'},
+ };
  return {
   schemaVersion:'VAOS_EXECUTIVE_INTELLIGENCE_V1',status:activeSources?'PARTIAL':'HOLD',
   readOnly:true,actionAuthorized:false,asOf:enterprise.executiveSignals.observedAt||null,
@@ -73,6 +97,7 @@ export function projectExecutiveIntelligence(enterprise,finance=null,{conversion
    companyClosingCashInr:financeReady?finance.closingCashInr:null,
    groupRevenueInr:null,groupConsolidationQualified:false,
    note:'Company-wide posted actuals only. Division attribution, internal transfers and elimination reconciliation have not been certified; group financial consolidation remains HOLD.'},
+  dataReadiness,
   sourceCoverage:{observed:activeSources,required:4},
  };
 }

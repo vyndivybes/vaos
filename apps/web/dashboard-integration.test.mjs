@@ -54,3 +54,10 @@ test('executive source cockpit is mounted and never invokes mutation endpoints',
  assert.doesNotMatch(js,/fetch\(['"]\/api\/.*(?:create|approve|pay|execute)/i);
  assert.doesNotMatch(js,/innerHTML\s*=/);
 });
+
+test('executive cockpit separates signed source availability from decision readiness',async()=>{
+ const js=await source('./executive-intelligence.mjs');
+ assert.match(js,/result\.dataReadiness/);
+ assert.match(js,/source.*decision/);
+ assert.doesNotMatch(js,/functional groups/);
+});

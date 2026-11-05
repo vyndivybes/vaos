@@ -50,3 +50,26 @@ test('database unavailability is HOLD rather than a healthy blank dashboard',asy
  assert.equal(r.code,503);assert.equal(r.body.data.status,'HOLD');
  assert.equal(JSON.stringify(r.body).includes('secret'),false);
 });
+
+test('projection drift stays HOLD and contradictory ready-looking metadata is rejected',async()=>{
+ const drift={...blank,sources:[
+  {...blank.sources[0],status:'HOLD',reason:'PROJECTION_DRIFT',
+   observedCount:1,projectionCount:0,lastExtractedAt:'2026-11-05T09:00:00.000Z',receiptAgeSeconds:30},
+  ...blank.sources.slice(1),
+ ]};
+ const handlerFor=data=>createOntologyHealthHandler({getSession:founder,
+  getStore:()=>({getOntologySourceHealth:async()=>data})});
+ const accepted=response();await handlerFor(drift)(req(),accepted);
+ assert.equal(accepted.code,200);
+ assert.equal(accepted.body.data.sources[0].status,'HOLD');
+ assert.equal(accepted.body.data.sources[0].reason,'PROJECTION_DRIFT');
+ for(const wrong of [
+  {...drift,sources:[{...drift.sources[0],status:'SOURCE_UNVERIFIED',
+   reason:'SOURCE_REVISION_UNVERIFIED'},...drift.sources.slice(1)]},
+  {...drift,sources:[{...drift.sources[0],status:'SOURCE_UNVERIFIED'},...drift.sources.slice(1)]},
+ ]){
+  const denied=response();await handlerFor(wrong)(req(),denied);
+  assert.equal(denied.code,503);
+  assert.equal(denied.body.data.status,'HOLD');
+ }
+});

@@ -59,7 +59,7 @@ test('Independent database watchdog schedules every 60 minutes, without credenti
 });
 test('Native Cloudflare cron is scheduled and legacy GitHub job is manual emergency-only',()=>{
   const y=workflow();
-  assert.deepEqual(cloudflareConfig().triggers.crons,['0 * * * *']);
+  assert.deepEqual(cloudflareConfig().triggers.crons,['0 * * * *','5,15,25,35,45,55 * * * *']);
   assert.match(cloudflareWorker(),/runCloudflareInfisicalHealth/);
   assert.doesNotMatch(y,/^  schedule:/m);
   assert.doesNotMatch(y,/^  push:/m);

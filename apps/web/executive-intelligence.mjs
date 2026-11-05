@@ -24,7 +24,7 @@ function render(){
  catch{clear('Enter a conversion assumption from 0 to 100%.');return;}
  clear(result.status==='HOLD'?'HOLD — No qualified signed executive data was returned.':
   'Executive source evidence: '+result.sourceCoverage.observed+' / '+result.sourceCoverage.required+
-  ' functional groups. Finance period '+result.period.from+' to '+result.period.to+
+  ' signed source groups observed (not decision-ready). Finance period '+result.period.from+' to '+result.period.to+
   '. CRM, HR and dispatch are current/all-recorded-date aggregates, not period activity. Company consolidation remains HOLD.');
  const host=$('wa-exec-kpis'),detail=$('wa-exec-brief');
  const {crm,hr,logistics,finance:financial}=result;
@@ -42,8 +42,12 @@ function render(){
  addMetric(host,'Company closing cash',financial.status==='POSTED_ACTUALS'?MONEY.format(financial.companyClosingCashInr):'HOLD',
   'Not division-attributed · '+financial.status);
  addMetric(host,'Group consolidated finance','HOLD','Approved source attribution and intercompany eliminations missing');
- for(const [name,domain] of [['CRM forecasting',crm],['Human HR intelligence',hr],['Logistics optimization',logistics],['Financial consolidation',financial]])
-  addNote(detail,name+' · '+domain.status,domain.note||domain.reason||'Source unavailable.');
+ for(const [name,key,domain] of [['CRM forecasting','crm',crm],['Human HR intelligence','hr',hr],
+  ['Logistics optimization','logistics',logistics],['Financial consolidation','groupConsolidation',financial]]){
+  const readiness=result.dataReadiness?.[key];
+  addNote(detail,name+' · source '+domain.status+' · decision '+(readiness?.status||'HOLD'),
+   (readiness?.reason||'Source unqualified.')+' '+(domain.note||domain.reason||''));
+ }
  addNote(detail,'Next governance actions',
   'Approve CRM conversion assumptions and dated opportunity histories before predictive forecasts. Qualify human attendance and payroll sources. Add carrier tracking, lane cost and promised delivery dates before route/OTIF optimization. Complete division-level transaction attribution and independent elimination reconciliation before group P&L or cash consolidation.');
 }

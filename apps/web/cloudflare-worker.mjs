@@ -67,6 +67,7 @@ import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
 import federatedKnowledge from './api/federated-knowledge.mjs';
 import neuralKnowledge from './api/neural-knowledge.mjs';
 import ontologySourceStatus from './api/ontology-source-status.mjs';
+import ontologyIngestCanary from './api/ontology-ingest-canary.mjs';
 import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
@@ -152,6 +153,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/federated-knowledge': federatedKnowledge,
   '/api/neural-knowledge': neuralKnowledge,
   '/api/ontology/source-status': ontologySourceStatus,
+  '/api/ontology/ingest-canary': ontologyIngestCanary,
   '/api/voice-ai-focus': voiceAiFocus,
 });
 

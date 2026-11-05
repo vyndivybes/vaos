@@ -253,6 +253,7 @@ export function createSupabaseControlStore({
         employeeId,
       });
     },
+    ingestOntologySourceReceipt(receipt) {return invoke('ingestOntologySourceReceipt',{receipt});},
     signVyndiBridgeRequest(input) {
       return invoke('signVyndiBridgeRequest', {
         keyId: input.keyId,

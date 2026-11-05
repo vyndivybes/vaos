@@ -8,19 +8,19 @@ import {createVyndiReadBridgeClient} from '../../../platform/execution/vyndi-rea
 import {VYNDI_SOURCE_RECEIPT_ROUTES} from '../../../platform/execution/vyndi-source-receipt.mjs';
 import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
-const ALLOWED=Object.fromEntries(
+export const ONTOLOGY_SOURCE_ACTIONS=Object.fromEntries(
  Object.entries(VYNDI_SOURCE_RECEIPT_ROUTES).map(([actionType,{kind}])=>[
   kind,{actionType,sourceAuthority:getVyndiBridgeRoute(actionType).authority},
  ]),
 );
-function makeReader(env){return createVyndiReadBridgeClient({
- signer:createSupabaseControlStore(resolveDurableControlConfig(env)),
+export function createOntologySignedReader(env,store=createSupabaseControlStore(resolveDurableControlConfig(env))){return createVyndiReadBridgeClient({
+ signer:store,
  serviceBinding:env?.VYNDI,
 });}
 function hold(reason,kind){return {status:'HOLD',reason,sourceKind:kind,
  readOnly:true,sourceCompletenessVerified:false,durableHydrationVerified:false,
  actionAuthorized:false,approvalGranted:false,productionWriteAuthorized:false};}
-export function createOntologySourceStatusHandler({getReader=makeReader,
+export function createOntologySourceStatusHandler({getReader=createOntologySignedReader,
  getSession=req=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE])}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
@@ -36,10 +36,10 @@ export function createOntologySourceStatusHandler({getReader=makeReader,
   try{
    const query=new URL(req.url).searchParams;
    if([...query.keys()].length!==1||query.getAll('source').length!==1||
-     !Object.hasOwn(ALLOWED,query.get('source')||''))throw Error();
+     !Object.hasOwn(ONTOLOGY_SOURCE_ACTIONS,query.get('source')||''))throw Error();
    kind=query.get('source');
   }catch{return res.status(422).json(apiError('SOURCE_INVALID','Choose inventory, shortages or purchaseOrders'));}
-  const expected=ALLOWED[kind];
+  const expected=ONTOLOGY_SOURCE_ACTIONS[kind];
   let result;
   try{
    result=await getReader(req.env).execute({

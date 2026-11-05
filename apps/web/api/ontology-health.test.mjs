@@ -102,3 +102,23 @@ test('founder-only cancelled-origin draft summary remains non-authoritative and 
   assert.equal(JSON.stringify(denied.body).includes('SECRET'),false);
  }
 });
+
+test('unknown or downgraded purchase-order evidence cannot appear as zero or omit lineage',async()=>{
+ const validPo={...blank.sources[2],status:'SOURCE_UNVERIFIED',
+  reason:'SOURCE_REVISION_UNVERIFIED',observedCount:2,projectionCount:2,
+  lastExtractedAt:'2026-11-05T12:00:00.000Z',receiptAgeSeconds:10,
+  cancelledOriginDraftCount:1,otherObservedOrderCount:1};
+ const candidates=[
+  {...blank.sources[2],cancelledOriginDraftCount:0,otherObservedOrderCount:0},
+  {...validPo,cancelledOriginDraftCount:undefined,otherObservedOrderCount:undefined},
+  {...validPo,reason:'PROJECTION_DRIFT',status:'HOLD',observedCount:3},
+ ];
+ for(const po of candidates){
+  const data={...blank,sources:[...blank.sources.slice(0,2),po]};
+  const res=response();
+  await createOntologyHealthHandler({getSession:founder,
+   getStore:()=>({getOntologySourceHealth:async()=>data})})(req(),res);
+  assert.equal(res.code,503);
+  assert.equal(res.body.data.status,'HOLD');
+ }
+});

@@ -3,6 +3,7 @@
 \i supabase/migrations/20261105083000_ontology_source_health_v1.sql
 \i supabase/migrations/20261105100000_ontology_source_health_projection_drift_v2.sql
 \i supabase/migrations/20261105123500_ontology_source_health_demand_lineage_v3.sql
+\i supabase/migrations/20261105130000_ontology_source_health_unknown_po_v4.sql
 
 do $$
 declare r jsonb;
@@ -10,6 +11,9 @@ begin
  r:=public.vaos_ontology_source_health_v1('test-only-server-key');
  if r->>'status'<>'HOLD' or jsonb_array_length(r->'sources')<>3 then raise exception 'ONTOLOGY_HEALTH_NOT_HOLD: %',r; end if;
  if r->'sources'->1->>'reason'<>'NO_SIGNED_RECEIPT' or r->'sources'->1->>'observedCount' is not null then raise exception 'FABRICATED_ZERO_STOCK: %',r; end if;
+ if r->'sources'->2 ? 'cancelledOriginDraftCount'
+    or r->'sources'->2 ? 'otherObservedOrderCount'
+ then raise exception 'UNKNOWN_PO_EVIDENCE_FABRICATED_ZERO: %',r->'sources'->2; end if;
  if has_function_privilege('anon','public.vaos_ontology_source_health_v1(text)','EXECUTE') or has_function_privilege('authenticated','public.vaos_ontology_source_health_v1(text)','EXECUTE') then raise exception 'ONTOLOGY_HEALTH_RPC_LEAK'; end if;
  begin
   perform public.vaos_ontology_source_health_v1('invalid-key');
@@ -99,6 +103,14 @@ begin
     or health->>'agentUsable'<>'false'
     or health->>'productionWriteAuthorized'<>'false'
  then raise exception 'SOURCE_CANCELLED_DRAFT_SUMMARY_INCORRECT: %',po; end if;
- raise notice 'Cancelled-origin draft aggregation and non-authority PASS';
+ -- A corrupted PO projection cannot return apparently classified draft counts.
+ update vaos_private.ontology_source_watermarks
+    set observed_count=3 where source_kind='purchaseOrders';
+ health:=public.vaos_ontology_source_health_v1('test-only-server-key');
+ po:=health->'sources'->2;
+ if po->>'status'<>'HOLD' or po->>'reason'<>'PROJECTION_DRIFT'
+    or po ? 'cancelledOriginDraftCount' or po ? 'otherObservedOrderCount'
+ then raise exception 'DRIFTED_PO_SUMMARY_FABRICATED: %',po; end if;
+ raise notice 'Cancelled-origin draft aggregation, missing-receipt and drift HOLD PASS';
 end $$;
 rollback;

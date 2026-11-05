@@ -25,7 +25,10 @@ function valid(data){
     Object.keys(s).every(k=>FIELDS.has(k))&&
     s.sourceKind===expected.kind&&s.objectType===expected.type&&
     s.sloSeconds===expected.slo&&['HOLD','SOURCE_UNVERIFIED'].includes(s.status)&&
-    ['NO_SIGNED_RECEIPT','RECEIPT_CLOCK_AHEAD','EXTRACTION_OVERDUE','SOURCE_REVISION_UNVERIFIED'].includes(s.reason)&&
+    ['NO_SIGNED_RECEIPT','RECEIPT_CLOCK_AHEAD','EXTRACTION_OVERDUE','PROJECTION_DRIFT','SOURCE_REVISION_UNVERIFIED'].includes(s.reason)&&
+    (s.status==='SOURCE_UNVERIFIED'
+      ? s.reason==='SOURCE_REVISION_UNVERIFIED'&&s.observedCount===s.projectionCount
+      : s.reason!=='SOURCE_REVISION_UNVERIFIED')&&
     (s.observedCount===null||(Number.isSafeInteger(s.observedCount)&&s.observedCount>=0&&s.observedCount<=100))&&
     Number.isSafeInteger(s.projectionCount)&&s.projectionCount>=0&&s.projectionCount<=100&&
     (s.lastExtractedAt===null||(typeof s.lastExtractedAt==='string'&&

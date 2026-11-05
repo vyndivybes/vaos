@@ -1,6 +1,7 @@
 -- This is intentionally independent of the live VAOS database.
 \i scripts/qualification/ontology-receipt-postgres.sql
 \i supabase/migrations/20261105083000_ontology_source_health_v1.sql
+\i supabase/migrations/20261105100000_ontology_source_health_projection_drift_v2.sql
 
 do $$
 declare r jsonb;

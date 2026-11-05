@@ -1,5 +1,6 @@
 // Governed, read-only visual navigation. This catalog never authorizes actions.
 export const VISUAL_MODES=Object.freeze([
+ Object.freeze({id:'overview',title:'Executive visual cockpit',kicker:'KPI · FLOWS · PLANNING',description:'Illustration-grade, multi-chart enterprise cockpit with interactive drill-down and explicitly unverified scenario KPIs.',href:'/visual-intelligence.html?viz=overview',renderer:'embed',label:'Executive cockpit'}),
  Object.freeze({id:'sankey',title:'Sankey process flows',kicker:'FLOW · LOSS · TRANSFER',description:'Interactive, quantity-scaled process flows. Synthetic or unverified user scenario only; no source-to-source material balance claimed.',href:'/visual-intelligence.html?viz=sankey',renderer:'embed',label:'Sankey flows'}),
  Object.freeze({id:'factory',title:'Factory digital twin preview',kicker:'3D · STATIONS · SCENARIO',description:'Rotatable isometric 3D plant topology with scenario station states. Not a machine-connected or certified physical twin.',href:'/visual-intelligence.html?viz=factory',renderer:'embed',label:'3D factory preview'}),
  Object.freeze({id:'simulation',title:'Predictive scenario simulation',kicker:'MONTE CARLO · P10 / P50 / P90',description:'Reproducible, browser-only probabilistic cash scenarios from explicitly entered hypothetical assumptions; not an approved forecast.',href:'/visual-intelligence.html?viz=simulation',renderer:'embed',label:'Monte Carlo'}),
@@ -24,6 +25,7 @@ export function getVisualMode(id){
 
 // Priority is intentional: specialized requests outrank generic dashboard terms.
 const INTENTS=[
+ ['overview',/\b(executive\s*visual\s*cockpit|visual\s*overview|intelligence\s*overview|visual\s*dashboard|executive\s*cockpit)\b/],
  ['sankey',/\b(sankey|material\s*flow\s*(diagram|visual)|flow\s*diagram)\b/],
  ['factory',/\b(factory\s*(digital\s*)?twin|3d\s*factory|manufacturing\s*(digital\s*)?twin|factory\s*layout)\b/],
  ['simulation',/\b(monte\s*carlo|predictive\s*simulation|scenario\s*(simulation|analysis)|probability\s*band)\b/],

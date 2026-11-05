@@ -1,19 +1,19 @@
-import {planJarvisTool} from './lib/jarvis-tools.mjs';
+import {planJarvisTool} from './lib/jarvis-tools.mjs?v=20261105-official-navigation';
 import {mountJarvisTools} from './lib/jarvis-tools-ui.mjs';
 import {resolveFounderGoogleIntent,resolveFounderCalendarReadIntent,formatFounderCalendarEvents} from './lib/founder-google-intents.mjs';
 import {formatFederatedVoiceEvidence} from './lib/federated-voice-report.mjs';
 import {resolveVoiceIntent} from './lib/voice-intelligence.mjs';
 import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-timing.mjs';
 import {createG6Conversation,createG6BargeInListener} from './lib/g6-conversation.mjs';
-import {isAdvisoryQuestion} from './lib/business-advice.mjs';
+import {isAdvisoryQuestion,isPublicIndustryResearchQuestion} from './lib/business-advice.mjs?v=20261105-public-research';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
 import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261016-audible-wake-v1';
-import {createVoiceReadback} from './lib/voice-readback.mjs';
+import {createVoiceReadback} from './lib/voice-readback.mjs?v=20261105-voice-error-detail';
 import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone-diagnostics.mjs';
 import {prepareLocalSpeech,chooseConversationSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
 import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
 import {founderLoginGreeting} from './lib/founder-voice-identity.mjs';
-import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady} from './lib/local-neural-speech.mjs';
+import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady,neuralSpeechFailureMessage} from './lib/local-neural-speech.mjs';
 import {mountConversationMemory,historicalQuery,formatHistoricalAnswer} from './lib/conversation-memory-ui.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // Business reads retain their original gates. Local tools require pairing and
@@ -60,7 +60,7 @@ export function shouldUseAdaptiveAnswer(intent,selected){
  if(selected!==true||!intent||intent.kind==='DENY'||intent.kind==='STARTUP')return false;
  if(intent.domain==='conversation')return false;
  // Public news/trend questions use the source-attributed RSS advisor, even with Adaptive selected.
- if(intent.kind==='ADVISORY'&&/\b(?:news|(?:market|industry|sector)\s+(?:trends?|outlook))\b/i.test(intent.question||''))return false;
+ if(intent.kind==='ADVISORY'&&isPublicIndustryResearchQuestion(intent.question||''))return false;
  if(['governance','missions'].includes(intent.domain)||intent.domain==='engineering')return false;
  if(intent.kind==='ADVISORY'||intent.domain==='group')return true;
  if(/\b(?:weather|rain|temperature|snow|humidity|storm)\b/i.test(intent.question||''))return true;
@@ -279,7 +279,7 @@ function init(){
   language:()=>({ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'}[answerLanguage]||'en-US'),
   onState:mode=>{if(mode==='QUEUED')setStatus('Voice queued; checking audio output.');
     if(mode==='SPEAKING'){setStatus('VAOS is speaking.');startInterruption();}},
-  onError:code=>setStatus('Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
+  onError:code=>setStatus(/^(?:ELEVENLABS|NEURAL)_/.test(code)?neuralSpeechFailureMessage(code):'Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
   onFinished:mode=>{stopInterruption();if(mode==='FINISHED')setStatus('Spoken answer completed.');wake?.resume();state();}
  });
  const acknowledgement=createVoiceAcknowledgement({
@@ -427,6 +427,11 @@ function init(){
   voiceRequestPending=false;
   let toolPlan;
   try{toolPlan=planJarvisTool(input.value);}catch(e){setStatus(e.message);return;}
+  if(toolPlan?.kind==='site.open'){
+   // Native navigation opens only the exact company URL, with no companion or popup required.
+   window.location.assign(toolPlan.input.url);
+   return;
+  }
   if(toolPlan){
    wake?.pause();cancel();busy=true;lastExchange=null;state();
    const abort=new AbortController();controller=abort;

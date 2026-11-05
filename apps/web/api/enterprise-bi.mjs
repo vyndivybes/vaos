@@ -27,13 +27,14 @@ export function createEnterpriseBiHandler({
   const session=sessionVerifier(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE]);
   if(!session)return res.status(401).json(apiError('UNAUTHENTICATED','Sign in required'));
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder identity required'));
-  let from,to,employeeId,limit,offset,sourceTable;
+  let from,to,employeeId,limit,offset,sourceTable,executive;
   try{
    const query=new URL(req.url).searchParams;
-   if([...query.keys()].some(k=>!['from','to','employee','limit','offset','source','primary','crm'].includes(k))||
+   if([...query.keys()].some(k=>!['from','to','employee','limit','offset','source','primary','crm','executive'].includes(k))||
      [...query.keys()].some(k=>query.getAll(k).length!==1))throw Error();
    from=query.get('from');to=query.get('to');employeeId=query.get('employee')||'all';
-   sourceTable=query.get('source');
+   sourceTable=query.get('source');executive=query.get('executive')==='1';
+   if(query.has('executive')&&query.get('executive')!=='1')throw Error();
    if(sourceTable&&(employeeId==='all'||!/^[_a-z][_a-z0-9]{0,95}$/.test(sourceTable)))throw Error();
    const rawLimit=query.get('limit')||'30',rawOffset=query.get('offset')||'0';
    if(!/^\d+$/.test(rawLimit)||!/^\d+$/.test(rawOffset))throw Error();
@@ -43,7 +44,8 @@ export function createEnterpriseBiHandler({
      Date.parse(to)-Date.parse(from)>366*86400000||
      (employeeId!=='all'&&!EMPLOYEES.has(employeeId))||
      !Number.isSafeInteger(limit)||limit<1||limit>100||
-     !Number.isSafeInteger(offset)||offset<0||offset>5000)throw Error();
+     !Number.isSafeInteger(offset)||offset<0||offset>5000||
+     (executive&&(employeeId!=='all'||sourceTable||offset!==0||query.has('primary')||query.has('crm'))))throw Error();
   }catch{return res.status(422).json(apiError('VALIDATION_ERROR','Valid employee, from, to and bounded pagination required'));}
   if(!req.env?.VYNDI||typeof req.env.VYNDI.fetch!=='function')
    return res.status(503).json(apiError('VYNDI_SOURCE_UNAVAILABLE','Signed VYNDI service binding unavailable'));
@@ -52,11 +54,15 @@ export function createEnterpriseBiHandler({
    const evidence=await client.execute({id:crypto.randomUUID(),intentId:crypto.randomUUID(),
     actionType:'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI',
     payload:{missionId:'founder:enterprise-bi',from,to,employeeId,limit,offset,
+     ...(executive?{executiveOnly:true}:{}),
      ...(sourceTable?{sourceTable}:{}),...(new URL(req.url).searchParams.get('primary')==='1'?{primaryOnly:true}:{}),...(new URL(req.url).searchParams.get('crm')==='1'?{crm:true}:{})}});
    const data=evidence?.data;
    if(data?.schemaVersion!=='VYNDI_ENTERPRISE_BI_V1'||data.readOnly!==true||
       data.period?.from!==from||data.period?.to!==to||data.scope!==employeeId||
-      !Array.isArray(data.departments))throw Error('INVALID_ENTERPRISE_SOURCE');
+      !Array.isArray(data.departments)||
+      (executive&&(data.executiveSignals?.schemaVersion!=='VYNDI_EXECUTIVE_SIGNALS_V1'||
+       data.executiveSignals?.readOnly!==true||!data.executiveSignals?.datasets||
+       typeof data.executiveSignals.datasets!=='object')))throw Error('INVALID_ENTERPRISE_SOURCE');
    return res.status(200).json({data});
   }catch{
    return res.status(503).json(apiError('ENTERPRISE_BI_HOLD',

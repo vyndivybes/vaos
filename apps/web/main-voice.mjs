@@ -39,6 +39,10 @@ export function classifyDashboardQuestion(value){
  if(!MODIFICATION.test(q)&&/\b(startup|prelaunch|start (?:my |the )?company|company readiness|first records|next startup actions)\b/i.test(q))return {kind:'STARTUP',question:q};
  const route=resolveVoiceIntent(q);
  if(route.reason==='BLOCKED_OR_UNBOUNDED')return {kind:'DENY',question:q};
+ // Explicit public industry questions are research, not a controlled engineering release.
+ if(/\b(market|industry|competitor|trends?|news|sector)\b/i.test(q)
+    &&isAdvisoryQuestion(q)&&planAdaptiveReads(q).state!=='DENIED')
+   return {kind:'ADVISORY',question:q,domain:'advisory'};
  if(['CONTROLLED_ENGINEERING_AUTHORITY','MISSION_RECOVERY_EXPLANATION','READ_ONLY_AUTHORITY_EXPLANATION'].includes(route.reason)||['missions','governance'].includes(route.domain))
   return {kind:'INSIGHT',question:q,domain:route.domain};
  if(isAdvisoryQuestion(q)&&planAdaptiveReads(q).state!=='DENIED')return {kind:'ADVISORY',question:q,domain:'advisory'};

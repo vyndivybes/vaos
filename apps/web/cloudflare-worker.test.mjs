@@ -273,10 +273,10 @@ test('Ontology founder canary is explicit, source-scoped and read-only in the wo
 test('Ontology evidence and workspace directory occupy separate desktop grid rows',async()=>{
  const css=await readFile(new URL('./vaos-interface.css',import.meta.url),'utf8');
  // Regression: PR #470 introduced a second .fc-business into a fixed grid row.
- assert.doesNotMatch(css,/#command-view>\\.fc-business\\s*\\{grid-column:2;grid-row:3/);
- assert.match(css,/#command-view>#cockpit-business\\s*\\{grid-column:2;grid-row:3/);
- assert.match(css,/#command-view>#ontology-evidence\\s*\\{grid-column:1\\/-1;grid-row:4/);
- assert.match(css,/#command-view>\\.fc-workforce\\s*\\{grid-column:1\\/-1;grid-row:5/);
- assert.match(css,/#ontology-health-sources\\s*\\{[^}]*display:grid/);
- assert.match(css,/@media\\(max-width:720px\\)[^{]*\\{[^}]*#ontology-health-sources/);
+ assert.equal(css.includes('#command-view>.fc-business{grid-column:2;grid-row:3'),false);
+ assert.ok(css.includes('#command-view>#cockpit-business{grid-column:2;grid-row:3'));
+ assert.ok(css.includes('#command-view>#ontology-evidence{grid-column:1/-1;grid-row:4'));
+ assert.ok(css.includes('#command-view>.fc-workforce{grid-column:1/-1;grid-row:5'));
+ assert.ok(css.includes('#ontology-health-sources{display:grid'));
+ assert.ok(css.includes('@media(max-width:720px){body.va-premium.workspace-body #ontology-health-sources'));
 });

@@ -5,12 +5,14 @@ import {featureControl} from '../lib/feature-flags.mjs';
 import {createSupabaseControlStore} from '../../../platform/persistence/supabase-store.mjs';
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createVyndiReadBridgeClient} from '../../../platform/execution/vyndi-read-bridge-client.mjs';
+import {VYNDI_SOURCE_RECEIPT_ROUTES} from '../../../platform/execution/vyndi-source-receipt.mjs';
+import {getVyndiBridgeRoute} from '../../../packages/contracts/vyndi-write-bridge.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
-const ALLOWED=Object.freeze({
- inventory:Object.freeze({actionType:'INVENTORY.OBSERVE_STOCK',sourceAuthority:'getAuthoritativeInventory'}),
- shortages:Object.freeze({actionType:'PROCUREMENT.OBSERVE_SHORTAGE',sourceAuthority:'getConfiguredDemandShortages'}),
- purchaseOrders:Object.freeze({actionType:'PROCUREMENT.OBSERVE_OPEN_POS',sourceAuthority:'listOpenPurchaseOrders'}),
-});
+const ALLOWED=Object.fromEntries(
+ Object.entries(VYNDI_SOURCE_RECEIPT_ROUTES).map(([actionType,{kind}])=>[
+  kind,{actionType,sourceAuthority:getVyndiBridgeRoute(actionType).authority},
+ ]),
+);
 function makeReader(env){return createVyndiReadBridgeClient({
  signer:createSupabaseControlStore(resolveDurableControlConfig(env)),
  serviceBinding:env?.VYNDI,

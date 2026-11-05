@@ -1,19 +1,14 @@
 /** No automatic production ingestion: explicit gate and trusted signed-client receipt only.
  * This prepares a call to a server-controlled service-role RPC; it never
  * supplies credentials or promotes source extracts to business authority. */
-import {checkVyndiSourceReceipt} from '../execution/vyndi-source-receipt.mjs';
-const MAP=Object.freeze({
- 'INVENTORY.OBSERVE_STOCK':'inventory',
- 'PROCUREMENT.OBSERVE_SHORTAGE':'shortages',
- 'PROCUREMENT.OBSERVE_OPEN_POS':'purchaseOrders',
-});
+import {checkVyndiSourceReceipt,VYNDI_SOURCE_RECEIPT_ROUTES} from '../execution/vyndi-source-receipt.mjs';
 const HOLD=(reason)=>Object.freeze({status:'HOLD',reason,agentUsable:false,
  actionAuthorized:false,productionWriteAuthorized:false});
 export function createDurableReceiptIngestor({writeReceipt,enabled=false}={}){
  return Object.freeze({
   async store(observation){
    if(enabled!==true)return HOLD('DURABLE_ONTOLOGY_INGEST_DISABLED');
-   const kind=MAP[observation?.actionType];
+   const kind=VYNDI_SOURCE_RECEIPT_ROUTES[observation?.actionType]?.kind;
    if(!kind||observation?.readOnly!==true||
      observation?.effectClass!=='read'||observation?.sourceReceiptChecked!==true||
      observation?.sourceCompletenessVerified!==false||

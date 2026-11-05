@@ -280,3 +280,19 @@ test('Ontology evidence and workspace directory occupy separate desktop grid row
  assert.ok(css.includes('#ontology-health-sources{display:grid'));
  assert.ok(css.includes('@media(max-width:720px){body.va-premium.workspace-body #ontology-health-sources'));
 });
+
+test('scheduled Ontology HOLD writes sanitized diagnostic to existing R2 and fails visibly',async()=>{
+ let task,record,key;
+ const env={VAOS_FEATURE_FLAGS:JSON.stringify({VAOS_ONTOLOGY_AUTO_REFRESH_CONTROL:'signed-readonly-v1'}),
+  VAOS_ARTIFACTS:{put:async(k,v)=>{key=k;record=JSON.parse(v);}}};
+ await cloudflareWorker.scheduled({cron:'5,15,25,35,45,55 * * * *',
+  scheduledTime:Date.UTC(2026,10,5,13,15)},env,{waitUntil(p){task=p;}});
+ await assert.rejects(task,/VAOS_ONTOLOGY_REFRESH_HOLD/);
+ assert.equal(key,'runtime/ontology/last-refresh.json');
+ assert.equal(record.status,'HOLD');
+ assert.equal(record.reason,'SIGNED_READER_UNAVAILABLE');
+ assert.equal(record.agentUsable,false);
+ assert.equal(record.productionWriteAuthorized,false);
+ assert.deepEqual(record.sources,[]);
+ assert.ok(!JSON.stringify(record).includes('VAOS_DB_RPC_SECRET'));
+});

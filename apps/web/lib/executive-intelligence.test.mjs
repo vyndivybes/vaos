@@ -71,3 +71,47 @@ test('manual CRM assumption is bounded; never promoted to conversion forecast or
  assert.equal(r.crm.forecastQualified,false);
  assert.equal(Object.hasOwn(r.crm,'projectedRevenue'),false);
 });
+
+test('queryable empty business sources never qualify forecasting, HR payroll or logistics',()=>{
+ const p=report();
+ p.executiveSignals.datasets.crmCustomers=rows();
+ p.executiveSignals.datasets.crmFollowups=rows();
+ p.executiveSignals.datasets.hrWorkforce=rows(
+  {category:'planned_role',status:'draft',record_count:22},
+  {category:'employee',status:'approved',record_count:1});
+ p.executiveSignals.datasets.hrAttendance=rows();
+ p.executiveSignals.datasets.hrPayrollReadiness=rows();
+ p.executiveSignals.datasets.dispatch=rows();
+ const r=projectExecutiveIntelligence(p,null);
+ assert.equal(r.sourceCoverage.observed,3,'signed aggregate source queries are connected');
+ assert.equal(r.crm.status,'OBSERVED','zero source rows are observed rather than missing');
+ assert.equal(r.dataReadiness.crm.status,'HOLD');
+ assert.equal(r.dataReadiness.crm.reason,'No CRM customer and conversion history for a predictive forecast.');
+ assert.equal(r.dataReadiness.hr.status,'HOLD');
+ assert.match(r.dataReadiness.hr.reason,/attendance.*payroll/i);
+ assert.equal(r.dataReadiness.logistics.status,'HOLD');
+ assert.match(r.dataReadiness.logistics.reason,/no dispatch history/i);
+ assert.equal(r.dataReadiness.finance.status,'HOLD');
+ assert.equal(r.dataReadiness.groupConsolidation.status,'HOLD');
+ assert.equal(r.hr.approvedPersonnelRecords,1,'draft planned roles are not approved staff');
+ assert.equal(r.hr.absentObservations,0,'observed empty remains zero, not unknown');
+ assert.equal(r.logistics.shipmentsRecorded,0);
+});
+test('populated CRM and dispatch still cannot claim predictive calibration or carrier optimization',()=>{
+ const r=projectExecutiveIntelligence(report(),finance);
+ assert.equal(r.dataReadiness.crm.status,'HOLD');
+ assert.match(r.dataReadiness.crm.reason,/win.loss/i);
+ assert.equal(r.dataReadiness.hr.status,'HOLD');
+ assert.match(r.dataReadiness.hr.reason,/payroll/i);
+ assert.equal(r.dataReadiness.logistics.status,'HOLD');
+ assert.match(r.dataReadiness.logistics.reason,/carrier/i);
+ assert.equal(r.dataReadiness.finance.status,'OBSERVED');
+ assert.equal(r.dataReadiness.groupConsolidation.status,'HOLD');
+});
+test('invalid executive evidence reports source HOLD and no guessed business readiness',()=>{
+ const p=report();p.executiveSignals.datasets.crmCustomers.rows[0].email='secret';
+ const r=projectExecutiveIntelligence(p,null);
+ assert.equal(r.dataReadiness.crm.status,'HOLD');
+ assert.match(r.dataReadiness.crm.reason,/unavailable/i);
+ assert.ok(!JSON.stringify(r).includes('secret'));
+});

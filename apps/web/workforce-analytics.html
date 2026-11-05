@@ -43,6 +43,21 @@
    <p id="wa-cash-scenario-status" role="status" aria-live="polite">Awaiting qualified ledger cash. No scenario calculated.</p>
    <div id="wa-cash-scenario-results" role="region" aria-label="Hypothetical weekly cash scenarios"></div>
   </details>
+ </section>
+ <section class="wa-period-card" aria-labelledby="wa-executive-bi-title">
+  <div class="wa-heading"><div><h2 id="wa-executive-bi-title">Enterprise decision intelligence</h2>
+   <p>CRM · Human HR · Dispatch logistics · Financial consolidation readiness</p></div>
+   <button type="button" id="wa-exec-refresh">Verify executive sources</button>
+  </div>
+  <p class="wa-period-note">Signed, aggregate-only VYNDI sources. No customer contact records, personnel identities or payroll amounts are displayed. This report does not execute business actions.</p>
+  <div class="wa-period-controls">
+   <label for="wa-exec-conversion">Illustrative prospect conversion (%)
+    <input id="wa-exec-conversion" type="number" min="0" max="100" step="1" value="20" required>
+   </label>
+  </div>
+  <p id="wa-exec-status" role="status" aria-live="polite">Select a period and verify the signed sources. Unavailable values remain HOLD, not zero.</p>
+  <div id="wa-exec-kpis" class="wa-stats" aria-label="Enterprise intelligence metrics"></div>
+  <div id="wa-exec-brief" class="wa-period-list" aria-label="Source provenance, risk exceptions and qualification limits"></div>
  </section><section class="wa-panel" aria-labelledby="wa-business-title"><h2 id="wa-business-title">Approved plan and closed actuals</h2><div id="wa-business-comparison" role="region" aria-label="Approved demand plan compared with closed actuals"></div>
 <p>Open Departments for all 16 reports, source coverage and records. Select an employee to inspect its business records alongside verified work, audits and approved plans.</p>
  <details class="wa-accordion"><summary>Profitability and business KPI definitions</summary>
@@ -184,4 +199,4 @@
   <details class="wa-accordion"><summary>Forecast qualification and provenance-backed founder reports</summary>
    <p>Forecasts need approved dated baselines, source integrity and independent backtests. Historical reports do not prove outbound delivery.</p>
    <div id="wa-forecast-work" class="wa-action-list"></div></details>
- </section></div><footer class="premium-footer"><span>VĀYŪ SHASTR <b> / VAOS</b></span><p>Source-backed reporting · Human authority</p><a href="/founder-console.html">Founder Command ↗</a></footer></main><script type="module" src="/premium.mjs"></script><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/financial-performance.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script><script type="module" src="/bi-entry.mjs"></script><script type="module" src="/vaos-interface.mjs"></script></body></html>
+ </section></div><footer class="premium-footer"><span>VĀYŪ SHASTR <b> / VAOS</b></span><p>Source-backed reporting · Human authority</p><a href="/founder-console.html">Founder Command ↗</a></footer></main><script type="module" src="/premium.mjs"></script><script type="module" src="/workforce-analytics.mjs"></script><script type="module" src="/vyndi-department-report.mjs"></script><script type="module" src="/financial-performance.mjs"></script><script type="module" src="/executive-intelligence.mjs"></script><script type="module" src="/enterprise-bi.mjs"></script><script type="module" src="/bi-entry.mjs"></script><script type="module" src="/vaos-interface.mjs"></script></body></html>

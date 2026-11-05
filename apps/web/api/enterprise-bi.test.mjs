@@ -62,3 +62,27 @@ test('specialist pagination scope is bounded and forwarded inside the signed req
   const bad=res();await handler(req(query+suffix),bad);assert.equal(bad.statusCode,422);
  }
 });
+
+test('executive-only mode forwards signed scope without allowing employee or source bypass',async()=>{
+ let captured;
+ const input={schemaVersion:'VYNDI_ENTERPRISE_BI_V1',readOnly:true,scope:'all',
+  period:{from:'2026-10-01',to:'2026-10-15'},departments:[],
+  executiveSignals:{schemaVersion:'VYNDI_EXECUTIVE_SIGNALS_V1',readOnly:true,datasets:{}}};
+ const handler=createEnterpriseBiHandler({sessionVerifier:founder,getStore:()=>({}),
+  bridgeFactory:()=>({execute:async job=>{captured=job;return {data:input};}})});
+ const good=res();await handler(req(query+'&executive=1'),good);
+ assert.equal(good.statusCode,200);
+ assert.equal(captured.payload.executiveOnly,true);
+ assert.equal(captured.actionType,'ORCHESTRATOR.OBSERVE_ENTERPRISE_BI');
+ for(const suffix of ['&executive=true','&executive=1&employee=finance',
+  '&executive=1&source=vyndi_people_records','&executive=1&offset=4','&executive=1&crm=1',
+  '&executive=1&executive=1']){
+  const bad=res();await handler(req(query+suffix),bad);assert.equal(bad.statusCode,422);
+ }
+});
+test('missing signed executive signal version fails closed',async()=>{
+ const handler=createEnterpriseBiHandler({sessionVerifier:founder,getStore:()=>({}),
+  bridgeFactory:()=>({execute:async()=>({data:{schemaVersion:'VYNDI_ENTERPRISE_BI_V1',
+   readOnly:true,scope:'all',departments:[],period:{from:'2026-10-01',to:'2026-10-15'}}})})});
+ const r=res();await handler(req(query+'&executive=1'),r);assert.equal(r.statusCode,503);
+});

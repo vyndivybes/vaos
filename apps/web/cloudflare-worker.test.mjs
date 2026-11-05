@@ -178,7 +178,7 @@ test('production voice and workforce pages ship their complete browser module de
   return rules.includes('lib/*')&&!rules.includes('!'+path);
  };
  const visited=new Set();
- const queue=['main-voice.mjs','mission-status.mjs','agent-supervision.mjs','workforce-analytics.mjs','workspace.mjs','group-dashboard.mjs','module-dashboard.mjs','business-analytics.mjs','financial-performance.mjs','enterprise-bi.mjs'];
+ const queue=['main-voice.mjs','mission-status.mjs','agent-supervision.mjs','workforce-analytics.mjs','workspace.mjs','group-dashboard.mjs','module-dashboard.mjs','business-analytics.mjs','financial-performance.mjs','executive-intelligence.mjs','enterprise-bi.mjs'];
  while(queue.length){
   const path=queue.shift();if(visited.has(path))continue;
   visited.add(path);

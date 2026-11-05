@@ -73,3 +73,32 @@ test('projection drift stays HOLD and contradictory ready-looking metadata is re
   assert.equal(denied.body.data.status,'HOLD');
  }
 });
+
+test('founder-only cancelled-origin draft summary remains non-authoritative and omits PO rows',async()=>{
+ const data={...blank,sources:[
+  ...blank.sources.slice(0,2),
+  {...blank.sources[2],status:'SOURCE_UNVERIFIED',reason:'SOURCE_REVISION_UNVERIFIED',
+    observedCount:2,projectionCount:2,lastExtractedAt:'2026-11-05T11:45:00.000Z',
+    receiptAgeSeconds:15,cancelledOriginDraftCount:1,otherObservedOrderCount:1}
+ ]};
+ const h=createOntologyHealthHandler({getSession:founder,
+  getStore:()=>({getOntologySourceHealth:async()=>data})});
+ const accepted=response();await h(req(),accepted);
+ assert.equal(accepted.code,200);
+ assert.equal(accepted.body.data.sources[2].cancelledOriginDraftCount,1);
+ assert.equal(accepted.body.data.sources[2].otherObservedOrderCount,1);
+ assert.equal(accepted.body.data.agentUsable,false);
+ assert.equal(accepted.body.data.productionWriteAuthorized,false);
+ for(const invalid of [
+  {...data,sources:[...data.sources.slice(0,2),{...data.sources[2],cancelledOriginDraftCount:3}]},
+  {...data,sources:[...data.sources.slice(0,2),{...data.sources[2],otherObservedOrderCount:-1}]},
+  {...data,sources:[...data.sources.slice(0,2),{...data.sources[2],records:[{id:'SECRET'}]}]},
+  {...data,sources:[{...data.sources[0],cancelledOriginDraftCount:1},...data.sources.slice(1)]}
+ ]){
+  const denied=response();await createOntologyHealthHandler({getSession:founder,
+   getStore:()=>({getOntologySourceHealth:async()=>invalid})})(req(),denied);
+  assert.equal(denied.code,503);
+  assert.equal(denied.body.data.status,'HOLD');
+  assert.equal(JSON.stringify(denied.body).includes('SECRET'),false);
+ }
+});

@@ -19,11 +19,13 @@ function addNote(host,title,description){
 }
 function render(){
  let result;
- try{result=projectExecutiveIntelligence(enterprise,finance,{conversionPct:Number($('wa-exec-conversion').value)});}
+ try{if($('wa-exec-conversion').value.trim()==='')throw Error('BI_ASSUMPTION_INVALID');
+  result=projectExecutiveIntelligence(enterprise,finance,{conversionPct:Number($('wa-exec-conversion').value)});}
  catch{clear('Enter a conversion assumption from 0 to 100%.');return;}
  clear(result.status==='HOLD'?'HOLD — No qualified signed executive data was returned.':
   'Executive source evidence: '+result.sourceCoverage.observed+' / '+result.sourceCoverage.required+
-  ' functional groups. Reporting period '+result.period.from+' to '+result.period.to+'. Company consolidation remains HOLD.');
+  ' functional groups. Finance period '+result.period.from+' to '+result.period.to+
+  '. CRM, HR and dispatch are current/all-recorded-date aggregates, not period activity. Company consolidation remains HOLD.');
  const host=$('wa-exec-kpis'),detail=$('wa-exec-brief');
  const {crm,hr,logistics,finance:financial}=result;
  addMetric(host,'CRM prospects',display(crm.prospectCustomers),'Current customer master · '+crm.status);

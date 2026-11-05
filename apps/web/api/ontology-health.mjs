@@ -10,7 +10,8 @@ const KINDS=Object.freeze([
  {kind:'purchaseOrders',type:'PurchaseOrder',slo:3600},
 ]);
 const FIELDS=new Set(['sourceKind','objectType','status','reason','observedCount',
- 'projectionCount','lastExtractedAt','receiptAgeSeconds','sloSeconds']);
+ 'projectionCount','lastExtractedAt','receiptAgeSeconds','sloSeconds',
+ 'cancelledOriginDraftCount','otherObservedOrderCount']);
 const hold=(reason)=>({status:'HOLD',reason,sources:[],readOnly:true,
  sourceCompletenessVerified:false,agentUsable:false,
  actionAuthorized:false,productionWriteAuthorized:false});
@@ -36,7 +37,15 @@ function valid(data){
     (s.receiptAgeSeconds===null||(Number.isSafeInteger(s.receiptAgeSeconds)&&s.receiptAgeSeconds>=0))&&
     (s.observedCount!==null||(s.status==='HOLD'&&s.reason==='NO_SIGNED_RECEIPT'&&
       s.lastExtractedAt===null&&s.receiptAgeSeconds===null))&&
-    (s.observedCount===null||s.lastExtractedAt!==null);
+    (s.observedCount===null||s.lastExtractedAt!==null)&&
+    (s.sourceKind==='purchaseOrders'?
+      ((s.cancelledOriginDraftCount===undefined&&s.otherObservedOrderCount===undefined)||
+       (Number.isSafeInteger(s.cancelledOriginDraftCount)&&s.cancelledOriginDraftCount>=0&&
+        Number.isSafeInteger(s.otherObservedOrderCount)&&s.otherObservedOrderCount>=0&&
+        s.cancelledOriginDraftCount+s.otherObservedOrderCount<=s.projectionCount&&
+        (s.status==='HOLD'||
+         s.cancelledOriginDraftCount+s.otherObservedOrderCount===s.projectionCount))):
+      s.cancelledOriginDraftCount===undefined&&s.otherObservedOrderCount===undefined);
   });
 }
 export function createOntologyHealthHandler({

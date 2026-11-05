@@ -73,6 +73,7 @@ function card(root,{mode,title,detail,eyebrow,wide='half',render}){
  action.type='button';action.dataset.openViz=mode;action.setAttribute('aria-label','Expand '+title);
  header.append(headings,action);
  const chart=element('div','av-dashboard-chart');
+ chart.dataset.chartMode=mode;
  const footer=element('div','av-dashboard-card-footer');
  footer.append(element('span','','SCENARIO / NOT LIVE'),
    element('span','',mode.toUpperCase()+' VIEW'));

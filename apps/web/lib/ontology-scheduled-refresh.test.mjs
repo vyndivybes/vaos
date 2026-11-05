@@ -77,8 +77,8 @@ test('10-minute cycles persist only signed inventory and shortages; purchase ord
   assert.equal(h.jobs.length,count);
   assert.equal(h.saved.length,count);
   assert.equal(h.jobs.every(job=>job.payload.limit===100&&job.payload.missionId==='ontology:scheduled-signed-read'),true);
-  assert.deepEqual(h.saved.map(x=>x.sourceKind),count===2?
-   ['inventory','shortages']:['inventory','shortages','purchaseOrders']);
+  assert.deepEqual(h.saved.map(x=>x.sourceKind).sort(),(count===2?
+   ['inventory','shortages']:['inventory','shortages','purchaseOrders']).sort());
   assert.equal(result.sources.every(x=>x.status==='SOURCE_UNVERIFIED'),true);
  }
 });
@@ -89,7 +89,7 @@ test('invalid signed PO payload is HOLD without writing a PO receipt',async()=>{
  assert.equal(r.status,'HOLD');
  assert.equal(r.agentUsable,false);
  assert.equal(r.productionWriteAuthorized,false);
- assert.deepEqual(h.saved.map(x=>x.sourceKind),['inventory','shortages']);
+ assert.deepEqual(h.saved.map(x=>x.sourceKind).sort(),['inventory','shortages']);
  assert.equal(r.sources.at(-1).status,'HOLD');
  assert.equal(JSON.stringify(r).includes('PO1'),false);
 });

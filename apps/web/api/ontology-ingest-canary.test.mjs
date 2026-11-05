@@ -23,7 +23,7 @@ async function observation(){
  const sourceRevision=Array.from(new Uint8Array(digest),n=>n.toString(16).padStart(2,'0')).join('');
  return {actionType:'INVENTORY.OBSERVE_STOCK',sourceAuthority:'getAuthoritativeInventory',
   readOnly:true,effectClass:'read',sourceReceiptChecked:true,sourceCompletenessVerified:false,
-  data:{...fields,schemaVersion:'VYNDI_ONTOLOGY_READ_RECEIPT_V1',sourceRevision,
+  actionAuthorized:false,productionWriteAuthorized:false,data:{...fields,schemaVersion:'VYNDI_ONTOLOGY_READ_RECEIPT_V1',sourceRevision,
    asOf:'2026-11-05T04:00:00.000Z',sourceRevisionAuthority:'CONTENT_DIGEST_ONLY',
    asOfAuthority:'EXTRACT_TIME_NOT_SOURCE_CHANGE_TIME',
    complete:true,hasMore:false,sourceCompletenessVerified:false,readOnly:true,
@@ -57,7 +57,8 @@ test('signed complete receipt persists once; response hides ERP records and all 
  const store={ingestOntologySourceReceipt:async receipt=>{
   writes++;saved=receipt;
   return {status:'SOURCE_UNVERIFIED',sourceKind:'inventory',receiptId:'receipt-1',
-   durableReceiptStored:true,agentUsable:false,productionWriteAuthorized:false};
+   durableReceiptStored:true,sourceCompletenessVerified:false,agentUsable:false,
+   actionAuthorized:false,productionWriteAuthorized:false};
  }};
  const handler=createOntologyIngestCanaryHandler({getSession:founder,getStore:()=>store,
   getReader:()=>({execute:async job=>{

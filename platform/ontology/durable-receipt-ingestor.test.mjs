@@ -14,8 +14,9 @@ const fixture=async()=>{const data={
   sourceKind:'inventory',sourceScope:'vyndi_inventory_balance:all'});
  const digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical));
  data.sourceRevision=Array.from(new Uint8Array(digest),x=>x.toString(16).padStart(2,'0')).join('');
- return {actionType:'INVENTORY.OBSERVE_STOCK',effectClass:'read',readOnly:true,
-  sourceReceiptChecked:true,sourceCompletenessVerified:false,data};
+ return {actionType:'INVENTORY.OBSERVE_STOCK',sourceAuthority:'getAuthoritativeInventory',
+  effectClass:'read',readOnly:true,sourceReceiptChecked:true,sourceCompletenessVerified:false,
+  actionAuthorized:false,productionWriteAuthorized:false,data};
 };
 test('disabled by default: no store call',async()=>{
  let calls=0;const adapter=createDurableReceiptIngestor({writeReceipt:async()=>{calls++;}});
@@ -25,7 +26,8 @@ test('disabled by default: no store call',async()=>{
 test('verified bounded observation reaches trusted store but is never agent usable',async()=>{
  let saved;const adapter=createDurableReceiptIngestor({enabled:true,
   writeReceipt:async data=>{saved=data;return {status:'SOURCE_UNVERIFIED',sourceKind:'inventory',
-   receiptId:'r-1',durableReceiptStored:true,agentUsable:false,productionWriteAuthorized:false}}});
+   receiptId:'r-1',durableReceiptStored:true,sourceCompletenessVerified:false,
+   agentUsable:false,actionAuthorized:false,productionWriteAuthorized:false}}});
  const r=await adapter.store(await fixture());
  assert.equal(r.status,'SOURCE_UNVERIFIED');assert.equal(r.agentUsable,false);
  assert.equal(r.productionWriteAuthorized,false);assert.equal(saved.sourceCount,1);
@@ -63,4 +65,38 @@ test('migration is private, RLS enabled, server-key guarded and never promotes O
  assert.match(sql,/sourceRevisionAuthority' is distinct from 'CONTENT_DIGEST_ONLY'/);
  assert.match(sql,/if v_old_as_of = v_as_of and v_old_digest = v_digest/);
  assert.match(sql,/'replay',true/);
+});
+
+test('only the expected signed read authority may submit an unprivileged observation',async()=>{
+ const good=await fixture();let writes=0;
+ const adapter=createDurableReceiptIngestor({enabled:true,
+  writeReceipt:async()=>{writes++;return {status:'SOURCE_UNVERIFIED'};}});
+ for(const observation of [
+  {...good,sourceAuthority:'self-certified'},
+  {...good,actionAuthorized:true},
+  {...good,productionWriteAuthorized:true},
+ ]){
+  const result=await adapter.store(observation);
+  assert.equal(result.status,'HOLD');
+ }
+ assert.equal(writes,0);
+});
+test('persistence cannot confirm a receipt without identity and explicit non-authority',async()=>{
+ const good=await fixture();
+ const valid={status:'SOURCE_UNVERIFIED',sourceKind:'inventory',receiptId:'r-1',
+  durableReceiptStored:true,sourceCompletenessVerified:false,agentUsable:false,
+  actionAuthorized:false,productionWriteAuthorized:false};
+ for(const bad of [
+  {...valid,receiptId:null},
+  {...valid,receiptId:' '},
+  {...valid,sourceCompletenessVerified:true},
+  {...valid,actionAuthorized:true},
+  {...valid,actionAuthorized:undefined},
+ ]){
+  const result=await createDurableReceiptIngestor({enabled:true,
+   writeReceipt:async()=>bad}).store(good);
+  assert.equal(result.status,'HOLD');
+  assert.equal(result.agentUsable,false);
+  assert.equal(result.productionWriteAuthorized,false);
+ }
 });

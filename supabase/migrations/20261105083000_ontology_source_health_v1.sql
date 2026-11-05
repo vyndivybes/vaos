@@ -16,16 +16,21 @@ begin
       'status',case
         when w.source_kind is null or w.last_extracted_at > now()
           or w.last_extracted_at < now() - pg_catalog.make_interval(secs => types.slo_seconds)
-          then 'HOLD' else 'SOURCE_UNVERIFIED' end,
+          then 'HOLD'
+        when w.observed_count is distinct from projections.current_count
+          or projections.visible_count is distinct from projections.current_count
+          then 'HOLD'
+        else 'SOURCE_UNVERIFIED' end,
       'reason',case when w.source_kind is null then 'NO_SIGNED_RECEIPT'
         when w.last_extracted_at > now() then 'RECEIPT_CLOCK_AHEAD'
         when w.last_extracted_at < now() - pg_catalog.make_interval(secs => types.slo_seconds)
           then 'EXTRACTION_OVERDUE'
+        when w.observed_count is distinct from projections.current_count
+          or projections.visible_count is distinct from projections.current_count
+          then 'PROJECTION_DRIFT'
         else 'SOURCE_REVISION_UNVERIFIED' end,
       'observedCount',w.observed_count,
-      'projectionCount',(select count(*)::integer
-        from vaos_private.ontology_projection_objects p
-        where p.source_kind=types.kind and p.present_in_latest_receipt),
+      'projectionCount',projections.visible_count,
       'lastExtractedAt',case when w.last_extracted_at is null then null
         else pg_catalog.to_char(w.last_extracted_at at time zone 'UTC',
           'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end,
@@ -40,7 +45,14 @@ begin
      (2,'shortages','Shortage',900),
      (3,'purchaseOrders','PurchaseOrder',3600)
   ) types(ordinal,kind,object_type,slo_seconds)
-  left join vaos_private.ontology_source_watermarks w on w.source_kind=types.kind;
+  left join vaos_private.ontology_source_watermarks w on w.source_kind=types.kind
+  left join lateral (
+    select count(*) filter (where p.present_in_latest_receipt)::integer as visible_count,
+      count(*) filter (where p.present_in_latest_receipt
+        and p.receipt_id=w.receipt_id)::integer as current_count
+    from vaos_private.ontology_projection_objects p
+    where p.source_kind=types.kind
+  ) projections on true;
   return result;
 end;
 $$;

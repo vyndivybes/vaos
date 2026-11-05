@@ -67,3 +67,37 @@ begin
  raise notice 'Ontology projection count and receipt-lineage drift acceptance PASS';
 end $$;
 rollback;
+
+-- Synthetic PO rows only, rolled back. Cancelled draft lineage is visible as
+-- aggregate metadata, never as a procurement commitment or business authority.
+begin;
+do $$
+declare rid uuid;
+        health jsonb;
+        po jsonb;
+begin
+ insert into vaos_private.ontology_source_receipts
+  (source_kind,source_scope,source_digest,extracted_at,source_count,records,status)
+ values ('purchaseOrders','synthetic:source',repeat('b',64),now()-interval '20 seconds',2,
+  '[{"id":"TEST-CANCELLED","status":"draft","demand_lineage_state":"CANCELLED_UPSTREAM_DEMAND"},{"id":"TEST-UNKNOWN","status":"draft","demand_lineage_state":"UPSTREAM_DEMAND_UNVERIFIED"}]'::jsonb,
+  'SOURCE_UNVERIFIED')
+ returning receipt_id into rid;
+ insert into vaos_private.ontology_projection_objects
+  (source_kind,object_type,object_id,properties,receipt_id,present_in_latest_receipt,authority_state)
+ values
+  ('purchaseOrders','PurchaseOrder','TEST-CANCELLED','{"id":"TEST-CANCELLED","status":"draft","demand_lineage_state":"CANCELLED_UPSTREAM_DEMAND"}',rid,true,'SOURCE_UNVERIFIED'),
+  ('purchaseOrders','PurchaseOrder','TEST-UNKNOWN','{"id":"TEST-UNKNOWN","status":"draft","demand_lineage_state":"UPSTREAM_DEMAND_UNVERIFIED"}',rid,true,'SOURCE_UNVERIFIED');
+ insert into vaos_private.ontology_source_watermarks
+  (source_kind,receipt_id,last_extracted_at,last_source_digest,observed_count,status)
+ values ('purchaseOrders',rid,now()-interval '20 seconds',repeat('b',64),2,'SOURCE_UNVERIFIED');
+ health:=public.vaos_ontology_source_health_v1('test-only-server-key');
+ po:=health->'sources'->2;
+ if po->>'status'<>'SOURCE_UNVERIFIED'
+    or po->>'cancelledOriginDraftCount'<>'1'
+    or po->>'otherObservedOrderCount'<>'1'
+    or health->>'agentUsable'<>'false'
+    or health->>'productionWriteAuthorized'<>'false'
+ then raise exception 'SOURCE_CANCELLED_DRAFT_SUMMARY_INCORRECT: %',po; end if;
+ raise notice 'Cancelled-origin draft aggregation and non-authority PASS';
+end $$;
+rollback;

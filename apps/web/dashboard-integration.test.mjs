@@ -42,3 +42,15 @@ test('13-week cash scenarios are wired only to the signed financial scorecard an
  assert.match(js,/clearCashScenario\('/);
  assert.doesNotMatch(js,/innerHTML\s*=/);
 });
+
+test('executive source cockpit is mounted and never invokes mutation endpoints',async()=>{
+ const html=await source('./workforce-analytics.html');
+ const js=await source('./executive-intelligence.mjs');
+ assert.match(html,/id="wa-exec-refresh"/);
+ assert.match(html,/id="wa-exec-conversion"/);
+ assert.match(html,/src="\/executive-intelligence\.mjs"/);
+ assert.match(js,/executive:'1'/);
+ assert.match(js,/\/api\/finance-scorecard/);
+ assert.doesNotMatch(js,/fetch\(['"]\/api\/.*(?:create|approve|pay|execute)/i);
+ assert.doesNotMatch(js,/innerHTML\s*=/);
+});

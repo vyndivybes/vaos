@@ -24,14 +24,14 @@ export function getVisualMode(id){
 
 // Priority is intentional: specialized requests outrank generic dashboard terms.
 const INTENTS=[
- ['sankey',/\\b(sankey|material\\s*flow\\s*(diagram|visual)|flow\\s*diagram)\\b/],
- ['factory',/\\b(factory\\s*(digital\\s*)?twin|3d\\s*factory|manufacturing\\s*(digital\\s*)?twin|factory\\s*layout)\\b/],
- ['simulation',/\\b(monte\\s*carlo|predictive\\s*simulation|scenario\\s*(simulation|analysis)|probability\\s*band)\\b/],
- ['heatmap',/\\b(heatmaps?|utilization\\s*matrix|capacity\\s*matrix)\\b/],
- ['waterfall',/\\b(waterfall|cost\\s*bridge|profit\\s*bridge)\\b/],
- ['funnel',/\\b(funnel|conversion\\s*(chart|stages?))\\b/],
- ['timeline',/\\b(gantt|timeline\\s*chart|production\\s*schedule\\s*chart)\\b/],
- ['logistics',/\\b(logistics\\s*(map|route|sketch)|shipment\\s*map|geographic\\s*(map|plot))\\b/],
+ ['sankey',/\b(sankey|material\s*flow\s*(diagram|visual)|flow\s*diagram)\b/],
+ ['factory',/\b(factory\s*(digital\s*)?twin|3d\s*factory|manufacturing\s*(digital\s*)?twin|factory\s*layout)\b/],
+ ['simulation',/\b(monte\s*carlo|predictive\s*simulation|scenario\s*(simulation|analysis)|probability\s*band)\b/],
+ ['heatmap',/\b(heatmaps?|utilization\s*matrix|capacity\s*matrix)\b/],
+ ['waterfall',/\b(waterfall|cost\s*bridge|profit\s*bridge)\b/],
+ ['funnel',/\b(funnel|conversion\s*(chart|stages?))\b/],
+ ['timeline',/\b(gantt|timeline\s*chart|production\s*schedule\s*chart)\b/],
+ ['logistics',/\b(logistics\s*(map|route|sketch)|shipment\s*map|geographic\s*(map|plot))\b/],
  ['graph',/\b(graphiti|graphify|brain\s*graph|knowledge\s*graph|ontology|neural|lineage\s*graph)\b/],
  ['engineering',/\b(3d|cad|stl|step|geometry|mesh|engineering\s*viewer|digital\s*twin)\b/],
  ['agents',/\b(agent|agents|mission|missions|orchestration|supervision)\b/],

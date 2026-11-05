@@ -69,6 +69,7 @@ import neuralKnowledge from './api/neural-knowledge.mjs';
 import ontologySourceStatus from './api/ontology-source-status.mjs';
 import ontologyIngestCanary from './api/ontology-ingest-canary.mjs';
 import ontologyHealth from './api/ontology-health.mjs';
+import {runScheduledOntologyRefresh,ONTOLOGY_REFRESH_CRON} from './lib/ontology-scheduled-refresh.mjs';
 import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
@@ -262,6 +263,17 @@ export function createCloudflareApp({
 
 export default {
   async scheduled(_controller, env, ctx) {
+    // Dedicated signed-reader cron cannot dispatch any existing hourly mission or watchdog.
+    if (_controller?.cron===ONTOLOGY_REFRESH_CRON) {
+      const task=runScheduledOntologyRefresh({env,scheduledTime:_controller.scheduledTime})
+       .then(result=>{
+        console.log('VAOS_ONTOLOGY_SCHEDULED_REFRESH',JSON.stringify(result));
+        if(result.status==='HOLD')throw Error('VAOS_ONTOLOGY_REFRESH_HOLD');
+       });
+      if(ctx?.waitUntil)ctx.waitUntil(task);
+      else await task;
+      return;
+    }
     // Keep the existing mission sweep independent from Infisical health dispatch.
     const mission = Promise.resolve().then(() => runScheduledMissionSweep({
       service: getEightAgentOperatingService(env),

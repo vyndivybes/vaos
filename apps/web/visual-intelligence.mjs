@@ -1,3 +1,4 @@
+import {renderVisualOverview} from './visual-overview.mjs';
 import {
  DEMO_VISUAL_SCENARIO, validateSankey, heatmapCells, waterfallSteps,
  funnelStages, timelineBars, routePoints, factoryStationMap
@@ -13,6 +14,7 @@ const $=id=>document.getElementById(id);
 const tabs=[...document.querySelectorAll('[data-viz]')];
 const known=new Set(tabs.map(t=>t.dataset.viz));
 const descriptions={
+ overview:['Executive intelligence cockpit','Information-dense visual workspace with linked scenario KPIs, Sankey flow, financial drivers, planning and operations.'],
  sankey:['Sankey material-flow diagram','Observe quantities through scenario nodes and transfers without inferring real order or stock movements.'],
  factory:['Factory 3D layout','Rotate and inspect hypothetical manufacturing cells and their simulated states. Not a physical asset digital twin or MES telemetry feed.'],
  simulation:['Monte Carlo cash scenario','Use explicit hypothetical demand, costs, capacity and volatility to calculate probability bands. It is not a certified forecast.'],
@@ -22,7 +24,7 @@ const descriptions={
  timeline:['Production Gantt','Hypothetical planning intervals; tasks are not approved production orders.'],
  logistics:['Logistics coordinate sketch','Show supplied geographic points and straight connections, not delivery routes, location tracking or ETAs.']
 };
-let current='sankey',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,simulation=null;
+let current='overview',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,simulation=null;
 
 function setProvenance(){
  $('av-provenance').textContent=source;
@@ -42,7 +44,8 @@ function renderCurrent(){
  const host=$('av-display');
  host.replaceChildren();
  try{
-  if(current==='sankey')renderSankey(host,scenario.sankey);
+  if(current==='overview')renderVisualOverview(host,scenario,{provenance:source,onNavigate:kind=>select(kind)});
+   else if(current==='sankey')renderSankey(host,scenario.sankey);
   else if(current==='factory')factoryDispose=mountFactoryTwin(host,scenario.factory);
   else if(current==='heatmap')renderHeatmap(host,scenario.heatmap);
   else if(current==='waterfall')renderWaterfall(host,scenario.waterfall);
@@ -165,7 +168,7 @@ async function bootstrap(){
   $('av-json').value=JSON.stringify(scenario,null,2);
   setProvenance();bind();
   const kind=new URL(location.href).searchParams.get('viz');
-  select(known.has(kind)?kind:'sankey',{push:false});
+  select(known.has(kind)?kind:'overview',{push:false});
  }catch(error){sessionStatus.textContent='HOLD — '+(error?.message||'Session unavailable')+'. Sign in through VAOS.';}
 }
 void bootstrap();

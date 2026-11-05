@@ -8,6 +8,8 @@ function publicUrl(value){
 export function planJarvisTool(value){
  if(typeof value!=='string'||value.length>1800)return null;
  const q=value.trim().replace(/^(?:hey\s+)?jarvis[,! ]+|^please\s+/i,'');let m;
+ if((m=q.match(/^(?:(?:can|could|would) you\s+)?open\s+(?:(?:the )?website\s+)?(?:https:\/\/)?(?:www\.)?vayushastr\.com\/?[.!?]?$/i)))
+  return {kind:'site.open',input:{url:'https://vayushastr.com/'}};
  if((m=q.match(/^(?:search (?:the )?(?:web|internet) for|look up online)\s+(.+)$/i))){
   if(m[1].length>300)throw Error('SEARCH_QUERY_TOO_LONG');
   return {kind:'browser.search',input:{query:m[1]}};

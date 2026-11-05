@@ -9,7 +9,7 @@ import {buildPlanningCycle} from '../lib/business-planning-cycle.mjs';
 import {shouldIncludeEngineering,buildOperatingDecisionSupport} from '../lib/operating-decision-support.mjs';
 import {createEngineeringKnowledgeHandler} from './engineering-knowledge.mjs';
 import {ADVISORY_LANGUAGES,isAdvisoryQuestion,chooseAdviceSources,externalTopic,
-  observeAdviceDomain,buildAdvisoryReport,checkTranslation} from '../lib/business-advice.mjs';
+  observeAdviceDomain,buildAdvisoryReport,checkTranslation,isPublicIndustryResearchQuestion} from '../lib/business-advice.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const CONTROL='founder-readonly-browser-v1';
@@ -87,6 +87,25 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
   const question=params.get('q')||'',lang=params.get('lang')||'en';
   if(!isAdvisoryQuestion(question)||/[\x00-\x1f\x7f]/.test(question)
    ||!Object.hasOwn(ADVISORY_LANGUAGES,lang))return res.status(422).json(apiError('ADVISORY_QUERY_INVALID','A bounded read-only business question and supported reply language are required'));
+  // Standalone industry-news questions never use private inventory, PO or production samples.
+  if(isPublicIndustryResearchQuestion(question)){
+   const publicResearch=qualifyPublicHeadlines(await getExternalHeadlines(question,fetchImpl),
+    {asOf:now().toISOString().slice(0,10)});
+   const found=publicResearch.items;
+   const report=buildAdvisoryReport({question,sources:[],web:found});
+   const answer=found.length
+    ?'PUBLIC INDUSTRY HEADLINES — Unverified discovery context, not independently confirmed market facts.\n\n'+found.map((x,i)=>
+      '['+(i+1)+'] '+x.title.slice(0,160)+' — '+x.publisher+' ('+x.published.slice(0,10)+')').join('\n')+
+      '\n\nOpen the source links to verify the underlying reports before making decisions.'
+    :'PUBLIC INDUSTRY NEWS UNAVAILABLE — No current, dated public headlines met the source checks. Internal VAOS inventory, production and procurement records are not evidence of external industry news.';
+   return res.status(200).json({data:{...report,status:found.length?'OBSERVED':'HOLD',
+    answer:answer+'\n\nRESEARCH QUALITY — Public headlines only; the underlying articles and market claims are not independently verified.',spokenAnswer:found.length
+     ?('Unverified public industry headlines: '+found.slice(0,2).map(x=>x.title+'; '+x.publisher+'.').join(' ')).slice(0,440)
+     :'Current public industry news is unavailable. I will not substitute internal company data for external sources.',
+    publicResearch,agenticRecommendation:'DETERMINISTIC_ONLY',
+    language:'en',translationQualified:lang==='en',voiceLanguage:lang,
+    observedAt:now().toISOString()}});
+  }
   let reader=null;try{reader=getReader(req.env);}catch{}
   const specs=chooseAdviceSources(question);
   const observationsPromise=Promise.all(specs.map(async spec=>{

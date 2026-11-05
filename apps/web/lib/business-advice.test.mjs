@@ -72,3 +72,11 @@ test('voice market research uses fixed public industry topics, never private wor
  assert.equal(externalTopic('Compare our secret customer pricing with web'),
   'India bicycle manufacturing market');
 });
+
+test('separates public industry news from internal company analysis',async()=>{
+ const {isPublicIndustryResearchQuestion}=await import('./business-advice.mjs');
+ assert.equal(isPublicIndustryResearchQuestion('Hey JARVIS, what is the latest aerospace and avionics industry news?'),true);
+ assert.equal(isPublicIndustryResearchQuestion('What are current carbon fiber composites market trends?'),true);
+ assert.equal(isPublicIndustryResearchQuestion('Why are our suppliers delaying production and increasing costs?'),false);
+ assert.equal(isPublicIndustryResearchQuestion('Compare our production bottlenecks with market practice'),false);
+});

@@ -66,3 +66,13 @@ test('speech diagnostics whitelist browser reasons and never echo arbitrary even
   assert.equal(player.speak('Read-only answer.'),false);assert.deepEqual(errors,[expected]);assert.deepEqual(states,['ERROR']);
  }
 });
+
+test('configured hosted voice errors report their actual provider reason, not a generic synthesis message',()=>{
+ const errors=[];
+ const player=createVoiceReadback({
+  synthesis:{speak:u=>u.onerror({error:'synthesis-unavailable',code:'ELEVENLABS_NOT_CONFIGURED'}),cancel(){}},
+  UtteranceClass:class {},onError:code=>errors.push(code),schedule:()=>1,clear:()=>{},
+ });
+ assert.equal(player.speak('Testing host voice.'),false);
+ assert.deepEqual(errors,['ELEVENLABS_NOT_CONFIGURED']);
+});

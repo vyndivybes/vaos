@@ -35,6 +35,13 @@ export function chooseAdviceSources(question){
   :advisors.find(x=>x.re.test(question||''))||advisors[0];
  return match.priority.map(domain=>({domain,actionType:VOICE_DOMAIN_ACTIONS[domain]}));
 }
+// External industry news is separate from the company's signed business data.
+export function isPublicIndustryResearchQuestion(q){
+ return typeof q==='string'&&q.length<=300
+  &&/\b(?:news|headlines|latest|recent|current|trends?|industry)\b/i.test(q)
+  &&/\b(?:industry|market|sector|aerospace|aviation|avionics|composites?|carbon\s+(?:fiber|fibre)|retail\s+automation|supermarket|software|saas)\b/i.test(q)
+  &&!/\b(?:our|my|vaos|vyndi|production|inventory|purchase|supplier|sales|finance|cash|job cards?)\b/i.test(q);
+}
 export function externalTopic(question){
  // A strict, public topic: never send founder questions, prices, project
  // names or any ERP data to unauthenticated internet services.

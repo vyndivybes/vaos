@@ -57,7 +57,8 @@ test('signed complete receipt persists once; response hides ERP records and all 
  const store={ingestOntologySourceReceipt:async receipt=>{
   writes++;saved=receipt;
   return {status:'SOURCE_UNVERIFIED',sourceKind:'inventory',receiptId:'receipt-1',
-   durableReceiptStored:true,agentUsable:false,productionWriteAuthorized:false};
+   durableReceiptStored:true,sourceCompletenessVerified:false,agentUsable:false,
+   actionAuthorized:false,productionWriteAuthorized:false};
  }};
  const handler=createOntologyIngestCanaryHandler({getSession:founder,getStore:()=>store,
   getReader:()=>({execute:async job=>{

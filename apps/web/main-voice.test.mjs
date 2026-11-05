@@ -342,3 +342,18 @@ test('hands-free JARVIS accepts market and industry questions but rejects market
  }
  assert.equal(classifyDashboardQuestion('Hey Jarvis, approve a purchase order now').kind,'DENY');
 });
+
+test('screenshot regression: selected Adaptive does not hijack public industry news',()=>{
+ const queries=[
+  'Hey JARVIS, what is the latest aerospace and avionics industry news?',
+  'What are current carbon fiber composites market trends?',
+  'Tell me the latest supermarket retail automation industry news',
+ ];
+ for(const question of queries){
+  const intent=classifyDashboardQuestion(question);
+  assert.equal(intent.kind,'ADVISORY',question);
+  assert.equal(shouldUseAdaptiveAnswer(intent,true),false,question);
+ }
+ const privateAnalysis=classifyDashboardQuestion('Why are suppliers delaying production and increasing costs?');
+ assert.equal(shouldUseAdaptiveAnswer(privateAnalysis,true),true);
+});

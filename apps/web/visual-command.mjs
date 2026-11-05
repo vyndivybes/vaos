@@ -111,7 +111,7 @@ async function bootstrap(){
   });
   setupVoice();
   const initial=new URL(location.href).searchParams.get('visual');
-  selectVisual(getVisualMode(initial)?initial:'bi',{push:false});
+  selectVisual(getVisualMode(initial)?initial:'overview',{push:false});
  }catch(e){auth.textContent=e.message||'Unable to verify authorization. Sign in and retry.';}
 }
 void bootstrap();

@@ -8,6 +8,7 @@
  <meta name="description" content="Sankey diagrams, 3D factory scenario, predictive simulations, heatmaps, waterfall, funnel, Gantt and logistics visualizations." />
  <link rel="icon" href="/assets/vayu-shastr-original.webp" type="image/webp" />
  <link rel="stylesheet" href="/visual-intelligence.css" />
+ <link rel="stylesheet" href="/visual-premium.css" />
 </head>
 <body>
  <a class="av-skip" href="#av-display">Skip to visualization</a>
@@ -18,11 +19,14 @@
  <div id="av-session-status" role="status" class="av-session">Verifying your VAOS session…</div>
  <main id="av-main" hidden>
   <section class="av-intro">
-   <div><p class="av-kicker">ADVANCED VISUAL INTELLIGENCE · V1</p><h1>Explore complex operations. <em>Never confuse a model with actuals.</em></h1>
-   <p>Every chart below works locally with an explicit synthetic example or a user-provided scenario. Real machine telemetry, approved plans, financial postings and delivery routes require independently qualified source connections.</p></div>
+   <div><p class="av-kicker">VAOS INTELLIGENCE / VISUAL COCKPIT</p><h1>Enterprise insights, <em>beautifully connected.</em></h1>
+   <p>A cohesive visual cockpit for process flows, financial drivers, production planning and engineering. Scenario examples are clearly separated from verified enterprise actuals.</p></div>
    <div class="av-status-block"><strong id="av-provenance">SYNTHETIC DEMO</strong><span id="av-provenance-desc">Illustration only — not VAOS business actuals.</span></div>
   </section>
+  <div class="av-shell">
   <nav class="av-tabs" aria-label="Advanced visualizations">
+   <span class="av-rail-label">YOUR WORKSPACES</span>
+   <button type="button" data-viz="overview">Executive cockpit</button>
    <button type="button" data-viz="sankey">Sankey flow</button>
    <button type="button" data-viz="factory">3D factory</button>
    <button type="button" data-viz="simulation">Monte Carlo</button>
@@ -60,6 +64,7 @@
     </form>
    </section>
   </section>
+  </div>
   <details class="av-import" id="av-import">
    <summary>Import or export an unverified scenario (JSON)</summary>
    <p>Paste your own data with the schema below, or inspect the current example. Imported records stay in this browser session and are never approved or certified by VAOS. JSON is processed client-side and is not sent to any server.</p>

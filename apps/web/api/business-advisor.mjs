@@ -99,7 +99,7 @@ export function createBusinessAdvisorHandler({getReader=makeCommercialReader,
       '\n\nOpen the source links to verify the underlying reports before making decisions.'
     :'PUBLIC INDUSTRY NEWS UNAVAILABLE — No current, dated public headlines met the source checks. Internal VAOS inventory, production and procurement records are not evidence of external industry news.';
    return res.status(200).json({data:{...report,status:found.length?'OBSERVED':'HOLD',
-    answer,spokenAnswer:found.length
+    answer:answer+'\n\nRESEARCH QUALITY — Public headlines only; the underlying articles and market claims are not independently verified.',spokenAnswer:found.length
      ?('Unverified public industry headlines: '+found.slice(0,2).map(x=>x.title+'; '+x.publisher+'.').join(' ')).slice(0,440)
      :'Current public industry news is unavailable. I will not substitute internal company data for external sources.',
     publicResearch,agenticRecommendation:'DETERMINISTIC_ONLY',

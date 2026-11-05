@@ -33,7 +33,8 @@ async function setup(fetch,module='enterprise-bi.mjs'){
  const script=module==='financial-performance.mjs'
   ?source.replace(/^import \{project13WeekCash\} from '\.\/lib\/cash-scenario\.mjs';\r?\n/,'')
   :source;
- runInNewContext(script,{...context,project13WeekCash});
+ context.project13WeekCash=project13WeekCash;
+ runInNewContext(script,context);
  return {context,get};
 }
 test('all recorded statuses stay visible and source pages request the scoped next offset',async()=>{

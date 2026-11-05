@@ -473,6 +473,9 @@ Deno.serve(async (req: Request) => {
   } else if (operation === 'reconciliationList') {
     rpcName = 'vaos_reconciliation_list'
     args = { p_server_key: serverKey }
+  } else if (operation === 'ingestOntologySourceReceipt') {
+    rpcName = 'vaos_ontology_ingest_read_receipt_v1'
+    args = { p_server_key: serverKey, p_receipt: payload.receipt }
   } else if (operation === 'qualificationEvidenceAppend') {
     rpcName = 'vaos_provider_qualification_evidence_append'
     args = { p_server_key: serverKey, p_record: payload.record || {} }

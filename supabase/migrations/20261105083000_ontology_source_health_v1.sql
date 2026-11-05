@@ -31,7 +31,7 @@ begin
           'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') end,
       'receiptAgeSeconds',case when w.last_extracted_at is null then null
         else pg_catalog.greatest(0,pg_catalog.floor(
-          pg_catalog.extract(epoch from now()-w.last_extracted_at)))::bigint end,
+          EXTRACT(EPOCH FROM now()-w.last_extracted_at)))::bigint end,
       'sloSeconds',types.slo_seconds
     ) order by types.ordinal)
   ) into result

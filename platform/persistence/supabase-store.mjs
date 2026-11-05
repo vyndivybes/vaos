@@ -254,6 +254,7 @@ export function createSupabaseControlStore({
       });
     },
     ingestOntologySourceReceipt(receipt) {return invoke('ingestOntologySourceReceipt',{receipt});},
+    getOntologySourceHealth() {return invoke('ontologySourceHealth');},
     signVyndiBridgeRequest(input) {
       return invoke('signVyndiBridgeRequest', {
         keyId: input.keyId,

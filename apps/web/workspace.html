@@ -161,6 +161,18 @@
           <a class="fc-command-link" href="/founder-console.html">Need to make a change? Review it in Founder Command ↗</a>
         </section>
 
+        <section class="fc-business" id="ontology-evidence" aria-labelledby="ontology-evidence-title">
+          <div class="fc-section-head"><div><h2 id="ontology-evidence-title">Ontology source evidence</h2>
+            <p>Signed-source receipts and processing watermarks. This is not certified stock or a digital twin.</p></div>
+            <button type="button" class="va-small-link" id="ontology-health-refresh">Refresh evidence</button></div>
+          <p id="ontology-health-status" role="status" aria-live="polite">Loading source verification status…</p>
+          <ul id="ontology-health-sources">
+            <li data-ontology-kind="inventory"><strong>Inventory</strong> <small>HOLD — Not checked</small></li>
+            <li data-ontology-kind="shortages"><strong>Shortages</strong> <small>HOLD — Not checked</small></li>
+            <li data-ontology-kind="purchaseOrders"><strong>Open purchase orders</strong> <small>HOLD — Not checked</small></li>
+          </ul>
+        </section>
+
         <section id="cockpit-business" class="fc-business" aria-labelledby="cockpit-business-title">
           <div class="fc-section-head"><div><h2 id="cockpit-business-title">Your workspaces</h2></div><button type="button" class="va-small-link" data-view="portfolio">Group overview →</button></div>
           <p id="cockpit-source-status" class="fc-source-note" role="status">Checking connections…</p>
@@ -524,6 +536,7 @@
   </dialog>
 
 
+  <script type="module" src="/ontology-health.mjs?v=20261105-evidence-v1"></script>
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
   <script type="module" src="/main-voice.mjs?v=20261016-official-site-research-voice-v4"></script>
 <script type="module" src="/vaos-interface.mjs"></script></body>

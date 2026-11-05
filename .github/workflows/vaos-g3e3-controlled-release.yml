@@ -43,4 +43,4 @@ jobs:
       - name: Full regression and Cloudflare safety verification
         run: npm test
       - name: Deploy to existing vaos Worker without new namespaces
-        run: npx --yes wrangler@4.136.3 deploy --config wrangler.jsonc
+        run: npx --yes wrangler@4.157.0 deploy --config wrangler.jsonc

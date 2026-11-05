@@ -54,3 +54,5 @@ cloudflare-worker.mjs
 
 !lib/jarvis-tools.mjs
 !lib/jarvis-tools-ui.mjs
+
+!lib/visual-command-model.mjs

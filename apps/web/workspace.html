@@ -167,10 +167,11 @@
             <button type="button" class="va-small-link" id="ontology-health-refresh">Refresh evidence</button></div>
           <p id="ontology-health-status" role="status" aria-live="polite">Loading source verification status…</p>
           <ul id="ontology-health-sources">
-            <li data-ontology-kind="inventory"><strong>Inventory</strong> <small>HOLD — Not checked</small></li>
-            <li data-ontology-kind="shortages"><strong>Shortages</strong> <small>HOLD — Not checked</small></li>
-            <li data-ontology-kind="purchaseOrders"><strong>Open purchase orders</strong> <small>HOLD — Not checked</small></li>
+            <li data-ontology-kind="inventory"><strong>Inventory</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="inventory" aria-label="Capture inventory signed receipt" disabled>Capture receipt</button></li>
+            <li data-ontology-kind="shortages"><strong>Shortages</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="shortages" aria-label="Capture shortages signed receipt" disabled>Capture receipt</button></li>
+            <li data-ontology-kind="purchaseOrders"><strong>Open purchase orders</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="purchaseOrders" aria-label="Capture open purchase orders signed receipt" disabled>Capture receipt</button></li>
           </ul>
+          <p id="ontology-capture-status" role="status" aria-live="polite">Founder-only manual capture. Receipts remain unverified and cannot authorize business actions.</p>
         </section>
 
         <section id="cockpit-business" class="fc-business" aria-labelledby="cockpit-business-title">

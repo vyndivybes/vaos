@@ -7,3 +7,7 @@ The existing signed VYNDI bridge client now exposes `readOnly:true` and `effectC
 This does not provide CDC, tenant-safe entity resolution, source-revision signatures, durable Ontology storage, scheduled replay, or authority to prepare/commit a purchase order. Preserve the existing L0-L5 policy and the 16 staff's historical qualifications.
 
 Tests: `node --test platform/execution/vyndi-read-bridge-client.test.mjs platform/execution/vyndi-ontology-read-receipt.test.mjs`.
+
+## Founder-only source status (disabled by default)
+
+`GET /api/ontology/source-status?source=inventory|shortages` is registered in the VAOS Worker but disabled unless `VAOS_ONTOLOGY_SOURCE_CONTROL=founder-readonly-v1` is provisioned after read source qualification. It uses the existing signed VYNDI bridge, never accepts a caller URL, and never returns ERP row bodies. An internally consistent bounded extract is reported `SOURCE_UNVERIFIED` (not agent action authority). Missing, malformed or partial receipts produce `HOLD`. No POST handler, production hydration writer, PO preparation or autonomous action is enabled.

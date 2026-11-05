@@ -89,9 +89,9 @@ begin
   v_digest := p_receipt->>'sourceRevision';
   if v_expected_scope is null or v_scope is distinct from v_expected_scope
      or coalesce(v_digest,'') !~ '^[a-f0-9]{64}$'
-     or p_receipt->>'schemaVersion' <> 'VYNDI_ONTOLOGY_READ_RECEIPT_V1'
-     or p_receipt->>'sourceRevisionAuthority' <> 'CONTENT_DIGEST_ONLY'
-     or p_receipt->>'asOfAuthority' <> 'EXTRACT_TIME_NOT_SOURCE_CHANGE_TIME'
+     or p_receipt->>'schemaVersion' is distinct from 'VYNDI_ONTOLOGY_READ_RECEIPT_V1'
+     or p_receipt->>'sourceRevisionAuthority' is distinct from 'CONTENT_DIGEST_ONLY'
+     or p_receipt->>'asOfAuthority' is distinct from 'EXTRACT_TIME_NOT_SOURCE_CHANGE_TIME'
      or p_receipt->'sourceCompletenessVerified' is distinct from 'false'::jsonb
      or p_receipt->'readOnly' is distinct from 'true'::jsonb
      or p_receipt->'actionAuthorized' is distinct from 'false'::jsonb
@@ -148,8 +148,11 @@ begin
     return jsonb_build_object('status','HOLD','reason','OUT_OF_ORDER_OR_CONFLICTING_RECEIPT');
   end if;
   if v_old_as_of = v_as_of and v_old_digest = v_digest then
-    return jsonb_build_object('status','REPLAY','agentUsable',false,
-      'productionWriteAuthorized',false);
+    return jsonb_build_object('status','SOURCE_UNVERIFIED','replay',true,
+      'receiptId',(select receipt_id from vaos_private.ontology_source_watermarks where source_kind=v_kind),
+      'sourceKind',v_kind,'durableReceiptStored',true,
+      'sourceCompletenessVerified',false,'agentUsable',false,
+      'actionAuthorized',false,'productionWriteAuthorized',false);
   end if;
 
   insert into vaos_private.ontology_source_receipts

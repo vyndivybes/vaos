@@ -59,4 +59,8 @@ test('migration is private, RLS enabled, server-key guarded and never promotes O
   assert.ok(sql.includes(marker),marker);
  }
  assert.ok(!sql.includes("'OBSERVED'"));
+ assert.match(sql,/schemaVersion' is distinct from 'VYNDI_ONTOLOGY_READ_RECEIPT_V1'/);
+ assert.match(sql,/sourceRevisionAuthority' is distinct from 'CONTENT_DIGEST_ONLY'/);
+ assert.match(sql,/if v_old_as_of = v_as_of and v_old_digest = v_digest/);
+ assert.match(sql,/'replay',true/);
 });

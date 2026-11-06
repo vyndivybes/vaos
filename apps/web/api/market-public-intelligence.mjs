@@ -38,7 +38,7 @@ export function createMarketPublicIntelligenceHandler({
    return fail(res,415,'JSON_REQUIRED');
   const body=req.body;
   if(!body||typeof body!=='object'||Array.isArray(body)||
-   Object.keys(body).sort().join(',')!=='confirm,operation'||body.operation!=='REFRESH')
+   Object.keys(body).some(key=>!['operation','confirm'].includes(key))||body.operation!=='REFRESH')
    return fail(res,422,'REFRESH_REQUEST_INVALID');
   if(body.confirm!==true)return fail(res,400,'REFRESH_CONSENT_REQUIRED');
   try{

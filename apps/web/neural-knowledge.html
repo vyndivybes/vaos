@@ -11,6 +11,7 @@
 <link rel="stylesheet" href="/unified-knowledge.css" />
 <script type="module" src="/unified-knowledge-ui.mjs"></script>
 <script type="module" src="/historical-knowledge-ui.mjs"></script>
+<script type="module" src="/historical-search-ui.mjs"></script>
 </head>
 <body>
 <a class="skip-link" href="#graph-stage">Skip to knowledge graph</a>
@@ -165,6 +166,15 @@
   <span id="historical-drive-status" aria-live="polite">Not checked</span>
  </div>
  <p id="historical-status" role="status" aria-live="polite">Historical archive status not yet observed. Source completeness remains unverified.</p>
+ <form id="historical-search" class="knowledge-form" style="max-width:100%;margin-top:15px">
+  <label for="historical-source" class="visually-hidden">Search historical source</label>
+  <select id="historical-source" aria-label="Historical source"><option value="gmail">Gmail</option><option value="drive">Drive</option></select>
+  <label for="historical-query" class="visually-hidden">Historical search phrase</label>
+  <input type="search" id="historical-query" placeholder="Search indexed historical text…" minlength="3" maxlength="90" required>
+  <button type="submit">Search encrypted index</button>
+ </form>
+ <p id="historical-search-status" role="status" aria-live="polite">No indexed archive search performed.</p>
+ <div id="historical-results" class="knowledge-results"></div>
  </section>
  <section class="trust-strip"><strong>Authority boundary</strong><p>VYNDI engineering graph references are not live ERP release decisions. SPARK, Obsidian, Graphiti, Graphify, Wiki, Brain Atlas and Dify snapshots are never automatically read from a private computer or external service. Uncommissioned sources remain explicitly on HOLD.</p></section>
 </main>

@@ -407,7 +407,7 @@ export async function readFounderDrive(env,q,{fetchImpl=fetch,now=()=>Date.now()
   }));
   return {status:'PASS',source:'GOOGLE_DRIVE',actionAuthorized:false,readOnly:true,
     query:q.trim(),files,hasMore:Boolean(result.nextPageToken)};
- }catch(e){return hold(e.message==='GOOGLE_SCOPE_RECONNECT_REQUIRED'?e.message:'DRIVE_SOURCE_UNVERIFIED')}
+ }catch(e){const safe=new Set(['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED','GOOGLE_OAUTH_UNAVAILABLE']);return hold(safe.has(e?.message)?e.message:'DRIVE_SOURCE_UNVERIFIED')}
 }
 
 export async function createFounderCalendarReminder(env,body,{fetchImpl=fetch,now=()=>Date.now()}={}){

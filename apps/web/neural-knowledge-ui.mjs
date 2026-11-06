@@ -223,6 +223,53 @@ async function loadSource(){
   byId('metric-evidence').textContent='HOLD';
  }finally{button.disabled=false;}
 }
+
+byId('knowledge-search').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const query=byId('knowledge-query').value.trim();
+ const output=byId('knowledge-results'),notice=byId('knowledge-status');
+ output.replaceChildren();
+ if(!/^[A-Za-z0-9][A-Za-z0-9 _.-]{3,119}$/.test(query)){
+  notice.textContent='Enter 4–120 non-secret letters, numbers, spaces or basic punctuation.';return;
+ }
+ const submit=byId('knowledge-search').querySelector('button[type=submit]');
+ submit.disabled=true;notice.textContent='Reading source-pinned repository evidence…';
+ try{
+  const response=await fetch('/api/federated-knowledge?q='+encodeURIComponent(query),{
+   credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}
+  });
+  const body=await response.json();
+  if(!response.ok||!body?.data||body.data.readOnly!==true||body.data.actionAuthorized!==false)
+   throw Error(body?.error?.code||'FEDERATED_SOURCE_HOLD');
+  const data=body.data;
+  const entries=[...(Array.isArray(data.evidence)?data.evidence:[])].slice(0,20);
+  notice.textContent=entries.length+' source documents with excerpts · '+(data.failedSources?.length||0)+' source failures. Review original files before drawing conclusions.';
+  if(!entries.length){
+   output.textContent='No source-cited evidence returned. A successful request does not certify indexing, freshness or completeness.';
+  }
+  for(const item of entries){
+   const article=document.createElement('article');article.className='knowledge-record';
+   const title=document.createElement('h3');title.textContent=String(item.repository||'Source')+' / '+String(item.path||'Document');
+   article.append(title);
+   const provenance=document.createElement('p');
+   provenance.textContent='Pinned blob: '+String(item.sha||'unverified');
+   article.append(provenance);
+   for(const excerpt of (Array.isArray(item.excerpts)?item.excerpts:[]).slice(0,3)){
+    const p=document.createElement('p');p.textContent='Line '+String(excerpt.line)+': '+String(excerpt.text||'');article.append(p);
+   }
+   try{
+    const url=new URL(item.url);
+    if(url.protocol!=='https:'||url.hostname!=='github.com')throw Error('SOURCE_LINK_INVALID');
+    const a=document.createElement('a');a.href=url.href;a.rel='noopener noreferrer';a.target='_blank';a.textContent='Review pinned file in GitHub';
+    article.append(a);
+   }catch{const warning=document.createElement('p');warning.textContent='Source link withheld';article.append(warning);}
+   output.append(article);
+  }
+ }catch(error){
+  notice.textContent='Repository knowledge HOLD: '+error.message+'. Verify founder session, private GitHub read authorization and source availability.';
+ }finally{submit.disabled=false;}
+});
+
 byId('load-graph').addEventListener('click',loadSource);
 byId('node-query').addEventListener('input',renderGraph);
 byId('kind-filter').addEventListener('change',renderGraph);

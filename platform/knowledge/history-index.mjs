@@ -51,7 +51,7 @@ function base64(bytes){
  return btoa(out).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 }
 function unbase64(v){
- if(typeof v!=='string'||!/.*/.test(v)||!/^[A-Za-z0-9_-]+$/.test(v)||v.length>220000)
+ if(typeof v!=='string'||!/.*/.test(v)||!/^[A-Za-z0-9_-]+$/.test(v)||v.length>6000000)
   stop('CIPHERTEXT_INVALID');
  const str=atob(v.replace(/-/g,'+').replace(/_/g,'/')+'='.repeat((4-v.length%4)%4));
  return Uint8Array.from(str,c=>c.charCodeAt(0));
@@ -70,7 +70,7 @@ async function open(object,key,source){
  if(!object)return null;
  let row;
  try{
-  if(Number.isInteger(object.size)&&object.size>4500000)stop('CIPHERTEXT_INVALID');
+  if(Number.isInteger(object.size)&&object.size>4800000)stop('CIPHERTEXT_INVALID');
   row=JSON.parse(await object.text());
   if(row?.v!==1)stop('CIPHERTEXT_INVALID');
   const iv=unbase64(row.iv),data=unbase64(row.ciphertext);

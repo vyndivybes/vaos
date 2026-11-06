@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mergeKnowledgeSources,selectKnowledgeView,layoutKnowledgeView,
- googleSearchGraph,githubEvidenceGraph,chatHistoryGraph} from './unified-knowledge-graph.mjs';
+ googleSearchGraph,githubEvidenceGraph,githubRepositoryInventoryGraph,chatHistoryGraph} from './unified-knowledge-graph.mjs';
 
 const observed=(source,nodes,edges=[])=>({
  source,status:'OBSERVED',readOnly:true,actionAuthorized:false,
@@ -95,4 +95,12 @@ test('invalid date and dangling links cannot fabricate lineage',()=>{
  const g=mergeKnowledgeSources([observed('obsidian',[n('a','A')],[{from:'a',to:'missing',relation:'LINKS'}])]);
  assert.equal(g.edges.length,0);
  assert.throws(()=>selectKnowledgeView(g,{asOf:'2026-99-99'}),/DATE_INVALID/);
+});
+
+test('GitHub inventory includes only authenticated repository-owner relationships',()=>{
+ const g=githubRepositoryInventoryGraph([{fullName:'vyndivybes/vaos',isPrivate:true},
+  {fullName:'vyndivybes/vyndios',isPrivate:true}]);
+ assert.equal(g.nodes.length,3);
+ assert.equal(g.edges.length,2);
+ assert.equal(mergeKnowledgeSources([g]).edges.length,2);
 });

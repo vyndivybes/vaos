@@ -68,3 +68,26 @@ test('zero selling price is invalid and missing sources cannot qualify a pilot',
  const report=buildMarketCaseStudy({...input(),evidence:[]});
  assert.equal(report.recommendation.status,'HOLD');
 });
+
+test('business continuity stress propagates to archived report without action authority',()=>{
+ const report=buildMarketCaseStudy({...input(),continuity:{
+  cashReserve:400000,demandDropPct:25,variableCostIncreasePct:20,
+  supplierRecoveryDays:15,inventoryCoverDays:5,recoveryCost:50000
+ }});
+ assert.equal(report.continuityStress.recurringMonthlySurplus,-129200);
+ assert.equal(report.continuityStress.firstMonthSurplus,-179200);
+ assert.equal(report.continuityStress.cashCoverageMonths,2.71);
+ assert.equal(report.recommendation.status,'HOLD');
+ assert.equal(report.forecastQualified,false);
+ assert.equal(report.actionAuthorized,false);
+ const markdown=renderMarketCaseStudy(report);
+ assert.match(markdown,/Business continuity and supply-chain stress/);
+ assert.match(markdown,/assumptions only/);
+ assert.match(markdown,/No forecast certification or autonomous business action/);
+});
+test('continuity input requires a financial model and rejects malformed shocks',()=>{
+ const continuity={cashReserve:1000,demandDropPct:5,variableCostIncreasePct:20,
+  supplierRecoveryDays:20,inventoryCoverDays:5,recoveryCost:100};
+ assert.throws(()=>buildMarketCaseStudy({...input(),model:null,continuity}),/CONTINUITY_STRESS_INVALID/);
+ assert.throws(()=>buildMarketCaseStudy({...input(),continuity:{...continuity,demandDropPct:101}}),/CONTINUITY_STRESS_INVALID/);
+});

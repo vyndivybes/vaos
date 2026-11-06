@@ -27,3 +27,14 @@ test('Cloudflare router wires protected case study handler and uncached HTML',as
  assert.match(worker,/'\/market-intelligence\.html'/);
  assert.match(founder,/href="\/market-intelligence\.html"/);
 });
+
+test('continuity stress controls are present and rendered without injection',async()=>{
+ const [html,js]=await Promise.all([read('./market-intelligence.html'),read('./market-intelligence.mjs')]);
+ for(const name of ['cashReserve','demandDropPct','variableCostIncreasePct','supplierRecoveryDays','inventoryCoverDays','recoveryCost'])
+  assert.match(html,new RegExp('name="'+name+'"'));
+ for(const id of ['continuity-panel','continuity-outage','continuity-surplus','continuity-runway','continuity-status'])
+  assert.equal([...html.matchAll(new RegExp('id="'+id+'"','g'))].length,1,id);
+ assert.match(js,/const stress=report.continuityStress/);
+ assert.match(js,/stressCount!==0&&stressCount!==6/);
+ assert.doesNotMatch(js,/\.innerHTML\s*=/);
+});

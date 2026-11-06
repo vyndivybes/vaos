@@ -1,3 +1,4 @@
+import {evaluateContinuityStress} from './market-continuity.mjs';
 /** Deterministic founder case-study calculator.
  * Source entries are references, NOT independently verified publications or market figures.
  * No money movement, AI output, web fetching, forecasting certification, or production writes.
@@ -77,7 +78,12 @@ export function buildMarketCaseStudy(input){
  const title=bounded(input.title,10,180),market=bounded(input.market,10,200);
  const evidence=evidenceRows(input.evidence??[],asOf);
  const financial=input.model==null?null:economics(input.model);
- const recommendation=!financial||evidence.length<2||financial.unitEconomics.contributionPerUnit<=0
+ const continuityStress=input.continuity==null?null:evaluateContinuityStress(input.model,input.continuity);
+ const continuityHold=continuityStress&&(continuityStress.fundingHold||continuityStress.firstMonthSurplus<0||
+  (continuityStress.cashCoverageMonths!==null&&continuityStress.cashCoverageMonths<3));
+ const recommendation=continuityHold
+  ?{status:'HOLD',decision:'Continuity stress indicates negative first-month performance, insufficient recovery funding or less than three months of modeled loss coverage; verify assumptions and recovery options before launch.'}
+  :!financial||evidence.length<2||financial.unitEconomics.contributionPerUnit<=0
    ||financial.scenarios.base.operatingSurplus<=0
   ?{status:'HOLD',decision:'No scalable commercial release from these inputs; verify actual selling prices, full landed BOM, fixed costs and customer orders first.'}
   :{status:'CONDITIONAL_PILOT',decision:'The base assumption is operating-positive, but downside risk and missing evidence require a bounded paid pilot before fixed-capital expansion.'};
@@ -87,7 +93,7 @@ export function buildMarketCaseStudy(input){
   marketSizing:{status:'HOLD',tam:null,sam:null,som:null,reason:'No defensible geographic market denominator, segmentation, pricing mix or obtainable share supplied.'},
   modelStatus:financial?'SCENARIO_ONLY':'NO_ASSUMPTIONS',
   unitEconomics:financial?.unitEconomics??null,
-  scenarios:financial?.scenarios??null,recommendation,
+  scenarios:financial?.scenarios??null,continuityStress,recommendation,
   limitations:[
    'Source URLs, publication dates and claims are supplied context; their contents and independent source authority are not verified by this calculator.',
    'TAM/SAM/SOM unavailable without reconciled market denominators and segmentation.',
@@ -133,6 +139,19 @@ export function renderMarketCaseStudy(report){
      ' | '+amount(x.fixedCosts,c)+' | '+amount(x.operatingSurplus,c)+' |';
    }));
  }else lines.push('No scenario generated; provide explicit cost, price and demand assumptions.');
+ if(report.continuityStress){
+  const s=report.continuityStress;
+  lines.push('','## Business continuity and supply-chain stress (assumptions only)',
+   'Supplier exposure: '+s.exposureDays+' days beyond inventory cover; modeled interruption: '+s.modeledInterruptionDays+' of 30 days.',
+   'Demand reduction '+s.demandDropPct+'%; variable-cost increase '+s.variableCostIncreasePct+'%; stressed sales '+s.stressedUnits+' units/month.',
+   'Stressed recurring operating surplus: '+amount(s.recurringMonthlySurplus,s.currency)+
+    '; first-month surplus after one-time recovery expense: '+amount(s.firstMonthSurplus,s.currency)+'.',
+   'Illustrative cash coverage after recovery: '+(s.cashCoverageMonths===null?
+     'not calculated (no recurring modeled loss)':s.cashCoverageMonths+' months of modeled recurring loss')+
+    (s.fundingHold?' — recovery cost exceeds available cash.':'.'),
+   ...s.limitations.map(x=>'- '+md(x)),
+   'No forecast certification or autonomous business action authorization.');
+ }
  lines.push('','## Limitations and verification gates',
   ...report.limitations.map(x=>'- '+md(x)),
   '','**Forecast qualified:** NO. **Production/finance actions authorised:** NO.',

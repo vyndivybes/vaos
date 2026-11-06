@@ -73,3 +73,15 @@ test('safe failure when archive is not provisioned and malformed studies are pro
  assert.equal((await f.call('POST',{operation:'PREVIEW',case:{}})).status,422);
  assert.equal((await f.call('POST',{operation:'SAVE',case:sample(),confirm:true})).status,503);
 });
+
+test('founder preview keeps continuity stress read only and requires no archive',async()=>{
+ const f=fixture();
+ const continuity={cashReserve:400000,demandDropPct:25,variableCostIncreasePct:20,
+  supplierRecoveryDays:15,inventoryCoverDays:5,recoveryCost:50000};
+ const p=await f.call('POST',{operation:'PREVIEW',case:{...sample(),continuity}});
+ assert.equal(p.status,200);
+ assert.equal(p.data.data.report.continuityStress.stressedUnits,6);
+ assert.equal(p.data.data.report.continuityStress.fundingHold,false);
+ assert.equal(p.data.data.report.actionAuthorized,false);
+ assert.equal(f.stats().writes,0);
+});

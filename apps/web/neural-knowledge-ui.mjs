@@ -270,6 +270,48 @@ byId('knowledge-search').addEventListener('submit',async event=>{
  }finally{submit.disabled=false;}
 });
 
+
+byId('personal-google-search').addEventListener('submit',async event=>{
+ event.preventDefault();
+ const form=byId('personal-google-search'),output=byId('personal-google-results');
+ const notice=byId('personal-google-status'),type=byId('personal-google-service').value;
+ const query=byId('personal-google-query').value.trim();
+ output.replaceChildren();
+ if(!['drive','mail'].includes(type)||query.length<2||query.length>90){notice.textContent='Choose a source and enter 2–90 characters.';return;}
+ const button=form.querySelector('button[type=submit]');button.disabled=true;
+ notice.textContent='Reading only the permitted '+(type==='drive'?'Drive metadata':'Gmail results')+'…';
+ try{
+  const endpoint=type==='drive'?'/api/google-workspace/drive?q=':'/api/google-workspace/mail?q=';
+  const res=await fetch(endpoint+encodeURIComponent(query),{
+   method:'GET',credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
+  if(!res.ok)throw Error('GOOGLE_AUTHENTICATION_REQUIRED');
+  const data=await res.json();
+  if(data.status!=='PASS'||data.actionAuthorized!==false)throw Error(data.reason||'GOOGLE_SCOPE_RECONNECT_REQUIRED');
+  const rows=type==='drive'?data.files:data.messages;
+  if(!Array.isArray(rows))throw Error('GOOGLE_SOURCE_RESPONSE_INVALID');
+  notice.textContent=rows.length+' private '+(type==='drive'?'files':'messages')+' returned. Search is on-demand, not a neural graph import.';
+  if(!rows.length){output.textContent='No matching records in the connected Google account.';return;}
+  for(const row of rows.slice(0,30)){
+   const card=document.createElement('article');card.className='knowledge-record';
+   const h=document.createElement('h3');h.textContent=type==='drive'?String(row.name||'Untitled'):String(row.subject||'No subject');
+   card.append(h);
+   const p=document.createElement('p');
+   p.textContent=type==='drive'?String(row.type||'File')+' · '+String(row.modifiedAt||''):
+    String(row.from||'')+' · '+String(row.date||'');
+   card.append(p);
+   if(type==='mail'){const snippet=document.createElement('p');snippet.textContent=String(row.snippet||'').slice(0,240);card.append(snippet);}
+   if(type==='drive'&&typeof row.url==='string'){
+    try{const url=new URL(row.url);if(url.protocol==='https:'&&url.hostname==='drive.google.com'){
+     const a=document.createElement('a');a.href=url.href;a.target='_blank';a.rel='noopener noreferrer';a.textContent='Open in Google Drive';card.append(a);
+    }}catch{}
+   }
+   output.append(card);
+  }
+ }catch(error){
+  notice.textContent='Google knowledge HOLD: '+String(error.message||'UNAVAILABLE')+'. Use Connect / renew Google permission, then retry.';
+ }finally{button.disabled=false;}
+});
+
 byId('load-graph').addEventListener('click',loadSource);
 byId('node-query').addEventListener('input',renderGraph);
 byId('kind-filter').addEventListener('change',renderGraph);

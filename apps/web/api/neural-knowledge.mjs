@@ -46,7 +46,7 @@ export function createNeuralKnowledgeHandler({getVyndiReader=sourceReader,getSna
   }catch{return res.status(422).json(apiError('SOURCE_INVALID','Select a permitted knowledge source'))}
   if(source==='registry')return res.status(200).json({data:{
    schemaVersion:'VAOS_NEUTRAL_GRAPH_REGISTRY_V1',
-   sources:NEUTRAL_GRAPH_SOURCES.map(id=>({id,status:statusOf(env,id),transport:id==='vyndi-vedm'?'signed-vyndi-read':'reviewed-r2-snapshot'})),
+   sources:NEUTRAL_GRAPH_SOURCES.map(id=>({id,status:statusOf(env,id),transport:id==='vyndi-vedm'?'signed-vyndi-read':id==='dify'&&statusOf(env,id)==='CONFIGURED_UNVERIFIED'?'provider-readonly-logs':'reviewed-r2-snapshot'})),
    readOnly:true,actionAuthorized:false,
   }});
   if(statusOf(env,source)==='NOT_COMMISSIONED')

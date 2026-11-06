@@ -52,7 +52,7 @@ export function createHistoricalSearchHandler({}={}){
    return res.status(503).json(apiError('HISTORY_SEARCH_STORAGE_HOLD','Encrypted record store unavailable'));
   try{
    const prefix=PREFIX+input.source+'/';
-   const batch=await bucket.list({prefix,limit:50,...(input.cursor?{cursor:input.cursor}:{})});
+   const batch=await bucket.list({prefix,limit:20,...(input.cursor?{cursor:input.cursor}:{})});
    if(!Array.isArray(batch.objects))throw Error();
    const matches=[];
    for(const item of batch.objects){

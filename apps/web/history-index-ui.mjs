@@ -95,7 +95,8 @@ async function importFiles(event){
  button.disabled=true;
  try{
   const source=sourceImport();
-  const rows=await collectFiles(source,[...input.files]);
+  const selectedFiles=[...input.files,...$('history-index-folder').files];
+  const rows=await collectFiles(source,selectedFiles);
   if(!rows.length)throw Error('EXPORT_CONTAINS_NO_SUPPORTED_RECORDS');
   const seen=new Set();
   for(const row of rows){
@@ -115,7 +116,7 @@ async function importFiles(event){
  }catch(error){
   notice('Historical import HOLD after '+count+' records: '+String(error.message||'UNAVAILABLE')+
    '. Already indexed records remain idempotent and can be resumed.',true);
- }finally{button.disabled=false;input.value='';}
+ }finally{button.disabled=false;input.value='';$('history-index-folder').value='';}
 }
 function showResults(){
  const output=$('history-index-results');output.replaceChildren();

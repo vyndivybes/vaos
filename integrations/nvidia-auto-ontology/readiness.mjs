@@ -14,6 +14,7 @@ const BASE=Object.freeze({
  sourceDataTransferred:false,modelAnswersVerified:false,productionWriteAuthorized:false,
 });
 const record=(reason,patch={})=>({...BASE,...patch,status:'HOLD',reason});
+export const holdNvidiaOntology=reason=>record(reason);
 const isSafeCount=value=>Number.isSafeInteger(value)&&value>0;
 
 export function validateOntologyOrigin(raw){

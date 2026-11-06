@@ -6,9 +6,12 @@ at upstream commit `c24aea9a0b0bbe9bd16363682045fc9218b3cbef` (6 November 2026).
 
 | Project-local skill | Purpose |
 | --- | --- |
+| `nvidia-ontology-setup` | Official Helm / Docker Compose runtime commissioning and MCP connection |
 | `nvidia-ontology-query` | Grounded, authenticated Auto Ontology read/query/answer validation |
 | `nvidia-ontology-management` | Semantic definitions, measures, relationships and governed publication |
 | `accelerated-computing-cudf` | Optional NVIDIA GPU DataFrame ETL and pandas-compatible acceleration |
+
+For live commissioning read [NVIDIA Auto Ontology commissioning](NVIDIA_AUTO_ONTOLOGY_COMMISSIONING.md). The fourth skill is pinned to the same NVIDIA source commit; deploying a server remains a separately qualified step.
 
 Operational skill files are at `.agents/skills/<skill>/SKILL.md`; all locally
 referenced `references/` and `assets/` files are included. Agent hosts that

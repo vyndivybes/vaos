@@ -74,6 +74,7 @@ import universeRepositories from './api/universe-repositories.mjs';
 import ontologySourceStatus from './api/ontology-source-status.mjs';
 import ontologyIngestCanary from './api/ontology-ingest-canary.mjs';
 import ontologyHealth from './api/ontology-health.mjs';
+import nvidiaOntologyReadiness from './api/nvidia-ontology-readiness.mjs';
 import {runScheduledOntologyRefresh,ONTOLOGY_REFRESH_CRON} from './lib/ontology-scheduled-refresh.mjs';
 import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
@@ -167,6 +168,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/ontology/source-status': ontologySourceStatus,
   '/api/ontology/ingest-canary': ontologyIngestCanary,
   '/api/ontology/health': ontologyHealth,
+  '/api/nvidia/ontology/readiness': nvidiaOntologyReadiness,
   '/api/voice-ai-focus': voiceAiFocus,
 });
 

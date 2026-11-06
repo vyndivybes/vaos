@@ -45,7 +45,7 @@
     "prepare:companion": "node scripts/sync-companion-assets.mjs",
     "test:companion": "node --test --test-concurrency=1 apps/companion/test/*.test.mjs",
     "test:neural-knowledge": "node --test integrations/neural-knowledge/*.test.mjs apps/web/lib/feature-flags.test.mjs apps/web/api/neural-knowledge.test.mjs apps/web/api/universe-repositories.test.mjs apps/web/neural-knowledge-client.test.mjs apps/web/neural-knowledge-ui.test.mjs apps/web/lib/unified-knowledge-graph.test.mjs apps/web/unified-knowledge-ui.test.mjs apps/web/neural-knowledge-search.test.mjs apps/web/neural-personal-google.test.mjs integrations/dify/workflow-metadata-reader.test.mjs && npm run test:history-index",
-    "test:history-index": "node --test platform/knowledge/history-index.test.mjs integrations/google/history-source.test.mjs apps/web/api/history-index.test.mjs apps/web/history-index-ui.test.mjs apps/web/lib/historical-import.test.mjs"
+    "test:history-index": "node --test platform/knowledge/history-index.test.mjs integrations/google/history-source.test.mjs apps/web/api/history-index.test.mjs apps/web/history-index-ui.test.mjs apps/web/lib/historical-import.test.mjs integrations/github/history-source.test.mjs"
   },
   "devDependencies": {
     "@electric-sql/pglite": "0.5.9",

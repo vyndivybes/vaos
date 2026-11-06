@@ -61,7 +61,7 @@ export function renderEvidenceTopology(host,packet,onInspect) {
   const card=text('button',undefined,'bi-topology-node');
   card.type='button';
   card.dataset.state=node.state;
-  card.style.setProperty('--bi-strength',String(node.intensity/100));
+  card.style.setProperty('--bi-strength',node.intensity+'%');
   card.setAttribute('aria-label','Inspect '+node.label+', '+(node.value===null?'unavailable':node.value+' '+(packet?.metric?.unit||'records'))+'. Source: '+node.source);
   const head=text('span',undefined,'bi-topology-node-head');
   head.append(text('span',node.agent),text('small',node.state==='observed'?'OBSERVED':node.state==='empty'?'EMPTY':'UNAVAILABLE'));

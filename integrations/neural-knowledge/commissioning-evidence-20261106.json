@@ -59,7 +59,7 @@
     },
     {
       "id": "dify",
-      "reason": "Dify secret bound, but read-only runtime workflow topology not independently verified; no invented jobs"
+      "reason": "Bound Dify secret and founder-scoped GET run metadata added; live provider response remains unverified, no workflow invocation or prompts exported"
     }
   ]
 }

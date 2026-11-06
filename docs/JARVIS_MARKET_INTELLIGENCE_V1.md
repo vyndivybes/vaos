@@ -128,3 +128,13 @@ not three simultaneous DOC API requests. This respects the conservative
 public-service request limit and reduces free-tier throttling. Articles
 without a recognisable brand term in the title are not attributed to a
 watchlisted competitor. Headline matches are not product/price proof.
+
+### Cloudflare free-plan variable budget correction
+
+Use the existing `VAOS_FEATURE_FLAGS` JSON text binding for
+`VAOS_MARKET_MONITOR_CONTROL`, resolved through
+`featureControl(env,'VAOS_MARKET_MONITOR_CONTROL')`.
+Do not create a separate Worker text binding for this control: the
+free plan permits 64 combined secret/text variables, and an
+additional top-level variable blocked the first release. Existing
+secrets and independent feature controls remain preserved.

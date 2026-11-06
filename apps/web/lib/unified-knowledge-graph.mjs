@@ -210,3 +210,19 @@ export function chatHistoryGraph(input){
  }
  return sourceEnvelope('chatgpt',nodes,edges);
 }
+
+/** Map only provider-returned repository membership to an ephemeral graph. */
+export function githubRepositoryInventoryGraph(rows){
+ if(!Array.isArray(rows))failure('SOURCE_INVALID');
+ const nodes=[],edges=[],owners=new Set(),seen=new Set();
+ for(const item of rows.slice(0,500)){
+  const name=safe(item?.fullName,180);
+  if(!name||!REPO.test(name)||seen.has(name))continue;
+  const owner=name.split('/')[0],ownerId='owner:'+owner,repoId='repo:'+name;
+  if(!owners.has(owner)){nodes.push({id:ownerId,label:owner,kind:'repository_owner',sourceRef:owner});owners.add(owner);}
+  nodes.push({id:repoId,label:name,kind:'repository',sourceRef:name});
+  edges.push({from:ownerId,to:repoId,relation:'OWNS_REPOSITORY'});
+  seen.add(name);
+ }
+ return sourceEnvelope('github',nodes,edges);
+}

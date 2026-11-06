@@ -9,6 +9,7 @@ on:
       - 'apps/web/market-intelligence.css'
       - 'apps/web/cloudflare-worker.mjs'
       - 'package.json'
+      - 'docs/JARVIS_PRIVATE_CASE_BRIDGE_V1.md'
       - '.github/workflows/secure-market-case-bridge.yml'
   push:
     branches: [main]
@@ -18,6 +19,7 @@ on:
       - 'apps/web/market-intelligence.html'
       - 'apps/web/cloudflare-worker.mjs'
       - 'package.json'
+      - 'docs/JARVIS_PRIVATE_CASE_BRIDGE_V1.md'
       - '.github/workflows/secure-market-case-bridge.yml'
 permissions:
   contents: read

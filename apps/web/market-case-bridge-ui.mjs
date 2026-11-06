@@ -53,6 +53,15 @@ async function loadCatalog(){
      btn.addEventListener('click',()=>openDocument(item.id,doc.documentId,0));
      li.append(node('span',doc.sourceFileName),btn);ul.append(li);
     }article.append(ul);
+    const include=node('button','Use as research reference');
+    include.type='button';include.className='tertiary';
+    include.addEventListener('click',()=>{
+     window.dispatchEvent(new CustomEvent('vaos:case-bridge-reference',
+      {detail:{id:item.id}}));
+     byId('private-case-status').textContent=item.id+
+      ' selected as internal, unverified research context for the next scenario.';
+    });
+    article.append(include);
    }
    if(item.referenceUrl){
     const a=node('a','Open original source');

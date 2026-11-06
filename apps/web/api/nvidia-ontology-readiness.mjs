@@ -19,7 +19,8 @@ export function createNvidiaOntologyReadinessHandler({
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder identity required'));
   try{if(new URL(req.url).search)return res.status(422).json(apiError('QUERY_INVALID','Query parameters are not supported'));}
   catch{return res.status(422).json(apiError('QUERY_INVALID','Invalid request URL'));}
-  if(featureControl(req.env,'VAOS_NVIDIA_ONTOLOGY_CONTROL')!=='founder-readonly-v1')
+  const mode=featureControl(req.env,'VAOS_NVIDIA_ONTOLOGY_CONTROL')??featureControl(req.env,'VAOS_ONTOLOGY_SOURCE_CONTROL');
+  if(mode!=='founder-readonly-v1')
    return res.status(200).json({data:holdNvidiaOntology('ONTOLOGY_CONTROL_DISABLED')});
   try{return res.status(200).json({data:await inspect(req.env)});}
   catch{return res.status(200).json({data:holdNvidiaOntology('ONTOLOGY_PROBE_FAILED')});}

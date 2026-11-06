@@ -1,6 +1,6 @@
 import {SOURCE_INFO} from './neural-knowledge-client.mjs';
 import {UNIVERSE_SOURCES,mergeKnowledgeSources,selectKnowledgeView,
- googleSearchGraph,githubEvidenceGraph,chatHistoryGraph} from './lib/unified-knowledge-graph.mjs';
+ googleSearchGraph,githubEvidenceGraph,githubRepositoryInventoryGraph,chatHistoryGraph} from './lib/unified-knowledge-graph.mjs';
 import {createUniverseRenderer,universeColor} from './unified-knowledge-render.mjs';
 
 const $=id=>document.getElementById(id);
@@ -163,6 +163,24 @@ async function importHistory(){
  }catch(error){status('Archive HOLD: '+String(error.message||'EXPORT_INVALID')+'. Choose conversations.json.',true);}
  finally{input.value='';}
 }
+async function loadRepos(){
+ const button=$('universe-repos');button.disabled=true;
+ try{
+  const response=await readJSON('/api/universe-repositories');
+  const d=response?.data;
+  if(d?.schemaVersion!=='VAOS_GITHUB_REPOSITORY_INVENTORY_V1'||d.status!=='OBSERVED'||
+   d.readOnly!==true||d.actionAuthorized!==false)throw Error('INVENTORY_NOT_GOVERNED');
+  const result=githubRepositoryInventoryGraph(d.repositories);
+  docs.set('github',result);
+  const checkbox=[...$('universe-sources').querySelectorAll('input')].find(x=>x.value==='github');
+  if(checkbox)checkbox.checked=true;
+  focus=null;rebuild();
+  status('Observed '+d.repositories.length+' repositories visible to the configured VAOS credential.'+
+   (d.truncated?' Source pagination was truncated.':'')+' Additional GitHub accounts require their own authorization.');
+ }catch(error){status('GitHub inventory HOLD: '+String(error.message||'UNAVAILABLE'),true);}
+ finally{button.disabled=false;}
+}
+$('universe-repos').addEventListener('click',loadRepos);
 $('universe-load').addEventListener('click',load);
 $('universe-private-form').addEventListener('submit',searchPrivate);
 $('universe-chat-file').addEventListener('change',importHistory);

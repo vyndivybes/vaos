@@ -55,6 +55,7 @@ import voiceInsight from './api/voice-insight.mjs';
 import sparkBridge from './api/spark-bridge.mjs';
 import businessAdvisor from './api/business-advisor.mjs';
 import jarvisDataAgent from './api/jarvis-data-agent.mjs';
+import marketCaseStudies from './api/market-case-studies.mjs';
 import adaptiveIntelligence from './api/adaptive-intelligence.mjs';
 import jarvisAuthorityGraph from './api/jarvis-authority-graph.mjs';
 import jarvisSourceAudit from './api/jarvis-source-audit.mjs';
@@ -143,6 +144,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/spark-bridge': sparkBridge,
   '/api/business-advisor': businessAdvisor,
   '/api/jarvis-data-agent': jarvisDataAgent,
+  '/api/market-case-studies': marketCaseStudies,
   '/api/adaptive-intelligence': adaptiveIntelligence,
   '/api/jarvis-authority-graph': jarvisAuthorityGraph,
   '/api/jarvis-source-audit': jarvisSourceAudit,
@@ -177,7 +179,7 @@ function jsonError(status, code, message) {
 }
 
 function uncachedWorkspaceAsset(path, response) {
-  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html'].includes(path);
+  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html', '/market-intelligence.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
   const isWorkspaceStylesheet = path.endsWith('.css');
   if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;

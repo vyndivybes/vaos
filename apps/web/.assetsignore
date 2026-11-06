@@ -59,3 +59,5 @@ cloudflare-worker.mjs
 
 !lib/advanced-visual-model.mjs
 !lib/predictive-simulation.mjs
+
+!lib/unified-knowledge-graph.mjs

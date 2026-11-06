@@ -56,12 +56,31 @@
 <label>Base demand (units/month)<input name="base" type="number" min="0" step="1" placeholder="—"></label>
 <label>Bull demand (units/month)<input name="bull" type="number" min="0" step="1" placeholder="—"></label>
 </div>
+<div class="section-divider"><span>BUSINESS CONTINUITY / SUPPLY-CHAIN STRESS</span><span>ASSUMPTIONS ONLY</span></div>
+<p class="subtle">Optional bounded 30-day stress. Enter all six fields or leave them blank. Supplier outage after inventory coverage reduces available sales; no verified supplier or cash data is inferred.</p>
+<div class="field-grid numeric-grid">
+<label>Available cash buffer (INR)<input name="cashReserve" type="number" min="0" max="1000000000000" step="any" placeholder="No assumption"></label>
+<label>Demand reduction (%)<input name="demandDropPct" type="number" min="0" max="100" step="any" placeholder="0–100"></label>
+<label>Variable-cost increase (%)<input name="variableCostIncreasePct" type="number" min="0" max="300" step="any" placeholder="0–300"></label>
+<label>Supplier recovery (days)<input name="supplierRecoveryDays" type="number" min="0" max="90" step="1" placeholder="0–90"></label>
+<label>Inventory coverage (days)<input name="inventoryCoverDays" type="number" min="0" max="90" step="1" placeholder="0–90"></label>
+<label>One-time recovery cost (INR)<input name="recoveryCost" type="number" min="0" max="1000000000000" step="any" placeholder="No assumption"></label>
+</div>
 <div class="form-actions"><button id="generate-case" type="submit">Generate case study</button><button id="save-case" type="button" class="secondary" disabled>Save a version in VAOS</button><button id="export-case" type="button" class="tertiary" disabled>Export Markdown</button></div></form><p id="case-status" role="status" aria-live="polite" class="mini-status">No case study generated.</p>
 <div id="result" class="result" hidden>
 <div class="result-head"><div><p class="kicker">RESEARCH / SCENARIO ONLY</p><h3 id="result-heading">Analyst brief</h3></div><span id="decision-status" class="decision">HOLD</span></div>
 <p id="decision-summary" class="decision-summary"></p>
 <div class="kpi-grid"><div class="kpi"><small>Unit contribution</small><strong id="unit-contribution">—</strong></div><div class="kpi"><small>Illustrative break-even</small><strong id="break-even">—</strong></div><div class="kpi"><small>Referenced sources</small><strong id="source-total">—</strong></div></div>
 <div id="scenario-bars" class="scenario-bars" role="region" aria-label="Illustrative monthly operating surplus scenarios"></div>
+<div id="continuity-panel" class="continuity-summary" hidden>
+ <p class="kicker">BUSINESS CONTINUITY STRESS / ASSUMPTION ONLY</p>
+ <div class="kpi-grid">
+  <div class="kpi"><small>Modeled supply interruption</small><strong id="continuity-outage">—</strong></div>
+  <div class="kpi"><small>Stressed first-month surplus</small><strong id="continuity-surplus">—</strong></div>
+  <div class="kpi"><small>Cash coverage after recovery</small><strong id="continuity-runway">—</strong></div>
+ </div>
+ <p id="continuity-status" class="subtle">No continuity stress provided.</p>
+</div>
 <details><summary>Complete report and evidence limitations</summary><pre id="case-markdown"></pre></details></div>
 </section>
 <footer>VAOS / JARVIS MARKET INTELLIGENCE · RESEARCH-ONLY PILOT <span>Sources require verification · R2 archives are founder-scoped · No commercial actions authorised</span></footer>

@@ -46,3 +46,10 @@ test('Neural founder read flag fits the existing feature bundle without consumin
  assert.equal(featureControl(config.vars,'VAOS_NEURAL_KNOWLEDGE_CONTROL'),'founder-readonly-v1');
  assert.equal(featureControl({VAOS_FEATURE_FLAGS:'{}'},'VAOS_NEURAL_KNOWLEDGE_CONTROL'),undefined);
 });
+
+test('Daily market monitor uses the consolidated feature flag with no new text binding',async()=>{
+ const config=JSON.parse(await readFile(new URL('../../../wrangler.jsonc',import.meta.url),'utf8'));
+ assert.equal(Object.hasOwn(config.vars,'VAOS_MARKET_MONITOR_CONTROL'),false);
+ assert.equal(featureControl(config.vars,'VAOS_MARKET_MONITOR_CONTROL'),'founder-daily-readonly-v1');
+ assert.equal(featureControl({VAOS_FEATURE_FLAGS:'{}'},'VAOS_MARKET_MONITOR_CONTROL'),undefined);
+});

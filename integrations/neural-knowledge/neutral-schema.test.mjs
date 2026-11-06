@@ -69,10 +69,29 @@ test('LLM Wiki retains reviewed citations only as advisory, not approval',()=>{
  assert.equal(out.currentBusinessTruthCertified,false);
 });
 test('reject unknown graph provenance, dangling edges, forged release permission and pathological size',()=>{
- assert.deepEqual(NEUTRAL_GRAPH_SOURCES,['vyndi-vedm','graphify','graphiti','llm-wiki','brain-atlas']);
+ assert.deepEqual(NEUTRAL_GRAPH_SOURCES,['vyndi-vedm','graphify','graphiti','llm-wiki','brain-atlas','obsidian','dify']);
  assert.throws(()=>normalizeNeutralGraph({...vedm,sourceType:'unauthorized'}),/NEUTRAL_GRAPH_SOURCE_DENIED/);
  assert.throws(()=>normalizeNeutralGraph({...vedm,payload:{...vedm.payload,actionAuthorized:true}}),/NEUTRAL_GRAPH_AUTHORITY_DENIED/);
  assert.throws(()=>normalizeNeutralGraph({...vedm,payload:{...vedm.payload,edges:[{from:'missing',to:'G10',relation:'SAYS'}]}}),/NEUTRAL_GRAPH_EDGE_INVALID/);
  assert.throws(()=>normalizeNeutralGraph({...vedm,sourceRevision:'spoofed'}),/NEUTRAL_GRAPH_PROVENANCE_INVALID/);
  assert.throws(()=>normalizeNeutralGraph(base('graphiti',{entities:Array.from({length:301},(_,i)=>({id:'n'+i,name:'a'})),facts:[]})),/NEUTRAL_GRAPH_SIZE_DENIED/);
+});
+
+test('Obsidian backlinks display metadata-only notes without importing private note bodies',()=>{
+ const input=base('obsidian',{pages:[{id:'note-01',title:'Frame engineering',sourceRef:'vault:reviewed/engineering',body:'PRIVATE_BODY'},{id:'note-02',title:'Project plan',sourceRef:'vault:reviewed/project'}],links:[{from:'note-01',to:'note-02',relation:'BACKLINK'}]});
+ const view=normalizeNeutralGraph(input,{integrityVerified:true});
+ assert.equal(view.nodes.length,2);
+ assert.equal(view.edges[0].relation,'BACKLINK');
+ assert.equal(view.nodes[0].sourceRef,'vault:reviewed/engineering');
+ assert.equal(view.integrityVerified,true);
+ assert.equal(JSON.stringify(view).includes('PRIVATE_BODY'),false);
+});
+test('Dify workflow graph displays metadata-only workflow nodes without credential disclosure',()=>{
+ const input=base('dify',{nodes:[{id:'flow-1',title:'Case study workflow',type:'workflow',apiKey:'DO_NOT_EXPOSE'},{id:'step-1',title:'Analysis',type:'step'}],edges:[{source:'flow-1',target:'step-1',type:'CONTAINS'}]});
+ const view=normalizeNeutralGraph(input);
+ assert.equal(view.nodes.length,2);
+ assert.equal(view.edges[0].relation,'CONTAINS');
+ assert.equal(view.nodes[0].authorityClass,'advisory');
+ assert.equal(JSON.stringify(view).includes('DO_NOT_EXPOSE'),false);
+ assert.equal(view.actionAuthorized,false);
 });

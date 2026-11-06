@@ -1,5 +1,6 @@
 // @ts-nocheck
 import {AGENTS,METRICS,defaultDefinition,interpretRequest,validateDefinition,projectEvidence} from './bi-model.mjs';
+import {renderEvidenceTopology} from './bi-evidence-topology.mjs';
 const element=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n;};
 // Mountable in the existing Command Centre and VAOS Intelligence workspace.
 export function mountBiStudio(host,adapter) {
@@ -14,8 +15,9 @@ export function mountBiStudio(host,adapter) {
  const controls=element('div',undefined,'bi-controls');
  const select=element('select');select.setAttribute('aria-label','Metric');for(const [id,m]of Object.entries(METRICS).filter(([id])=>adapter.supportsAgents!==false||id!=='agents'))select.append(new Option(m.label,id));
  const from=element('input'),to=element('input');from.type=to.type='date';from.setAttribute('aria-label','Period from');to.setAttribute('aria-label','Period to');
- const chart=element('select');chart.setAttribute('aria-label','Chart type');chart.append(new Option('Interactive bars','bar'),new Option('Data table','table'));
- const refresh=element('button','Refresh evidence');refresh.type='button';controls.append(select,from,to,chart,refresh);
+ const chart=element('select');chart.setAttribute('aria-label','Chart type');chart.append(new Option('Visual evidence','bar'),new Option('Data table','table'));
+ const presentation=element('select');presentation.setAttribute('aria-label','Evidence view');presentation.append(new Option('Evidence topology','topology'),new Option('Evidence bars','bars'));presentation.value='topology';
+ const refresh=element('button','Refresh evidence');refresh.type='button';controls.append(select,from,to,chart,presentation,refresh);
  const department=element('select');department.setAttribute('aria-label','Department drill-down');department.append(new Option('All permitted departments','all'));for(const id of AGENTS)department.append(new Option(id,id));controls.append(department);
  const notice=element('p','No evidence loaded. Choose a question or refresh.','bi-notice');notice.setAttribute('role','status');
  const transcript=element('div',undefined,'bi-transcript');transcript.setAttribute('aria-label','Conversation');
@@ -27,12 +29,14 @@ export function mountBiStudio(host,adapter) {
  persist.append(title,visibility,save,share,saved);save.type=share.type='button';share.disabled=true;
  root.append(heading,form,examples,controls,notice,transcript,result,inspector,persist);
  function syncUrl(id){const u=new URL(location.href);if(id)u.searchParams.set('dashboard',id);else u.searchParams.delete('dashboard');history.replaceState(null,'',u);}
- function sync(){select.value=definition.metric;from.value=definition.from;to.value=definition.to;chart.value=definition.chart;title.value=definition.title;department.value=definition.agents.length===1?definition.agents[0]:'all';}
+ function sync(){select.value=definition.metric;from.value=definition.from;to.value=definition.to;chart.value=definition.chart;presentation.disabled=definition.chart!=='bar';title.value=definition.title;department.value=definition.agents.length===1?definition.agents[0]:'all';}
  function render(){
   const p=projectEvidence(definition,enterprise,workforce);result.replaceChildren();explanation.replaceChildren();
   result.append(element('p','Reporting day: Asia/Kolkata. Source dates retain their recorded meaning.'),element('h3',definition.title),element('p',p.metric.meaning),element('p','Observed: '+(p.observedAt||'not observed')+' · Coverage '+p.coverage));
   const rows=p.rows,max=Math.max(1,...rows.map(r=>r.value||0));
-  if(definition.chart==='bar')for(const r of rows){
+  if(definition.chart==='bar'&&presentation.value==='topology'){
+   renderEvidenceTopology(result,p,agent=>{if(!AGENTS.includes(agent))return;definition={...definition,agents:[agent]};sync();render();inspector.open=true;});
+  }else if(definition.chart==='bar')for(const r of rows){
    const b=element('button',undefined,'bi-bar');b.type='button';b.setAttribute('aria-label','Inspect '+r.label);
    b.append(element('span',r.label),element('strong',r.value===null?r.state:r.value+' '+p.metric.unit),element('small',r.state));const meter=element('meter');meter.min=0;meter.max=max;meter.value=r.value??0;meter.setAttribute('aria-label',r.label+' count');b.append(meter);
    b.addEventListener('click',()=>{definition={...definition,agents:[r.agent]};sync();render();inspector.open=true;});result.append(b);
@@ -46,6 +50,7 @@ export function mountBiStudio(host,adapter) {
  enterprise=data.enterprise;workforce=data.workforce;notice.textContent='Source response received. Unavailable and empty sources remain labeled separately.';render();}catch(e){if(!disposed&&ticket===generation){notice.textContent=e.message||'Evidence unavailable';render();}}finally{if(!disposed&&ticket===generation)refresh.disabled=ask.disabled=false;}}
  form.addEventListener('submit',async e=>{e.preventDefault();try{const next=interpretRequest(input.value,definition);const line=element('p','You: '+input.value);transcript.append(line,element('p','Report: '+next.title+'. '+METRICS[next.metric].meaning));while(transcript.children.length>8)transcript.firstChild.remove();definition=next;savedId=null;revision=0;share.disabled=true;syncUrl(null);sync();await load();}catch(error){notice.textContent=error.message;}});
  for(const control of [select,from,to,chart,department])control.addEventListener('change',async()=>{try{definition=validateDefinition({...definition,metric:select.value,from:from.value,to:to.value,chart:chart.value,agents:select.value==='crm'?['commercial']:department.value==='all'?[...AGENTS]:[department.value]});savedId=null;revision=0;share.disabled=true;await load();}catch(error){notice.textContent=error.message;sync();}});
+ presentation.addEventListener('change',()=>{if(definition.chart==='bar')render();});
  refresh.addEventListener('click',load);
  async function list(){try{const rows=await adapter.list();saved.replaceChildren(new Option('Open saved dashboard',''));for(const r of rows)saved.append(new Option(r.title,r.id));}catch(e){notice.textContent='Saved dashboards unavailable: '+e.message;}}
  save.addEventListener('click',async()=>{save.disabled=true;try{definition=validateDefinition({...definition,title:title.value});const r=await adapter.save({id:savedId,revision,visibility:visibility.value,definition});savedId=r.id;revision=r.revision;share.disabled=false;syncUrl(savedId);notice.textContent='Definition saved. Source results are read again on opening.';await list();}catch(e){notice.textContent='Save failed: '+e.message;}finally{save.disabled=false;}});

@@ -6,7 +6,7 @@ const page=read('./neural-knowledge.html');
 const script=read('./history-index-ui.mjs');
 test('Neural Intelligence displays founder-only historical commissioning, OAuth and search',()=>{
  for(const id of ['historical-index','history-index-status','history-index-sources',
-  'history-index-sync-gmail','history-index-sync-drive','history-index-import',
+  'history-index-sync-gmail','history-index-sync-drive','history-index-sync-github','history-index-import',
   'history-index-file','history-index-search','history-index-results',
   'history-index-contents','history-index-search-more'])
   assert.ok(page.includes('id="'+id+'"'),id);

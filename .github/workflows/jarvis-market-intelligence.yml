@@ -5,6 +5,12 @@ on:
     paths:
       - 'intelligence/market-case-study*.mjs'
       - 'intelligence/market-continuity*.mjs'
+      - 'intelligence/market-public-sources*.mjs'
+      - 'intelligence/market-series-forecast*.mjs'
+      - 'intelligence/market-monitoring*.mjs'
+      - 'apps/web/api/market-public-intelligence*.mjs'
+      - 'apps/web/market-public-intelligence*.mjs'
+      - 'wrangler.jsonc'
       - 'apps/web/api/market-case-studies*.mjs'
       - 'apps/web/market-intelligence.*'
       - 'apps/web/cloudflare-worker.mjs'
@@ -28,9 +34,14 @@ jobs:
       - name: Validate market intelligence syntax
         run: |
           node --check intelligence/market-continuity.mjs
+          node --check intelligence/market-public-sources.mjs
+          node --check intelligence/market-series-forecast.mjs
+          node --check intelligence/market-monitoring.mjs
+          node --check apps/web/api/market-public-intelligence.mjs
+          node --check apps/web/market-public-intelligence.mjs
           node --check intelligence/market-case-study.mjs
           node --check apps/web/api/market-case-studies.mjs
           node --check apps/web/market-intelligence.mjs
           node --check apps/web/cloudflare-worker.mjs
       - name: Test analytical accuracy, provenance, access controls, archive and RSS
-        run: node --test intelligence/market-continuity.test.mjs intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs apps/web/market-intelligence.test.mjs
+        run: node --test intelligence/market-public-sources.test.mjs intelligence/market-series-forecast.test.mjs intelligence/market-monitoring.test.mjs apps/web/api/market-public-intelligence.test.mjs apps/web/market-public-intelligence-ui.test.mjs intelligence/market-continuity.test.mjs intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs apps/web/market-intelligence.test.mjs

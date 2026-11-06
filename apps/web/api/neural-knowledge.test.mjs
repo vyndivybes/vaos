@@ -48,6 +48,14 @@ test('registry reports source types without falsely claiming live commissioned c
  const handler=createNeuralKnowledgeHandler();
  const result=await invoke(request({source:'registry'}),handler);
  assert.equal(result.status,200);
- assert.equal(result.body.data.sources.length,5);
+ assert.equal(result.body.data.sources.length,7);
  assert.ok(result.body.data.sources.every(x=>x.status!=='LIVE_VERIFIED'));
+});
+
+test('registry distinguishes reviewed snapshots for Obsidian and Dify without claiming live connections',async()=>{
+ const result=await invoke(request({source:'registry',env:{VAOS_ARTIFACTS:{async get(){return null}}}}),createNeuralKnowledgeHandler());
+ const sources=result.body.data.sources;
+ assert.equal(result.status,200);
+ assert.deepEqual(sources.filter(s=>['obsidian','dify'].includes(s.id)).map(s=>s.status),['NOT_COMMISSIONED','NOT_COMMISSIONED']);
+ assert.ok(sources.every(s=>s.status!=='LIVE_VERIFIED'));
 });

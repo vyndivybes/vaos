@@ -39,6 +39,8 @@ A production deployment and a passing CI run are different things from operation
 
 Keep pilot, tested, deployed and independently verified claims distinct in documentation and in the UI.
 
+The visual and UI consistency contract is [one VAOS theme and one workspace per page](docs/VAOS_VISUAL_WORKSPACE_STANDARD.md). It prohibits nesting a second dashboard inside the Visual Command page.
+
 ## Where the work lives
 
 | Directory | Purpose |

@@ -28,4 +28,4 @@ jobs:
           node --check apps/web/market-intelligence.mjs
           node --check apps/web/cloudflare-worker.mjs
       - name: Test analytical accuracy, provenance, access controls, archive and RSS
-        run: node --test intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs
+        run: node --test intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs apps/web/market-intelligence.test.mjs

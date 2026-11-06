@@ -17,5 +17,7 @@ test('founder market cockpit renders official feeds and competitor monitoring wi
  assert.match(css,/\.public-market-grid/);
  assert.match(js,/textContent/);
  assert.doesNotMatch(js,/\.innerHTML\s*=/);
- assert.equal(JSON.parse(config).vars.VAOS_MARKET_MONITOR_CONTROL,'founder-daily-readonly-v1');
+ const vars=JSON.parse(config).vars;
+ assert.equal(Object.hasOwn(vars,'VAOS_MARKET_MONITOR_CONTROL'),false,'no extra Cloudflare free-plan variable');
+ assert.equal(JSON.parse(vars.VAOS_FEATURE_FLAGS).VAOS_MARKET_MONITOR_CONTROL,'founder-daily-readonly-v1');
 });

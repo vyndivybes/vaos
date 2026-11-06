@@ -30,3 +30,18 @@
 .bi-topology-note{border-left:2px solid var(--vaos-gold,#e6bd7e);padding-left:.7rem}
 @media(max-width:650px){.bi-topology-totals{grid-template-columns:1fr}.bi-topology-rail span{flex:1 1 auto}.bi-topology-grid{grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr))}}
 @media(prefers-reduced-motion:reduce){.bi-studio .bi-topology-node{transition:none}.bi-studio .bi-topology-node:hover{transform:none}}
+
+/* NVIDIA connection check: one compact read-only instrument, not a nested dashboard. */
+.bi-ontology-commission{margin:1rem 0;padding:clamp(.85rem,2vw,1.3rem);
+ border:1px solid var(--vaos-line,var(--bi-line,#435465));border-radius:var(--vaos-radius,12px);
+ background:linear-gradient(125deg,var(--vaos-panel,#172a3d),var(--vaos-surface,#111c2d));
+ color:var(--vaos-ink,inherit);display:grid;gap:.55rem}
+.bi-ontology-commission h3{font-size:1.08rem;margin:0;color:var(--vaos-gold,#e6bd7e)}
+.bi-ontology-commission p{margin:0;color:var(--vaos-muted,#b2c4d0);line-height:1.55}
+.bi-ontology-commission button{background:transparent;color:var(--vaos-accent,#78d6c3);
+ border:1px solid var(--vaos-line,#304b61);border-radius:.6rem;padding:.7rem .9rem;
+ font:inherit;text-align:left;min-height:44px;cursor:pointer;justify-self:start}
+.bi-ontology-commission button:disabled{opacity:.6;cursor:default}
+.bi-ontology-commission button:focus-visible{outline:2px solid var(--vaos-focus,#f0ce98);outline-offset:3px}
+@media(max-width:600px){.bi-ontology-commission button{width:100%}}
+@media(prefers-reduced-motion:reduce){.bi-ontology-commission *{animation:none!important;transition:none!important}}

@@ -82,7 +82,7 @@ async function refresh(){
  const button=$('market-public-refresh');button.disabled=true;
  $('market-public-status').textContent='Checking the public sources and their reporting periods…';
  try{show(await request('POST',{operation:'REFRESH',confirm:true}))}
- catch(error){$('market-public-status').textContent='REFRESH HOLD — we could not complete the public-data check. Your last saved result is unchanged. (Code: '+error.message+')}
+ catch(error){$('market-public-status').textContent='REFRESH HOLD — we could not complete the public-data check. Your last saved result is unchanged. (Code: '+error.message+')'}
  finally{button.disabled=false;}
 }
 $('market-public-load').addEventListener('click',load);

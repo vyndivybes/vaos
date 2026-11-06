@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#080e1a"><meta name="description" content="JARVIS market intelligence and evidence-based business case studies">
+<title>VAOS — JARVIS Market Intelligence</title><link rel="icon" href="/assets/vayu-shastr-original.webp" type="image/webp">
+<link rel="stylesheet" href="/market-intelligence.css"></head>
+<body>
+<a class="skip" href="#mission">Skip to market research</a>
+<header class="topbar"><a class="brand" href="/workspace"><img src="/assets/vayu-shastr-original.webp" width="34" height="34" alt=""><span><strong>VAOS</strong><small>JARVIS / RESEARCH DIRECTOR</small></span></a>
+<nav aria-label="VAOS navigation"><a href="/workspace">Workspace</a><a href="/founder-console.html">Founder Command</a><a href="/visual-intelligence.html">Visual Intelligence</a></nav><span class="status-pill">EVIDENCE-FIRST · PILOT</span></header>
+<main id="mission" hidden>
+<section class="hero"><div class="hero-copy"><p class="kicker">JARVIS INTELLIGENCE LAB / v1</p><h1>Understand the market.<br><em>Defend the decision.</em></h1><p>Explore public signals, stress-test unit economics and preserve founder-reviewed, versioned business cases. No automatic claims of verified market size or profitability.</p>
+<div class="hero-steps"><span>01 · SCAN SIGNALS</span><span>02 · MODEL SCENARIOS</span><span>03 · ARCHIVE EVIDENCE</span></div></div>
+<div class="intelligence-art" aria-hidden="true"><div class="orbit o-one"></div><div class="orbit o-two"></div><div class="orbit o-three"></div><div class="core"><span>J</span></div><div class="node n-one"></div><div class="node n-two"></div><div class="node n-three"></div><div class="node n-four"></div><div class="orb-caption">MARKET / FINANCE / STRATEGY</div></div></section>
+<div class="workspace-grid">
+<section class="panel" aria-labelledby="signals-title"><div class="section-head"><div><p class="kicker">01 / EXTERNAL ENVIRONMENT</p><h2 id="signals-title">Public market signal scan</h2></div><span class="tag">UNVERIFIED CONTEXT</span></div>
+<p class="subtle">Zero-subscription Google News RSS discovery. Headlines identify research leads; they are not independent evidence of prices, market share or sales.</p>
+<form id="scan-form" class="horizontal-form"><label class="sr-only" for="scan-query">Industry research topic</label><input id="scan-query" type="text" minlength="8" maxlength="120" required value="India premium carbon bicycle market" placeholder="Industry and region to investigate"><button type="submit">Scan public signals</button></form>
+<p id="scan-status" role="status" class="mini-status">No external scan requested.</p><ol id="signal-list" class="signal-list"></ol></section>
+<section class="panel" aria-labelledby="archive-title"><div class="section-head"><div><p class="kicker">03 / INSTITUTIONAL MEMORY</p><h2 id="archive-title">Case-study archive</h2></div><span class="tag">FOUNDER ONLY</span></div><p class="subtle">Immutable case versions stored in the existing VAOS R2 artifact bucket. No order, ledger or engineering release is changed.</p><button id="refresh-archive" class="secondary" type="button">Refresh saved studies</button><p id="archive-status" role="status" class="mini-status">Archive not queried.</p><ul id="archive-list" class="archive-list"></ul></section>
+</div>
+<section class="panel model-panel" aria-labelledby="model-title"><div class="section-head"><div><p class="kicker">02 / CASE BUILDER</p><h2 id="model-title">Create an evidence-linked business case</h2></div><button class="secondary" type="button" id="load-illustration">Load VYNDI illustrative example</button></div>
+<p class="subtle">Enter actual source references separately from scenario assumptions. Leave financial assumptions blank to prepare an evidence-only study. Examples are never treated as verified VYNDI accounts.</p>
+<form id="case-form"><div class="field-grid">
+<label>Case identifier<input id="case-id" required pattern="[A-Z][A-Z0-9-]{5,79}" value="BUSINESS-CASE-003" maxlength="80"></label>
+<label>As-of date<input id="as-of" type="date" required value="2026-11-06"></label>
+<label class="wide">Research title<input id="case-title" required minlength="10" maxlength="180" value="VYNDI carbon endurance/gravel bicycle market entry"></label>
+<label class="wide">Market and geography<input id="case-market" required minlength="10" maxlength="200" value="India premium carbon endurance bicycles"></label>
+</div>
+<div class="section-divider"><span>PUBLIC REFERENCE REGISTER</span><span id="source-count">0 SOURCES</span></div>
+<div class="source-actions"><button id="load-references" type="button" class="secondary">Include documented NITI + ZIV references</button><button id="clear-references" type="button" class="tertiary">Clear references</button></div>
+<ol id="reference-list" class="reference-list"><li>No cited evidence selected. Research conclusions remain on HOLD.</li></ol>
+<div class="section-divider"><span>ILLUSTRATIVE UNIT ECONOMICS</span><span>NO CERTIFIED FORECAST</span></div>
+<div class="field-grid numeric-grid">
+<label>Selling price / unit (INR)<input name="sellingPrice" type="number" min="1" step="any" placeholder="No assumption"></label>
+<label>Variable cost / unit (INR)<input name="variableCost" type="number" min="0" step="any" placeholder="No assumption"></label>
+<label>Fixed cost / month (INR)<input name="monthlyFixedCost" type="number" min="0" step="any" placeholder="No assumption"></label>
+<label>Bear demand (units/month)<input name="bear" type="number" min="0" step="1" placeholder="—"></label>
+<label>Base demand (units/month)<input name="base" type="number" min="0" step="1" placeholder="—"></label>
+<label>Bull demand (units/month)<input name="bull" type="number" min="0" step="1" placeholder="—"></label>
+</div>
+<div class="form-actions"><button id="generate-case" type="submit">Generate case study</button><button id="save-case" type="button" class="secondary" disabled>Save a version in VAOS</button><button id="export-case" type="button" class="tertiary" disabled>Export Markdown</button></div></form><p id="case-status" role="status" aria-live="polite" class="mini-status">No case study generated.</p>
+<div id="result" class="result" hidden>
+<div class="result-head"><div><p class="kicker">RESEARCH / SCENARIO ONLY</p><h3 id="result-heading">Analyst brief</h3></div><span id="decision-status" class="decision">HOLD</span></div>
+<p id="decision-summary" class="decision-summary"></p>
+<div class="kpi-grid"><div class="kpi"><small>Unit contribution</small><strong id="unit-contribution">—</strong></div><div class="kpi"><small>Illustrative break-even</small><strong id="break-even">—</strong></div><div class="kpi"><small>Referenced sources</small><strong id="source-total">—</strong></div></div>
+<div id="scenario-bars" class="scenario-bars" role="region" aria-label="Illustrative monthly operating surplus scenarios"></div>
+<details><summary>Complete report and evidence limitations</summary><pre id="case-markdown"></pre></details></div>
+</section>
+<footer>VAOS / JARVIS MARKET INTELLIGENCE · RESEARCH-ONLY PILOT <span>Sources require verification · R2 archives are founder-scoped · No commercial actions authorised</span></footer>
+</main><p id="login-check" class="login-check" role="status">Checking authorised VAOS session…</p>
+<script type="module" src="/market-intelligence.mjs"></script></body></html>

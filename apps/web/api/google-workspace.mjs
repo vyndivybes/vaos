@@ -133,18 +133,19 @@ function allowedScopes(raw){
  const granted=normalizeGrantedScopes(raw);
  return SCOPES.every(scope=>granted.includes(scope));
 }
-async function oauthStart(env,now){
+async function oauthStart(env,now,mode='calendar'){
+ const requestedScopes=mode==='knowledge'?EXTENDED_SCOPES:SCOPES;
  const check=googleWorkspaceReadiness(env);
  if(!check.ready)return reply(503,{...check,reason:'OAUTH_CLIENT_OR_HARDENED_AUTH_MISSING'});
  const state=randomUrl(),verifier=randomUrl(),sha=await crypto.subtle.digest('SHA-256',enc.encode(verifier));
- const pending={state,verifier,expiresAt:now()+600000,consumed:false};
+ const pending={state,verifier,requestedScopes,expiresAt:now()+600000,consumed:false};
  const result=await env.VAOS_ARTIFACTS.put(PENDING+state+'.json',JSON.stringify(pending),{
   onlyIf:new Headers({'If-None-Match':'*'}),httpMetadata:{contentType:'application/json'}});
  if(!result)return reply(503,hold('OAUTH_STATE_STORAGE_UNAVAILABLE'));
  const u=new URL('https://accounts.google.com/o/oauth2/v2/auth');
  u.search=new URLSearchParams({
   client_id:env.GOOGLE_OAUTH_CLIENT_ID,response_type:'code',
-  redirect_uri:ORIGIN+'/api/google-workspace/callback',scope:EXTENDED_SCOPES.join(' '),
+  redirect_uri:ORIGIN+'/api/google-workspace/callback',scope:requestedScopes.join(' '),
   access_type:'offline',prompt:'consent',state,
   code_challenge:bytes64(new Uint8Array(sha)),code_challenge_method:'S256',
   login_hint:FOUNDER
@@ -177,7 +178,9 @@ async function oauthCallback(req,env,fetchImpl,now){
    client_secret:env.GOOGLE_OAUTH_CLIENT_SECRET,redirect_uri:ORIGIN+'/api/google-workspace/callback',
    code,code_verifier:p.verifier,grant_type:'authorization_code'
   });
-  if(!allowedScopes(tok.scope)||typeof tok.refresh_token!=='string'||tok.refresh_token.length<8)
+  if(!allowedScopes(tok.scope)||!Array.isArray(p.requestedScopes)||
+     !p.requestedScopes.every(s=>normalizeGrantedScopes(tok.scope).includes(s))||
+     typeof tok.refresh_token!=='string'||tok.refresh_token.length<8)
    return reply(503,hold('OAUTH_SCOPES_OR_REFRESH_TOKEN_MISSING'));
   // Manual redirect handling prevents a bearer token being forwarded.
   let identity;
@@ -467,7 +470,12 @@ export function createGoogleWorkspaceHandler({authorized=isFounder,fetchImpl=fet
    try{consentPresent=Boolean(await env?.VAOS_ARTIFACTS?.get(RECORD))}catch{}
    return reply(200,{...ready,consentPresent});
   }
-  if(path==='/api/google-workspace/start')return oauthStart(env,now);
+  if(path==='/api/google-workspace/start'){
+   const params=new URL(req.url).searchParams;
+   const mode=params.get('scope')||'calendar';
+   if(params.size>1||!['calendar','knowledge'].includes(mode))return reply(422,hold('GOOGLE_CONSENT_SCOPE_INVALID'));
+   return oauthStart(env,now,mode);
+  }
   if(path==='/api/google-workspace/brief')return reply(200,await readGoogleWorkspaceBrief(env,{fetchImpl,now}));
   if(path==='/api/google-workspace/events')return reply(200,await readFounderCalendarEvents(env,{fetchImpl,now}));
   if(path==='/api/google-workspace/drive'){

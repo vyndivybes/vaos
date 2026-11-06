@@ -27,7 +27,7 @@ function out(){const data={status:200,body:null};const res={setHeader(){return t
  json(v){data.body=v;return this}};return {res,data};}
 async function run(handler,req){const {res,data}=out();await handler(req,res);return data;}
 test('route is protected by founder authentication and commissioning flag',async()=>{
- assert.equal(typeof DEFAULT_API_HANDLERS['/api/history-index'],'function');
+ assert.equal(typeof DEFAULT_API_HANDLERS['/api/history-index/status'],'function');
  const h=createHistoryIndexHandler({makeStore:fakeStore});
  assert.equal((await run(h,{...request('/status'),headers:{cookie:''}})).status,401);
  assert.equal((await run(h,request('/status','GET',null,{email:'other@example.com'}))).status,403);

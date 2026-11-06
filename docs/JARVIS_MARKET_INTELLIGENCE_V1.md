@@ -120,3 +120,11 @@ idempotency, authentication, cross-origin rejection and DOM contract tests.
 Live R2 persistence, Cloudflare deployment, upstream service quotas, browser
 and authenticated founder session remain independently qualified release
 conditions, not assumed from repository tests.
+
+### GDELT query budget
+
+The three-brand watchlist uses **one combined OR query** per daily scan,
+not three simultaneous DOC API requests. This respects the conservative
+public-service request limit and reduces free-tier throttling. Articles
+without a recognisable brand term in the title are not attributed to a
+watchlisted competitor. Headline matches are not product/price proof.

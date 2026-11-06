@@ -116,3 +116,8 @@ footer{border-top:1px solid var(--line);padding:20px clamp(16px,3vw,42px);displa
 .knowledge-record h3{font-size:12px;overflow-wrap:anywhere;color:#e9d4a8;margin-bottom:10px}
 .knowledge-record p{font-size:10px;color:#a6beca;overflow-wrap:anywhere;margin-bottom:8px}
 .knowledge-record a{font-size:11px;color:#8cd9e4}
+
+#personal-google-service{background:#142839;border:1px solid #39566a;color:#e8f2f7;border-radius:8px;padding:10px;max-width:150px}
+#personal-google-connect{font-size:11px;border:1px solid #b19b73;padding:10px 13px;border-radius:8px;color:#e8ca93}
+#personal-google-connect:hover{background:rgba(225,188,124,.12)}
+@media(max-width:560px){#personal-google-service{max-width:none;width:100%}#personal-google-search{flex-direction:column}}

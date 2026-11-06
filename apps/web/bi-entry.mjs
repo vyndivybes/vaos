@@ -8,6 +8,7 @@ if(host)mountBiStudio(host,{
   const packets=[];for(const employee of d.agents)packets.push(await request('/api/enterprise-bi?'+new URLSearchParams({from:d.from,to:d.to,employee,limit:'5',primary:'1',...(d.metric==='crm'?{crm:'1'}:{})})));
   return {enterprise:{...packets[0],departments:packets.flatMap(p=>p.departments)},workforce:null};
  },
+ checkOntology:()=>request('/api/nvidia/ontology/readiness'),
  list:()=>request('/api/dashboards'),open:id=>request('/api/dashboards?id='+encodeURIComponent(id)),
  save:data=>request('/api/dashboards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}),
 });

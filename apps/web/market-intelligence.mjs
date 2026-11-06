@@ -116,14 +116,14 @@ function resetGenerated(message){
  $('result').hidden=true;$('case-status').textContent=message;
 }
 async function refreshArchive(){
- $('archive-status').textContent='Checking founder-only archive…';
+ $('archive-status').textContent='Looking for your saved research…';
  const list=$('archive-list');list.replaceChildren();
  try{
   const data=await api(API);
   const rows=(data.records||[]).slice().reverse();
   $('archive-status').textContent=rows.length+' archived study version(s)'+
    (data.partial?' (partial listing)':'');
-  if(!rows.length)list.append(element('li','No archived research studies yet.'));
+  if(!rows.length)list.append(element('li','No saved research yet. Build a case study and save a version when you are ready.'));
   for(const record of rows){
    const li=element('li'),meta=element('span');
    meta.append(element('strong',record.id));
@@ -141,25 +141,25 @@ async function refreshArchive(){
    });
    li.append(meta,button);list.append(li);
   }
- }catch(e){$('archive-status').textContent='Archive HOLD — '+e.message;}
+ }catch(e){$('archive-status').textContent='Archive HOLD — we could not load saved research. You can try again. (Code: '+e.message+')';}
 }
 async function scan(e){
  e.preventDefault();const list=$('signal-list');list.replaceChildren();
  const topic=$('scan-query').value.trim();
- $('scan-status').textContent='Checking public headline context…';
+ $('scan-status').textContent='Checking recent public news for your topic…';
  try{
   const result=await api(API+'?q='+encodeURIComponent(topic));
   const context=result.context;
   $('scan-status').textContent=context.items.length+' contextual headline(s) · '+
    context.status+' · NOT verified market measurements';
-  if(!context.items.length)list.append(element('li','No qualified recent headlines retrieved. Do not infer market demand from this.'));
+  if(!context.items.length)list.append(element('li','No recent matching headlines were available. This is not evidence that market demand is zero.'));
   for(const item of context.items){
    const li=element('li'),anchor=element('a',item.title);
    anchor.href=item.url;anchor.rel='noopener noreferrer';anchor.target='_blank';
    li.append(anchor,element('small',item.publisher+' · '+item.published.slice(0,10)+
     ' · UNVERIFIED HEADLINE'));list.append(li);
   }
- }catch(err){$('scan-status').textContent='Public scan HOLD — '+err.message;}
+ }catch(err){$('scan-status').textContent='Public scan HOLD — we could not complete the news search. Try again later. (Code: '+err.message+')';}
 }
 async function generate(e){
  e.preventDefault();resetGenerated('Preparing scenario from entered assumptions and references…');
@@ -169,21 +169,21 @@ async function generate(e){
   const result=await api(API,{method:'POST',headers:{'Content-Type':'application/json'},
    body:JSON.stringify({operation:'PREVIEW',case:request})});
   showReport(result);lastInput=request;$('save-case').disabled=false;
-  $('case-status').textContent='Research preview prepared. Source citations are unverified and all financial values remain scenarios. No archive write occurred.';
+  $('case-status').textContent='Your draft is ready. The sources still need checking, and the financial figures use your assumptions. Nothing has been saved yet.';
  }catch(err){$('case-status').textContent='CASE HOLD — '+err.message;}
  finally{$('generate-case').disabled=false;}
 }
 async function save(){
  if(!lastInput||!generated)return;
  if(!confirm('Save an immutable founder-only research version to VAOS R2? This will NOT approve any business decision.'))return;
- $('save-case').disabled=true;$('case-status').textContent='Archiving version with explicit consent…';
+ $('save-case').disabled=true;$('case-status').textContent='Saving a separate version of your research…';
  try{
   const result=await api(API,{method:'POST',headers:{'Content-Type':'application/json'},
    body:JSON.stringify({operation:'SAVE',case:lastInput,confirm:true})});
   $('case-status').textContent='Archived '+result.id+' version '+result.version+
    ' — market proof and forecast qualification remain HOLD.';
   await refreshArchive();
- }catch(err){$('case-status').textContent='ARCHIVE HOLD — '+err.message;}
+ }catch(err){$('case-status').textContent='ARCHIVE HOLD — we could not save this version. Your earlier saved versions are unchanged. (Code: '+err.message+')';}
  finally{$('save-case').disabled=false;}
 }
 function exportReport(){
@@ -199,7 +199,7 @@ window.addEventListener('vaos:case-bridge-reference',event=>{
  const record=internalCaseReferences[id];
  if(!currentReferences.some(x=>x.url===record.url))currentReferences.push({...record});
  showReferences();
- resetGenerated('Private case '+id+' referenced in the next research preview. Internal assumptions remain unverified.');
+ resetGenerated('Added '+id+' as a reference for your next draft. Its assumptions have not been independently checked.');
 });
 async function init(){
  try{
@@ -220,7 +220,7 @@ async function init(){
   $('load-illustration').addEventListener('click',()=>{
    const sample={sellingPrice:55000,variableCost:36000,monthlyFixedCost:200000,bear:6,base:12,bull:20};
    for(const [key,value]of Object.entries(sample))$('case-form').elements.namedItem(key).value=String(value);
-   $('case-status').textContent='ILLUSTRATIVE EXAMPLE LOADED — amounts are not verified VYNDI supplier prices, BOM or financial actuals.';
+   $('case-status').textContent='Example values added. They are for illustration only, not verified VYNDI supplier quotes, bill of materials or accounts.';
   });
   showReferences();await refreshArchive();
  }catch(err){$('login-check').textContent='VAOS session unavailable — '+err.message;}

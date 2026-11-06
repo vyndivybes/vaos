@@ -13,6 +13,11 @@ on:
       - 'wrangler.jsonc'
       - 'apps/web/api/market-case-studies*.mjs'
       - 'apps/web/market-intelligence.*'
+      - 'apps/web/market-human-language.test.mjs'
+      - 'README.md'
+      - 'CONTRIBUTING.md'
+      - 'docs/WRITING_FOR_PEOPLE.md'
+      - 'docs/JARVIS_MARKET_INTELLIGENCE_V1.md'
       - 'apps/web/cloudflare-worker.mjs'
       - 'knowledge/business-cases/BUSINESS-CASE-003.md'
       - '.github/workflows/jarvis-market-intelligence.yml'
@@ -44,4 +49,4 @@ jobs:
           node --check apps/web/market-intelligence.mjs
           node --check apps/web/cloudflare-worker.mjs
       - name: Test analytical accuracy, provenance, access controls, archive and RSS
-        run: node --test intelligence/market-public-sources.test.mjs intelligence/market-series-forecast.test.mjs intelligence/market-monitoring.test.mjs apps/web/api/market-public-intelligence.test.mjs apps/web/market-public-intelligence-ui.test.mjs intelligence/market-continuity.test.mjs intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs apps/web/market-intelligence.test.mjs
+        run: node --test apps/web/market-human-language.test.mjs intelligence/market-public-sources.test.mjs intelligence/market-series-forecast.test.mjs intelligence/market-monitoring.test.mjs apps/web/api/market-public-intelligence.test.mjs apps/web/market-public-intelligence-ui.test.mjs intelligence/market-continuity.test.mjs intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs apps/web/market-intelligence.test.mjs

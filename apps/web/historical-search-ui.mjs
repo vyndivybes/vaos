@@ -34,6 +34,7 @@ document.getElementById('historical-search').addEventListener('submit',async eve
    }
    cursor=data.hasMore?data.nextCursor:null;
   }while(cursor&&pages<3);
+  window.dispatchEvent(new CustomEvent('vaos:historical-results',{detail:{source,rows:[...resultList.querySelectorAll('article')].length}}));
   notice.textContent='Search inspected '+pages+' encrypted archive page(s), found '+
    resultList.children.length+' matches. Results are bounded; the complete archive is not certified.';
  }catch(error){notice.textContent='History search HOLD · '+String(error.message||'UNAVAILABLE');}

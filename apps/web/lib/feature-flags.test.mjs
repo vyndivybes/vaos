@@ -39,3 +39,10 @@ test('ElevenLabs personal control uses the existing bundle without adding a bill
  assert.equal(featureControl(config.vars,'VAOS_ELEVENLABS_CONTROL'),'free-personal-v1');
  for(const [name,value] of Object.entries(flags))assert.equal(featureControl(config.vars,name),value);
 });
+
+test('Neural founder read flag fits the existing feature bundle without consuming a new Worker variable',async()=>{
+ const config=JSON.parse(await readFile(new URL('../../../wrangler.jsonc',import.meta.url),'utf8'));
+ assert.equal(Object.hasOwn(config.vars,'VAOS_NEURAL_KNOWLEDGE_CONTROL'),false);
+ assert.equal(featureControl(config.vars,'VAOS_NEURAL_KNOWLEDGE_CONTROL'),'founder-readonly-v1');
+ assert.equal(featureControl({VAOS_FEATURE_FLAGS:'{}'},'VAOS_NEURAL_KNOWLEDGE_CONTROL'),undefined);
+});

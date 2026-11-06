@@ -56,6 +56,8 @@ import sparkBridge from './api/spark-bridge.mjs';
 import businessAdvisor from './api/business-advisor.mjs';
 import jarvisDataAgent from './api/jarvis-data-agent.mjs';
 import marketCaseStudies from './api/market-case-studies.mjs';
+import marketPublicIntelligence from './api/market-public-intelligence.mjs';
+import {runScheduledMarketMonitor} from '../../intelligence/market-monitoring.mjs';
 import marketCaseBridge from './api/market-case-bridge.mjs';
 import adaptiveIntelligence from './api/adaptive-intelligence.mjs';
 import jarvisAuthorityGraph from './api/jarvis-authority-graph.mjs';
@@ -146,6 +148,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/business-advisor': businessAdvisor,
   '/api/jarvis-data-agent': jarvisDataAgent,
   '/api/market-case-studies': marketCaseStudies,
+  '/api/market-public-intelligence': marketPublicIntelligence,
   '/api/market-case-bridge': marketCaseBridge,
   '/api/adaptive-intelligence': adaptiveIntelligence,
   '/api/jarvis-authority-graph': jarvisAuthorityGraph,
@@ -397,6 +400,13 @@ export default {
       }),{httpMetadata:{contentType:'application/json'}});}catch{}
       console.warn('VAOS_SLACK_FOUNDER_AGENT_HOLD',reason);
     });
+    const marketMonitor=Promise.resolve().then(()=>runScheduledMarketMonitor({
+      env,scheduledTime:_controller?.scheduledTime
+    })).then(result=>console.log('VAOS_DAILY_MARKET_MONITOR',JSON.stringify({
+      status:result.status,checkedAt:result.collectedAt||null,
+      sourceStatus:result.evidence?.sourceQualification||null,
+      demandForecastQualified:false,actionAuthorized:false
+    }))).catch(()=>console.warn('VAOS_DAILY_MARKET_MONITOR_HOLD'));
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.
     // Preserve the independently qualified four-provider scheduling contract.
@@ -405,7 +415,7 @@ export default {
     });
     // Keep the optional, fail-closed observer within waitUntil without changing
     // any existing mission/watchdog/synthetic/Stirling result semantics.
-    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert,googleDigest]).then(results=>{
+    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert,googleDigest,marketMonitor]).then(results=>{
       if(results[0].status==='rejected')throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 

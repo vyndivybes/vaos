@@ -35,3 +35,19 @@ footer{display:flex;justify-content:space-between;gap:25px;border-top:1px solid 
 .continuity-summary{margin:20px 0;padding:19px;border-radius:14px;background:linear-gradient(135deg,#152d3b,#101e2f);border:1px solid #577087}
 .continuity-summary .kpi-grid{margin:12px 0}
 .continuity-summary .subtle{margin-bottom:0}
+
+/* Market observatory: source provenance is visually distinct from hypothetical financial cases. */
+.intelligence-public-panel{margin:20px 0 25px;background:linear-gradient(145deg,#13283b,#0a1a2b)}
+.public-market-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:22px 0}
+.public-market-box{padding:18px;border:1px solid #365875;border-radius:14px;background:#09182b;margin:12px 0}
+.public-market-box h3{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:2px 0 14px;font-size:17px;color:#f1d5a5}
+.market-metric-stack{display:grid;gap:10px}
+.market-metric{display:grid;gap:7px;padding:12px;border-radius:10px;background:#15263d;color:#cedce7}
+.market-metric span{color:#a1cad6;font-variant-numeric:tabular-nums}
+.market-metric a,.market-competitor-list a{color:#91d5e6;overflow-wrap:anywhere;text-decoration:none}
+.market-metric a:hover,.market-competitor-list a:hover{text-decoration:underline}
+.market-competitor-list{list-style:none;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));padding:0;gap:12px}
+.market-competitor-list li{display:flex;flex-direction:column;gap:8px;padding:15px;border-radius:11px;background:#12253b;border:1px solid #35506d;line-height:1.45;font-size:12px}
+.market-competitor-list small{color:#9aacc5}
+@media(max-width:900px){.market-competitor-list{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:660px){.public-market-grid,.market-competitor-list{grid-template-columns:1fr}}

@@ -18,6 +18,39 @@
 <p id="scan-status" role="status" class="mini-status">No external scan requested.</p><ol id="signal-list" class="signal-list"></ol></section>
 <section class="panel" aria-labelledby="archive-title"><div class="section-head"><div><p class="kicker">03 / INSTITUTIONAL MEMORY</p><h2 id="archive-title">Case-study archive</h2></div><span class="tag">FOUNDER ONLY</span></div><p class="subtle">Immutable case versions stored in the existing VAOS R2 artifact bucket. No order, ledger or engineering release is changed.</p><button id="refresh-archive" class="secondary" type="button">Refresh saved studies</button><p id="archive-status" role="status" class="mini-status">Archive not queried.</p><ul id="archive-list" class="archive-list"></ul></section>
 </div>
+<section class="panel intelligence-public-panel" aria-labelledby="public-intel-title">
+<div class="section-head">
+<div><p class="kicker">04 / OFFICIAL PUBLIC DATA + WATCHLIST</p><h2 id="public-intel-title">Industry intelligence observatory</h2></div>
+<span class="tag">FOUNDER READ-ONLY</span>
+</div>
+<p class="subtle">Official World Bank indicators, UN Comtrade preview and GDELT competitor news. These feeds cannot establish frameset market size, supplier pricing or independently qualified VYNDI demand forecasts. Daily evidence snapshots only; failed sources remain on HOLD.</p>
+<div class="source-actions">
+<button id="market-public-load" class="secondary" type="button">Load latest public snapshot</button>
+<button id="market-public-refresh" type="button">Refresh public evidence</button>
+</div>
+<p id="market-public-status" role="status" aria-live="polite" class="mini-status">No public data snapshot loaded.</p>
+<div class="public-market-grid">
+<div class="public-market-box">
+<h3>India macro indicators <span class="tag">WORLD BANK</span></h3>
+<div id="market-worldbank" class="market-metric-stack">No observations loaded.</div>
+</div>
+<div class="public-market-box">
+<h3>Bicycle import signal <span class="tag">UN COMTRADE</span></h3>
+<p class="subtle">HS 8712 · Non-motorized bicycles imported into India, worldwide aggregate, current USD. Not carbon framesets.</p>
+<div id="market-comtrade" class="market-metric-stack">No observations loaded.</div>
+</div>
+</div>
+<div class="public-market-box public-market-forecast" aria-label="Historical indicator model quality">
+<h3>Backtested indicator extrapolations <span class="tag">NOT BICYCLE DEMAND FORECASTS</span></h3>
+<p class="subtle">Three rolling-origin holdouts compare a three-point moving mean to the last-known-value baseline. No independently verified commercial-demand forecast is generated.</p>
+<div id="market-indicator-backtests" class="market-metric-stack">No validated time series loaded.</div>
+</div>
+<div class="public-market-box">
+<div class="section-head"><h3>Competitor news watchlist <span class="tag">GDELT DISCOVERY</span></h3><span id="market-new-articles" class="tag">NO VERIFIED PRICE CHANGES</span></div>
+<p class="subtle">Trek, Giant and Canyon keyword matches. Article titles are unverified leads; additions are not product launches or confirmed competitive actions.</p>
+<ul id="market-competitor-articles" class="market-competitor-list"><li>No monitored articles loaded.</li></ul>
+</div>
+</section>
 <section class="panel private-case-panel" aria-labelledby="private-case-heading">
 <div class="section-head"><div><p class="kicker">SECURE KNOWLEDGE / ORIGINAL BUSINESS CASES</p>
 <h2 id="private-case-heading">Your existing case studies</h2></div><span class="tag">FOUNDER ACCESS · INTEGRITY CHECKED</span></div>
@@ -86,4 +119,5 @@
 <footer>VAOS / JARVIS MARKET INTELLIGENCE · RESEARCH-ONLY PILOT <span>Sources require verification · R2 archives are founder-scoped · No commercial actions authorised</span></footer>
 </main><p id="login-check" class="login-check" role="status">Checking authorised VAOS session…</p>
 <script type="module" src="/market-intelligence.mjs"></script>
+<script type="module" src="/market-public-intelligence.mjs"></script>
 <script type="module" src="/market-case-bridge-ui.mjs"></script></body></html>

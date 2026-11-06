@@ -9,11 +9,11 @@ async function fixture({email='shyamsundhar1982@gmail.com',corrupt=false,missing
  const f=[{id:'case1-doc',caseId:'BUSINESS-CASE-001',sourceSha256:'a'.repeat(64),
   sourceFileName:'Model.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   text:'Source 2026 cost assumptions. Frameset landed BOM is hypothetical. A warranty reserve is required.',
-  status:'PARSED_UNVERIFIED_FORMULAS_NOT_RECALCULATED',schemaVersion:'VAOS_CASE_DOC_TEXT_V1'},
+  status:'PARSED_UNVERIFIED_FORMULAS_NOT_RECALCULATED',schemaVersion:'VAOS_CASE_DOC_TEXT_V1',actionAuthorized:false},
   {id:'case2-pdf',caseId:'BUSINESS-CASE-002',sourceSha256:'b'.repeat(64),
   sourceFileName:'Capital plan.pdf',mimeType:'application/pdf',
   text:'Engineering services first. Avoid owned factory CAPEX until orders and supplier validation are proven.',
-  status:'PARSED_UNVERIFIED',schemaVersion:'VAOS_CASE_DOC_TEXT_V1'}];
+  status:'PARSED_UNVERIFIED',schemaVersion:'VAOS_CASE_DOC_TEXT_V1',actionAuthorized:false}];
  const docs=f.map(x=>({...x,documentId:x.id}));
  const content1=JSON.stringify(docs[0]),content2=JSON.stringify(docs[1]);
  const map=new Map([['archive1',archive1],['archive2',archive2],['doc1',content1],['doc2',content2]]);

@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief,readFounderCalendarEvents,readFounderGmail,createFounderCalendarReminder} from './google-workspace.mjs';
+import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief,readFounderCalendarEvents,readFounderGmail,readFounderDrive,createFounderCalendarReminder} from './google-workspace.mjs';
 
 const ORIGIN='https://vaos.vayushastr.workers.dev';
 const ctx={email:'shyamsundhar1982@gmail.com'};
@@ -91,8 +91,8 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  assert.equal(consent.searchParams.get('code_challenge_method'),'S256');
  assert.equal(consent.searchParams.get('access_type'),'offline');
  const requestedScopes=new Set(consent.searchParams.get('scope').split(' '));
- assert.deepEqual([...requestedScopes].sort(),['openid','email','https://www.googleapis.com/auth/calendar.events'].sort());
- assert.equal(requestedScopes.has('https://www.googleapis.com/auth/gmail.readonly'),false);
+ assert.deepEqual([...requestedScopes].sort(),['openid','email','https://www.googleapis.com/auth/calendar.events','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly'].sort());
+ assert.equal(requestedScopes.has('https://www.googleapis.com/auth/gmail.readonly'),true);
  const state=consent.searchParams.get('state');
  assert.ok(s.storage.has('runtime/google-workspace/oauth-pending/'+state+'.json'));
  const cookie=start.headers.get('set-cookie').split(';')[0];
@@ -486,4 +486,16 @@ test('calendar status interpretation is restricted to safe diagnostic codes',asy
  assert.equal(calendarApiFailureReason(400),'GOOGLE_CALENDAR_REQUEST_INVALID');
  assert.equal(calendarApiFailureReason(302),'GOOGLE_CALENDAR_REDIRECT_REJECTED');
  assert.equal(calendarApiFailureReason(500),'GOOGLE_CALENDAR_PROVIDER_UNAVAILABLE');
+});
+
+test('Drive metadata reader requires explicit founder reconsent and does not fetch document bodies',async()=>{
+ const context=setup();const out=await readFounderDrive(context.env,'VAOS',{fetchImpl:context.fetchImpl});
+ assert.equal(out.status,'HOLD');
+ assert.ok(['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED'].includes(out.reason));
+ assert.equal(context.calls.some(x=>x.url.includes('/drive/v3/files')),false);
+});
+test('Personal Google Drive is never returned through an unauthenticated GET route',async()=>{
+ const s=setup();const handler=createGoogleWorkspaceHandler({authorized:()=>false,fetchImpl:s.fetchImpl});
+ const response=await handler({method:'GET',url:'https://vaos.vayushastr.workers.dev/api/google-workspace/drive?q=VAOS',headers:{},env:s.env});
+ assert.equal(response.status,403);
 });

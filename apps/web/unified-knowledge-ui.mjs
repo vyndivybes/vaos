@@ -181,6 +181,15 @@ async function loadRepos(){
  finally{button.disabled=false;}
 }
 $('universe-repos').addEventListener('click',loadRepos);
+window.addEventListener('vaos:historical-results',event=>{
+ const {source,rows} = event.detail||{};
+ if(!['gmail','drive'].includes(source)||!Array.isArray(rows))return;
+ const records=rows.slice(0,180).map(r=>source==='gmail'?{id:r.id,subject:r.label}:{id:r.id,name:r.label});
+ docs.set(source,googleSearchGraph(source,records));
+ const box=[...$('universe-sources').querySelectorAll('input')].find(x=>x.value===source);
+ if(box)box.checked=true;
+ focus=null;rebuild();
+});
 $('universe-load').addEventListener('click',load);
 $('universe-private-form').addEventListener('submit',searchPrivate);
 $('universe-chat-file').addEventListener('change',importHistory);

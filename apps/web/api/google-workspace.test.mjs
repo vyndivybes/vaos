@@ -518,7 +518,7 @@ test('explicit knowledge consent reads only Drive metadata without downloading d
  const setupData=setup();
  setupData.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
  const scope=['openid','email','https://www.googleapis.com/auth/calendar.events',
-  'https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly'].join(' ');
+  'https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/drive.readonly','https://www.googleapis.com/auth/gmail.readonly'].join(' ');
  const seen=[];
  const fetchImpl=async(url,opts)=>{
   seen.push({url,method:opts.method});

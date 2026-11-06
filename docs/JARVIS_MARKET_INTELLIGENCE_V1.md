@@ -41,3 +41,32 @@
 - Governed mission queue for recurring research, review/correction and versioned citations, tenant isolation and retrieval/semantic indexes.
 
 Until these gates are independently demonstrated, classify this implementation as **FOUNDER RESEARCH PILOT**, not complete autonomous analyst or production-verified forecasting.
+
+## v1.1 add-on: supply-chain BCP stress (2026-11-06)
+
+The existing founder market case builder also accepts an **optional** `continuity` object.
+Provide all six bounded values: `cashReserve`, `demandDropPct`,
+`variableCostIncreasePct`, `supplierRecoveryDays`, `inventoryCoverDays`,
+and `recoveryCost`. Financial unit-economics inputs must also be present.
+The builder evaluates one conservative **30-day stress window** using base demand,
+rounded-down sellable units, unavailable supplier days exceeding inventory cover,
+increased variable cost, unchanged monthly fixed cost and one-off recovery cost.
+
+Outputs: modeled supply-interruption days, stressed units, first-month and recurring
+operating-surplus estimates, cash after recovery, hypothetical cash-loss coverage
+months and an explicit recovery funding HOLD if cash is insufficient.
+A negative first-month result, recovery funding shortfall or <3 months modeled
+cash-loss coverage downgrades the case recommendation to HOLD.
+Cash-loss coverage is not a validated business cash-flow forecast.
+No daily scheduling, alternative-source lead time, receivables, taxes, CAPEX,
+payables, working capital, customer orders, supplier receipts or currency exposure
+is incorporated. Values are supplied assumptions, not observed operational facts.
+
+Validation: `npm run test:market` and the GitHub market qualification workflow
+include the continuity engine and tests. Archive versions persist this new
+analysis inside the existing immutable case report; older versions without it
+remain readable. No new secrets, third-party paid feeds, new storage writes,
+new production finance/procurement capability or background job are introduced.
+
+**Release evidence remains required:** same-head CI green, independent browser
+and Cloudflare acceptance, and verification of any external market measurements.

@@ -1,6 +1,6 @@
 # VAOS Neutral Knowledge Graph — read-only VYNDI/SPARK federation
 
-Status: **source integration prepared; production disabled/unverified** (3 November 2026).
+Status: **founder-readonly gateway enabled in source configuration; production connection and live source availability remain unverified** (6 November 2026).
 Repositories: `vyndivybes/vaos`, `vyndivybes/vyndios`, `vyndivybes/spark`.
 No new service or paid inference subscription; no automatic migration of the personal Graphiti graph.
 
@@ -16,9 +16,9 @@ No new service or paid inference subscription; no automatic migration of the per
 ## VAOS user-facing surface
 
 `/neural-knowledge.html` — Founder Brain Graph; interactive nodes/edges, source inspector, provenance, source registry and explicit HOLD messages. No synthetic demo results. The authenticated read route is `GET /api/neural-knowledge?source=` with one of:
-`vyndi-vedm`, `graphify`, `graphiti`, `llm-wiki`, `brain-atlas`, `registry`.
+`vyndi-vedm`, `graphify`, `graphiti`, `llm-wiki`, `brain-atlas`, `obsidian`, `dify`, `registry`.
 
-The gateway is **off unless** `VAOS_NEURAL_KNOWLEDGE_CONTROL=founder-readonly-v1` is explicitly provisioned. It requires a founder session, refuses non-GET and arbitrary query parameters, returns no-store JSON, and masks upstream failures. It never accepts source bodies or arbitrary URLs from a client.
+The gateway stays **off unless** `VAOS_NEURAL_KNOWLEDGE_CONTROL=founder-readonly-v1` is explicitly provisioned. The founder-only value is proposed in `wrangler.jsonc`; it does not commission external sources or authorize writes. It requires a founder session, refuses non-GET and arbitrary query parameters, returns no-store JSON, and masks upstream failures. It never accepts source bodies or arbitrary URLs from a client.
 
 ## Source admission & cost controls
 
@@ -41,9 +41,9 @@ Snapshot example (illustrative schema only; do not upload fake source data):
 }
 ```
 
-Graphify/Brain Atlas payload: `nodes: [{id,title,type}], edges: [{source,target,type}]`.
+Graphify/Brain Atlas/Dify workflow metadata payload: `nodes: [{id,title,type}], edges: [{source,target,type}]`.
 Graphiti payload: `entities: [{id,name}], facts: [{source,target,relation,valid_at?,invalid_at?}]`.
-Wiki payload: `pages: [{id,title,sourceRef}], links: [{from,to,relation}]`.
+Wiki/Obsidian reviewed notes payload: `pages: [{id,title,sourceRef}], links: [{from,to,relation}]`.
 No raw text bodies, external contacts, credentials, personal episode content, non-allowlisted node fields or business writes are exported.
 
 ## Required evidence before operational declaration
@@ -55,3 +55,20 @@ No raw text bodies, external contacts, credentials, personal episode content, no
 5. **Release decision:** qualified read-only knowledge can inform explanations, but not release, purchasing, payments, payroll, ledger, production or engineering approvals. Keep all graph-derived statements source-linked with validity timestamps.
 
 No application secret, token, API subscription, and no local-PC installation is included in this PR.
+
+## 6 November 2026 — Unified Neural Intelligence source hub
+
+The browser now exposes seven source panels, searchable/pannable/zoomable graph views, and node/source provenance inspection. `Neural Schema` denotes an interchange contract, not a separately operating inference service. Obsidian supports metadata-only note backlinks and Dify supports metadata-only workflow topology. Neither raw source bodies nor untrusted URLs are rendered; no demo nodes are fabricated.
+
+**Not commissioned by this change:** remote access to the user's local SPARK machine, unreviewed Obsidian note bodies, Dify workflow execution, unattended synchronization, or certified live business state. The VYNDI signed export remains a reviewed engineering-reference graph.
+
+### Commissioning checklist (free-tier infrastructure only)
+
+1. Review and redact source metadata. Do not import contacts, private notes, credentials, employee data, private conversations or operational secrets. Pin an exact source revision and observed time.
+2. Produce envelope `schemaVersion=VAOS_NEUTRAL_GRAPH_SOURCE_V1`, an exact permitted `sourceType`, lowercase 40/64 hex `sourceRevision`, ISO `observedAt` and approved bounded `payload`.
+3. For Graphify, Graphiti, LLM Wiki, Brain Atlas, Obsidian and Dify, upload the approved envelope to `VAOS_ARTIFACTS` at `knowledge/neutral-v1/<sourceType>.json`, then configure its exact SHA-256 UTF-8 digest in `VAOS_NEURAL_GRAPH_SNAPSHOT_HASHES`. A bucket or hash setting alone does not prove a successful source read.
+4. For VYNDI OS, verify the signed `KNOWLEDGE.OBSERVE_VEDM_GRAPH` endpoint, provenance, replay resistance, returned node/edge counts and read-only authority.
+5. Authenticate as founder and inspect `GET /api/neural-knowledge?source=registry`, every permitted source API and `/neural-knowledge.html`. `401`, `403`, `409`, `503` or an empty node set must not be labeled operational PASS.
+6. Run `npm run test:neural-knowledge`, Cloudflare dry-run, regressions and authenticated browser acceptance before a production claim.
+
+**HOLD policy:** Unavailable source, failed signature, mismatching hash, absent R2 object or invalid schema remains visibly HOLD. Missing evidence never becomes decorative graph data.

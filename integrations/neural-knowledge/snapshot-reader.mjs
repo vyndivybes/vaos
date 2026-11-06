@@ -1,7 +1,7 @@
 /** Curated, content-addressed Graphify/Graphiti/Wiki/Atlas snapshots.
  * Never accepts a user-supplied bucket key, URL, or arbitrary Cloudflare object.
  */
-const SNAPSHOTS=Object.freeze(['graphify','graphiti','llm-wiki','brain-atlas']);
+const SNAPSHOTS=Object.freeze(['graphify','graphiti','llm-wiki','brain-atlas','obsidian','dify']);
 const HASH=/^[a-f0-9]{64}$/;
 const MAX_BYTES=350_000;
 function fail(code){const e=new Error('NEURAL_'+code);e.code='NEURAL_'+code;e.retryable=false;throw e}

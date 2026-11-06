@@ -115,3 +115,29 @@ test('invalid executive evidence reports source HOLD and no guessed business rea
  assert.match(r.dataReadiness.crm.reason,/unavailable/i);
  assert.ok(!JSON.stringify(r).includes('secret'));
 });
+
+test('canonical CRM order links are observed separately from estimates or collected revenue',()=>{
+ const p=report();
+ p.executiveSignals.datasets.crmOrderLinks=rows(
+  {category:'dealer',status:'lead',record_count:5},
+  {category:'dealer',status:'confirmed',record_count:2},
+  {category:'retail',status:'delivered',record_count:1},
+  {category:'retail',status:'cancelled',record_count:3});
+ const r=projectExecutiveIntelligence(p,finance);
+ assert.equal(r.crm.orderLinkStatus,'OBSERVED');
+ assert.equal(r.crm.linkedSalesOrders,11);
+ assert.equal(r.crm.linkedConfirmedOrders,2);
+ assert.equal(r.crm.linkedDeliveredOrders,1);
+ assert.equal(r.crm.forecastQualified,false);
+ assert.equal(r.dataReadiness.crm.status,'HOLD','order status evidence is not a dated won/lost forecast');
+});
+test('CRM linkage source missing or malformed stays HOLD without suppressing customer-master counts',()=>{
+ const p=report();
+ assert.equal(projectExecutiveIntelligence(p,finance).crm.orderLinkStatus,'HOLD');
+ p.executiveSignals.datasets.crmOrderLinks=rows({category:'dealer',status:'confirmed',record_count:1,email:'private'});
+ const r=projectExecutiveIntelligence(p,finance);
+ assert.equal(r.crm.orderLinkStatus,'HOLD');
+ assert.equal(r.crm.linkedConfirmedOrders,null);
+ assert.equal(r.crm.prospectCustomers,10);
+ assert.ok(!JSON.stringify(r).includes('private'));
+});

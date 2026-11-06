@@ -38,8 +38,8 @@ function node(x,source,kindKey,titleKey){
 }
 function edge(x,source,allowed){
  if(!x||typeof x!=='object'||Array.isArray(x))fail('EDGE_INVALID');
- const from=id(source==='graphiti'||source==='graphify'||source==='brain-atlas'?x.source:x.from);
- const to=id(source==='graphiti'||source==='graphify'||source==='brain-atlas'?x.target:x.to);
+ const from=id(source==='graphiti'||source==='graphify'||source==='brain-atlas'||source==='dify'?x.source:x.from);
+ const to=id(source==='graphiti'||source==='graphify'||source==='brain-atlas'||source==='dify'?x.target:x.to);
  const relation=text(x.relation||x.type,64);
  if(!from||!to||!relation||!REL.test(relation))fail('EDGE_INVALID');
  if(!allowed.has(from)||!allowed.has(to))return null;
@@ -77,8 +77,8 @@ export function normalizeNeutralGraph(input,{integrityVerified=false}={}){
  const hidden=new Set(originalNodes.filter(x=>x&&HIDDEN.has(String(x[kindKey]||'').toLowerCase())).map(x=>x.id));
  const edges=[];
  for(const rawEdge of originalEdges){
-  const f=source==='graphiti'||source==='graphify'||source==='brain-atlas'?rawEdge?.source:rawEdge?.from;
-  const t=source==='graphiti'||source==='graphify'||source==='brain-atlas'?rawEdge?.target:rawEdge?.to;
+  const f=source==='graphiti'||source==='graphify'||source==='brain-atlas'||source==='dify'?rawEdge?.source:rawEdge?.from;
+  const t=source==='graphiti'||source==='graphify'||source==='brain-atlas'||source==='dify'?rawEdge?.target:rawEdge?.to;
   if(hidden.has(f)||hidden.has(t))continue;
   const row=edge(rawEdge,source,unique);
   if(!row)fail('EDGE_INVALID');

@@ -27,7 +27,7 @@ test('visual switching is session gated and reuses the existing BI entrypoint',(
  assert.match(source,/session\.authenticated!==true/);
  assert.match(source,/await import\('\.\/bi-entry\.mjs'\)/);
  assert.match(source,/resolveVisualMode/);
- assert.match(source,/visual-command-native\\.mjs/);
+ assert.ok(source.includes('visual-command-native.mjs'));
  assert.doesNotMatch(source,/frame\\.src/);
  assert.doesNotMatch(source,/fetch\([^)]*method:\s*['"]POST/);
 });

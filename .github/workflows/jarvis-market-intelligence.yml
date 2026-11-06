@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'intelligence/market-case-study*.mjs'
+      - 'intelligence/market-continuity*.mjs'
       - 'apps/web/api/market-case-studies*.mjs'
       - 'apps/web/market-intelligence.*'
       - 'apps/web/cloudflare-worker.mjs'
@@ -26,9 +27,10 @@ jobs:
         run: node --version
       - name: Validate market intelligence syntax
         run: |
+          node --check intelligence/market-continuity.mjs
           node --check intelligence/market-case-study.mjs
           node --check apps/web/api/market-case-studies.mjs
           node --check apps/web/market-intelligence.mjs
           node --check apps/web/cloudflare-worker.mjs
       - name: Test analytical accuracy, provenance, access controls, archive and RSS
-        run: node --test intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs apps/web/market-intelligence.test.mjs
+        run: node --test intelligence/market-continuity.test.mjs intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs apps/web/market-intelligence.test.mjs

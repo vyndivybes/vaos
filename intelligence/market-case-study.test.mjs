@@ -61,3 +61,10 @@ test('no sources or input economics does not invent a forecast',()=>{
  assert.equal(report.scenarios,null);
  assert.equal(report.recommendation.status,'HOLD');
 });
+
+test('zero selling price is invalid and missing sources cannot qualify a pilot',()=>{
+ assert.throws(()=>buildMarketCaseStudy({...input(),
+  model:{...input().model,sellingPrice:0}}),/INVALID/);
+ const report=buildMarketCaseStudy({...input(),evidence:[]});
+ assert.equal(report.recommendation.status,'HOLD');
+});

@@ -8,6 +8,8 @@
 <link rel="stylesheet" href="/neural-knowledge.css">
 <script type="module" src="/neural-knowledge-ui.mjs"></script>
 <link rel="stylesheet" href="/vaos-global-theme.css" />
+<link rel="stylesheet" href="/unified-knowledge.css" />
+<script type="module" src="/unified-knowledge-ui.mjs"></script>
 </head>
 <body>
 <a class="skip-link" href="#graph-stage">Skip to knowledge graph</a>
@@ -65,6 +67,69 @@
    <section class="inspector-section"><h3>Find a node</h3><div id="node-results" class="node-results">Load a graph to inspect individual records.</div></section>
   </aside>
  </section>
+ <section class="universe" id="knowledge-universe" aria-labelledby="universe-title">
+  <div class="universe-head">
+   <div><p class="universe-kicker">SOURCE-VERIFIED INTELLIGENCE / MULTI-SOURCE EXPLORER</p>
+    <h2 id="universe-title">Knowledge Universe <span aria-hidden="true">✦</span></h2>
+    <p>A unified, read-only view of approved Graphify, Graphiti, Obsidian, VYNDI and VAOS evidence. Trace only asserted lineage. Private mail, files and conversations are never imported automatically.</p>
+   </div>
+   <button type="button" class="universe-primary" id="universe-load">Load authorized graphs</button>
+  </div>
+  <div class="universe-metrics" aria-label="Combined knowledge measurements">
+   <div><small>Authorized metadata nodes</small><strong id="universe-total">0</strong></div>
+   <div><small>Visible nodes</small><strong id="universe-visible">0</strong></div>
+   <div><small>Visible relationships</small><strong id="universe-links">0</strong></div>
+   <div><small>View fidelity</small><strong id="universe-truncated" style="font-size:12px">No data loaded</strong></div>
+  </div>
+  <div class="universe-sourcebar"><h3>Source selection · combine or isolate</h3>
+   <div id="universe-sources" class="universe-sources" role="group" aria-label="Choose source systems"></div>
+  </div>
+  <div class="universe-tools">
+   <label>Find an entity <input id="universe-search" type="search" placeholder="Name, revision, source reference…" autocomplete="off" maxlength="120"></label>
+   <label>Visualization <select id="universe-mode">
+    <option value="constellation">Constellation</option><option value="lineage">Lineage layers</option>
+    <option value="lanes">Source lanes</option><option value="timeline">Time axis</option>
+    <option value="matrix">Relationship matrix</option></select></label>
+   <label>Trace direction <select id="universe-direction">
+    <option value="both">Both ways</option><option value="ancestors">Upstream</option>
+    <option value="descendants">Downstream</option></select></label>
+   <label>Trace depth <select id="universe-depth"><option value="1">1 hop</option>
+    <option value="2" selected>2 hops</option><option value="3">3 hops</option>
+    <option value="4">4 hops</option><option value="5">5 hops</option></select></label>
+   <label>Valid at <input id="universe-date" type="date" aria-label="Filter temporal relationships valid on this date"></label>
+  </div>
+  <div class="universe-stage">
+   <div class="universe-canvas">
+    <svg id="universe-svg" viewBox="0 0 1200 700" role="img" aria-label="Selectable, source-provenance knowledge graph"></svg>
+    <div id="universe-empty" class="universe-empty"><strong>Real evidence only</strong>
+     Load an authorized graph or explicitly search private sources. No illustration is presented as factual data.</div>
+    <div class="universe-canvas-footer">
+     <span>Selected lineage: <strong id="universe-focus-label">All selected evidence</strong></span>
+     <div class="universe-controlset"><button id="universe-clear-focus" type="button" disabled>Clear focus</button>
+      <button id="universe-zoom-out" type="button" aria-label="Zoom out">−</button>
+      <button id="universe-reset" type="button">Reset view</button>
+      <button id="universe-zoom-in" type="button" aria-label="Zoom in">+</button></div>
+    </div>
+   </div>
+   <aside class="universe-inspector" aria-label="Node evidence and lineage">
+    <section><h3>Evidence inspector</h3><dl id="universe-details"></dl></section>
+    <section><h3>Inbound and outbound relationships</h3><div id="universe-related"></div></section>
+    <section><h3>Visible records</h3><div id="universe-results" class="universe-results"></div></section>
+   </aside>
+  </div>
+  <div class="universe-private">
+   <form id="universe-private-form" aria-label="On-demand private metadata search">
+    <label>Private source <select id="universe-private-source"><option value="drive">Google Drive</option>
+     <option value="gmail">Gmail</option><option value="github">Allowlisted GitHub repositories</option></select></label>
+    <label>Search term <input id="universe-private-q" type="search" placeholder="Specific topic or document" minlength="2" maxlength="90" required autocomplete="off"></label>
+    <button id="universe-private-submit" type="submit">Add observed metadata</button>
+   </form>
+   <label class="universe-chat">ChatGPT history · local-only metadata import
+    <input id="universe-chat-file" type="file" accept=".json,application/json" aria-label="Choose ChatGPT export conversations.json"></label>
+  </div>
+  <p id="universe-status" class="universe-note" role="status" aria-live="polite">No sources loaded. Graphify, Graphiti and Obsidian require commissioned snapshots; Gmail and Drive require separate VAOS OAuth. GitHub search currently covers its configured allowlist. ChatGPT requires an export file.</p>
+ </section>
+
  <section class="knowledge-search" aria-labelledby="knowledge-title">
   <div class="knowledge-intro"><div><p class="eyebrow">04 / SOURCE-REFERENCED REPOSITORY WIKI</p><h2 id="knowledge-title">VYNDI OS + VAOS knowledge evidence</h2><p>Query the existing founder-only GitHub federation for source-pinned document excerpts. This search is not an LLM-generated answer or a graph sync.</p></div>
   <form id="knowledge-search" class="knowledge-form"><label for="knowledge-query" class="visually-hidden">Search source documents</label><input id="knowledge-query" type="search" placeholder="Example: geometry revision or business case study" minlength="4" maxlength="120" required autocomplete="off"><button type="submit">Search sources</button></form></div>

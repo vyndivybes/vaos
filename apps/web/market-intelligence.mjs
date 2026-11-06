@@ -61,9 +61,15 @@ function inputs(){
   sellingPrice:Number(raw.sellingPrice),variableCost:Number(raw.variableCost),
   monthlyFixedCost:Number(raw.monthlyFixedCost),
   monthlyUnits:{bear:Number(raw.bear),base:Number(raw.base),bull:Number(raw.bull)}};
+ const stressFields=['cashReserve','demandDropPct','variableCostIncreasePct','supplierRecoveryDays','inventoryCoverDays','recoveryCost'];
+ const stressRaw=Object.fromEntries(stressFields.map(name=>[name,form.elements.namedItem(name).value.trim()]));
+ const stressCount=Object.values(stressRaw).filter(x=>x!=='').length;
+ if(stressCount!==0&&stressCount!==6)throw Error('Enter all six continuity stress assumptions or leave every one blank.');
+ if(stressCount>0&&!model)throw Error('Continuity stress requires the six unit-economics assumptions.');
+ const continuity=stressCount===0?null:Object.fromEntries(stressFields.map(name=>[name,Number(stressRaw[name])]));
  return {id:$('case-id').value.trim(),title:$('case-title').value.trim(),
   market:$('case-market').value.trim(),asOf:$('as-of').value,
-  evidence:currentReferences.map(x=>({...x})),model};
+  evidence:currentReferences.map(x=>({...x})),model,continuity};
 }
 function showReport({report,markdown}){
  generated={report,markdown};
@@ -91,6 +97,18 @@ function showReport({report,markdown}){
   }
   bars.prepend(element('p','Scenario-only operating surplus / month — excludes working capital, taxes and CAPEX','subtle'));
  }else bars.append(element('p','No model supplied: market claims need independent review and financial forecasts remain HOLD.','subtle'));
+ const stress=report.continuityStress;
+ $('continuity-panel').hidden=!stress;
+ if(stress){
+  $('continuity-outage').textContent=stress.modeledInterruptionDays+' of 30 days';
+  $('continuity-surplus').textContent=currency(stress.firstMonthSurplus);
+  $('continuity-runway').textContent=stress.cashCoverageMonths===null?
+   'Not modeled (non-loss)':
+   stress.cashCoverageMonths+' months';
+  $('continuity-status').textContent=stress.fundingHold?
+   'HOLD — one-time recovery cost exceeds assumed cash reserve. No financial action authorized.':
+   'Stress scenario only: supplier recovery, inventory, demand, cash and costs are unverified inputs. No financial action authorized.';
+ }
  $('export-case').disabled=false;
 }
 function resetGenerated(message){

@@ -59,3 +59,11 @@ test('registry distinguishes reviewed snapshots for Obsidian and Dify without cl
  assert.deepEqual(sources.filter(s=>['obsidian','dify'].includes(s.id)).map(s=>s.status),['NOT_COMMISSIONED','NOT_COMMISSIONED']);
  assert.ok(sources.every(s=>s.status!=='LIVE_VERIFIED'));
 });
+
+test('neural source registry can be admitted through bundled free-tier feature control',async()=>{
+ const handler=createNeuralKnowledgeHandler();
+ const env={VAOS_NEURAL_KNOWLEDGE_CONTROL:undefined,VAOS_FEATURE_FLAGS:JSON.stringify({VAOS_NEURAL_KNOWLEDGE_CONTROL:'founder-readonly-v1'})};
+ const response=await invoke(request({source:'registry',env}),handler);
+ assert.equal(response.status,200);
+ assert.ok(response.body.data.sources.length>=7);
+});

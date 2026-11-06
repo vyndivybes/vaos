@@ -72,3 +72,7 @@ The browser now exposes seven source panels, searchable/pannable/zoomable graph 
 6. Run `npm run test:neural-knowledge`, Cloudflare dry-run, regressions and authenticated browser acceptance before a production claim.
 
 **HOLD policy:** Unavailable source, failed signature, mismatching hash, absent R2 object or invalid schema remains visibly HOLD. Missing evidence never becomes decorative graph data.
+
+### Workers Free variable-limit correction (6 November 2026)
+
+Cloudflare Workers Free permits at most 64 text/secret variables per Worker. A dedicated `VAOS_NEURAL_KNOWLEDGE_CONTROL` binding caused deployment to fail with error 10055 at 65 variables. The founder-readonly control is now allowlisted in `apps/web/lib/feature-flags.mjs` and provisioned inside the existing `VAOS_FEATURE_FLAGS` JSON bundle, preserving the previous number of Worker variables. Tests assert that the standalone variable is absent and that the bundled control is actually read by the gateway. No paid upgrade is required.

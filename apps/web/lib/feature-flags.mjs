@@ -10,6 +10,7 @@ const NAMES = new Set([
   'VAOS_ONTOLOGY_INGEST_CONTROL',
   'VAOS_ONTOLOGY_AUTO_REFRESH_CONTROL',
   'VAOS_ELEVENLABS_CONTROL',
+  'VAOS_NEURAL_KNOWLEDGE_CONTROL',
 ]);
 
 export function featureControl(env, name) {

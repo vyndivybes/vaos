@@ -5,6 +5,7 @@
  */
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
+import {featureControl} from '../lib/feature-flags.mjs';
 import {createSupabaseControlStore} from '../../../platform/persistence/supabase-store.mjs';
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createVyndiReadBridgeClient} from '../../../platform/execution/vyndi-read-bridge-client.mjs';
@@ -33,7 +34,7 @@ export function createNeuralKnowledgeHandler({getVyndiReader=sourceReader,getSna
   if(!session)return res.status(401).json(apiError('UNAUTHENTICATED','Founder authentication required'));
   if(session.email!==FOUNDER)return res.status(403).json(apiError('FOUNDER_ONLY','Founder-only knowledge graph'));
   const env=req.env||{};
-  if(env.VAOS_NEURAL_KNOWLEDGE_CONTROL!=='founder-readonly-v1')
+  if(featureControl(env,'VAOS_NEURAL_KNOWLEDGE_CONTROL')!=='founder-readonly-v1')
    return res.status(409).json(apiError('NEURAL_GRAPH_DISABLED','Read-only knowledge gateway not commissioned'));
   let source;
   try{

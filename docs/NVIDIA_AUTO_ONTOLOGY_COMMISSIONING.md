@@ -2,6 +2,8 @@
 
 ## Commissioned boundary
 
+This is a **read-only** commissioning preflight, not production inference or data ingestion.
+
 VAOS exposes a founder-only **readiness probe** in the existing BI Studio and
 `GET /api/nvidia/ontology/readiness`. It uses the authenticated VAOS session
 and existing `VAOS_ONTOLOGY_SOURCE_CONTROL=founder-readonly-v1` feature control.

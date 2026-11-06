@@ -148,12 +148,13 @@
    <section class="history-action-card" aria-labelledby="history-google-title">
     <p class="eyebrow">01 / GOOGLE CONSENT AND RESUMABLE RETRIEVAL</p>
     <h3 id="history-google-title">Gmail &amp; Google Drive</h3>
-    <p>Connect VAOS separately for Gmail read-only and full Drive read-only access. Run bounded retrieval pages until enumeration is complete. Binary attachments and unsupported documents remain marked incomplete.</p>
+    <p>Connect VAOS separately for Gmail read-only and full Drive read-only access. Run bounded retrieval pages until enumeration is complete. GitHub has a separate credential-scoped read. Binary attachments and unsupported documents remain marked incomplete.</p>
     <a class="history-consent" href="/api/google-workspace/start?scope=history">Authorize Gmail &amp; Drive historical read</a>
     <label class="history-restart"><input id="history-index-restart" type="checkbox"> Restart enumeration to capture recent changes</label>
     <div class="history-button-row">
      <button id="history-index-sync-gmail" type="button">Index Gmail history</button>
      <button id="history-index-sync-drive" type="button">Index Drive history</button>
+     <button id="history-index-sync-github" type="button">Index accessible GitHub repositories</button>
     </div>
    </section>
    <section class="history-action-card" aria-labelledby="history-export-title">

@@ -5,7 +5,7 @@
  */
 export const UNIVERSE_SOURCES=Object.freeze([
  'vyndi-vedm','graphify','graphiti','llm-wiki','brain-atlas','obsidian','dify',
- 'gmail','drive','github','chatgpt'
+ 'gmail','drive','github','chatgpt','vyndios','vaos'
 ]);
 const ALLOWED=new Set(UNIVERSE_SOURCES);
 const MAX_NODES=20000,MAX_EDGES=40000;
@@ -225,4 +225,24 @@ export function githubRepositoryInventoryGraph(rows){
   seen.add(name);
  }
  return sourceEnvelope('github',nodes,edges);
+}
+
+export function historicalSearchGraph(source,rows){
+ if(!ALLOWED.has(source)||!Array.isArray(rows))failure('SOURCE_DENIED');
+ const records=rows.slice(0,350).filter(x=>x?.source===source&&
+  typeof x.id==='string'&&VALID_ID.test(x.id)&&
+  typeof x.title==='string'&&x.title.trim().length>0);
+ const accepted=new Set(records.map(x=>x.id));
+ const nodes=records.map(x=>({id:x.id,label:x.title.slice(0,180),
+  kind:typeof x.kind==='string'?x.kind:'historical_document',
+  sourceRef:typeof x.sourceRef==='string'?x.sourceRef.slice(0,220):x.id}));
+ const edges=[];
+ for(const row of records){
+  for(const link of Array.isArray(row.links)?row.links.slice(0,80):[]){
+   if(typeof link.targetId==='string'&&accepted.has(link.targetId)&&
+    typeof link.relation==='string'&&/^[A-Za-z][A-Za-z0-9_-]{0,49}$/.test(link.relation))
+    edges.push({from:row.id,to:link.targetId,relation:link.relation});
+  }
+ }
+ return sourceEnvelope(source,nodes,edges);
 }

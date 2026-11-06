@@ -18,6 +18,10 @@ const EXTENDED_SCOPES=Object.freeze([...SCOPES,
  'https://www.googleapis.com/auth/drive.metadata.readonly',
  'https://www.googleapis.com/auth/gmail.readonly'
 ]);
+const HISTORY_SCOPES=Object.freeze([...SCOPES,
+ 'https://www.googleapis.com/auth/gmail.readonly',
+ 'https://www.googleapis.com/auth/drive.readonly'
+]);
 const AAD=new TextEncoder().encode('vaos:google-workspace:founder-readonly:v1');
 const enc=new TextEncoder();
 function reply(status,body){
@@ -134,7 +138,7 @@ function allowedScopes(raw){
  return SCOPES.every(scope=>granted.includes(scope));
 }
 async function oauthStart(env,now,mode='calendar'){
- const requestedScopes=mode==='knowledge'?EXTENDED_SCOPES:SCOPES;
+ const requestedScopes=mode==='history'?HISTORY_SCOPES:mode==='knowledge'?EXTENDED_SCOPES:SCOPES;
  const check=googleWorkspaceReadiness(env);
  if(!check.ready)return reply(503,{...check,reason:'OAUTH_CLIENT_OR_HARDENED_AUTH_MISSING'});
  const state=randomUrl(),verifier=randomUrl(),sha=await crypto.subtle.digest('SHA-256',enc.encode(verifier));
@@ -249,6 +253,12 @@ export async function readGoogleWorkspaceBrief(env,{fetchImpl=fetch,now=()=>Date
  }catch{return hold('GOOGLE_SOURCE_UNVERIFIED')}
 }
 
+export async function founderHistoricalCredential(env,source,{fetchImpl=fetch,now=()=>Date.now()}={}){
+ const scopes={gmail:'https://www.googleapis.com/auth/gmail.readonly',
+  drive:'https://www.googleapis.com/auth/drive.readonly'};
+ if(!Object.hasOwn(scopes,source))throw Error('GOOGLE_HISTORY_SOURCE_DENIED');
+ return founderGoogleCredential(env,{fetchImpl,now,required:[scopes[source]]});
+}
 const validIso=s=>typeof s==='string' && /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(s)&&Number.isFinite(Date.parse(s));
 async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),required=[]}={}){
  if(!googleWorkspaceReadiness(env).ready)throw Error('GOOGLE_OAUTH_UNAVAILABLE');
@@ -473,7 +483,7 @@ export function createGoogleWorkspaceHandler({authorized=isFounder,fetchImpl=fet
   if(path==='/api/google-workspace/start'){
    const params=new URL(req.url).searchParams;
    const mode=params.get('scope')||'calendar';
-   if(params.size>1||!['calendar','knowledge'].includes(mode))return reply(422,hold('GOOGLE_CONSENT_SCOPE_INVALID'));
+   if(params.size>1||!['calendar','knowledge','history'].includes(mode))return reply(422,hold('GOOGLE_CONSENT_SCOPE_INVALID'));
    return oauthStart(env,now,mode);
   }
   if(path==='/api/google-workspace/brief')return reply(200,await readGoogleWorkspaceBrief(env,{fetchImpl,now}));

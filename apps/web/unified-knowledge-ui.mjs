@@ -1,11 +1,12 @@
 import {SOURCE_INFO} from './neural-knowledge-client.mjs';
 import {UNIVERSE_SOURCES,mergeKnowledgeSources,selectKnowledgeView,
- googleSearchGraph,githubEvidenceGraph,githubRepositoryInventoryGraph,chatHistoryGraph} from './lib/unified-knowledge-graph.mjs';
+ historicalSearchGraph,googleSearchGraph,githubEvidenceGraph,githubRepositoryInventoryGraph,chatHistoryGraph} from './lib/unified-knowledge-graph.mjs';
 import {createUniverseRenderer,universeColor} from './unified-knowledge-render.mjs';
 
 const $=id=>document.getElementById(id);
 const LABELS=Object.fromEntries([...SOURCE_INFO.map(x=>[x.id,x.label]),
- ['gmail','Gmail'],['drive','Google Drive'],['github','GitHub'],['chatgpt','ChatGPT export']]);
+ ['gmail','Gmail'],['drive','Google Drive'],['github','GitHub'],['chatgpt','ChatGPT export'],
+ ['vyndios','VYNDI OS historical'],['vaos','VAOS historical']]);
 const governed=new Set(SOURCE_INFO.map(x=>x.id));
 const docs=new Map(),statuses=new Map(),holds=new Map();
 let graph={nodes:[],edges:[],sources:[]},focus=null;
@@ -191,3 +192,17 @@ $('universe-reset').addEventListener('click',renderer.reset);
 $('universe-zoom-in').addEventListener('click',()=>renderer.adjust(1.2));
 $('universe-zoom-out').addEventListener('click',()=>renderer.adjust(.83));
 choices();render();
+window.addEventListener('vaos:history-search-results',event=>{
+ const rows=Array.isArray(event?.detail?.records)?event.detail.records.slice(0,350):[];
+ const sources=[...new Set(rows.map(r=>r?.source))].filter(Boolean);
+ for(const source of sources){
+  try{
+   const projected=historicalSearchGraph(source,rows);
+   docs.set(source,projected);
+  }catch{status('Historical results require qualified source provenance.',true);return;}
+ }
+ for(const checkbox of $('universe-sources').querySelectorAll('input')){
+  if(sources.includes(checkbox.value))checkbox.checked=true;
+ }
+ focus=null;rebuild();
+});

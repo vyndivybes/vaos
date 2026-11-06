@@ -35,7 +35,8 @@ test('official feeds normalize scoped observations and preserve provenance',asyn
  assert.equal(x.comtrade.observations[0].valueUSD,1250000);
  assert.equal(x.comtrade.scope,'INDIA_IMPORTED_NONMOTORIZED_BICYCLES_HS8712_NOT_FRAMESETS');
  assert.equal(x.competitors.status,'UNVERIFIED_HEADLINE_CONTEXT');
- assert.equal(x.competitors.items.length,3);
+ assert.equal(x.competitors.items.length,1);
+ assert.equal(x.competitors.items[0].watchId,'canyon');
  assert.equal(x.demandForecastQualified,false);
  assert.equal(x.actionAuthorized,false);
  assert.ok(f.urls.every(x=>/^https:\/\/(api\.worldbank\.org|comtradeapi\.un\.org|api\.gdeltproject\.org)\//.test(x)));
@@ -61,7 +62,8 @@ test('malformed responses and source outages fail closed without fabricated fact
 test('external feeds are bounded and never accept arbitrary URLs',async()=>{
  const f=fixture();
  await collectMarketPublicEvidence({fetchImpl:f.fetchImpl,now:()=>new Date('2026-11-06T00:00:00Z')});
- assert.ok(f.urls.length<=8);
+ assert.ok(f.urls.length<=6);
+ assert.equal(f.urls.filter(u=>u.includes('gdeltproject')).length,1);
  assert.equal(new URL(f.urls.find(u=>u.includes('comtradeapi'))).searchParams.get('reporterCode'),'699');
- assert.ok(f.urls.filter(u=>u.includes('gdeltproject')).every(u=>new URL(u).searchParams.get('maxrecords')==='10'));
+ assert.ok(f.urls.filter(u=>u.includes('gdeltproject')).every(u=>new URL(u).searchParams.get('maxrecords')==='30'));
 });

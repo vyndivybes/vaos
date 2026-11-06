@@ -1,0 +1,39 @@
+name: Secure JARVIS Case-Study Bridge Qualification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'apps/web/api/market-case-bridge*.mjs'
+      - 'apps/web/market-case-bridge-ui*.mjs'
+      - 'apps/web/market-intelligence.html'
+      - 'apps/web/market-intelligence.css'
+      - 'apps/web/cloudflare-worker.mjs'
+      - 'package.json'
+      - '.github/workflows/secure-market-case-bridge.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/api/market-case-bridge*.mjs'
+      - 'apps/web/market-case-bridge-ui*.mjs'
+      - 'apps/web/market-intelligence.html'
+      - 'apps/web/cloudflare-worker.mjs'
+      - 'package.json'
+      - '.github/workflows/secure-market-case-bridge.yml'
+permissions:
+  contents: read
+jobs:
+  private-source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verify Worker API and DOM module syntax
+        run: |
+          node --check apps/web/api/market-case-bridge.mjs
+          node --check apps/web/market-case-bridge-ui.mjs
+          node --check apps/web/cloudflare-worker.mjs
+      - name: Verify founder denial, hash integrity, fail-closed search and safe UI
+        run: node --test apps/web/api/market-case-bridge.test.mjs apps/web/market-case-bridge-ui.test.mjs

@@ -37,21 +37,7 @@ const selected=()=>[...$('universe-sources').querySelectorAll('input:checked')].
 function rebuild(){
  try{graph=mergeKnowledgeSources([...docs.values()]);}
  catch{graph={nodes:[],edges:[],sources:[]};status('Source evidence contract rejected. No graph was displayed.',true);}
- window.addEventListener('vaos:history-search-results',event=>{
- const rows=Array.isArray(event?.detail?.records)?event.detail.records.slice(0,350):[];
- const sources=[...new Set(rows.map(r=>r?.source))].filter(Boolean);
- for(const source of sources){
-  try{
-   const projected=historicalSearchGraph(source,rows);
-   docs.set(source,projected);
-  }catch{status('Historical results require qualified source provenance.',true);return;}
- }
- for(const checkbox of $('universe-sources').querySelectorAll('input')){
-  if(sources.includes(checkbox.value))checkbox.checked=true;
- }
- focus=null;rebuild();
-});
-choices();render();
+ choices();render();
 }
 async function readJSON(url){
  const response=await fetch(url,{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
@@ -206,3 +192,17 @@ $('universe-reset').addEventListener('click',renderer.reset);
 $('universe-zoom-in').addEventListener('click',()=>renderer.adjust(1.2));
 $('universe-zoom-out').addEventListener('click',()=>renderer.adjust(.83));
 choices();render();
+window.addEventListener('vaos:history-search-results',event=>{
+ const rows=Array.isArray(event?.detail?.records)?event.detail.records.slice(0,350):[];
+ const sources=[...new Set(rows.map(r=>r?.source))].filter(Boolean);
+ for(const source of sources){
+  try{
+   const projected=historicalSearchGraph(source,rows);
+   docs.set(source,projected);
+  }catch{status('Historical results require qualified source provenance.',true);return;}
+ }
+ for(const checkbox of $('universe-sources').querySelectorAll('input')){
+  if(sources.includes(checkbox.value))checkbox.checked=true;
+ }
+ focus=null;rebuild();
+});

@@ -491,7 +491,7 @@ test('calendar status interpretation is restricted to safe diagnostic codes',asy
 test('Drive metadata reader requires explicit founder reconsent and does not fetch document bodies',async()=>{
  const context=setup();const out=await readFounderDrive(context.env,'VAOS',{fetchImpl:context.fetchImpl});
  assert.equal(out.status,'HOLD');
- assert.ok(['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED'].includes(out.reason));
+ assert.ok(['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED','GOOGLE_OAUTH_UNAVAILABLE'].includes(out.reason));
  assert.equal(context.calls.some(x=>x.url.includes('/drive/v3/files')),false);
 });
 test('Personal Google Drive is never returned through an unauthenticated GET route',async()=>{

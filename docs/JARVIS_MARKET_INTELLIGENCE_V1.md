@@ -16,7 +16,7 @@
 
 ## Acceptance and explicit holds
 
-- Dedicated self-hosted GitHub workflow: `.github/workflows/jarvis-market-intelligence.yml`.
+- Dedicated free hosted GitHub workflow: `.github/workflows/jarvis-market-intelligence.yml`.
 - Standard web test script also includes the market engine, API security and UI wiring tests.
 - Tests do not prove independently verified competitor quotations, economic market sizing, published-source content correctness, fully autonomous multi-source retrieval, RAG embeddings, repeat scheduled research, external revenue qualification or the live Cloudflare endpoint.
 - Existing CASE-001 and CASE-002 are repository references to private files; storing links is **not live RAG ingestion**.

@@ -9,10 +9,12 @@ import {apiError} from '../lib/api-contracts.mjs';
 import {createHistoricalStore} from '../../../platform/knowledge/history-index.mjs';
 import {founderHistoricalCredential} from './google-workspace.mjs';
 import {readGoogleHistoryPage} from '../../../integrations/google/history-source.mjs';
+import {readGitHubHistoryPage} from '../../../integrations/github/history-source.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const IMPORTABLE=new Set(['chatgpt','obsidian','graphiti','graphify','github','vyndios','vaos']);
 const GOOGLE=new Set(['gmail','drive']);
+const SYNC=new Set([...GOOGLE,'github']);
 const PATH='/api/history-index';
 const respond=(res,status,data)=>res.status(status).json(data);
 const error=(res,status,code,description)=>respond(res,status,apiError(code,description));
@@ -35,7 +37,8 @@ function validBody(body){
 }
 export function createHistoryIndexHandler({
  makeStore=createHistoricalStore,googleToken=founderHistoricalCredential,
- googlePage=readGoogleHistoryPage,fetchImpl=globalThis.fetch
+ googlePage=readGoogleHistoryPage,githubPage=readGitHubHistoryPage,
+ fetchImpl=globalThis.fetch
 }={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
@@ -96,7 +99,7 @@ export function createHistoryIndexHandler({
    }
    if(path===PATH+'/sync'){
     const source=req.body.source;
-    if(params.size||!GOOGLE.has(source)||Object.keys(req.body).some(x=>!['source','restart'].includes(x))||
+    if(params.size||!SYNC.has(source)||Object.keys(req.body).some(x=>!['source','restart'].includes(x))||
       (req.body.restart!==undefined&&req.body.restart!==true))
      return error(res,422,'HISTORY_SYNC_DENIED','Only scoped Google read synchronization accepted');
     const progress=await store.progress(source);
@@ -104,9 +107,12 @@ export function createHistoryIndexHandler({
      return respond(res,200,{status:'ENUMERATION_COMPLETE',source,
       indexedThisStep:0,enumerationComplete:true,actionAuthorized:false});
     // No OAuth token is sent to the client or persisted in corpus storage.
-    const token=await googleToken(env,source,{fetchImpl});
-    const page=await googlePage({source,token,
-     cursor:req.body.restart?null:progress.cursor,fetchImpl});
+    const token=source==='github'?env.VAOS_FEDERATED_GITHUB_TOKEN:
+     await googleToken(env,source,{fetchImpl});
+    if(typeof token!=='string'||token.length<20)throw Error('SOURCE_CREDENTIAL_HOLD');
+    const page=source==='github'?
+     await githubPage({token,cursor:req.body.restart?null:progress.cursor,fetchImpl}):
+     await googlePage({source,token,cursor:req.body.restart?null:progress.cursor,fetchImpl});
     if(page?.source!==source||!Array.isArray(page.records)||page.records.length>12||
       typeof page.complete!=='boolean')throw Error('HISTORY_PROVIDER_INVALID');
     const ingested=page.records.length?await store.ingest(source,page.records):

@@ -8,7 +8,7 @@ document.getElementById('historical-search').addEventListener('submit',async eve
  historyCursor=null;
  const notice=document.getElementById('historical-search-status');
  if(query.length<3)return;
- let pages=0;
+ let pages=0;const observed=[];
  const lookup=async cursor=>{
   const reply=await fetch('/api/historical-knowledge-search',{
    method:'POST',credentials:'same-origin',cache:'no-store',
@@ -26,6 +26,7 @@ document.getElementById('historical-search').addEventListener('submit',async eve
    const data=await lookup(cursor);
    pages++;
    for(const record of data.results||[]){
+    observed.push({id:record.id,label:record.label,sourceRef:record.sourceRef});
     const item=document.createElement('article');item.className='knowledge-record';
     const heading=document.createElement('h3');heading.textContent=String(record.label||'Source record');
     const excerpt=document.createElement('p');excerpt.textContent=String(record.excerpt||'');
@@ -34,7 +35,7 @@ document.getElementById('historical-search').addEventListener('submit',async eve
    }
    cursor=data.hasMore?data.nextCursor:null;
   }while(cursor&&pages<3);
-  window.dispatchEvent(new CustomEvent('vaos:historical-results',{detail:{source,rows:[...resultList.querySelectorAll('article')].length}}));
+  window.dispatchEvent(new CustomEvent('vaos:historical-results',{detail:{source,rows:observed}}));
   notice.textContent='Search inspected '+pages+' encrypted archive page(s), found '+
    resultList.children.length+' matches. Results are bounded; the complete archive is not certified.';
  }catch(error){notice.textContent='History search HOLD · '+String(error.message||'UNAVAILABLE');}

@@ -6,11 +6,11 @@ export const SOURCE_INFO=Object.freeze([
  {id:'llm-wiki',label:'LLM Wiki',detail:'Pinned SPARK documentation index',kind:'wiki',origin:'Pinned repository snapshot'},
  {id:'brain-atlas',label:'Brain Atlas',detail:'Reviewed Graphify Atlas projection',kind:'atlas',origin:'SPARK reviewed snapshot'},
  {id:'obsidian',label:'Obsidian',detail:'Reviewed notes and backlinks',kind:'notes',origin:'reviewed snapshot'},
- {id:'dify',label:'Dify',detail:'Workflow topology',kind:'workflow',origin:'reviewed snapshot'}
+ {id:'dify',label:'Dify',detail:'Provider workflow run history',kind:'workflow',origin:'Authenticated read-only Dify logs'}
 ]);
 export function sourceReadiness(status){
  switch(status){
-  case 'CONFIGURED_UNVERIFIED':return 'Signed source configured, live read unverified';
+  case 'CONFIGURED_UNVERIFIED':return 'Provider access configured, live read unverified';
   case 'PIN_CONFIGURED_UNVERIFIED':return 'Reviewed checksum configured, content unverified';
   case 'NOT_COMMISSIONED':return 'Source not commissioned';
   default:return 'Source status unknown';

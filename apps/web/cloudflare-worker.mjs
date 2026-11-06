@@ -56,6 +56,7 @@ import sparkBridge from './api/spark-bridge.mjs';
 import businessAdvisor from './api/business-advisor.mjs';
 import jarvisDataAgent from './api/jarvis-data-agent.mjs';
 import marketCaseStudies from './api/market-case-studies.mjs';
+import marketCaseBridge from './api/market-case-bridge.mjs';
 import adaptiveIntelligence from './api/adaptive-intelligence.mjs';
 import jarvisAuthorityGraph from './api/jarvis-authority-graph.mjs';
 import jarvisSourceAudit from './api/jarvis-source-audit.mjs';
@@ -145,6 +146,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/business-advisor': businessAdvisor,
   '/api/jarvis-data-agent': jarvisDataAgent,
   '/api/market-case-studies': marketCaseStudies,
+  '/api/market-case-bridge': marketCaseBridge,
   '/api/adaptive-intelligence': adaptiveIntelligence,
   '/api/jarvis-authority-graph': jarvisAuthorityGraph,
   '/api/jarvis-source-audit': jarvisSourceAudit,

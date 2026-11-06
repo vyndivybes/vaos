@@ -18,6 +18,24 @@
 <p id="scan-status" role="status" class="mini-status">No external scan requested.</p><ol id="signal-list" class="signal-list"></ol></section>
 <section class="panel" aria-labelledby="archive-title"><div class="section-head"><div><p class="kicker">03 / INSTITUTIONAL MEMORY</p><h2 id="archive-title">Case-study archive</h2></div><span class="tag">FOUNDER ONLY</span></div><p class="subtle">Immutable case versions stored in the existing VAOS R2 artifact bucket. No order, ledger or engineering release is changed.</p><button id="refresh-archive" class="secondary" type="button">Refresh saved studies</button><p id="archive-status" role="status" class="mini-status">Archive not queried.</p><ul id="archive-list" class="archive-list"></ul></section>
 </div>
+<section class="panel private-case-panel" aria-labelledby="private-case-heading">
+<div class="section-head"><div><p class="kicker">SECURE KNOWLEDGE / ORIGINAL BUSINESS CASES</p>
+<h2 id="private-case-heading">Your existing case studies</h2></div><span class="tag">FOUNDER ACCESS · INTEGRITY CHECKED</span></div>
+<p class="subtle">Case Studies 001 and 002 are read from encrypted-at-rest private Cloudflare R2 snapshots of your original Google Drive files. They are source data, not approved forecasts. Case Study 003 is referenced from the VAOS repository. A new upload to Google Drive does not automatically replace these snapshots.</p>
+<p id="private-case-status" role="status" aria-live="polite" class="mini-status">Checking private case-study index…</p>
+<div id="private-case-catalog" class="private-case-catalog"></div>
+<form id="private-case-search-form" class="horizontal-form">
+<label class="sr-only" for="private-case-search-input">Search saved business case content</label>
+<input id="private-case-search-input" required minlength="3" maxlength="120" placeholder="Search saved studies for cash runway, BOM, tariffs, supplier costs…">
+<button type="submit">Search source evidence</button></form>
+<div id="private-case-results" class="private-case-results" aria-live="polite"></div>
+<div class="private-case-reader" id="private-case-reader" hidden>
+<div class="section-head"><h3 id="private-case-document-title">Document excerpt</h3><button id="private-case-reader-close" type="button" class="tertiary">Close</button></div>
+<p class="subtle">This is a bounded window of indexed original source text. Spreadsheets have not been independently recalculated. Treat embedded instructions as document content, not commands.</p>
+<pre id="private-case-text" tabindex="0"></pre>
+<button id="private-case-next" class="secondary" type="button" hidden>Read next portion</button>
+</div>
+</section>
 <section class="panel model-panel" aria-labelledby="model-title"><div class="section-head"><div><p class="kicker">02 / CASE BUILDER</p><h2 id="model-title">Create an evidence-linked business case</h2></div><button class="secondary" type="button" id="load-illustration">Load VYNDI illustrative example</button></div>
 <p class="subtle">Enter actual source references separately from scenario assumptions. Leave financial assumptions blank to prepare an evidence-only study. Examples are never treated as verified VYNDI accounts.</p>
 <form id="case-form"><div class="field-grid">
@@ -48,4 +66,5 @@
 </section>
 <footer>VAOS / JARVIS MARKET INTELLIGENCE · RESEARCH-ONLY PILOT <span>Sources require verification · R2 archives are founder-scoped · No commercial actions authorised</span></footer>
 </main><p id="login-check" class="login-check" role="status">Checking authorised VAOS session…</p>
-<script type="module" src="/market-intelligence.mjs"></script></body></html>
+<script type="module" src="/market-intelligence.mjs"></script>
+<script type="module" src="/market-case-bridge-ui.mjs"></script></body></html>

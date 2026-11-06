@@ -51,7 +51,7 @@ function parseComtrade(raw,requestedYear,url){
  }
  return observations.length===1?observations[0]:null;
 }
-function parseArticles(raw,watch,asOf){
+function parseArticles(raw,asOf){
  const list=Array.isArray(raw?.articles)?raw.articles:[];
  const result=[],seen=new Set();
  for(const a of list.slice(0,20)){
@@ -60,11 +60,16 @@ function parseArticles(raw,watch,asOf){
   const day=typeof a?.seendate==='string'&&/^\d{8}T\d{6}Z$/.test(a.seendate)?
    a.seendate.slice(0,4)+'-'+a.seendate.slice(4,6)+'-'+a.seendate.slice(6,8):null;
   if(!day||day>asOf||Date.parse(asOf+'T00:00:00Z')-Date.parse(day+'T00:00:00Z')>8*86400000)continue;
+  const watch=WATCH.find(w=>{
+   const matches=new RegExp('\\b'+w.id+'\\b','i').test(title);
+   return matches&&(w.id!=='giant'||/bicycle|bike|cycling/i.test(title));
+  });
+  if(!watch)continue;
   seen.add(url);
   result.push({watchId:watch.id,watchName:watch.name,title,url,date:day,
    publisher:safe(a?.domain,100)||'Source unverified',
    evidenceClass:'UNVERIFIED_NEWS_ARTICLE',supplierPriceVerified:false});
-  if(result.length===5)break;
+  if(result.length===15)break;
  }
  return result;
 }
@@ -81,11 +86,12 @@ export async function collectMarketPublicEvidence({fetchImpl=globalThis.fetch,no
   const url=CT+'?'+new URLSearchParams({period:String(year),reporterCode:'699',partnerCode:'0',cmdCode:'8712',flowCode:'M'}).toString();
   try{return parseComtrade(await readJSON(url,fetchImpl),year,url)}catch{return null}
  }));
- const items=(await Promise.all(WATCH.map(async watch=>{
-  const url=GD+'?'+new URLSearchParams({query:watch.query,mode:'artlist',format:'json',maxrecords:'10',timespan:'7d',sort:'datedesc'}).toString();
-  try{return parseArticles(await readJSON(url,fetchImpl),watch,asOf)}
-  catch{return []}
- }))).flat();
+ const gdeltUrl=GD+'?'+new URLSearchParams({
+  query:WATCH.map(w=>w.query).join(' OR '),mode:'artlist',format:'json',
+  maxrecords:'30',timespan:'7d',sort:'datedesc'
+ }).toString();
+ let items=[];
+ try{items=parseArticles(await readJSON(gdeltUrl,fetchImpl),asOf)}catch{items=[]}
  const observations=trades.filter(Boolean);
  const seen=new Set(),deduplicated=items.filter(x=>{
   const key=x.watchId+':'+x.url;

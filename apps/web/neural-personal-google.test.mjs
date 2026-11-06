@@ -8,6 +8,6 @@ test('founder knowledge hub has distinct Drive and Gmail on-demand search withou
   assert.ok(html.includes('id="'+id+'"'),id);
  assert.match(js,/\/api\/google-workspace\/drive\?q=/);
  assert.match(js,/\/api\/google-workspace\/mail\?q=/);
- assert.match(js,/\/api\/google-workspace\/start/);
+ assert.match(html,/\/api\/google-workspace\/start/);
  assert.doesNotMatch(js,/innerHTML\s*=/);
 });

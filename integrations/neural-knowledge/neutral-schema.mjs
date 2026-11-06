@@ -3,12 +3,12 @@
  * model calls, approval propagation, transaction writes, or automatic sync.
  * Sources retain separate authority and provenance.
  */
-export const NEUTRAL_GRAPH_SOURCES=Object.freeze(['vyndi-vedm','graphify','graphiti','llm-wiki','brain-atlas']);
+export const NEUTRAL_GRAPH_SOURCES=Object.freeze(['vyndi-vedm','graphify','graphiti','llm-wiki','brain-atlas','obsidian','dify']);
 const IDENTIFIER=/^[A-Za-z0-9][A-Za-z0-9_.:/#-]{0,159}$/;
 const SHA=/^[a-f0-9]{40}(?:[a-f0-9]{24})?$/;
 const KIND=/^[a-z][a-z0-9_-]{0,49}$/i;
 const REL=/^[A-Za-z][A-Za-z0-9_-]{0,63}$/;
-const CLASS={ 'vyndi-vedm':'reviewed-reference',graphify:'advisory',graphiti:'model-derived','llm-wiki':'advisory','brain-atlas':'advisory' };
+const CLASS={ 'vyndi-vedm':'reviewed-reference',graphify:'advisory',graphiti:'model-derived','llm-wiki':'advisory','brain-atlas':'advisory',obsidian:'advisory',dify:'advisory' };
 const HIDDEN=new Set(['contact','person','user','credential','secret','employee','email','phone']);
 function fail(code){const e=new Error('NEUTRAL_GRAPH_'+code);e.code='NEUTRAL_GRAPH_'+code;e.retryable=false;throw e}
 function text(v,max=180){return typeof v==='string'&&v.trim()&&v.length<=max&&!/[\x00-\x1f\x7f]/.test(v)?v.trim():null}
@@ -27,7 +27,7 @@ function node(x,source,kindKey,titleKey){
  const kind=text(x[kindKey],50)||'record';
  if(!key||!label||!KIND.test(kind))fail('NODE_INVALID');
  if(HIDDEN.has(kind.toLowerCase()))return null;
- const ref=text(source==='vyndi-vedm'?x.sourceRef:source==='llm-wiki'?x.sourceRef:key,180);
+ const ref=text(source==='vyndi-vedm'?x.sourceRef:(source==='llm-wiki'||source==='obsidian')?x.sourceRef:key,180);
  if(!ref)fail('NODE_INVALID');
  return Object.freeze({id:key,label,kind,sourceRef:ref,authorityClass:CLASS[source],...(source==='vyndi-vedm'?{
   releaseEffect:text(x.releaseEffect,40)||'none',
@@ -66,7 +66,7 @@ export function normalizeNeutralGraph(input,{integrityVerified=false}={}){
   originalNodes=array(raw.nodes,120);originalEdges=array(raw.edges,240);kindKey='kind';titleKey='title';
  }else if(source==='graphiti'){
   originalNodes=array(raw.entities,300);originalEdges=array(raw.facts,600);kindKey='kind';titleKey='name';
- }else if(source==='llm-wiki'){
+ }else if(source==='llm-wiki'||source==='obsidian'){
   originalNodes=array(raw.pages,300);originalEdges=array(raw.links,600);kindKey='kind';titleKey='title';
  }else{
   originalNodes=array(raw.nodes,300);originalEdges=array(raw.edges,600);kindKey='type';titleKey='title';

@@ -91,8 +91,8 @@ test('hardened OAuth uses PKCE + browser cookie, encrypts tokens, and permits me
  assert.equal(consent.searchParams.get('code_challenge_method'),'S256');
  assert.equal(consent.searchParams.get('access_type'),'offline');
  const requestedScopes=new Set(consent.searchParams.get('scope').split(' '));
- assert.deepEqual([...requestedScopes].sort(),['openid','email','https://www.googleapis.com/auth/calendar.events','https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly'].sort());
- assert.equal(requestedScopes.has('https://www.googleapis.com/auth/gmail.readonly'),true);
+ assert.deepEqual([...requestedScopes].sort(),['openid','email','https://www.googleapis.com/auth/calendar.events'].sort());
+ assert.equal(requestedScopes.has('https://www.googleapis.com/auth/gmail.readonly'),false);
  const state=consent.searchParams.get('state');
  assert.ok(s.storage.has('runtime/google-workspace/oauth-pending/'+state+'.json'));
  const cookie=start.headers.get('set-cookie').split(';')[0];
@@ -498,4 +498,18 @@ test('Personal Google Drive is never returned through an unauthenticated GET rou
  const s=setup();const handler=createGoogleWorkspaceHandler({authorized:()=>false,fetchImpl:s.fetchImpl});
  const response=await handler({method:'GET',url:'https://vaos.vayushastr.workers.dev/api/google-workspace/drive?q=VAOS',headers:{},env:s.env});
  assert.equal(response.status,403);
+});
+
+test('personal Google knowledge permission uses separate explicit consent without widening calendar default',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl:s.fetchImpl});
+ const response=await h(makeReq('/api/google-workspace/start?scope=knowledge'),getResponse(),s.env);
+ assert.equal(response.status,302);
+ const scopes=new URL(response.headers.get('location')).searchParams.get('scope').split(' ');
+ assert.ok(scopes.includes('https://www.googleapis.com/auth/gmail.readonly'));
+ assert.ok(scopes.includes('https://www.googleapis.com/auth/drive.metadata.readonly'));
+ const state=new URL(response.headers.get('location')).searchParams.get('state');
+ const pending=JSON.parse(s.storage.get('runtime/google-workspace/oauth-pending/'+state+'.json'));
+ assert.equal(pending.requestedScopes.includes('https://www.googleapis.com/auth/gmail.readonly'),true);
 });

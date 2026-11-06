@@ -102,3 +102,17 @@ footer{border-top:1px solid var(--line);padding:20px clamp(16px,3vw,42px);displa
 @media(max-width:780px){.hero{grid-template-columns:1fr;min-height:unset}.hero-art{display:none}.summary{grid-template-columns:repeat(2,minmax(0,1fr))}.hub{grid-template-columns:1fr}.inspector{grid-column:auto;display:flex}.source-list{grid-template-columns:repeat(2,minmax(0,1fr));max-height:unset}.graph-stage{min-height:430px}#graph-svg{height:430px}.topbar nav{gap:12px}.read-only{display:none}}
 @media(max-width:470px){.source-list{grid-template-columns:1fr}.summary>div{padding:15px}.summary strong{font-size:25px}.toolbar{gap:7px}.search-box{min-width:100%}.filter-wrap{flex:1}.hero{padding:24px 17px}.trust-strip{flex-direction:column;gap:6px}.hero-pills span{font-size:9px}}
 @media(prefers-reduced-motion:no-preference){.orbit-one{animation:orbitPulse 13s ease-in-out infinite alternate}.orbit-two{animation:orbitPulse2 15s ease-in-out infinite alternate}.orbit-core{animation:corePulse 6s ease-in-out infinite alternate}}@keyframes orbitPulse{to{transform:rotateX(65deg) rotate(37deg)}}@keyframes orbitPulse2{to{transform:rotateY(69deg) rotate(-42deg)}}@keyframes corePulse{to{box-shadow:0 0 70px rgba(77,183,198,.38),inset 0 0 38px rgba(230,201,144,.19)}}
+
+.knowledge-search{margin-top:15px;border-radius:12px;border:1px solid var(--line);background:linear-gradient(120deg,#0e1c2e,#102131);padding:22px}
+.knowledge-intro{display:flex;align-items:flex-end;gap:20px;justify-content:space-between;flex-wrap:wrap}
+.knowledge-intro h2{font-size:21px;margin:0 0 7px}
+.knowledge-intro p:not(.eyebrow){color:#a6bbca;font-size:12px;max-width:660px;margin:0}
+.knowledge-form{display:flex;gap:8px;flex:1 1 390px;max-width:560px}
+.knowledge-form input{min-width:130px;flex:1;background:#0c1724;border:1px solid #36546a;border-radius:8px;padding:12px;color:var(--text)}
+.knowledge-form button{border:1px solid #d7bc7f;background:linear-gradient(110deg,#e4bd79,#f2d8a4);border-radius:8px;color:#162334;font-weight:750;padding:10px 17px}
+#knowledge-status{color:#a4bdc9;font-size:11px;margin:15px 0 10px}
+.knowledge-results{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.knowledge-record{border:1px solid rgba(150,180,197,.22);border-radius:9px;background:#0d1b2a;padding:14px;min-width:0}
+.knowledge-record h3{font-size:12px;overflow-wrap:anywhere;color:#e9d4a8;margin-bottom:10px}
+.knowledge-record p{font-size:10px;color:#a6beca;overflow-wrap:anywhere;margin-bottom:8px}
+.knowledge-record a{font-size:11px;color:#8cd9e4}

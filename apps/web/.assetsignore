@@ -61,3 +61,5 @@ cloudflare-worker.mjs
 !lib/predictive-simulation.mjs
 
 !lib/unified-knowledge-graph.mjs
+
+!lib/historical-import.mjs

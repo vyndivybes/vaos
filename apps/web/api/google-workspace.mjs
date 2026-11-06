@@ -16,6 +16,7 @@ const SCOPES=Object.freeze([
 // require separate explicit integrations and are not part of Calendar consent.
 const EXTENDED_SCOPES=Object.freeze([...SCOPES,
  'https://www.googleapis.com/auth/drive.metadata.readonly',
+ 'https://www.googleapis.com/auth/drive.readonly',
  'https://www.googleapis.com/auth/gmail.readonly'
 ]);
 const AAD=new TextEncoder().encode('vaos:google-workspace:founder-readonly:v1');
@@ -250,7 +251,7 @@ export async function readGoogleWorkspaceBrief(env,{fetchImpl=fetch,now=()=>Date
 }
 
 const validIso=s=>typeof s==='string' && /^20\d{2}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(s)&&Number.isFinite(Date.parse(s));
-async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),required=[]}={}){
+export async function founderGoogleCredential(env,{fetchImpl=fetch,now=()=>Date.now(),required=[]}={}){
  if(!googleWorkspaceReadiness(env).ready)throw Error('GOOGLE_OAUTH_UNAVAILABLE');
  let blob;
  try{blob=await env.VAOS_ARTIFACTS.get(RECORD)}

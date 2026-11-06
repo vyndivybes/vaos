@@ -6,10 +6,26 @@ const HASH=/^[a-f0-9]{64}$/;
 const MAX_BYTES=350_000;
 function fail(code){const e=new Error('NEURAL_'+code);e.code='NEURAL_'+code;e.retryable=false;throw e}
 function sha256(bytes){return crypto.subtle.digest('SHA-256',bytes).then(b=>Array.from(new Uint8Array(b),v=>v.toString(16).padStart(2,'0')).join(''))}
+export function readPinnedSnapshotHashes(env){
+ let raw=env?.VAOS_NEURAL_GRAPH_SNAPSHOT_HASHES;
+ if(raw===undefined){
+  const bundled=env?.VAOS_FEATURE_FLAGS;
+  if(typeof bundled!=='string'||bundled.length>4096)return null;
+  try{
+   const flags=JSON.parse(bundled);
+   if(!flags||typeof flags!=='object'||Array.isArray(flags))return null;
+   raw=flags.VAOS_NEURAL_GRAPH_SNAPSHOT_HASHES;
+  }catch{return null}
+ }
+ if(typeof raw!=='string'||raw.length>1024)return null;
+ try{
+  const hashes=JSON.parse(raw);
+  return hashes&&typeof hashes==='object'&&!Array.isArray(hashes)?hashes:null;
+ }catch{return null}
+}
 export async function loadApprovedGraphSnapshot({env,sourceType}={}){
  if(!SNAPSHOTS.includes(sourceType))fail('SNAPSHOT_SOURCE_DENIED');
- let config;
- try{config=JSON.parse(env?.VAOS_NEURAL_GRAPH_SNAPSHOT_HASHES||'null')}catch{fail('SNAPSHOT_NOT_COMMISSIONED')}
+ const config=readPinnedSnapshotHashes(env);
  if(!config||typeof config!=='object'||Array.isArray(config)||!HASH.test(config[sourceType]||'')
     ||typeof env?.VAOS_ARTIFACTS?.get!=='function')fail('SNAPSHOT_NOT_COMMISSIONED');
  const key='knowledge/neutral-v1/'+sourceType+'.json';

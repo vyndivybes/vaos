@@ -1,0 +1,65 @@
+{
+  "schemaVersion": "VAOS_NEURAL_COMMISSIONING_EVIDENCE_V1",
+  "observedOn": "2026-11-06",
+  "mode": "reviewed-repository-metadata-snapshots",
+  "sourceDataFreshnessCertified": false,
+  "liveProviderConnectionVerified": false,
+  "independentVerification": false,
+  "readOnly": true,
+  "approvalsTransferred": false,
+  "sources": [
+    {
+      "id": "graphify",
+      "status": "R2_SNAPSHOT_HASH_VERIFIED",
+      "sourceRepository": "vyndivybes/spark",
+      "sourcePath": "vendor/vayu-workspace/VAYU-Knowledge-Sphere-Live.html",
+      "sourceFileBlobSha": "170a2f4c31f29e0250a4b3d89f63ee2c3716fdb9",
+      "sha256": "a125d4637cf999edb6b4d09361ec04bee33fe289cab0e9fec7509d02b566fedf",
+      "nodes": 63,
+      "edges": 62,
+      "scope": "project/division/document/decision labels and explicit edges; no contacts or free-text bodies",
+      "live": false
+    },
+    {
+      "id": "brain-atlas",
+      "status": "R2_SNAPSHOT_HASH_VERIFIED",
+      "sourceRepository": "vyndivybes/spark",
+      "sourcePath": "vendor/vayu-workspace/VAYU-Knowledge-Sphere-Live.html",
+      "sourceFileBlobSha": "170a2f4c31f29e0250a4b3d89f63ee2c3716fdb9",
+      "sha256": "6778963e490c74c06e70f8f8b3251229624712074050281e6cfa42f7abf9cb06",
+      "nodes": 63,
+      "edges": 62,
+      "scope": "same source inventory, alternate Atlas projection; not independent source",
+      "live": false
+    },
+    {
+      "id": "llm-wiki",
+      "status": "R2_SNAPSHOT_HASH_VERIFIED",
+      "sourceRepository": "vyndivybes/spark",
+      "sourceRevision": "9a43dd606e1f11ad57c421ec21bf4ea3b3f6edb4",
+      "sha256": "c1a1fb348f915956548d859629bb62e644787b220482ed6bec85d57da572a71d",
+      "nodes": 12,
+      "edges": 1,
+      "scope": "pinned public markdown document titles and one explicit markdown link; not a running LLM service",
+      "live": false
+    }
+  ],
+  "holds": [
+    {
+      "id": "vyndi-vedm",
+      "reason": "Signed VYNDI service binding configured; authenticated production read still unverified"
+    },
+    {
+      "id": "graphiti",
+      "reason": "Private/local temporal Graphiti runtime not connected; do not publish stored episodes"
+    },
+    {
+      "id": "obsidian",
+      "reason": "Local Obsidian vault inaccessible to Cloudflare; no private note contents permitted"
+    },
+    {
+      "id": "dify",
+      "reason": "Dify secret bound, but read-only runtime workflow topology not independently verified; no invented jobs"
+    }
+  ]
+}

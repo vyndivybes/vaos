@@ -1,10 +1,10 @@
 // Public, dependency-free view model. Real graph data comes only from the authenticated API.
 export const SOURCE_INFO=Object.freeze([
  {id:'vyndi-vedm',label:'VYNDI OS',detail:'Engineering authority graph',kind:'engineering',origin:'signed bridge'},
- {id:'graphify',label:'Graphify',detail:'Architecture relationships',kind:'architecture',origin:'SPARK reviewed snapshot'},
+ {id:'graphify',label:'Graphify',detail:'Reviewed SPARK inventory topology',kind:'architecture',origin:'Pinned repository snapshot'},
  {id:'graphiti',label:'Graphiti',detail:'Time-valid facts',kind:'temporal',origin:'SPARK reviewed snapshot'},
- {id:'llm-wiki',label:'LLM Wiki',detail:'Referenced knowledge pages',kind:'wiki',origin:'reviewed snapshot'},
- {id:'brain-atlas',label:'Brain Atlas',detail:'Neural schema atlas',kind:'atlas',origin:'SPARK reviewed snapshot'},
+ {id:'llm-wiki',label:'LLM Wiki',detail:'Pinned SPARK documentation index',kind:'wiki',origin:'Pinned repository snapshot'},
+ {id:'brain-atlas',label:'Brain Atlas',detail:'Reviewed Graphify Atlas projection',kind:'atlas',origin:'SPARK reviewed snapshot'},
  {id:'obsidian',label:'Obsidian',detail:'Reviewed notes and backlinks',kind:'notes',origin:'reviewed snapshot'},
  {id:'dify',label:'Dify',detail:'Workflow topology',kind:'workflow',origin:'reviewed snapshot'}
 ]);

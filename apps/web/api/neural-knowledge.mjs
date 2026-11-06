@@ -10,7 +10,7 @@ import {createSupabaseControlStore} from '../../../platform/persistence/supabase
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createVyndiReadBridgeClient} from '../../../platform/execution/vyndi-read-bridge-client.mjs';
 import {normalizeNeutralGraph,NEUTRAL_GRAPH_SOURCES} from '../../../integrations/neural-knowledge/neutral-schema.mjs';
-import {loadApprovedGraphSnapshot} from '../../../integrations/neural-knowledge/snapshot-reader.mjs';
+import {loadApprovedGraphSnapshot,readPinnedSnapshotHashes} from '../../../integrations/neural-knowledge/snapshot-reader.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
 const ACTION='KNOWLEDGE.OBSERVE_VEDM_GRAPH';
 const ZERO_SHA=/^[a-f0-9]{64}$/;
@@ -20,8 +20,7 @@ const sourceReader=env=>createVyndiReadBridgeClient({
 });
 function statusOf(env,type){
  if(type==='vyndi-vedm')return typeof env?.VYNDI?.fetch==='function'?'CONFIGURED_UNVERIFIED':'NOT_COMMISSIONED';
- let config=null;
- try{config=JSON.parse(env?.VAOS_NEURAL_GRAPH_SNAPSHOT_HASHES||'null')}catch{}
+ const config=readPinnedSnapshotHashes(env);
  return (typeof env?.VAOS_ARTIFACTS?.get==='function'&&ZERO_SHA.test(config?.[type]||''))
    ?'PIN_CONFIGURED_UNVERIFIED':'NOT_COMMISSIONED';
 }

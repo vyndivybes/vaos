@@ -76,3 +76,15 @@ The browser now exposes seven source panels, searchable/pannable/zoomable graph 
 ### Workers Free variable-limit correction (6 November 2026)
 
 Cloudflare Workers Free permits at most 64 text/secret variables per Worker. A dedicated `VAOS_NEURAL_KNOWLEDGE_CONTROL` binding caused deployment to fail with error 10055 at 65 variables. The founder-readonly control is now allowlisted in `apps/web/lib/feature-flags.mjs` and provisioned inside the existing `VAOS_FEATURE_FLAGS` JSON bundle, preserving the previous number of Worker variables. Tests assert that the standalone variable is absent and that the bundled control is actually read by the gateway. No paid upgrade is required.
+
+## 6 November 2026 — verified public-source commissioning
+
+The existing R2 bucket now contains three content-addressed, metadata-only source envelopes. Exact SHA-256 readback was independently checked against the approved values committed in `integrations/neural-knowledge/commissioning-evidence-20261106.json`. The existing `VAOS_FEATURE_FLAGS` JSON bundles the SHA-256 allowlist, so no new Workers Free variable is consumed.
+
+- **Graphify reference inventory:** 63 project, division, document, and decision nodes / 62 explicit edges. Pinned to Spark packaged HTML blob `170a2f4c31f29e0250a4b3d89f63ee2c3716fdb9`. No contact nodes, note contents, credentials or local Graphify graph are copied.
+- **Brain Atlas reference projection:** 63 nodes / 62 edges from the **same underlying packaged source**. This is a different visual source contract, not independent verification or a live local Atlas stream.
+- **LLM Wiki document index:** 12 pinned public repository Markdown pages / one explicit Markdown citation edge from the SPARK code repository. It is an index for exploration, not evidence of a running generative LLM Wiki backend.
+
+Remaining source HOLD: the live VYNDI signed bridge requires authenticated API verification, Graphiti temporal episodes are local/private, Obsidian vault is local/private, and Dify has a deployed secret but unverified read-only live workflow topology. No dummy data, reverse tunnels, payments, paid inference or model invocation were activated.
+
+A successful R2 read of a pinned snapshot establishes **integrity and source provenance**, not freshness of any original locally running service. Runtime deployment and founder-session browser graph acceptance remain separate checks. For new snapshots, re-review and replace exact R2 bytes and update the SHA pin through code review; a mismatched hash must fail closed.

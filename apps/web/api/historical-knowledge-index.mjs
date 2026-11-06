@@ -9,6 +9,7 @@ import {featureControl} from '../lib/feature-flags.mjs';
 import {founderGoogleCredential} from './google-workspace.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
+const MAX_INDEXED_PER_SOURCE=12000;
 const PREFIX='runtime/history-index/v1/';
 const AAD=new TextEncoder().encode('vaos:history-index:private:v1');
 const enc=new TextEncoder(),dec=new TextDecoder();
@@ -193,6 +194,8 @@ export function createHistoricalIndexHandler({fetchImpl=globalThis.fetch,tokenRe
    if(req.method==='GET')return res.status(200).json({data:{status:state.prior?.state||'NOT_STARTED',
     source,processed:state.prior?.indexed||0,skipped:state.prior?.skipped||0,
     pages:state.prior?.page||0,contentComplete:false,sourceCoverageCertified:false,actionAuthorized:false}});
+   if((state.prior?.indexed||0)+12>MAX_INDEXED_PER_SOURCE)
+    return res.status(409).json(apiError('HISTORY_FREE_TIER_CAP','Per-source free-tier safety cap reached'));
    if(state.prior?.state==='LISTING_COMPLETE')
     return res.status(200).json({data:{source,status:'LISTING_COMPLETE',
       processed:state.prior.indexed,skipped:state.prior.skipped,actionAuthorized:false,

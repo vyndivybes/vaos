@@ -77,3 +77,27 @@ test('neural registry reflects pinned metadata sources through free-tier config 
  for(const key of Object.keys(hashes))assert.equal(sources[key],'PIN_CONFIGURED_UNVERIFIED');
  for(const key of ['graphiti','obsidian','dify'])assert.equal(sources[key],'NOT_COMMISSIONED');
 });
+
+test('founder may view Dify provider-observed run metadata without any write capability',async()=>{
+ const envelope={schemaVersion:'VAOS_NEUTRAL_GRAPH_SOURCE_V1',sourceType:'dify',sourceRevision:'a'.repeat(64),observedAt:'2026-11-06T04:00:00Z',
+ payload:{nodes:[{id:'dify:run-12345678',type:'workflow_run',title:'Workflow run succeeded'}],edges:[]}};
+ let calls=0;
+ const handler=createNeuralKnowledgeHandler({readDifyMetadata:async()=>{calls++;return envelope}});
+ const env={DIFY_API_KEY:'bound-key',VAOS_FEATURE_FLAGS:JSON.stringify({VAOS_DIFY_NEURAL_READ_CONTROL:'founder-readonly-v1'})};
+ const registry=await invoke(request({source:'registry',env}),handler);
+ assert.equal(registry.status,200);
+ assert.equal(registry.body.data.sources.find(x=>x.id==='dify').status,'CONFIGURED_UNVERIFIED');
+ assert.equal(registry.body.data.sources.find(x=>x.id==='dify').transport,'provider-readonly-logs');
+ const result=await invoke(request({source:'dify',env}),handler);
+ assert.equal(result.status,200);
+ assert.equal(result.body.data.source,'dify');
+ assert.equal(result.body.data.nodes.length,1);
+ assert.equal(result.body.data.integrityVerified,false);
+ assert.equal(result.body.data.actionAuthorized,false);
+ assert.equal(calls,1);
+});
+test('Dify live reader remains disabled unless explicit founder-only control is present',async()=>{
+ const handler=createNeuralKnowledgeHandler({readDifyMetadata:async()=>{throw Error('should not call')}});
+ const result=await invoke(request({source:'dify',env:{DIFY_API_KEY:'bound-key'}}),handler);
+ assert.equal(result.status,503);
+});

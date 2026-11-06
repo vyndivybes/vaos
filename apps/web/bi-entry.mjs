@@ -1,4 +1,5 @@
 import {mountBiStudio} from './bi-studio.mjs';
+import {mountOntologyReadiness} from './bi-ontology-readiness-ui.mjs';
 async function request(path,options){const r=await fetch(path,{credentials:'same-origin',cache:'no-store',...options});const b=await r.json();if(!r.ok)throw Error(b.error?.message||'Source unavailable');return b.data;}
 const host=document.getElementById('business-intelligence');
 if(host)mountBiStudio(host,{
@@ -12,3 +13,5 @@ if(host)mountBiStudio(host,{
  list:()=>request('/api/dashboards'),open:id=>request('/api/dashboards?id='+encodeURIComponent(id)),
  save:data=>request('/api/dashboards',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}),
 });
+
+if(host)mountOntologyReadiness(host,()=>request('/api/nvidia/ontology/readiness'));

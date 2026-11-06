@@ -10,6 +10,8 @@
 <link rel="stylesheet" href="/vaos-global-theme.css" />
 <link rel="stylesheet" href="/unified-knowledge.css" />
 <script type="module" src="/unified-knowledge-ui.mjs"></script>
+<link rel="stylesheet" href="/history-index.css" />
+<script type="module" src="/history-index-ui.mjs"></script>
 </head>
 <body>
 <a class="skip-link" href="#graph-stage">Skip to knowledge graph</a>
@@ -129,6 +131,72 @@
     <input id="universe-chat-file" type="file" accept=".json,application/json" aria-label="Choose ChatGPT export conversations.json"></label>
   </div>
   <p id="universe-status" class="universe-note" role="status" aria-live="polite">No sources loaded. Graphify, Graphiti and Obsidian require commissioned snapshots; Gmail and Drive require separate VAOS OAuth. GitHub search currently covers its configured allowlist. ChatGPT requires an export file.</p>
+ </section>
+
+ <section class="history-index-panel" id="historical-index" aria-labelledby="history-title">
+  <div class="history-heading">
+   <div>
+    <p class="eyebrow">FOUNDER ONLY / ENCRYPTED EVIDENCE CORPUS / INCREMENTAL COMMISSIONING</p>
+    <h2 id="history-title">Historical Knowledge Index</h2>
+    <p>Search source content only after explicit OAuth authorization or export import. Every source retains its original reference and an honest extraction-completeness state. Indexed private text is encrypted in VAOS R2, never committed to GitHub.</p>
+   </div>
+   <button type="button" id="history-index-refresh">Check index status</button>
+  </div>
+  <p id="history-index-status" role="status" aria-live="polite">Checking encrypted storage readiness…</p>
+  <div id="history-index-sources" class="history-index-sources" aria-label="Historical source progress"></div>
+  <div class="history-actions">
+   <section class="history-action-card" aria-labelledby="history-google-title">
+    <p class="eyebrow">01 / GOOGLE CONSENT AND RESUMABLE RETRIEVAL</p>
+    <h3 id="history-google-title">Gmail &amp; Google Drive</h3>
+    <p>Connect VAOS separately for Gmail read-only and full Drive read-only access. Run bounded retrieval pages until enumeration is complete. Binary attachments and unsupported documents remain marked incomplete.</p>
+    <a class="history-consent" href="/api/google-workspace/start?scope=history">Authorize Gmail &amp; Drive historical read</a>
+    <label class="history-restart"><input id="history-index-restart" type="checkbox"> Restart enumeration to capture recent changes</label>
+    <div class="history-button-row">
+     <button id="history-index-sync-gmail" type="button">Index Gmail history</button>
+     <button id="history-index-sync-drive" type="button">Index Drive history</button>
+    </div>
+   </section>
+   <section class="history-action-card" aria-labelledby="history-export-title">
+    <p class="eyebrow">02 / OWNER-SELECTED HISTORICAL EXPORT</p>
+    <h3 id="history-export-title">ChatGPT · Obsidian · Graphiti · Graphify · Repositories</h3>
+    <p>Choose source files explicitly. Full text will be sent only to authenticated VAOS, encrypted and stored in the private index. This differs from the local-only metadata preview above.</p>
+    <form id="history-index-import">
+     <label>Export source
+      <select id="history-index-import-source">
+       <option value="chatgpt">ChatGPT conversations.json</option>
+       <option value="obsidian">Obsidian Markdown vault / JSON</option>
+       <option value="graphiti">Graphiti entities and facts JSON</option>
+       <option value="graphify">Graphify indexed graph JSON</option>
+       <option value="github">GitHub source export JSON</option>
+       <option value="vyndios">VYNDI OS records JSON</option>
+       <option value="vaos">VAOS records JSON</option>
+      </select>
+     </label>
+     <label>File export(s)<input id="history-index-file" type="file" multiple accept=".json,.md,application/json,text/markdown"></label>
+     <label>Obsidian vault folder (Chromium browsers)<input id="history-index-folder" type="file" multiple webkitdirectory directory></label>
+     <button id="history-index-import-submit" type="submit">Encrypt and index selected export</button>
+    </form>
+   </section>
+  </div>
+  <section class="history-search-card" aria-labelledby="history-search-title">
+   <div><p class="eyebrow">03 / VERIFIED SOURCE SEARCH</p><h3 id="history-search-title">Search encrypted historical text</h3>
+    <p>Keyword search scans encrypted records in bounded pages. A source is marked complete only when its enumeration finishes; keyword search reports when its scan finishes. Results can be projected into the Knowledge Universe with their asserted, directed relationships.</p></div>
+   <form id="history-index-search">
+    <label>Search terms <input id="history-index-q" type="search" minlength="2" maxlength="120" placeholder="Example: carbon frame quality audit" required autocomplete="off"></label>
+    <label>Source <select id="history-index-filter">
+     <option value="all">All indexed sources</option>
+     <option value="gmail">Gmail</option><option value="drive">Google Drive</option>
+     <option value="github">GitHub</option><option value="chatgpt">ChatGPT</option>
+     <option value="obsidian">Obsidian</option><option value="graphiti">Graphiti</option>
+     <option value="graphify">Graphify</option><option value="vyndios">VYNDI OS</option>
+     <option value="vaos">VAOS</option>
+    </select></label>
+    <button type="submit">Search index</button>
+   </form>
+   <div id="history-index-results" class="history-index-results" aria-label="Indexed source matches"></div>
+   <button id="history-index-search-more" type="button" hidden disabled>Scan more encrypted records</button>
+   <div id="history-index-contents" class="history-index-contents" aria-live="polite"></div>
+  </section>
  </section>
 
  <section class="knowledge-search" aria-labelledby="knowledge-title">

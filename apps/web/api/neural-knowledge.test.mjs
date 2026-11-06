@@ -67,3 +67,13 @@ test('neural source registry can be admitted through bundled free-tier feature c
  assert.equal(response.status,200);
  assert.ok(response.body.data.sources.length>=7);
 });
+
+test('neural registry reflects pinned metadata sources through free-tier config without claiming live SPARK',async()=>{
+ const hashes={graphify:'a'.repeat(64),'brain-atlas':'b'.repeat(64),'llm-wiki':'c'.repeat(64)};
+ const env={VAOS_ARTIFACTS:{get:async()=>null},VAOS_FEATURE_FLAGS:JSON.stringify({VAOS_NEURAL_GRAPH_SNAPSHOT_HASHES:JSON.stringify(hashes)})};
+ const result=await invoke(request({source:'registry',env}),createNeuralKnowledgeHandler());
+ assert.equal(result.status,200);
+ const sources=Object.fromEntries(result.body.data.sources.map(s=>[s.id,s.status]));
+ for(const key of Object.keys(hashes))assert.equal(sources[key],'PIN_CONFIGURED_UNVERIFIED');
+ for(const key of ['graphiti','obsidian','dify'])assert.equal(sources[key],'NOT_COMMISSIONED');
+});

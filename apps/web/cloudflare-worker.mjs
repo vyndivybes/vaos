@@ -401,7 +401,8 @@ export default {
       console.warn('VAOS_SLACK_FOUNDER_AGENT_HOLD',reason);
     });
     const marketMonitor=Promise.resolve().then(()=>runScheduledMarketMonitor({
-      env,scheduledTime:_controller?.scheduledTime
+      env,scheduledTime:_controller?.scheduledTime,
+      controlValue:featureControl(env,'VAOS_MARKET_MONITOR_CONTROL')
     })).then(result=>console.log('VAOS_DAILY_MARKET_MONITOR',JSON.stringify({
       status:result.status,checkedAt:result.collectedAt||null,
       sourceStatus:result.evidence?.sourceQualification||null,

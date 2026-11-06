@@ -48,9 +48,9 @@ test('primary VAOS workspaces share their dark teal and gold design tokens',asyn
   assert.match(html,/href="\/vaos-global-theme\.css"/,path);
  }
  const premium=await read('./premium.css');
- assert.match(premium,/var\(--vaos-bg\)/);
+ assert.ok(premium.includes('--p-bg:var(--vaos-bg,'));
  const visualPremium=await read('./visual-premium.css');
- assert.match(visualPremium,/var\(--vaos-accent\)/);
+ assert.ok(visualPremium.includes('var(--vaos-accent,'));
 });
 
 test('Visual Command has one header and a human-readable status',async()=>{

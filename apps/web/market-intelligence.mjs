@@ -13,6 +13,20 @@ const references=[
   url:'https://www.ziv-zweirad.de/en/2026/09/07/ziv-half-year-review-2026/',
   claim:'ZIV reports German conventional bicycle sales rose almost 10% and production 6% year-on-year in H1 2026; no transfer to India is assumed.'}
 ];
+const internalCaseReferences=Object.freeze({
+ 'BUSINESS-CASE-001':{
+  title:'VYNDI feasibility and landed-BOM research (Case Study 001)',
+  publisher:'VYNDI internal management research',published:'2026-11-02',
+  kind:'USER_SUPPLIED',
+  url:'https://drive.google.com/file/d/13YuMrODnAdUO5nFnjwDfvKm3MAWeteX4/view',
+  claim:'Internal feasibility research with five source documents. Prices, BOM and stress assumptions remain unverified and spreadsheet formulas are not independently recalculated.'},
+ 'BUSINESS-CASE-002':{
+  title:'VYNDI capital-disciplined startup pathway (Case Study 002)',
+  publisher:'VYNDI internal management research',published:'2026-11-02',
+  kind:'USER_SUPPLIED',
+  url:'https://drive.google.com/file/d/1VyChHKSkQuEIvuZOi5zEEM79Ky9ofwHC/view',
+  claim:'Founder-owned consultancy-first and frameset entry planning study. Financial assumptions are not verified business actuals, signed customers or manufacturing approval.'}
+});
 let currentReferences=[],generated=null,lastInput=null;
 const currency=n=>n==null?'—':new Intl.NumberFormat('en-IN',
  {style:'currency',currency:'INR',maximumFractionDigits:0}).format(n);
@@ -161,6 +175,14 @@ function exportReport(){
  a.href=url;a.download=(generated.report.id||'market-case')+'.md';
  document.body.append(a);a.click();a.remove();URL.revokeObjectURL(url);
 }
+window.addEventListener('vaos:case-bridge-reference',event=>{
+ const id=event?.detail?.id;
+ if(!Object.hasOwn(internalCaseReferences,id))return;
+ const record=internalCaseReferences[id];
+ if(!currentReferences.some(x=>x.url===record.url))currentReferences.push({...record});
+ showReferences();
+ resetGenerated('Private case '+id+' referenced in the next research preview. Internal assumptions remain unverified.');
+});
 async function init(){
  try{
   const r=await fetch('/api/session',{credentials:'same-origin',cache:'no-store'});

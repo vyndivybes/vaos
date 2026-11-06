@@ -30,7 +30,7 @@ test('route is protected by founder authentication and commissioning flag',async
  assert.equal(typeof DEFAULT_API_HANDLERS['/api/history-index/status'],'function');
  const h=createHistoryIndexHandler({makeStore:fakeStore});
  assert.equal((await run(h,{...request('/status'),headers:{cookie:''}})).status,401);
- assert.equal((await run(h,request('/status','GET',null,{email:'other@example.com'}))).status,403);
+ assert.equal((await run(h,request('/status','GET',null,{email:'kaaviyam1519@gmail.com'}))).status,403);
  assert.equal((await run(h,request('/status','GET',null,{env:{VAOS_HISTORY_INDEX_CONTROL:'off'}}))).status,409);
  assert.equal((await run(h,request('/unknown'))).status,404);
 });

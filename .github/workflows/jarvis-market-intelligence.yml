@@ -1,0 +1,31 @@
+name: JARVIS Market Intelligence V1 qualification
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'intelligence/market-case-study*.mjs'
+      - 'apps/web/api/market-case-studies*.mjs'
+      - 'apps/web/market-intelligence.*'
+      - 'apps/web/cloudflare-worker.mjs'
+      - 'knowledge/business-cases/BUSINESS-CASE-003.md'
+      - '.github/workflows/jarvis-market-intelligence.yml'
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  evidence-bound-engine:
+    runs-on: [self-hosted, Linux]
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show available Node runtime (no paid dependency installs)
+        run: node --version
+      - name: Validate market intelligence syntax
+        run: |
+          node --check intelligence/market-case-study.mjs
+          node --check apps/web/api/market-case-studies.mjs
+          node --check apps/web/market-intelligence.mjs
+          node --check apps/web/cloudflare-worker.mjs
+      - name: Test analytical accuracy, provenance, access controls, archive and RSS
+        run: node --test intelligence/market-case-study.test.mjs apps/web/api/market-case-studies.test.mjs

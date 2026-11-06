@@ -92,3 +92,16 @@ A successful R2 read of a pinned snapshot establishes **integrity and source pro
 ### Dify read-only metadata admission
 
 The existing Dify secret binding can support an explicit founder-only read from the fixed Dify logs endpoint, limited to 25 workflow-run IDs and status labels. No workflow runs are started, modified or retried. Inputs, outputs, prompt text, secrets and user payloads are discarded before graph normalization. The Dify registry reports `CONFIGURED_UNVERIFIED` until a successful authenticated provider read; an API error remains a HOLD. Run-history nodes do **not** assert workflow topology or live production activation. The separate Dify control is stored inside the existing Workers Free feature flag bundle, with no new variable.
+
+
+## Personal Google Drive and Gmail — explicitly consented connector
+
+The illustrated VAOS Neural Intelligence cockpit provides separate private founder-only Drive and Gmail search, backed by the existing VAOS Google OAuth application and AES-GCM credential vault. ChatGPT's Google connectors are distinct OAuth grants and cannot be reused as VAOS Worker credentials.
+
+Calendar OAuth **still requests Calendar only** on the existing `/api/google-workspace/start` route. Knowledge access requires selecting **Connect / renew Google permission** at `/api/google-workspace/start?scope=knowledge`. The explicit knowledge mode additionally requests `drive.metadata.readonly` and `gmail.readonly`; OAuth callback verifies the complete requested grant before persisting the encrypted refresh token. Partial Google consent does not commission the private search pages.
+
+Drive search reads bounded file IDs, names, MIME types, modification timestamps, and Drive links only, without downloading contents or permissions. Gmail search is bounded to the existing authenticated query route. The cockpit renders only subject, sender, date and a short snippet; body text is not shown on the graph or stored in neutral R2 snapshots.
+
+The browser issues searches directly against founder-session, same-origin API endpoints and never copies responses into GitHub, static assets, SPARK, or source-neutral graphs. Readiness requires actual completed OAuth consent and a successful authenticated provider read. Cloudflare and GitHub test success alone cannot establish account authorization.
+
+The local SPARK Graphify `graphify-out/graph.json` and Graphiti Kuzu database are not present in its GitHub repository. The commissioned 63-node Graphify/Brain Atlas reference snapshots therefore remain reference-only. Those snapshots cannot be represented as the original live 2,226-node Graphify graph or a synchronized temporal Graphiti database. A permissioned device export and source-hash verification are still required for full local runtime ingestion.

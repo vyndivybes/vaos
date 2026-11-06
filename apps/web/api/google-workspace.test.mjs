@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief,readFounderCalendarEvents,readFounderGmail,createFounderCalendarReminder} from './google-workspace.mjs';
+import {createGoogleWorkspaceHandler,googleWorkspaceReadiness,readGoogleWorkspaceBrief,readFounderCalendarEvents,readFounderGmail,readFounderDrive,createFounderCalendarReminder} from './google-workspace.mjs';
 
 const ORIGIN='https://vaos.vayushastr.workers.dev';
 const ctx={email:'shyamsundhar1982@gmail.com'};
@@ -486,4 +486,64 @@ test('calendar status interpretation is restricted to safe diagnostic codes',asy
  assert.equal(calendarApiFailureReason(400),'GOOGLE_CALENDAR_REQUEST_INVALID');
  assert.equal(calendarApiFailureReason(302),'GOOGLE_CALENDAR_REDIRECT_REJECTED');
  assert.equal(calendarApiFailureReason(500),'GOOGLE_CALENDAR_PROVIDER_UNAVAILABLE');
+});
+
+test('Drive metadata reader requires explicit founder reconsent and does not fetch document bodies',async()=>{
+ const context=setup();const out=await readFounderDrive(context.env,'VAOS',{fetchImpl:context.fetchImpl});
+ assert.equal(out.status,'HOLD');
+ assert.ok(['GOOGLE_SCOPE_RECONNECT_REQUIRED','GOOGLE_FOUNDER_CONSENT_REQUIRED','GOOGLE_OAUTH_UNAVAILABLE'].includes(out.reason));
+ assert.equal(context.calls.some(x=>x.url.includes('/drive/v3/files')),false);
+});
+test('Personal Google Drive is never returned through an unauthenticated GET route',async()=>{
+ const s=setup();const handler=createGoogleWorkspaceHandler({authorized:()=>false,fetchImpl:s.fetchImpl});
+ const response=await handler({method:'GET',url:'https://vaos.vayushastr.workers.dev/api/google-workspace/drive?q=VAOS',headers:{},env:s.env});
+ assert.equal(response.status,403);
+});
+
+test('personal Google knowledge permission uses separate explicit consent without widening calendar default',async()=>{
+ const s=setup();
+ s.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const h=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl:s.fetchImpl});
+ const response=await h(makeReq('/api/google-workspace/start?scope=knowledge'),getResponse(),s.env);
+ assert.equal(response.status,302);
+ const scopes=new URL(response.headers.get('location')).searchParams.get('scope').split(' ');
+ assert.ok(scopes.includes('https://www.googleapis.com/auth/gmail.readonly'));
+ assert.ok(scopes.includes('https://www.googleapis.com/auth/drive.metadata.readonly'));
+ const state=new URL(response.headers.get('location')).searchParams.get('state');
+ const pending=JSON.parse(s.storage.get('runtime/google-workspace/oauth-pending/'+state+'.json'));
+ assert.equal(pending.requestedScopes.includes('https://www.googleapis.com/auth/gmail.readonly'),true);
+});
+
+test('explicit knowledge consent reads only Drive metadata without downloading document bodies',async()=>{
+ const setupData=setup();
+ setupData.env.VAOS_GOOGLE_VAULT_KEY=await crypto.subtle.generateKey({name:'AES-GCM',length:256},false,['encrypt','decrypt']);
+ const scope=['openid','email','https://www.googleapis.com/auth/calendar.events',
+  'https://www.googleapis.com/auth/drive.metadata.readonly','https://www.googleapis.com/auth/gmail.readonly'].join(' ');
+ const seen=[];
+ const fetchImpl=async(url,opts)=>{
+  seen.push({url,method:opts.method});
+  if(url==='https://oauth2.googleapis.com/token')
+   return Response.json({token_type:'Bearer',access_token:'approved-access-2026',refresh_token:'approved-refresh-2026',expires_in:3600,scope});
+  if(url==='https://openidconnect.googleapis.com/v1/userinfo')
+   return Response.json({email:'shyamsundhar1982@gmail.com',email_verified:true});
+  if(url.startsWith('https://www.googleapis.com/drive/v3/files?'))
+   return Response.json({files:[{id:'file-2026',name:'VYNDI plan',mimeType:'application/pdf',
+    modifiedTime:'2026-11-06T08:00:00Z',webViewLink:'https://drive.google.com/file/d/file-2026/view',
+    content:'NEVER_EXPOSE_CONTENT'}]});
+  throw Error('unexpected_network_destination');
+ };
+ const now=()=>Date.parse('2026-11-06T08:01:00Z');
+ const handler=createGoogleWorkspaceHandler({authorized:()=>true,fetchImpl,now});
+ const start=await handler(makeReq('/api/google-workspace/start?scope=knowledge'),getResponse(),setupData.env);
+ const state=new URL(start.headers.get('location')).searchParams.get('state');
+ const callback=await handler(makeReq('/api/google-workspace/callback?state='+state+'&code=approved_code_2026',{
+  cookie:start.headers.get('set-cookie').split(';')[0]}),getResponse(),setupData.env);
+ assert.equal(callback.status,200);
+ const result=await readFounderDrive(setupData.env,'VYNDI',{fetchImpl,now});
+ assert.equal(result.status,'PASS');
+ assert.equal(result.files.length,1);
+ assert.equal(result.files[0].name,'VYNDI plan');
+ assert.equal(JSON.stringify(result).includes('NEVER_EXPOSE_CONTENT'),false);
+ assert.equal(seen.filter(row=>row.url.includes('/drive/v3/')).length,1);
+ assert.ok(seen.every(row=>!row.url.includes('/files/file-2026')));
 });

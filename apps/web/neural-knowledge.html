@@ -69,6 +69,22 @@
   <form id="knowledge-search" class="knowledge-form"><label for="knowledge-query" class="visually-hidden">Search source documents</label><input id="knowledge-query" type="search" placeholder="Example: geometry revision or business case study" minlength="4" maxlength="120" required autocomplete="off"><button type="submit">Search sources</button></form></div>
   <p id="knowledge-status" role="status" aria-live="polite">No source document search performed.</p><div id="knowledge-results" class="knowledge-results"></div>
  </section>
+ <section class="knowledge-search" aria-labelledby="personal-google-title">
+  <div class="knowledge-intro"><div><p class="eyebrow">05 / PERSONAL GOOGLE SOURCES</p>
+   <h2 id="personal-google-title">My Drive &amp; Gmail</h2>
+   <p>On-demand private results from your explicitly authorized Google account. No mail bodies or document contents are automatically copied into SPARK, GitHub, or the public knowledge graph.</p>
+  </div>
+  <a id="personal-google-connect" href="/api/google-workspace/start?scope=knowledge">Connect / renew Google permission</a></div>
+  <form id="personal-google-search" class="knowledge-form">
+   <label for="personal-google-service" class="visually-hidden">Google source</label>
+   <select id="personal-google-service"><option value="drive">Google Drive</option><option value="mail">Gmail</option></select>
+   <label for="personal-google-query" class="visually-hidden">Search private Google account</label>
+   <input id="personal-google-query" type="search" placeholder="Search your Drive or Gmail…" minlength="2" maxlength="90" required autocomplete="off">
+   <button type="submit">Private search</button>
+  </form>
+  <p id="personal-google-status" role="status" aria-live="polite">A separate, explicit Google OAuth permission is required. Existing ChatGPT account access is not transferred into VAOS.</p>
+  <div id="personal-google-results" class="knowledge-results"></div>
+ </section>
  <section class="trust-strip"><strong>Authority boundary</strong><p>VYNDI engineering graph references are not live ERP release decisions. SPARK, Obsidian, Graphiti, Graphify, Wiki, Brain Atlas and Dify snapshots are never automatically read from a private computer or external service. Uncommissioned sources remain explicitly on HOLD.</p></section>
 </main>
 <footer><span>VAOS / NEURAL KNOWLEDGE · SOURCE GOVERNED</span><a href="/visual-command.html">Return to Visual Command</a></footer>

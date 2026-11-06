@@ -48,3 +48,12 @@ test('scheduled worker enforces once-daily control and can disable without write
  assert.equal((await runScheduledMarketMonitor({env:{VAOS_ARTIFACTS:b,VAOS_MARKET_MONITOR_CONTROL:'founder-daily-readonly-v1'},collect,scheduledTime:Date.parse('2026-11-06T01:00:00Z')})).status,'PARTIAL_OBSERVATIONS');
  assert.equal(b.rows.size,1);
 });
+
+test('scheduled monitor accepts a pre-resolved consolidated feature flag',async()=>{
+ const b=bucket();
+ const result=await runScheduledMarketMonitor({env:{VAOS_ARTIFACTS:b},
+  controlValue:'founder-daily-readonly-v1',collect:async()=>evidence(),
+  scheduledTime:Date.parse('2026-11-06T01:00:00Z')});
+ assert.equal(result.status,'PARTIAL_OBSERVATIONS');
+ assert.equal(b.rows.size,1);
+});

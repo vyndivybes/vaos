@@ -390,8 +390,8 @@ export async function readFounderDrive(env,q,{fetchImpl=fetch,now=()=>Date.now()
   const escaped=q.trim().replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'");
   const filter="trashed = false and name contains '"+escaped+"'";
   const url='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({
-    q:filter,page_size:'30',pageSize:'30',
-    fields:'nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,description)',
+    q:filter,pageSize:'30',
+    fields:'nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink)',
     orderBy:'modifiedTime desc'
   }).toString();
   const result=await googleGet(url,token,fetchImpl);

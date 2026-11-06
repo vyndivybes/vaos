@@ -38,8 +38,8 @@ export async function refreshMarketIntelligence({bucket,fetchImpl=globalThis.fet
  await bucket.put(LATEST_KEY,JSON.stringify(snapshot),{httpMetadata:{contentType:'application/json'}});
  return snapshot;
 }
-export async function runScheduledMarketMonitor({env,scheduledTime=Date.now(),fetchImpl=globalThis.fetch,collect}={}){
- if(env?.VAOS_MARKET_MONITOR_CONTROL!==control)return{status:'SKIPPED',reason:'CONTROL_DISABLED'};
+export async function runScheduledMarketMonitor({env,controlValue,scheduledTime=Date.now(),fetchImpl=globalThis.fetch,collect}={}){
+ if((controlValue??env?.VAOS_MARKET_MONITOR_CONTROL)!==control)return{status:'SKIPPED',reason:'CONTROL_DISABLED'};
  const date=new Date(scheduledTime);
  if(!Number.isFinite(date.getTime())||date.getUTCHours()!==1||date.getUTCMinutes()!==0)
   return{status:'SKIPPED',reason:'OUTSIDE_DAILY_WINDOW'};

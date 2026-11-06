@@ -38,7 +38,7 @@ test('failed feeds do not overwrite a healthy persisted snapshot',async()=>{
  await refreshMarketIntelligence({bucket:b,collect:async()=>evidence(),now:()=>new Date('2026-11-06T01:00:00Z')});
  const failed=evidence();failed.worldBank.gdp={status:'HOLD',series:[]};failed.competitors={status:'HOLD',items:[]};
  await assert.rejects(()=>refreshMarketIntelligence({bucket:b,collect:async()=>failed,now:()=>new Date('2026-11-07T01:00:00Z')}),/MARKET_FEEDS_UNAVAILABLE/);
- assert.equal(b.rows.get(LATEST_KEY).collectedAt,'2026-11-06T01:00:00Z');
+ assert.equal(b.rows.get(LATEST_KEY).collectedAt,'2026-11-06T01:00:00.000Z');
 });
 test('scheduled worker enforces once-daily control and can disable without writes',async()=>{
  const b=bucket();

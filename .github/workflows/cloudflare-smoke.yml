@@ -53,6 +53,12 @@ jobs:
       - name: Syntax-check Insight Studio
         run: node --check apps/web/jarvis-data-agent.mjs && node --check apps/web/lib/insight-studio.mjs
 
+      - name: Verify one Visual Command surface and shared theme
+        run: |
+          node --check apps/web/visual-command.mjs
+          node --check apps/web/visual-command-native.mjs
+          node --test apps/web/visual-command.test.mjs apps/web/visual-command-shell.test.mjs apps/web/visual-premium.test.mjs apps/web/visual-intelligence.test.mjs
+
       - name: Verify Founder Command browser asset dependency closure
         run: node --test apps/web/browser-asset-closure.test.mjs
 

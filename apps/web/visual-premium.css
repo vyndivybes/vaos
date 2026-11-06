@@ -1,9 +1,12 @@
+@import url('/vaos-global-theme.css');
 /* Original VAOS dashboard design system: editorial BI, no screenshot assets or paid fonts.
    All numerical content retains synthetic/unverified provenance from its source view. */
 :root {
-  --vp-bg:#080e18;--vp-panel:#111c2d;--vp-card:#132236;--vp-line:#243a51;
-  --vp-ink:#eff8ff;--vp-sub:#9db4c7;--vp-teal:#65d2c2;
-  --vp-gold:#e6bd7e;--vp-blue:#83aaf3;--vp-violet:#bb9bec;
+  --vp-bg:var(--vaos-bg,#080e18);--vp-panel:var(--vaos-surface,#111c2d);
+  --vp-card:var(--vaos-panel,#172a3d);--vp-line:var(--vaos-line,#304b61);
+  --vp-ink:var(--vaos-ink,#eff8ff);--vp-sub:var(--vaos-muted,#b2c4d0);
+  --vp-teal:var(--vaos-accent,#78d6c3);
+  --vp-gold:var(--vaos-gold,#e6bd7e);--vp-blue:#83aaf3;--vp-violet:#bb9bec;
 }
 html{scroll-behavior:smooth}
 body{

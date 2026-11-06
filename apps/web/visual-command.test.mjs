@@ -9,7 +9,8 @@ test('authenticated workspace links to the visual command centre',()=>{
  assert.match(workspace,/href="\/visual-command\.html"/);
  assert.match(page,/id="vc-main" hidden/);
  assert.match(page,/id="business-intelligence"/);
- assert.match(page,/id="vc-frame"/);
+ assert.match(page,/id="vc-native-host"/);
+ assert.doesNotMatch(page,/<iframe\\b/i);
  assert.match(page,/src="\/visual-command\.mjs"/);
 });
 
@@ -26,5 +27,7 @@ test('visual switching is session gated and reuses the existing BI entrypoint',(
  assert.match(source,/session\.authenticated!==true/);
  assert.match(source,/await import\('\.\/bi-entry\.mjs'\)/);
  assert.match(source,/resolveVisualMode/);
+ assert.ok(source.includes('visual-command-native.mjs'));
+ assert.doesNotMatch(source,/frame\\.src/);
  assert.doesNotMatch(source,/fetch\([^)]*method:\s*['"]POST/);
 });

@@ -1,0 +1,82 @@
+/* VAOS cross-workspace design foundation.
+ * Applied to primary founder, operational, research and visual workspaces.
+ * No business figures, access levels or operational states are styled into claims.
+ */
+@font-face{
+ font-family:Manrope;
+ src:url('/assets/manrope-latin.woff2') format('woff2');
+ font-style:normal;font-weight:400 800;font-display:swap
+}
+:root{
+ color-scheme:dark;
+ --vaos-bg:#080e18;
+ --vaos-surface:#111c2d;
+ --vaos-panel:#172a3d;
+ --vaos-elevated:#1c3446;
+ --vaos-line:#304b61;
+ --vaos-ink:#eff8ff;
+ --vaos-muted:#b2c4d0;
+ --vaos-accent:#78d6c3;
+ --vaos-accent-hover:#a7ebd8;
+ --vaos-gold:#e6bd7e;
+ --vaos-focus:#f0ce98;
+ --vaos-radius:12px;
+ --vaos-font:Manrope,'Segoe UI',system-ui,sans-serif
+}
+body{
+ font-family:var(--vaos-font);
+ color:var(--vaos-ink);
+ background:radial-gradient(ellipse at 70% -20%,#173044 0,transparent 55%),var(--vaos-bg);
+ -webkit-font-smoothing:antialiased
+}
+body.va-premium{
+ --p-bg:var(--vaos-bg);
+ --p-surface:var(--vaos-surface);
+ --p-raised:var(--vaos-panel);
+ --p-ink:var(--vaos-ink);
+ --p-muted:var(--vaos-muted);
+ --p-line:rgba(156,194,210,.2);
+ --p-accent:var(--vaos-accent);
+ --p-deep:var(--vaos-elevated);
+ font-family:var(--vaos-font);
+ background:radial-gradient(ellipse at 70% -20%,#173044 0,transparent 55%),var(--vaos-bg);
+ color:var(--vaos-ink)
+}
+:is(.vc-topbar,.av-top,header.topbar,.va-app-header,.control-header){
+ background:linear-gradient(100deg,#0d1928,#122236);
+ border-bottom:1px solid var(--vaos-line);
+ color:var(--vaos-ink)
+}
+:is(.vc-topbar,.av-top,header.topbar,.va-app-header,.control-header) nav a{
+ color:var(--vaos-muted);
+ text-underline-offset:4px
+}
+:is(.vc-topbar,.av-top,header.topbar,.va-app-header,.control-header) nav a:hover,
+:is(.vc-topbar,.av-top,header.topbar,.va-app-header,.control-header) nav a[aria-current="page"]{
+ color:var(--vaos-accent)
+}
+:is(.vc-brand,.av-home,header.topbar .brand,.va-app-brand,.header-brand){
+ color:var(--vaos-ink)
+}
+:is(.vc-command,.vc-stage,.av-panel,.av-import,.av-evidence){
+ border-color:var(--vaos-line)
+}
+:is(.vc-stage-heading,.av-panel-head){
+ background:linear-gradient(110deg,var(--vaos-elevated),var(--vaos-surface))
+}
+:is(.vc-command button.vc-primary,.av-primary){
+ background:linear-gradient(110deg,var(--vaos-accent),#5abab0);
+ border-color:var(--vaos-accent);
+ color:#071b25
+}
+:is(.vc-command button.vc-primary,.av-primary):hover{
+ background:var(--vaos-accent-hover)
+}
+:is(a,button,input,select,textarea,summary):focus-visible{
+ outline:2px solid var(--vaos-focus);
+ outline-offset:3px
+}
+::selection{background:#4fae9a;color:#061521}
+@media (prefers-reduced-motion:reduce){
+ *,*::before,*::after{scroll-behavior:auto!important}
+}

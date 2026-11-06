@@ -2,9 +2,10 @@ import {VISUAL_MODES,getVisualMode,resolveVisualMode} from './lib/visual-command
 
 const $=id=>document.getElementById(id);
 const main=$('vc-main'),auth=$('vc-auth-status'),menu=$('vc-menu'),message=$('vc-message');
-const business=$('business-intelligence'),frameShell=$('vc-frame-shell'),frame=$('vc-frame');
+const business=$('business-intelligence'),nativeHost=$('vc-native-host');
 const linkShell=$('vc-link-shell'),link=$('vc-link'),open=$('vc-open-view');
 let current=null,biLoaded=false,loadingBi=false,recognition=null;
+let nativeCleanup=null,visualSelection=0;
 
 function messageText(text){message.textContent=text;}
 
@@ -31,9 +32,24 @@ async function loadBi(){
  }finally{loadingBi=false;}
 }
 
+async function loadNativeVisual(mode,revision){
+ messageText('Opening '+mode.title+' in this workspace…');
+ try{
+  const {mountVisualCommandViz}=await import('./visual-command-native.mjs');
+  if(revision!==visualSelection||current!==mode.id)return;
+  nativeCleanup=mountVisualCommandViz(nativeHost,mode.id,{onNavigate:kind=>selectVisual(kind)});
+  messageText('Showing '+mode.title+'. The charts are examples, not live operational results.');
+ }catch{
+  if(revision!==visualSelection)return;
+  messageText('This example could not load. Use Open full workspace to see the full visual tool.');
+ }
+}
+
 function selectVisual(id,{push=true}={}){
  const mode=getVisualMode(id);
  if(!mode)return false;
+ nativeCleanup?.();nativeCleanup=null;
+ const revision=++visualSelection;
  current=mode.id;
  for(const button of menu.querySelectorAll('[data-visual]')){
   const active=button.dataset.visual===mode.id;
@@ -44,15 +60,11 @@ function selectVisual(id,{push=true}={}){
  $('vc-view-description').textContent=mode.description;
  open.href=mode.href;link.href=mode.href;
  business.hidden=mode.renderer!=='bi';
- frameShell.hidden=mode.renderer!=='embed';
+ nativeHost.hidden=mode.renderer!=='native';
  linkShell.hidden=mode.renderer!=='link';
- if(mode.renderer==='bi'){
-  if(frame.getAttribute('src'))frame.removeAttribute('src');
-  void loadBi();
- }else if(mode.renderer==='embed'){
-  if(frame.getAttribute('src')!==mode.href)frame.src=mode.href;
-  frame.title=mode.title+' · authenticated VAOS view';
- }else if(frame.getAttribute('src'))frame.removeAttribute('src');
+ nativeHost.replaceChildren();
+ if(mode.renderer==='bi')void loadBi();
+ if(mode.renderer==='native')void loadNativeVisual(mode,revision);
  if(push){
   const url=new URL(location.href);
   url.searchParams.set('visual',mode.id);
@@ -65,7 +77,9 @@ function openIntent(raw){
  const selected=resolveVisualMode(raw);
  if(!selected){messageText('No safe visual destination matched. Choose a workspace below. Only read-only navigation is supported.');return;}
  selectVisual(selected.id);
- messageText('Showing '+selected.title+'. Its source and authorization checks are retained.');
+ messageText(selected.renderer==='link'
+  ?'Open '+selected.title+' in the full workspace to keep its tools and access controls visible.'
+  :'Opening '+selected.title+' with its existing source and authorization checks.');
 }
 
 function setupVoice(){

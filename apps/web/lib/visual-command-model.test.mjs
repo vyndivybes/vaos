@@ -7,7 +7,8 @@ test('visual command has distinct, same-origin destination paths', () => {
   assert.ok(VISUAL_MODES.length>=8);
   for(const item of VISUAL_MODES){
     assert.match(item.href,/^\/(?!\/)[a-z0-9./?=&-]+$/);
-    assert.ok(['bi','embed','link'].includes(item.renderer));
+    assert.ok(['bi','native','link'].includes(item.renderer));
+    assert.notEqual(item.renderer,'embed','Visual Command must not nest another full page');
     assert.ok(item.title.length>0);
   }
 });
@@ -34,7 +35,7 @@ test('ambiguous and unrecognized commands do not issue an unintended action',()=
 
 test('predefined visual workspaces are read-only or existing navigation',()=>{
   const e=getVisualMode('engineering');
-  assert.equal(e.renderer,'embed');
+  assert.equal(e.renderer,'link');
   assert.equal(e.href,'/engineering-viewer.html');
   assert.equal(getVisualMode('bi').renderer,'bi');
 });

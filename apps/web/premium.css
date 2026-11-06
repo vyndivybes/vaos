@@ -1,8 +1,11 @@
+@import url('/vaos-global-theme.css');
 @font-face{font-family:Manrope;src:url('/assets/manrope-latin.woff2') format('woff2');font-weight:400 800;font-display:swap}
 /* A single visual system across the founder workspace. All values remain source-owned. */
 body.va-premium{
- --p-bg:#101714;--p-surface:#18211d;--p-raised:#1d2922;--p-ink:#edf1e9;--p-muted:#a3b0a6;
- --p-line:rgba(205,225,208,.12);--p-accent:#c2edaa;--p-deep:#263e2b;
+ --p-bg:var(--vaos-bg,#080e18);--p-surface:var(--vaos-surface,#111c2d);
+ --p-raised:var(--vaos-panel,#172a3d);--p-ink:var(--vaos-ink,#eff8ff);
+ --p-muted:var(--vaos-muted,#b2c4d0);--p-line:rgba(156,194,210,.2);
+ --p-accent:var(--vaos-accent,#78d6c3);--p-deep:var(--vaos-elevated,#1c3446);
  --workspace-ink:var(--p-ink);--workspace-muted:var(--p-muted);--workspace-gold:var(--p-accent);--workspace-gold-bright:var(--p-accent);--workspace-rim:var(--p-line);
  --vayu-muted:var(--p-muted);--vayu-silver:var(--p-ink);--vayu-gold:var(--p-accent);--vayu-gold-bright:var(--p-accent);--vayu-gold-soft:var(--p-accent);
  background:var(--p-bg);color:var(--p-ink);font:400 14px/1.65 Manrope,'Segoe UI',sans-serif;letter-spacing:-.01em;

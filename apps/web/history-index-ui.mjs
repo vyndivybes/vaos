@@ -27,7 +27,7 @@ async function refresh(){
    const card=document.createElement('div');card.className='history-source-state';
    const title=document.createElement('strong');title.textContent=LABELS[source];
    const count=document.createElement('span');count.textContent=(info?.items??0)+' encrypted records';
-   const state=document.createElement('small');state.textContent=source==='gmail'||source==='drive'?
+   const state=document.createElement('small');state.textContent=source==='gmail'||source==='drive'||source==='github'?
     info?.complete?'Enumeration complete · content coverage may be partial':
     info?.cursorAvailable?'Backfill resumable':'Not fully enumerated':
     'Explicit source export required';
@@ -40,7 +40,7 @@ async function refresh(){
  }
 }
 async function syncGoogle(source){
- const button=$(source==='gmail'?'history-index-sync-gmail':'history-index-sync-drive');
+ const button=$(source==='gmail'?'history-index-sync-gmail':source==='drive'?'history-index-sync-drive':'history-index-sync-github');
  button.disabled=true;let processed=0,stages=0,completed=false;
  try{
   // Foreground-only, bounded execution: never silently exhaust free-tier quotas.
@@ -196,6 +196,7 @@ function startSearch(event){
 $('history-index-refresh').addEventListener('click',refresh);
 $('history-index-sync-gmail').addEventListener('click',()=>syncGoogle('gmail'));
 $('history-index-sync-drive').addEventListener('click',()=>syncGoogle('drive'));
+$('history-index-sync-github').addEventListener('click',()=>syncGoogle('github'));
 $('history-index-import').addEventListener('submit',importFiles);
 $('history-index-search').addEventListener('submit',startSearch);
 $('history-index-search-more').addEventListener('click',scan);

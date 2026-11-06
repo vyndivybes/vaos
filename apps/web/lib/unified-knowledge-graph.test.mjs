@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mergeKnowledgeSources,selectKnowledgeView,layoutKnowledgeView,
- googleSearchGraph,githubEvidenceGraph,githubRepositoryInventoryGraph,chatHistoryGraph} from './unified-knowledge-graph.mjs';
+ historicalSearchGraph,googleSearchGraph,githubEvidenceGraph,githubRepositoryInventoryGraph,chatHistoryGraph} from './unified-knowledge-graph.mjs';
 
 const observed=(source,nodes,edges=[])=>({
  source,status:'OBSERVED',readOnly:true,actionAuthorized:false,
@@ -103,4 +103,14 @@ test('GitHub inventory includes only authenticated repository-owner relationship
  assert.equal(g.nodes.length,3);
  assert.equal(g.edges.length,2);
  assert.equal(mergeKnowledgeSources([g]).edges.length,2);
+});
+
+test('historical index search results form asserted same-source lineage without fabricated links',()=>{
+ const g=historicalSearchGraph('chatgpt',[
+  {source:'chatgpt',id:'p',title:'Parent',kind:'chat_message',links:[{targetId:'c',relation:'HAS_REPLY'}]},
+  {source:'chatgpt',id:'c',title:'Child',kind:'chat_message'}]);
+ const merged=mergeKnowledgeSources([g]);
+ assert.equal(merged.nodes.length,2);assert.equal(merged.edges.length,1);
+ assert.equal(merged.nodes[0].integrityVerified,false);
+ assert.equal(historicalSearchGraph('obsidian',[{source:'chatgpt',id:'p',title:'Wrong'}]).nodes.length,0);
 });

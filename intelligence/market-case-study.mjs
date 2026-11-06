@@ -33,6 +33,7 @@ function economics(m){
  if(!['INR','USD','EUR','GBP'].includes(m.currency)||typeof m.unit!=='string'
    ||!/^[A-Za-z][A-Za-z -]{2,30}$/.test(m.unit))INVALID();
  const sellingPrice=number(m.sellingPrice),variableCost=number(m.variableCost),fixed=number(m.monthlyFixedCost);
+ if(sellingPrice===0)INVALID();
  if(!m.monthlyUnits||Object.keys(m.monthlyUnits).sort().join(',')!=='base,bear,bull')INVALID();
  const demand={};
  for(const key of ['bear','base','bull']){
@@ -76,7 +77,7 @@ export function buildMarketCaseStudy(input){
  const title=bounded(input.title,10,180),market=bounded(input.market,10,200);
  const evidence=evidenceRows(input.evidence??[],asOf);
  const financial=input.model==null?null:economics(input.model);
- const recommendation=!financial||financial.unitEconomics.contributionPerUnit<=0
+ const recommendation=!financial||evidence.length<2||financial.unitEconomics.contributionPerUnit<=0
    ||financial.scenarios.base.operatingSurplus<=0
   ?{status:'HOLD',decision:'No scalable commercial release from these inputs; verify actual selling prices, full landed BOM, fixed costs and customer orders first.'}
   :{status:'CONDITIONAL_PILOT',decision:'The base assumption is operating-positive, but downside risk and missing evidence require a bounded paid pilot before fixed-capital expansion.'};

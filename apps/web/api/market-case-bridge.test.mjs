@@ -6,11 +6,11 @@ const sha=async v=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256
 async function fixture({email='shyamsundhar1982@gmail.com',corrupt=false,missing=false}={}){
  const archive1=new Uint8Array([80,75,3,4,1,2,3]);
  const archive2=new Uint8Array([37,80,68,70,45,49,1,2]);
- const f=[{id:'case1-doc',caseId:'BUSINESS-CASE-001',sourceSha256:'a'.repeat(64),
+ const f=[{id:'case1-01-xlsx',caseId:'BUSINESS-CASE-001',sourceSha256:'a'.repeat(64),
   sourceFileName:'Model.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   text:'Source 2026 cost assumptions. Frameset landed BOM is hypothetical. A warranty reserve is required.',
   status:'PARSED_UNVERIFIED_FORMULAS_NOT_RECALCULATED',schemaVersion:'VAOS_CASE_DOC_TEXT_V1',actionAuthorized:false},
-  {id:'case2-pdf',caseId:'BUSINESS-CASE-002',sourceSha256:'b'.repeat(64),
+  {id:'case2-01-pdf',caseId:'BUSINESS-CASE-002',sourceSha256:'b'.repeat(64),
   sourceFileName:'Capital plan.pdf',mimeType:'application/pdf',
   text:'Engineering services first. Avoid owned factory CAPEX until orders and supplier validation are proven.',
   status:'PARSED_UNVERIFIED',schemaVersion:'VAOS_CASE_DOC_TEXT_V1',actionAuthorized:false}];
@@ -21,9 +21,9 @@ async function fixture({email='shyamsundhar1982@gmail.com',corrupt=false,missing
   typeof b==='string'?new TextEncoder().encode(b):b))).map(x=>x.toString(16).padStart(2,'0')).join('');
  const catalog=[
  {id:'BUSINESS-CASE-001',title:'First case',archive:{key:'archive1',sha256:await hashBytes(archive1)},
-  documents:[{id:'case1-doc',key:'doc1',sha256:await sha(content1),sourceSha256:'a'.repeat(64)}]},
+  documents:[{id:'case1-01-xlsx',key:'doc1',sha256:await sha(content1),sourceSha256:'a'.repeat(64),sourceFileName:'Model.xlsx',mimeType:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}]},
  {id:'BUSINESS-CASE-002',title:'Second case',archive:{key:'archive2',sha256:await hashBytes(archive2)},
-  documents:[{id:'case2-pdf',key:'doc2',sha256:await sha(content2),sourceSha256:'b'.repeat(64)}]},
+  documents:[{id:'case2-01-pdf',key:'doc2',sha256:await sha(content2),sourceSha256:'b'.repeat(64),sourceFileName:'Capital plan.pdf',mimeType:'application/pdf'}]},
  {id:'BUSINESS-CASE-003',title:'Third case',referenceUrl:'https://github.com/vyndivybes/vaos/blob/main/knowledge/business-cases/BUSINESS-CASE-003.md',documents:[]}
  ];
  if(corrupt)map.set('doc1',content1.replace('hypothetical','certified'));
@@ -62,25 +62,25 @@ test('private search returns only bounded quoted excerpts with exact file proven
  const f=await fixture();const r=await f.call('?q=warranty');
  assert.equal(r.status,200);assert.equal(r.data.data.status,'EVIDENCE_EXCERPTS_UNVERIFIED');
  assert.equal(r.data.data.results.length,1);
- assert.equal(r.data.data.results[0].documentId,'case1-doc');
+ assert.equal(r.data.data.results[0].documentId,'case1-01-xlsx');
  assert.match(r.data.data.results[0].quote,/warranty reserve/i);
  assert.equal(r.data.data.results[0].sourceSha256,'a'.repeat(64));
  assert.equal(r.data.data.forecastQualified,false);
 });
 test('document windows allow complete read without exposing other documents',async()=>{
- const f=await fixture();const r=await f.call('?case=BUSINESS-CASE-001&doc=case1-doc&offset=0');
+ const f=await fixture();const r=await f.call('?case=BUSINESS-CASE-001&doc=case1-01-xlsx&offset=0');
  assert.equal(r.status,200);
  assert.match(r.data.data.text,/Frameset landed BOM/);
- assert.equal(r.data.data.documentId,'case1-doc');
- assert.equal((await f.call('?case=BUSINESS-CASE-002&doc=case1-doc')).status,422);
- assert.equal((await f.call('?case=BUSINESS-CASE-001&doc=case1-doc&offset=-1')).status,422);
+ assert.equal(r.data.data.documentId,'case1-01-xlsx');
+ assert.equal((await f.call('?case=BUSINESS-CASE-002&doc=case1-01-xlsx')).status,422);
+ assert.equal((await f.call('?case=BUSINESS-CASE-001&doc=case1-01-xlsx&offset=-1')).status,422);
 });
 test('corrupted text and unavailable source archive fail closed',async()=>{
  const broken=await fixture({corrupt:true}),missing=await fixture({missing:true});
  assert.equal((await broken.call()).data.data.cases[0].status,'HOLD');
  assert.equal((await broken.call('?q=warranty')).status,503);
  assert.equal((await missing.call()).data.data.cases[0].status,'HOLD');
- assert.equal((await missing.call('?case=BUSINESS-CASE-001&doc=case1-doc')).status,503);
+ assert.equal((await missing.call('?case=BUSINESS-CASE-001&doc=case1-01-xlsx')).status,503);
 });
 test('GET only, strict query bounds, no public credentials and no mutations',async()=>{
  const f=await fixture();

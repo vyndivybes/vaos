@@ -88,3 +88,7 @@ The existing R2 bucket now contains three content-addressed, metadata-only sourc
 Remaining source HOLD: the live VYNDI signed bridge requires authenticated API verification, Graphiti temporal episodes are local/private, Obsidian vault is local/private, and Dify has a deployed secret but unverified read-only live workflow topology. No dummy data, reverse tunnels, payments, paid inference or model invocation were activated.
 
 A successful R2 read of a pinned snapshot establishes **integrity and source provenance**, not freshness of any original locally running service. Runtime deployment and founder-session browser graph acceptance remain separate checks. For new snapshots, re-review and replace exact R2 bytes and update the SHA pin through code review; a mismatched hash must fail closed.
+
+### Dify read-only metadata admission
+
+The existing Dify secret binding can support an explicit founder-only read from the fixed Dify logs endpoint, limited to 25 workflow-run IDs and status labels. No workflow runs are started, modified or retried. Inputs, outputs, prompt text, secrets and user payloads are discarded before graph normalization. The Dify registry reports `CONFIGURED_UNVERIFIED` until a successful authenticated provider read; an API error remains a HOLD. Run-history nodes do **not** assert workflow topology or live production activation. The separate Dify control is stored inside the existing Workers Free feature flag bundle, with no new variable.

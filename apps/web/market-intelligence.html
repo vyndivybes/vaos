@@ -8,47 +8,47 @@
 <header class="topbar"><a class="brand" href="/workspace"><img src="/assets/vayu-shastr-original.webp" width="34" height="34" alt=""><span><strong>VAOS</strong><small>JARVIS / RESEARCH DIRECTOR</small></span></a>
 <nav aria-label="VAOS navigation"><a href="/workspace">Workspace</a><a href="/founder-console.html">Founder Command</a><a href="/visual-intelligence.html">Visual Intelligence</a></nav><span class="status-pill">EVIDENCE-FIRST · PILOT</span></header>
 <main id="mission" hidden>
-<section class="hero"><div class="hero-copy"><p class="kicker">JARVIS INTELLIGENCE LAB / v1</p><h1>Understand the market.<br><em>Defend the decision.</em></h1><p>Explore public signals, stress-test unit economics and preserve founder-reviewed, versioned business cases. No automatic claims of verified market size or profitability.</p>
+<section class="hero"><div class="hero-copy"><p class="kicker">JARVIS / MARKET RESEARCH</p><h1>Understand the market.<br><em>Defend the decision.</em></h1><p>Follow market news, compare public figures, test business assumptions and save your research. A research workspace, not a verified sales forecast. No financial or procurement actions are taken here.</p>
 <div class="hero-steps"><span>01 · SCAN SIGNALS</span><span>02 · MODEL SCENARIOS</span><span>03 · ARCHIVE EVIDENCE</span></div></div>
 <div class="intelligence-art" aria-hidden="true"><div class="orbit o-one"></div><div class="orbit o-two"></div><div class="orbit o-three"></div><div class="core"><span>J</span></div><div class="node n-one"></div><div class="node n-two"></div><div class="node n-three"></div><div class="node n-four"></div><div class="orb-caption">MARKET / FINANCE / STRATEGY</div></div></section>
 <div class="workspace-grid">
-<section class="panel" aria-labelledby="signals-title"><div class="section-head"><div><p class="kicker">01 / EXTERNAL ENVIRONMENT</p><h2 id="signals-title">Public market signal scan</h2></div><span class="tag">UNVERIFIED CONTEXT</span></div>
-<p class="subtle">Zero-subscription Google News RSS discovery. Headlines identify research leads; they are not independent evidence of prices, market share or sales.</p>
+<section class="panel" aria-labelledby="signals-title"><div class="section-head"><div><p class="kicker">01 / EXTERNAL ENVIRONMENT</p><h2 id="signals-title">Scan recent market news</h2></div><span class="tag">UNVERIFIED CONTEXT</span></div>
+<p class="subtle">Browse recent public headlines without a paid subscription. News is a starting point for research, not proof of prices, market share or sales.</p>
 <form id="scan-form" class="horizontal-form"><label class="sr-only" for="scan-query">Industry research topic</label><input id="scan-query" type="text" minlength="8" maxlength="120" required value="India premium carbon bicycle market" placeholder="Industry and region to investigate"><button type="submit">Scan public signals</button></form>
-<p id="scan-status" role="status" class="mini-status">No external scan requested.</p><ol id="signal-list" class="signal-list"></ol></section>
-<section class="panel" aria-labelledby="archive-title"><div class="section-head"><div><p class="kicker">03 / INSTITUTIONAL MEMORY</p><h2 id="archive-title">Case-study archive</h2></div><span class="tag">FOUNDER ONLY</span></div><p class="subtle">Immutable case versions stored in the existing VAOS R2 artifact bucket. No order, ledger or engineering release is changed.</p><button id="refresh-archive" class="secondary" type="button">Refresh saved studies</button><p id="archive-status" role="status" class="mini-status">Archive not queried.</p><ul id="archive-list" class="archive-list"></ul></section>
+<p id="scan-status" role="status" class="mini-status">No news checked yet. Enter a topic and select Scan public signals.</p><ol id="signal-list" class="signal-list"></ol></section>
+<section class="panel" aria-labelledby="archive-title"><div class="section-head"><div><p class="kicker">03 / INSTITUTIONAL MEMORY</p><h2 id="archive-title">Your saved research</h2></div><span class="tag">FOUNDER ONLY</span></div><p class="subtle">Each saved study creates a new version you can return to. Saving research does not change orders, accounts or engineering releases.</p><button id="refresh-archive" class="secondary" type="button">Show saved studies</button><p id="archive-status" role="status" class="mini-status">Saved studies have not been checked yet.</p><ul id="archive-list" class="archive-list"></ul></section>
 </div>
 <section class="panel intelligence-public-panel" aria-labelledby="public-intel-title">
 <div class="section-head">
-<div><p class="kicker">04 / OFFICIAL PUBLIC DATA + WATCHLIST</p><h2 id="public-intel-title">Industry intelligence observatory</h2></div>
+<div><p class="kicker">04 / PUBLIC DATA AND COMPETITORS</p><h2 id="public-intel-title">Public data and competitor updates</h2></div>
 <span class="tag">FOUNDER READ-ONLY</span>
 </div>
-<p class="subtle">Official World Bank indicators, UN Comtrade preview and GDELT competitor news. These feeds cannot establish frameset market size, supplier pricing or independently qualified VYNDI demand forecasts. Daily evidence snapshots only; failed sources remain on HOLD.</p>
+<p class="subtle">Public data has limits. World Bank indicators show India's economic context, UN Comtrade offers a limited bicycle-import view, and GDELT finds recent competitor news mentions. None of these alone proves carbon-frameset demand, supplier prices or future sales. Missing or mismatched data stays on HOLD.</p>
 <div class="source-actions">
-<button id="market-public-load" class="secondary" type="button">Load latest public snapshot</button>
-<button id="market-public-refresh" type="button">Refresh public evidence</button>
+<button id="market-public-load" class="secondary" type="button">Show last saved results</button>
+<button id="market-public-refresh" type="button">Check public sources now</button>
 </div>
-<p id="market-public-status" role="status" aria-live="polite" class="mini-status">No public data snapshot loaded.</p>
+<p id="market-public-status" role="status" aria-live="polite" class="mini-status">No public-data results loaded. Select Check public sources now to start.</p>
 <div class="public-market-grid">
 <div class="public-market-box">
-<h3>India macro indicators <span class="tag">WORLD BANK</span></h3>
+<h3>India's economic indicators <span class="tag">WORLD BANK</span></h3>
 <div id="market-worldbank" class="market-metric-stack">No observations loaded.</div>
 </div>
 <div class="public-market-box">
-<h3>Bicycle import signal <span class="tag">UN COMTRADE</span></h3>
-<p class="subtle">HS 8712 · Non-motorized bicycles imported into India, worldwide aggregate, current USD. Not carbon framesets.</p>
+<h3>Bicycle import data <span class="tag">UN COMTRADE</span></h3>
+<p class="subtle">India's imports of non-motorized bicycles from all trading partners (HS 8712), valued in US dollars. This does not measure carbon frameset sales.</p>
 <div id="market-comtrade" class="market-metric-stack">No observations loaded.</div>
 </div>
 </div>
 <div class="public-market-box public-market-forecast" aria-label="Historical indicator model quality">
-<h3>Backtested indicator extrapolations <span class="tag">NOT BICYCLE DEMAND FORECASTS</span></h3>
-<p class="subtle">Three rolling-origin holdouts compare a three-point moving mean to the last-known-value baseline. No independently verified commercial-demand forecast is generated.</p>
+<h3>Historical patterns, not sales predictions <span class="tag">NOT BICYCLE DEMAND FORECASTS</span></h3>
+<p class="subtle">This simple check compares two historical methods against three years of past data. It helps show how uncertain an economic estimate may be; it does not predict bicycle sales.</p>
 <div id="market-indicator-backtests" class="market-metric-stack">No validated time series loaded.</div>
 </div>
 <div class="public-market-box">
-<div class="section-head"><h3>Competitor news watchlist <span class="tag">GDELT DISCOVERY</span></h3><span id="market-new-articles" class="tag">NO VERIFIED PRICE CHANGES</span></div>
-<p class="subtle">Trek, Giant and Canyon keyword matches. Article titles are unverified leads; additions are not product launches or confirmed competitive actions.</p>
-<ul id="market-competitor-articles" class="market-competitor-list"><li>No monitored articles loaded.</li></ul>
+<div class="section-head"><h3>Competitor news <span class="tag">GDELT DISCOVERY</span></h3><span id="market-new-articles" class="tag">NO VERIFIED PRICE CHANGES</span></div>
+<p class="subtle">News mentions are leads, not confirmed price changes. We check for references to Trek, Giant and Canyon. A new link does not by itself confirm a product launch, a price or a change in market share.</p>
+<ul id="market-competitor-articles" class="market-competitor-list"><li>No competitor articles loaded yet. Check public sources to look for recent mentions.</li></ul>
 </div>
 </section>
 <section class="panel private-case-panel" aria-labelledby="private-case-heading">
@@ -69,8 +69,8 @@
 <button id="private-case-next" class="secondary" type="button" hidden>Read next portion</button>
 </div>
 </section>
-<section class="panel model-panel" aria-labelledby="model-title"><div class="section-head"><div><p class="kicker">02 / CASE BUILDER</p><h2 id="model-title">Create an evidence-linked business case</h2></div><button class="secondary" type="button" id="load-illustration">Load VYNDI illustrative example</button></div>
-<p class="subtle">Enter actual source references separately from scenario assumptions. Leave financial assumptions blank to prepare an evidence-only study. Examples are never treated as verified VYNDI accounts.</p>
+<section class="panel model-panel" aria-labelledby="model-title"><div class="section-head"><div><p class="kicker">02 / CASE BUILDER</p><h2 id="model-title">Build a research-backed business case</h2></div><button class="secondary" type="button" id="load-illustration">Load VYNDI illustrative example</button></div>
+<p class="subtle">Add links to the sources you have checked, then enter your own price, cost and demand assumptions if you want to model a scenario. You can also save a research-only study without financial numbers. The example values are not VYNDI's verified accounts.</p>
 <form id="case-form"><div class="field-grid">
 <label>Case identifier<input id="case-id" required pattern="[A-Z][A-Z0-9-]{5,79}" value="BUSINESS-CASE-003" maxlength="80"></label>
 <label>As-of date<input id="as-of" type="date" required value="2026-11-06"></label>

@@ -5,6 +5,7 @@ import {
  renderSankey,renderWaterfall,renderHeatmap,renderTimeline,
  renderFunnel,renderLogistics
 } from './advanced-visual-renderers.mjs';
+import {renderSignalDeck} from './visual-signal-deck.mjs';
 
 const svgNS='http://www.w3.org/2000/svg';
 const format=new Intl.NumberFormat('en-IN',{maximumFractionDigits:1});
@@ -185,13 +186,16 @@ export function renderVisualOverview(host,scenario,{provenance='SYNTHETIC DEMO',
  const header=element('div','av-dashboard-heading');
  const copy=element('div');
  copy.append(element('p','av-dashboard-eyebrow','VAOS / ANALYTICS / EXECUTIVE COCKPIT'),
-  element('h2','','Enterprise intelligence at a glance'),
+  element('h2','','One operating picture. Every connection.'),
   element('p','av-dashboard-subtitle',
    'Rich, explorable diagrams using '+(provenance==='SYNTHETIC DEMO'?'SYNTHETIC DEMO':'USER SUPPLIED · UNVERIFIED')+' values. No operational actuals are inferred.'));
  const actions=element('div','av-dashboard-actions');
  const view=element('button','av-dashboard-button','Inspect full Sankey ↗');
  view.type='button';view.dataset.openViz='sankey';actions.append(view);
  header.append(copy,actions);dashboard.append(header);
+ const signalHost=element('div','av-dashboard-signal');
+ renderSignalDeck(signalHost,scenario.sankey,{provenance,onNavigate});
+ dashboard.append(signalHost);
  const kpis=element('div','av-dashboard-kpis');
  createKpi(kpis,{eyebrow:'Origin flow',value:metricValue(totalOrigin),
   suffix:sankey.unit,note:'Synthetic / unverified material input',tone:'mint',spark:series});

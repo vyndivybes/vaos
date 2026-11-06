@@ -386,11 +386,11 @@ export async function readFounderGmail(env,q,{fetchImpl=fetch,now=()=>Date.now()
 /** Founder-only live Drive title metadata. No file contents, ACLs, permissions or previews copied. */
 export async function readFounderDrive(env,q,{fetchImpl=fetch,now=()=>Date.now()}={}){
  const scope='https://www.googleapis.com/auth/drive.metadata.readonly';
- if(typeof q!=='string'||q.trim().length<2||q.length>90||/[\\x00-\\x1f]/.test(q))
+ if(typeof q!=='string'||q.trim().length<2||q.length>90||/[\x00-\x1f]/.test(q))
   return hold('DRIVE_QUERY_INVALID');
  try{
   const token=await founderGoogleCredential(env,{fetchImpl,now,required:[scope]});
-  const escaped=q.trim().replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'");
+  const escaped=q.trim().replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const filter="trashed = false and name contains '"+escaped+"'";
   const url='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({
     q:filter,pageSize:'30',

@@ -87,6 +87,7 @@ test('founder may view Dify provider-observed run metadata without any write cap
  const registry=await invoke(request({source:'registry',env}),handler);
  assert.equal(registry.status,200);
  assert.equal(registry.body.data.sources.find(x=>x.id==='dify').status,'CONFIGURED_UNVERIFIED');
+ assert.equal(registry.body.data.sources.find(x=>x.id==='dify').transport,'provider-readonly-logs');
  const result=await invoke(request({source:'dify',env}),handler);
  assert.equal(result.status,200);
  assert.equal(result.body.data.source,'dify');

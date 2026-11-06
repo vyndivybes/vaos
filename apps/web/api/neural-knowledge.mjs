@@ -11,6 +11,7 @@ import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createVyndiReadBridgeClient} from '../../../platform/execution/vyndi-read-bridge-client.mjs';
 import {normalizeNeutralGraph,NEUTRAL_GRAPH_SOURCES} from '../../../integrations/neural-knowledge/neutral-schema.mjs';
 import {loadApprovedGraphSnapshot,readPinnedSnapshotHashes} from '../../../integrations/neural-knowledge/snapshot-reader.mjs';
+import {readDifyWorkflowMetadata} from '../../../integrations/dify/workflow-metadata-reader.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
 const ACTION='KNOWLEDGE.OBSERVE_VEDM_GRAPH';
 const ZERO_SHA=/^[a-f0-9]{64}$/;
@@ -20,11 +21,12 @@ const sourceReader=env=>createVyndiReadBridgeClient({
 });
 function statusOf(env,type){
  if(type==='vyndi-vedm')return typeof env?.VYNDI?.fetch==='function'?'CONFIGURED_UNVERIFIED':'NOT_COMMISSIONED';
+ if(type==='dify'&&featureControl(env,'VAOS_DIFY_NEURAL_READ_CONTROL')==='founder-readonly-v1'&&typeof env?.DIFY_API_KEY==='string'&&env.DIFY_API_KEY.trim())return 'CONFIGURED_UNVERIFIED';
  const config=readPinnedSnapshotHashes(env);
  return (typeof env?.VAOS_ARTIFACTS?.get==='function'&&ZERO_SHA.test(config?.[type]||''))
    ?'PIN_CONFIGURED_UNVERIFIED':'NOT_COMMISSIONED';
 }
-export function createNeuralKnowledgeHandler({getVyndiReader=sourceReader,getSnapshot=loadApprovedGraphSnapshot,now=()=>new Date()}={}){
+export function createNeuralKnowledgeHandler({getVyndiReader=sourceReader,getSnapshot=loadApprovedGraphSnapshot,readDifyMetadata=readDifyWorkflowMetadata,now=()=>new Date()}={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
   res.setHeader('X-Content-Type-Options','nosniff');
@@ -64,6 +66,8 @@ export function createNeuralKnowledgeHandler({getVyndiReader=sourceReader,getSna
      sourceRevision:raw.sourceCommit,observedAt:now().toISOString(),payload:raw};
     // A signed request authenticates the bridge, but is not independently
     // signed evidence of current source truth.
+   }else if(source==='dify'&&statusOf(env,'dify')==='CONFIGURED_UNVERIFIED'){
+    envelope=await readDifyMetadata({env});
    }else{
     const approved=await getSnapshot({env,sourceType:source});
     envelope=approved.snapshot;

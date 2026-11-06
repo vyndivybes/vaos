@@ -22,3 +22,12 @@ test('read-only private case API is registered in the Worker, never exposed as s
  assert.match(worker,/'\/api\/market-case-bridge': marketCaseBridge/);
  assert.match(ignore,/^api\//m);
 });
+
+test('verified private case records can be selected as unverified research references',async()=>{
+ const [app,bridge]=await Promise.all([read('./market-intelligence.mjs'),
+  read('./market-case-bridge-ui.mjs')]);
+ assert.match(bridge,/dispatchEvent\(new CustomEvent\('vaos:case-bridge-reference'/);
+ assert.match(app,/addEventListener\('vaos:case-bridge-reference'/);
+ assert.match(app,/USER_SUPPLIED/);
+ assert.match(app,/Object\.hasOwn\(internalCaseReferences/);
+});

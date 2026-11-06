@@ -14,7 +14,10 @@ const SCOPES=Object.freeze([
 ]);
 // Request only the Calendar permission configured for VAOS; Gmail and Drive
 // require separate explicit integrations and are not part of Calendar consent.
-const EXTENDED_SCOPES=SCOPES;
+const EXTENDED_SCOPES=Object.freeze([...SCOPES,
+ 'https://www.googleapis.com/auth/drive.metadata.readonly',
+ 'https://www.googleapis.com/auth/gmail.readonly'
+]);
 const AAD=new TextEncoder().encode('vaos:google-workspace:founder-readonly:v1');
 const enc=new TextEncoder();
 function reply(status,body){
@@ -41,7 +44,7 @@ export function googleWorkspaceReadiness(env){
  tokenKeyReady(env.VAOS_GOOGLE_VAULT_KEY) &&
  typeof env.VAOS_ARTIFACTS?.get==='function'&&typeof env.VAOS_ARTIFACTS?.put==='function';
  return {status:ready?'READY':'HOLD',ready:Boolean(ready),actionAuthorized:false,
-  scopes:['calendar.events','openid','email'],
+  scopes:['calendar.events','openid','email'],requestedReadScopes:['drive.metadata.readonly','gmail.readonly'],
   productionWritesAuthorized:false};
 }
 const isFounder=(req)=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE])?.email===FOUNDER;
@@ -376,6 +379,37 @@ export async function readFounderGmail(env,q,{fetchImpl=fetch,now=()=>Date.now()
     :'No matching messages found in the connected Gmail account.'};
  }catch(e){return hold(e.message==='GOOGLE_SCOPE_RECONNECT_REQUIRED'?e.message:'GMAIL_SOURCE_UNVERIFIED')}
 }
+
+/** Founder-only live Drive title metadata. No file contents, ACLs, permissions or previews copied. */
+export async function readFounderDrive(env,q,{fetchImpl=fetch,now=()=>Date.now()}={}){
+ const scope='https://www.googleapis.com/auth/drive.metadata.readonly';
+ if(typeof q!=='string'||q.trim().length<2||q.length>90||/[\\x00-\\x1f]/.test(q))
+  return hold('DRIVE_QUERY_INVALID');
+ try{
+  const token=await founderGoogleCredential(env,{fetchImpl,now,required:[scope]});
+  const escaped=q.trim().replace(/\\\\/g,'\\\\\\\\').replace(/'/g,"\\\\'");
+  const filter="trashed = false and name contains '"+escaped+"'";
+  const url='https://www.googleapis.com/drive/v3/files?'+new URLSearchParams({
+    q:filter,page_size:'30',pageSize:'30',
+    fields:'nextPageToken,files(id,name,mimeType,modifiedTime,webViewLink,description)',
+    orderBy:'modifiedTime desc'
+  }).toString();
+  const result=await googleGet(url,token,fetchImpl);
+  if(!Array.isArray(result?.files))return hold('DRIVE_LIST_SCHEMA_INVALID');
+  const files=result.files.slice(0,30).filter(row=>
+    typeof row?.id==='string'&&row.id.length<200&&
+    typeof row?.name==='string').map(row=>({
+    id:row.id,name:row.name.slice(0,180),
+    type:String(row.mimeType||'').slice(0,100),
+    modifiedAt:String(row.modifiedTime||'').slice(0,40),
+    url:typeof row.webViewLink==='string'&&row.webViewLink.startsWith('https://drive.google.com/')?
+      row.webViewLink:null
+  }));
+  return {status:'PASS',source:'GOOGLE_DRIVE',actionAuthorized:false,readOnly:true,
+    query:q.trim(),files,hasMore:Boolean(result.nextPageToken)};
+ }catch(e){return hold(e.message==='GOOGLE_SCOPE_RECONNECT_REQUIRED'?e.message:'DRIVE_SOURCE_UNVERIFIED')}
+}
+
 export async function createFounderCalendarReminder(env,body,{fetchImpl=fetch,now=()=>Date.now()}={}){
  if(!body||typeof body!=='object'||Array.isArray(body)||Object.keys(body).some(k=>!['title','start','end','requestId'].includes(k))
   ||typeof body.title!=='string'||body.title.trim().length<3||body.title.length>140
@@ -436,6 +470,10 @@ export function createGoogleWorkspaceHandler({authorized=isFounder,fetchImpl=fet
   if(path==='/api/google-workspace/start')return oauthStart(env,now);
   if(path==='/api/google-workspace/brief')return reply(200,await readGoogleWorkspaceBrief(env,{fetchImpl,now}));
   if(path==='/api/google-workspace/events')return reply(200,await readFounderCalendarEvents(env,{fetchImpl,now}));
+  if(path==='/api/google-workspace/drive'){
+   const q=new URL(req.url).searchParams.get('q');
+   return reply(200,await readFounderDrive(env,q,{fetchImpl,now}));
+  }
   if(path==='/api/google-workspace/mail'){
    const q=new URL(req.url).searchParams.get('q');
    return reply(200,await readFounderGmail(env,q,{fetchImpl,now}));

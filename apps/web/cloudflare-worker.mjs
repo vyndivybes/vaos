@@ -71,6 +71,7 @@ import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
 import federatedKnowledge from './api/federated-knowledge.mjs';
 import neuralKnowledge from './api/neural-knowledge.mjs';
 import universeRepositories from './api/universe-repositories.mjs';
+import historicalKnowledgeIndex from './api/historical-knowledge-index.mjs';
 import ontologySourceStatus from './api/ontology-source-status.mjs';
 import ontologyIngestCanary from './api/ontology-ingest-canary.mjs';
 import ontologyHealth from './api/ontology-health.mjs';
@@ -165,6 +166,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/federated-knowledge': federatedKnowledge,
   '/api/neural-knowledge': neuralKnowledge,
   '/api/universe-repositories': universeRepositories,
+  '/api/historical-knowledge-index': historicalKnowledgeIndex,
   '/api/ontology/source-status': ontologySourceStatus,
   '/api/ontology/ingest-canary': ontologyIngestCanary,
   '/api/ontology/health': ontologyHealth,

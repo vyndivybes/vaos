@@ -63,11 +63,16 @@ export function deriveEvidenceView(packet,{from,to}={}){
   if(typeof id!=='string'||!ID.test(id)||known.has(id))error('DEPARTMENT_ID_INVALID');
   known.add(id);
   const status=label(raw.status,60)?.toUpperCase()||'UNKNOWN';
-  const category=classify(status);
+  const coverageStatus=label(raw.coverage?.status,60)?.toUpperCase()||null;
+  const category=status==='OBSERVED'&&coverageStatus==='PARTIAL_OR_UNAVAILABLE'?'partial':classify(status);
   const observedAt=label(raw.observedAt||raw.asOf||raw.sourceObservedAt,50);
   return Object.freeze({
-   id,name:label(raw.displayName||raw.label,100)||id.replaceAll('-',' ').replaceAll('_',' '),
-   status,category,sourceObserved:status==='OBSERVED',
+   id,name:label(raw.department||raw.displayName||raw.label,100)||id.replaceAll('-',' ').replaceAll('_',' '),
+   status,category,coverageStatus,sourceObserved:status==='OBSERVED',
+   observedRelatedSources:Number.isSafeInteger(raw.coverage?.observed)?raw.coverage.observed:null,
+   expectedRelatedSources:Number.isSafeInteger(raw.coverage?.expected)?raw.coverage.expected:null,
+   periodEventCount:status==='OBSERVED'&&Number.isSafeInteger(raw.periodEventCount)?raw.periodEventCount:null,
+   currentAttentionCount:status==='OBSERVED'&&Number.isSafeInteger(raw.currentAttentionCount)?raw.currentAttentionCount:null,
    businessActualsQualified:false,actionAuthorized:false,
    sourceRef:label(raw.sourceRef||raw.sourceTable,150),
    observedAt:observedAt&&Number.isFinite(Date.parse(observedAt))?new Date(observedAt).toISOString():null,

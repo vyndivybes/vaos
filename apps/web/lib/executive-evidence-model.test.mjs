@@ -58,3 +58,15 @@ test('period presets are bounded and India-local, preserving the selected report
  assert.throws(()=>resolveEvidencePeriod('2026-11-08',400));
  assert.throws(()=>resolveEvidencePeriod('2026-02-30',30));
 });
+
+test('OBSERVED primary source with unavailable related ledgers is PARTIAL, not healthy',()=>{
+ const view=deriveEvidenceView(packet([{employeeId:'qa',department:'Quality assurance',status:'OBSERVED',
+  periodEventCount:10,currentAttentionCount:4,coverage:{status:'PARTIAL_OR_UNAVAILABLE',observed:1,expected:3}}]),
+  {from:'2026-10-10',to:'2026-11-08'});
+ assert.equal(view.rows[0].category,'partial');
+ assert.equal(view.rows[0].sourceObserved,true);
+ assert.equal(view.rows[0].periodEventCount,10);
+ assert.equal(view.rows[0].currentAttentionCount,4);
+ assert.equal(view.rows[0].expectedRelatedSources,3);
+ assert.equal(view.counts.observed,0);
+});

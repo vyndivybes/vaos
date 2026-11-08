@@ -16,6 +16,7 @@ The UI calls the existing founder-only, read-only `/api/enterprise-bi` endpoint 
 - Review-oriented drill-down to existing founder-authorized modules
 - Explicit HOLD, empty, invalid source, expired session and read failure states
 - Client request cancellation when leaving the view, and no browser persistence or invented demo records
+- Separate on-demand executive aggregate read (7 canonical CRM, HR and dispatch families). Each independently qualified family has its own count, status breakdown, exception highlights and source navigation; no cross-family sums or arbitrary forecast claims. The executive aggregate read is current source state and not filtered by the selected reporting period.
 
 ## Verification and release gate
 Run Node's `--test` on `apps/web/lib/executive-evidence-model.test.mjs` and `apps/web/executive-evidence-ui.test.mjs`, then the existing `npm run test:web`, `verify:web` and Cloudflare bundle smoke. Verify desktop, mobile, keyboard and reduced-motion acceptance in a founder-authenticated browser. This code is an unmerged review branch; production source data and signed bridge health have not been independently verified here.

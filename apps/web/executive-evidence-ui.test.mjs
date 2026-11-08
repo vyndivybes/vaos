@@ -23,6 +23,8 @@ test('all evidence browser dependencies are published and do not bypass source p
  assert.match(client,/\/api\/enterprise-bi\?/);
  assert.match(client,/credentials:'same-origin'/);
  assert.match(client,/deriveEvidenceView/);
+ assert.match(client,/employee:'all',limit:'5'/);
+ assert.doesNotMatch(client,/executive:'1'/,'executive-only source mode has no department records');
  assert.match(server,/FOUNDER_ONLY/);
  assert.doesNotMatch(client,/innerHTML\s*=/);
  assert.doesNotMatch(client,/localStorage|sessionStorage|sendBeacon/);

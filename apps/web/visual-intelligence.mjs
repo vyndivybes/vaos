@@ -9,11 +9,13 @@ import {
  renderTimeline,renderLogistics,renderSimulation
 } from './advanced-visual-renderers.mjs';
 import {mountFactoryTwin} from './factory-twin-view.mjs';
+import {mountExecutiveEvidence} from './executive-evidence.mjs';
 
 const $=id=>document.getElementById(id);
 const tabs=[...document.querySelectorAll('[data-viz]')];
 const known=new Set(tabs.map(t=>t.dataset.viz));
 const descriptions={
+ evidence:['Governed executive evidence','Inspect signed source coverage and operational holds, then drill into the original VAOS workspaces. No synthetic actuals.'],
  overview:['Executive intelligence cockpit','Information-dense visual workspace with linked scenario KPIs, Sankey flow, financial drivers, planning and operations.'],
  sankey:['Sankey material-flow diagram','Observe quantities through scenario nodes and transfers without inferring real order or stock movements.'],
  factory:['Factory 3D layout','Rotate and inspect hypothetical manufacturing cells and their simulated states. Not a physical asset digital twin or MES telemetry feed.'],
@@ -24,7 +26,7 @@ const descriptions={
  timeline:['Production Gantt','Hypothetical planning intervals; tasks are not approved production orders.'],
  logistics:['Logistics coordinate sketch','Show supplied geographic points and straight connections, not delivery routes, location tracking or ETAs.']
 };
-let current='overview',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,simulation=null;
+let current='overview',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,evidenceDispose=null,simulation=null;
 
 function setProvenance(){
  $('av-provenance').textContent=source;
@@ -35,16 +37,27 @@ function setProvenance(){
 function fail(message){$('av-status').textContent='HOLD — '+message;}
 function renderCurrent(){
  factoryDispose?.();factoryDispose=null;
+ evidenceDispose?.();evidenceDispose=null;
  for(const tab of tabs)tab.setAttribute('aria-current',tab.dataset.viz===current?'page':'false');
  const [title,description]=descriptions[current];
  $('av-heading').textContent=title;
  $('av-description').textContent=description;
- $('av-kind').textContent=current==='simulation'?'HYPOTHETICAL DISTRIBUTION':'SCENARIO · '+current.toUpperCase();
+ $('av-kind').textContent=current==='evidence'?'GOVERNED SIGNED SOURCE':current==='simulation'?'HYPOTHETICAL DISTRIBUTION':'SCENARIO · '+current.toUpperCase();
+ $('av-import').hidden=current==='evidence';
+ const scenarioNotice=document.querySelector('.av-evidence');
+ if(scenarioNotice)scenarioNotice.hidden=current==='evidence';
+ if(current==='evidence'){
+  $('av-provenance').textContent='GOVERNED SOURCE · AWAITING READ';
+  $('av-provenance-desc').textContent='Department coverage from the signed VYNDI endpoint. Not business KPI certification.';
+ }else setProvenance();
  $('av-simulation-controls').hidden=current!=='simulation';
  const host=$('av-display');
  host.replaceChildren();
  try{
-  if(current==='overview')renderVisualOverview(host,scenario,{provenance:source,onNavigate:kind=>select(kind)});
+  if(current==='evidence')evidenceDispose=mountExecutiveEvidence(host,{
+   onState:message=>{$('av-status').textContent=message;}
+  });
+  else if(current==='overview')renderVisualOverview(host,scenario,{provenance:source,onNavigate:kind=>select(kind)});
    else if(current==='sankey')renderSankey(host,scenario.sankey);
   else if(current==='factory')factoryDispose=mountFactoryTwin(host,scenario.factory);
   else if(current==='heatmap')renderHeatmap(host,scenario.heatmap);
@@ -56,7 +69,9 @@ function renderCurrent(){
    if(simulation)renderSimulation(host,simulation);
    else {const p=document.createElement('p');p.className='av-placeholder';p.textContent='Enter explicit assumptions and run a reproducible simulation below, or load the labeled illustrative values. No financial result is generated automatically.';host.append(p);}
   }
-  $('av-status').textContent=source+' · Graph is generated only from the current scenario. No live source result has been inferred.';
+  $('av-status').textContent=current==='evidence'
+   ?'GOVERNED READ · Select a reporting period and request signed source evidence. No sample data is substituted.'
+   :source+' · Graph is generated only from the current scenario. No live source result has been inferred.';
  }catch(error){fail(error?.message||'This scenario cannot be visualized');}
 }
 function select(kind,{push=true}={}){

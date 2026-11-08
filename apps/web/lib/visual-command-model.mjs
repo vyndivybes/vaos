@@ -1,5 +1,6 @@
 // Governed, read-only visual navigation. This catalog never authorizes actions.
 export const VISUAL_MODES=Object.freeze([
+ Object.freeze({id:'evidence',title:'Governed executive evidence',kicker:'SIGNED SOURCES · EXCEPTIONS · LINEAGE',description:'Inspect signed departmental source coverage, missingness and actionable investigative links, without synthetic KPI claims.',href:'/visual-intelligence.html?viz=evidence',renderer:'link',label:'Governed evidence'}),
  Object.freeze({id:'overview',title:'Executive visual cockpit',kicker:'KPI · FLOWS · PLANNING',description:'Explore eight interactive example charts in one workspace. These are scenario numbers, not verified company performance.',href:'/visual-intelligence.html?viz=overview',renderer:'native',label:'Executive cockpit'}),
  Object.freeze({id:'sankey',title:'Sankey process flows',kicker:'FLOW · LOSS · TRANSFER',description:'Interactive, quantity-scaled process flows. Synthetic or unverified user scenario only; no source-to-source material balance claimed.',href:'/visual-intelligence.html?viz=sankey',renderer:'native',label:'Sankey flows'}),
  Object.freeze({id:'factory',title:'Factory digital twin preview',kicker:'3D · STATIONS · SCENARIO',description:'Explore a rotatable example factory layout. It is not connected to machines or certified as a digital twin.',href:'/visual-intelligence.html?viz=factory',renderer:'native',label:'3D factory preview'}),
@@ -25,6 +26,7 @@ export function getVisualMode(id){
 
 // Priority is intentional: specialized requests outrank generic dashboard terms.
 const INTENTS=[
+ ['evidence',/\b(governed\s*evidence|signed\s*source\s*(coverage|status)|source\s*readiness|department\s*source\s*status)\b/],
  ['overview',/\b(executive\s*visual\s*cockpit|visual\s*overview|intelligence\s*overview|visual\s*dashboard|executive\s*cockpit)\b/],
  ['sankey',/\b(sankey|material\s*flow\s*(diagram|visual)|flow\s*diagram)\b/],
  ['factory',/\b(factory\s*(digital\s*)?twin|3d\s*factory|manufacturing\s*(digital\s*)?twin|factory\s*layout)\b/],

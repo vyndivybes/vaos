@@ -106,7 +106,7 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
  const rowsHost=el('div','evi-rows-host');
  const inspector=el('aside','evi-inspector');
  main.append(chartHost,rowsHost,inspector);root.append(main);
- const footer=el('p','evi-boundary','OBSERVED means a source returned a bounded record. It is not proof of complete operations, accurate revenue, cleared orders, approved engineering releases or agent execution.');
+ const footer=el('p','evi-boundary','OBSERVED reports source readability, not verified business actuals. Period records and current attention counts are primary-ledger measures only; overlapping related ledgers are never summed. Engineering, finance, orders and agent authority remain governed separately.');
  root.append(footer);host.replaceChildren(root);
 
  function showDetails(row){
@@ -121,6 +121,9 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
    ['Reported state',row.status],['Source reference',row.sourceRef||'Not supplied'],
    ['Source revision',row.sourceRevision||'Not supplied'],
    ['Source observed at',row.observedAt||'Not supplied'],
+   ['Related source coverage',row.expectedRelatedSources===null?'Not supplied':String(row.observedRelatedSources??'Unknown')+' / '+row.expectedRelatedSources+' observed'],
+   ['Primary source records in selected period',row.periodEventCount===null?'Not supplied':String(row.periodEventCount)],
+   ['Current primary-source attention records',row.currentAttentionCount===null?'Not supplied':String(row.currentAttentionCount)],
    ['Operational completeness','Not independently verified'],
    ['Transaction authorization','None — read only']
   ]){
@@ -149,7 +152,7 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
    entry.style.setProperty('--evi-status-color',PALETTE[row.category]);
    const first=el('span','evi-source-name',row.name);
    first.append(el('small','',row.id));
-   const second=el('span','evi-source-state',row.status);
+   const second=el('span','evi-source-state',row.status+(row.coverageStatus==='PARTIAL_OR_UNAVAILABLE'?' · PARTIAL COVERAGE':''));
    entry.append(first,second);
    entry.addEventListener('click',()=>{selectedId=row.id;showDetails(row);drawRows();});
    list.append(entry);
@@ -179,7 +182,7 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
   provenance.textContent='Do not interpret this as a live or complete business result.';
   try{
    const dates=resolveEvidencePeriod(today(),Number(period.value));
-   const query=new URLSearchParams({...dates,employee:'all',executive:'1',limit:'100'});
+   const query=new URLSearchParams({...dates,employee:'all',limit:'5'});
    const response=await fetchImpl('/api/enterprise-bi?'+query,{
     method:'GET',credentials:'same-origin',cache:'no-store',signal:controller.signal,
     headers:{Accept:'application/json'}
@@ -188,7 +191,7 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
    const parsed=await response.json();
    const next=deriveEvidenceView(parsed?.data,dates);
    if(disposed)return;
-   view=next;sourcePill.textContent='SIGNED SOURCE · '+(next.total?'RECORDS RETURNED':'NO RECORDS');
+   view=next;sourcePill.textContent='SIGNED DEPARTMENTAL READ · '+(next.total?'RECORDS RETURNED':'NO RECORDS');
    provenance.textContent='Reporting window: '+dates.from+' to '+dates.to+
     ' · Returned statuses are source-reported; completeness and business truth remain unverified.';
    notice.textContent=sourceSummary(next);

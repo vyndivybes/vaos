@@ -24,7 +24,8 @@ test('all evidence browser dependencies are published and do not bypass source p
  assert.match(client,/credentials:'same-origin'/);
  assert.match(client,/deriveEvidenceView/);
  assert.match(client,/employee:'all',limit:'5'/);
- assert.doesNotMatch(client,/executive:'1'/,'executive-only source mode has no department records');
+ assert.match(client,/new URLSearchParams\(\{\.\.\.dates,employee:'all',limit:'5'\}\)/,
+  'departmental read must avoid executive-only mode, which returns zero departments');
  assert.match(server,/FOUNDER_ONLY/);
  assert.doesNotMatch(client,/innerHTML\s*=/);
  assert.doesNotMatch(client,/localStorage|sessionStorage|sendBeacon/);

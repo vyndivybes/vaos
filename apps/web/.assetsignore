@@ -57,6 +57,7 @@ cloudflare-worker.mjs
 
 !lib/visual-command-model.mjs
 !lib/executive-evidence-model.mjs
+!lib/executive-signals-model.mjs
 
 !lib/advanced-visual-model.mjs
 !lib/predictive-simulation.mjs

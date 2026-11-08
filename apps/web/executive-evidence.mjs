@@ -2,6 +2,8 @@
  * No synthetic metrics, model estimates, mutation or source authority transfer.
  */
 import {deriveEvidenceView,filterEvidenceRows,resolveEvidencePeriod} from './lib/executive-evidence-model.mjs';
+import {deriveExecutiveSignals} from './lib/executive-signals-model.mjs';
+import {renderExecutiveSignals} from './executive-signals-view.mjs';
 
 const NS='http://www.w3.org/2000/svg';
 const PALETTE={observed:'#cfff59',attention:'#ffb6aa',partial:'#f1cf84',other:'#a9abb8'};
@@ -66,7 +68,7 @@ function coverageChart(host,view,onSelect){
 }
 export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=()=>{},today=localDay}={}){
  if(!host||typeof host.replaceChildren!=='function')throw Error('EVIDENCE_HOST_INVALID');
- let disposed=false,controller=null,view=null,selectedId=null;
+ let disposed=false,controller=null,signalsController=null,view=null,selectedId=null;
  const root=el('section','evi-dashboard');
  const heading=el('div','evi-intro');
  const headingText=el('div');
@@ -85,7 +87,8 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
   option.value=String(days);period.append(option);
  }
  period.value='30';periodLabel.append(period);
- const button=el('button','evi-refresh','Read signed sources');button.type='button';
+ const button=el('button','evi-refresh','Read signed departments');button.type='button';
+ const signalsButton=el('button','evi-refresh evi-refresh-secondary','Read canonical executive aggregates');signalsButton.type='button';
  const filterLabel=el('label','evi-field','Source status');
  const state=el('select','evi-state');
  for(const [id,name] of [['all','All'],['attention','Needs attention'],['partial','Partial / stale'],['observed','Observed'],['other','Other']]){
@@ -95,12 +98,16 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
  const searchLabel=el('label','evi-field','Find department');
  const search=el('input','evi-search');search.type='search';search.placeholder='Department or source';search.maxLength=90;
  searchLabel.append(search);
- controls.append(periodLabel,button,filterLabel,searchLabel);root.append(controls);
+ controls.append(periodLabel,button,signalsButton,filterLabel,searchLabel);root.append(controls);
 
  const notice=el('p','evi-notice','Not loaded. Select a period and read the founder-authorized signed VYNDI source.');notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
  const provenance=el('p','evi-provenance','No source read has occurred. Nothing is inferred from scenario graphs.');
  root.append(notice,provenance);
  const metrics=el('div','evi-metrics');root.append(metrics);
+ const signalStatus=el('p','evi-signal-status','Canonical CRM, HR and dispatch signals not loaded. Counts are independent and not period-filtered.');
+ signalStatus.setAttribute('role','status');signalStatus.setAttribute('aria-live','polite');
+ const signalsHost=el('div','evi-signal-host');
+ root.append(signalStatus,signalsHost);
  const main=el('div','evi-content');
  const chartHost=el('div','evi-graphics');
  const rowsHost=el('div','evi-rows-host');
@@ -205,11 +212,40 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
    onState(notice.textContent);
   }finally{if(!disposed)button.disabled=false;}
  }
+ async function readSignals(){
+  if(disposed)return;
+  signalsController?.abort();signalsController=new AbortController();
+  signalsButton.disabled=true;
+  signalsHost.replaceChildren();
+  signalStatus.textContent='Reading seven canonical executive status aggregates…';
+  try{
+   const dates=resolveEvidencePeriod(today(),Number(period.value));
+   const query=new URLSearchParams({...dates,employee:'all',executive:'1',limit:'5'});
+   const response=await fetchImpl('/api/enterprise-bi?'+query,{
+    method:'GET',credentials:'same-origin',cache:'no-store',
+    signal:signalsController.signal,headers:{Accept:'application/json'}
+   });
+   if(!response.ok)throw Error(response.status===401?'Founder session expired':
+    response.status===403?'Founder access denied':'EXECUTIVE_SOURCE_HTTP_'+response.status);
+   const packet=(await response.json())?.data;
+   const result=deriveExecutiveSignals(packet,dates);
+   if(disposed)return;
+   renderExecutiveSignals(signalsHost,result);
+   signalStatus.textContent='Canonical source read returned '+result.observedCount+
+    ' of 7 observed families; '+result.holdCount+' remain HOLD. These aggregates are current source statuses, not selected-period trends.';
+   onState('Executive canonical status aggregates displayed; no cross-source summation or certified forecasts.');
+  }catch(error){
+   if(disposed||error?.name==='AbortError')return;
+   signalStatus.textContent='HOLD — '+(error?.message||'Executive aggregate source unavailable')+'. No fabricated counts displayed.';
+   onState(signalStatus.textContent);
+  }finally{if(!disposed)signalsButton.disabled=false;}
+ }
  button.addEventListener('click',()=>{void read();});
+ signalsButton.addEventListener('click',()=>{void readSignals();});
  state.addEventListener('change',drawRows);
  search.addEventListener('input',drawRows);
  showDetails(null);
  return ()=>{
-  disposed=true;controller?.abort();host.replaceChildren();
+  disposed=true;controller?.abort();signalsController?.abort();host.replaceChildren();
  };
 }

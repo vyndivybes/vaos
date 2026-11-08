@@ -95,3 +95,46 @@
  .evi-metrics{grid-template-columns:1fr 1fr}.evi-metric-value{font-size:30px}}
 @media(prefers-reduced-motion:reduce){.evi-dashboard *, .evi-dashboard *:before, .evi-dashboard *:after{
  animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+
+/* Seven independent, source-reported executive aggregates: never additive. */
+.evi-refresh-secondary{background:#25282a;border-color:#787d76;color:#e4ffd2}
+.evi-refresh-secondary:hover:not(:disabled){background:#343a32;border-color:#cfff59}
+.evi-signal-status{
+ margin:0;padding:12px 16px;border-left:3px solid #f1cf84;
+ background:#252527;color:#e3e4dd;font-size:12px;
+}
+.evi-aggregates{display:grid;gap:14px;background:#141416;border:1px solid #444448;padding:clamp(14px,2vw,24px)}
+.evi-signal-head{display:grid;gap:6px}
+.evi-signal-head h3{font-size:clamp(20px,2vw,29px);margin:0;color:#f6f6f1;letter-spacing:-.04em}
+.evi-signal-head p{margin:0;color:#bcbeb7;font-size:12px;max-width:710px}
+.evi-signal-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:9px}
+.evi-signal-card{
+ min-width:0;text-align:left;display:grid;gap:8px;padding:15px 10px;
+ background:#202024;border:1px solid #4e4e51;color:#f4f4f1;
+ cursor:pointer;font:inherit;min-height:126px;
+}
+.evi-signal-card:hover,.evi-signal-card[aria-pressed="true"]{border-color:#cfff59;background:#2e312b}
+.evi-signal-card[data-status="HOLD"]{border-left:3px solid #ffb6aa}
+.evi-signal-label{font-size:11px;color:#dbddd7;line-height:1.4;overflow-wrap:anywhere}
+.evi-signal-value{font-size:clamp(23px,2vw,38px);color:#f8f8f1;font-weight:780;font-variant-numeric:tabular-nums}
+.evi-signal-card small{font-size:10px;color:#c0c4bc}
+.evi-signal-detail{
+ background:#1d1d20;border:1px solid #49494d;padding:clamp(14px,2vw,22px);
+ display:grid;gap:12px;
+}
+.evi-signal-breakdown{display:grid;gap:10px}
+.evi-signal-bar{display:grid;gap:6px;min-width:0}
+.evi-signal-bar-label{display:flex;justify-content:space-between;gap:14px;align-items:baseline;
+ font-size:12px;color:#e7e9e4;overflow-wrap:anywhere}
+.evi-signal-bar-label strong{color:#f0f1eb;white-space:nowrap;font-variant-numeric:tabular-nums}
+.evi-signal-track{height:12px;background:#33363a;border:1px solid #515359;overflow:hidden}
+.evi-signal-fill{height:100%;background:#cfff59;min-width:0}
+.evi-signal-bar[data-review="true"] .evi-signal-fill{background:#ffb6aa}
+.evi-signal-review{margin:0;border-left:3px solid #cfff59;padding:9px 12px;background:#272829;
+ color:#e3e6da;font-size:12px}
+.evi-source-note{margin:0;font-size:11px;color:#adb2aa}
+@media(max-width:1450px){.evi-signal-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:840px){.evi-signal-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){.evi-signal-grid{grid-template-columns:1fr 1fr}
+ .evi-signal-card{padding:10px;min-height:110px}
+ .evi-signal-value{font-size:26px}}

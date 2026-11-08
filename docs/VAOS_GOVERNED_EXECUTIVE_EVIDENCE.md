@@ -7,12 +7,12 @@ A founder can inspect which signed VYNDI departmental source records are current
 An original responsive executive evidence room: source status chart, four summary cards, filterable department register, provenance inspector, and deterministic review priority. Styling is integrated with the Kinetic Intelligence theme in PR #505. Charts use only observed source statuses, not example business metrics or inferred forecasts.
 
 ## Authenticity
-The UI calls the existing founder-only, read-only `/api/enterprise-bi` endpoint via the signed VYNDI OS service bridge. It does not synthesize balances, revenue, operational rates, CRM conversion, headcount, inventory or predictive claims. An OBSERVED source status is not certified business completeness. Forecasts and Monte Carlo illustrations remain in their separately labeled scenario modes.
+The UI calls the existing founder-only, read-only `/api/enterprise-bi` endpoint via the signed VYNDI OS service bridge, using its bounded departmental mode (not the executive-only aggregate mode, which deliberately returns zero department rows). It does not synthesize balances, revenue, operational rates, CRM conversion, headcount, inventory or predictive claims. An OBSERVED source status is not certified business completeness. Forecasts and Monte Carlo illustrations remain in their separately labeled scenario modes.
 
 ## Interaction
 - User-triggered read, with a selectable 7/30/90-day India-local reporting window
-- Source status filter, search and interactive status chart selectors
-- Readable department statuses, source references, reported source timestamps and revisions when available
+- Source status filter, search and interactive status chart selectors. Related-source partial coverage overrides a primary-source OBSERVED label for readiness display
+- Readable department statuses, source references, related-source coverage, primary-ledger period record counts, current primary-ledger attention counts, and source timestamps/revisions when available. Counts from heterogeneous or overlapping ledgers are never summed
 - Review-oriented drill-down to existing founder-authorized modules
 - Explicit HOLD, empty, invalid source, expired session and read failure states
 - Client request cancellation when leaving the view, and no browser persistence or invented demo records

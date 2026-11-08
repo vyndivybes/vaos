@@ -29,3 +29,15 @@ test('all evidence browser dependencies are published and do not bypass source p
  assert.doesNotMatch(client,/innerHTML\s*=/);
  assert.doesNotMatch(client,/localStorage|sessionStorage|sendBeacon/);
 });
+
+test('canonical aggregate explorer stays independently scoped and has no fabricated metrics',()=>{
+ const client=read('./executive-evidence.mjs');
+ const render=read('./executive-signals-view.mjs');
+ const ignore=read('./.assetsignore');
+ assert.match(client,/deriveExecutiveSignals/);
+ assert.match(client,/renderExecutiveSignals/);
+ assert.match(client,/executive:'1'/);
+ assert.match(ignore,/!lib\/executive-signals-model\.mjs/);
+ assert.match(render,/cross/i);
+ assert.doesNotMatch(render,/innerHTML\s*=/);
+});

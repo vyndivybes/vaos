@@ -312,3 +312,10 @@ body::before{
  .vs-link,.av-dashboard-kpi,.av-dashboard-card{transition:none}
  .av-dashboard-kpi:hover,.av-dashboard-card:hover{transform:none}
 }
+
+/* Compact analytics header. Data provenance remains visible beside the title. */
+.av-intro{min-height:0;padding:clamp(16px,2.5vw,28px);background:#141719;border:1px solid #3f4848;border-radius:8px}
+.av-intro::before,.av-intro::after{content:none}
+.av-intro h1{margin:0;font-size:clamp(30px,4vw,46px);line-height:1.1;letter-spacing:-.045em}
+.av-intro p:not(.av-kicker){margin:6px 0 0}
+.av-integrity[hidden]{display:none}

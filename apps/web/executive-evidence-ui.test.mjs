@@ -12,7 +12,10 @@ test('evidence mode is available without replacing the scenario studio or weaken
  assert.match(logic,/mountExecutiveEvidence/);
  assert.match(logic,/evidenceDispose\?\.\(\)/);
  assert.match(model,/id:'evidence'/);
- assert.match(logic,/GOVERNED SOURCE · AWAITING READ/);
+ assert.match(logic,/VYNDI OS sources/);
+ const check=logic.slice(logic.indexOf('async function checkSources'),logic.indexOf('function bind'));
+ assert.match(check,/employee:'all',limit:'5'/);
+ assert.doesNotMatch(check,/executive:'1'/);
  assert.match(html,/data-viz="simulation"/);
 });
 test('all evidence browser dependencies are published and do not bypass source permissions',()=>{

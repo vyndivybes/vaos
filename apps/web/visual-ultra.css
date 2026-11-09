@@ -312,3 +312,23 @@ body::before{
  .vs-link,.av-dashboard-kpi,.av-dashboard-card{transition:none}
  .av-dashboard-kpi:hover,.av-dashboard-card:hover{transform:none}
 }
+
+/* Compact analytics header. Data provenance remains visible beside the title. */
+.av-intro{min-height:0;padding:clamp(16px,2.5vw,28px);background:#141719;border:1px solid #3f4848;border-radius:8px}
+.av-intro::before,.av-intro::after{content:none}
+.av-intro h1{margin:0;font-size:clamp(30px,4vw,46px);line-height:1.1;letter-spacing:-.045em}
+.av-intro p:not(.av-kicker){margin:6px 0 0}
+.av-integrity[hidden]{display:none}
+
+/* A single picker gives evidence and scenarios the full content width. */
+.av-shell.av-shell--single{display:block}
+.av-view-picker{display:grid;gap:4px;color:#e0e6e2;font-size:.875rem}
+.av-view-picker select{
+ min-height:44px;padding:8px 10px;background:#191b1c;color:#f5f5f0;
+ border:1px solid #59615d;border-radius:5px;font:inherit;
+}
+.av-provenance-line{display:flex;flex-wrap:wrap;gap:4px 8px;margin:8px 0 0}
+.av-provenance-line strong{color:#d7e4c7}
+@media(max-width:540px){
+ .av-view-picker,.av-view-picker select{width:100%}
+}

@@ -968,3 +968,32 @@ body.va-premium.workspace-body .fc-metrics>*:focus-visible{border-color:#cfff59!
  .kinetic-command__actions a:hover{transform:none!important}
  .kinetic-exhibition__hint>span:last-child{transition:none!important}
 }
+
+/* Overview uses a single reading column. Secondary work is disclosed on demand. */
+.workspace-body .workspace-workbench{
+ max-width:1060px;margin:16px 0 24px;display:grid;gap:20px;
+}
+body.va-premium.workspace-body .workspace-workbench > .va-voice-widget{
+ margin:0!important;border-color:#444844!important;background:#171917!important;
+}
+body.va-premium.workspace-body .workspace-brief .fc-intro{
+ display:flex;flex-wrap:wrap;gap:12px;margin:0!important;
+}
+body.va-premium.workspace-body .workspace-brief .fc-metrics{
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:8px;margin:12px 0 0!important;
+}
+body.va-premium.workspace-body .workspace-brief .fc-metrics > *{
+ min-width:0;padding:12px!important;border-top-width:1px!important;
+}
+body.va-premium.workspace-body .workspace-brief .fc-metrics strong{
+ font-size:clamp(1rem,2vw,1.5rem)!important;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;
+}
+.workspace-body .workspace-details{margin:0 0 12px;max-width:1060px}
+.workspace-body .workspace-details > summary{
+ padding:13px 15px;border:1px solid #444844;border-radius:4px;cursor:pointer;color:#f3f4ef;
+}
+.workspace-body .workspace-details[open] > summary{margin-bottom:12px}
+.workspace-body #kinetic-title{font-size:1.25rem;margin:0 0 8px}
+@media(max-width:720px){
+ .founder-cockpit .workspace-brief .fc-intro h2{display:block;font-size:1.125rem}
+}

@@ -5,23 +5,7 @@
  color:#f4f4f0;font:400 14px/1.55 Manrope,'Segoe UI',system-ui,sans-serif;
  display:grid;gap:19px;min-width:0;
 }
-.evi-intro{
- display:flex;align-items:flex-end;justify-content:space-between;gap:22px;
- padding:clamp(18px,2.8vw,38px);
- background:linear-gradient(125deg,#111115 5%,#1b1d22 85%);
- border:1px solid #444448;position:relative;overflow:hidden;
-}
-.evi-intro::after{
- content:"";position:absolute;right:-120px;top:-190px;width:410px;height:410px;
- pointer-events:none;border-radius:50%;border:1px solid #cfff5930;
- box-shadow:0 0 0 55px #cfff590a,0 0 0 110px #cfff5904;
-}
 .evi-kicker{font-size:11px;font-weight:800;letter-spacing:.14em;color:#cfff59;text-transform:uppercase}
-.evi-title{font-size:clamp(28px,3.8vw,59px);line-height:1.05;margin:13px 0;
- letter-spacing:-.062em;font-weight:850;color:#f6f6f1}
-.evi-lede{max-width:680px;margin:0;color:#c7c9c6;font-size:14px;line-height:1.65}
-.evi-source-pill{white-space:nowrap;align-self:flex-start;padding:10px 13px;
- border:1px solid #6e7961;color:#cfff59;font-weight:780;letter-spacing:.05em;font-size:11px;background:#21251d}
 .evi-controls{display:flex;align-items:end;gap:13px;flex-wrap:wrap;padding:2px 0}
 .evi-field{display:grid;gap:6px;color:#bfc1bb;font-size:12px;min-width:140px;flex:1 1 160px}
 .evi-field select,.evi-field input{
@@ -38,28 +22,30 @@
  color:#eef0e9;font-size:12px;overflow-wrap:anywhere;
 }
 .evi-provenance{background:transparent;border-left:0;padding:0 3px;color:#b6b8b4}
-.evi-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}
-.evi-metric{padding:17px;min-width:0;display:grid;gap:6px;background:#1a1a1d;border:1px solid #444448}
-.evi-metric-label{color:#c3c6bf;text-transform:uppercase;letter-spacing:.08em;font-size:10px;font-weight:850}
-.evi-metric-value{font-size:clamp(28px,3vw,46px);line-height:1.05;color:#f3f3f0;font-weight:800;font-variant-numeric:tabular-nums}
-.evi-metric-note{font-size:11px;color:#aeb0ab}
-.evi-content{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(210px,.72fr) minmax(210px,.7fr);gap:14px;align-items:start}
+.evi-content{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+.evi-content[hidden]{display:none}
+.evi-graphics,.evi-filters{grid-column:1/-1}
+.evi-summaries{border:1px solid #444448;padding:14px;background:#19191c}
+.evi-summaries summary{cursor:pointer;font-weight:750;padding:6px 0}
+.evi-summaries[open] > :not(summary){margin-top:12px}
 .evi-graphics{display:grid;gap:14px;min-width:0}
-.evi-chart-card,.evi-rows-host,.evi-inspector,.evi-insight{
+.evi-chart-card,.evi-rows-host,.evi-inspector{
  min-width:0;background:#19191c;border:1px solid #444448;padding:18px;
 }
-.evi-card-heading h3,.evi-inspector h3,.evi-insight h3{
+.evi-card-heading h3,.evi-inspector h3{
  margin:0 0 7px;font-size:16px;color:#f1f2ee;font-weight:750;letter-spacing:-.02em
 }
-.evi-card-heading p,.evi-insight p{margin:0 0 13px;color:#b9bdb8;font-size:12px}
-.evi-chart-card svg{width:100%;height:auto;display:block;overflow:visible;max-height:280px}
-.evi-chart-actions{display:flex;flex-wrap:wrap;gap:8px}
+.evi-card-heading p{margin:0 0 13px;color:#b9bdb8;font-size:12px}
+.evi-chart-actions{display:grid;gap:8px}
 .evi-filter-chip{
- min-height:34px;border-color:var(--evi-status-color);color:var(--evi-status-color);
- background:transparent;font-size:10px;padding:6px 10px;
+ display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 12px;
+ padding:7px 10px;text-align:left;background:#222225;color:#f4f4f0;border:1px solid #4e4e51;
+ font-size:13px;font-weight:650;
 }
-.evi-filter-chip:hover:not(:disabled){background:#2a2a2e}
-.evi-filter-chip:disabled{opacity:.4;cursor:not-allowed}
+.evi-filter-chip .evi-signal-track{grid-column:1/-1;height:6px}
+.evi-filter-chip .evi-signal-fill{display:block;background:var(--evi-status-color)}
+.evi-filter-chip[aria-pressed="true"],.evi-filter-chip:hover:not(:disabled){border-color:#cfff59;background:#2e312b}
+.evi-filter-chip:disabled{cursor:default}
 .evi-source-list{display:grid;gap:7px;max-height:560px;overflow-y:auto;overscroll-behavior:contain}
 .evi-source-row{min-width:0;display:flex;justify-content:space-between;align-items:center;text-align:left;gap:8px;
  background:#232327;color:#e9ebe7;border:1px solid #444448;border-left:3px solid var(--evi-status-color);
@@ -78,21 +64,15 @@
 .evi-open-source{display:inline-block;margin-top:13px;color:#0f120b;background:#cfff59;padding:10px 12px;
  text-decoration:none;font-size:12px;font-weight:800}
 .evi-open-source:hover{background:#e4ffab}
-.evi-insight{border-left:3px solid #cfff59}
 .evi-empty{padding:20px;background:#29292b;color:#cfd0cc;line-height:1.5}
 .evi-boundary{font-size:12px;color:#b2b3ac;line-height:1.65;border-top:1px solid #424244;padding-top:15px;margin:0}
 .evi-dashboard :is(button,input,select,a):focus-visible{outline:3px solid #cfff59;outline-offset:3px}
-@media(max-width:1360px){.evi-content{grid-template-columns:minmax(0,1.15fr) minmax(250px,.85fr)}
- .evi-inspector{grid-column:1/-1}}
-@media(max-width:980px){.evi-content{grid-template-columns:1fr}.evi-inspector{grid-column:auto}
- .evi-metrics{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:760px){.evi-intro{flex-direction:column;align-items:flex-start}
- .evi-source-pill{max-width:100%;white-space:normal}.evi-controls{display:grid;grid-template-columns:1fr 1fr}
- .evi-refresh{grid-column:1/-1;order:3}
- .evi-field{min-width:0}.evi-metrics{gap:9px}.evi-metric{padding:13px}
- .evi-chart-card,.evi-rows-host,.evi-inspector{padding:14px}}
-@media(max-width:420px){.evi-controls{grid-template-columns:1fr}.evi-refresh{grid-column:1}
- .evi-metrics{grid-template-columns:1fr 1fr}.evi-metric-value{font-size:30px}}
+@media(max-width:760px){
+ .evi-content{grid-template-columns:minmax(0,1fr)}
+ .evi-controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,150px),1fr))}
+ .evi-field{min-width:0}
+ .evi-chart-card,.evi-rows-host,.evi-inspector{padding:14px}
+}
 @media(prefers-reduced-motion:reduce){.evi-dashboard *, .evi-dashboard *:before, .evi-dashboard *:after{
  animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 

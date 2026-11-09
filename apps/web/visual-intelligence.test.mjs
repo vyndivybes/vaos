@@ -13,7 +13,11 @@ test('advanced studio exposes eight working graphics and a source distinction',(
   assert.match(page,new RegExp('data-viz="'+kind+'"'));
   assert.match(app,new RegExp("'"+kind+"'"));
  }
- assert.match(page,/SYNTHETIC DEMO/);
+ assert.match(app,/SYNTHETIC DEMO/);
+ assert.match(page,/<select id="av-view">/);
+ assert.match(page,/<optgroup label="What-if scenarios">/);
+ assert.match(app,/viewPicker.addEventListener\('change'/);
+ assert.match(app,/select\(known\.has\(kind\)\?kind:'evidence'/);
  assert.match(app,/USER_SUPPLIED_UNVERIFIED/);
  assert.match(app,/\/api\/session/);
  assert.match(render,/renderSankey/);

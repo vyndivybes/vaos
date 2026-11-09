@@ -5,80 +5,55 @@ import {deriveEvidenceView,filterEvidenceRows,resolveEvidencePeriod} from './lib
 import {deriveExecutiveSignals} from './lib/executive-signals-model.mjs';
 import {renderExecutiveSignals} from './executive-signals-view.mjs';
 
-const NS='http://www.w3.org/2000/svg';
 const PALETTE={observed:'#cfff59',attention:'#ffb6aa',partial:'#f1cf84',other:'#a9abb8'};
-const TITLES={observed:'Source returned OBSERVED',attention:'Source needs attention',partial:'Partial or stale source',other:'Other / unverified status'};
+const TITLES={observed:'Readable source',attention:'Needs attention',partial:'Partial or stale source',other:'Other or unknown'};
 const el=(tag,cls,text)=>{
  const node=document.createElement(tag);
  if(cls)node.className=cls;
  if(text!==undefined)node.textContent=String(text);
  return node;
 };
-const mark=(tag,attrs={},text)=>{
- const node=document.createElementNS(NS,tag);
- for(const [key,value] of Object.entries(attrs))node.setAttribute(key,String(value));
- if(text!==undefined)node.textContent=String(text);
- return node;
-};
 const localDay=()=>new Date(Date.now()+5.5*3600*1000).toISOString().slice(0,10);
 function sourceSummary(view){
- if(view.total===0)return 'The signed request returned no departmental rows. No completion or readiness is inferred.';
+ if(view.total===0)return 'VYNDI OS returned no departments for this period.';
  if(view.counts.attention)return view.counts.attention+
-  ' department source(s) require investigation before using their outputs for decisions.';
+  (view.counts.attention===1?' department source needs attention.':' department sources need attention.');
  if(view.counts.partial)return view.counts.partial+
-  ' department source(s) report partial or stale coverage. Check completeness before analysis.';
- if(view.counts.other)return 'Some departments returned unrecognized source statuses. Review their source contracts.';
- return 'All returned departments report OBSERVED. This does not certify record completeness or business performance.';
-}
-function addMetric(host,label,value,note){
- const card=el('article','evi-metric');
- card.append(el('span','evi-metric-label',label),el('strong','evi-metric-value',value),
-  el('small','evi-metric-note',note));host.append(card);
+  (view.counts.partial===1?' department source is partial or stale.':' department sources are partial or stale.');
+ if(view.counts.other)return 'Some sources returned an unknown status. Open a department to review its details.';
+ return 'All returned department sources were readable.';
 }
 function coverageChart(host,view,onSelect){
  const section=el('section','evi-chart-card');
  const heading=el('div','evi-card-heading');
- heading.append(el('h3','', 'Source coverage, not business performance'),
-  el('p','', 'Number of returned departmental source statuses across the selected reporting window.'));
- section.append(heading);
- const chart=mark('svg',{viewBox:'0 0 780 264',role:'img',
-  'aria-label':'Departmental source status counts: '+
-   Object.entries(view.counts).map(([state,n])=>state+' '+n).join(', ')});
- chart.append(mark('title',{},'Bounded signed-source coverage by returned status'));
- const max=Math.max(1,view.total);
- for(const [index,key] of ['observed','attention','partial','other'].entries()){
-  const y=28+index*58;
-  chart.append(mark('text',{x:20,y:y+13,fill:'#eeeeea','font-size':15},TITLES[key]));
-  chart.append(mark('rect',{x:310,y,width:405,height:22,rx:4,fill:'#343438'}));
-  if(view.counts[key])chart.append(mark('rect',{x:310,y,width:(405*view.counts[key]/max),height:22,rx:4,fill:PALETTE[key]}));
-  chart.append(mark('text',{x:734,y:y+16,fill:'#f4f4f0','font-size':16,'font-weight':750},String(view.counts[key])));
- }
- section.append(chart);
- const shortcuts=el('div','evi-chart-actions');
+ heading.append(el('h3','','Department source status'),
+  el('p','',view.total+' departments returned. Select a status to filter the list.'));
+ const actions=el('div','evi-chart-actions');
+ const buttons=[];
  for(const key of ['attention','partial','observed','other']){
-  const button=el('button','evi-filter-chip',TITLES[key]+' · '+view.counts[key]);
+  const button=el('button','evi-filter-chip');
   button.type='button';
+  button.dataset.category=key;
   button.disabled=view.counts[key]===0;
   button.style.setProperty('--evi-status-color',PALETTE[key]);
+  const track=el('span','evi-signal-track');
+  track.setAttribute('aria-hidden','true');
+  const fill=el('span','evi-signal-fill');
+  fill.style.width=100*view.counts[key]/Math.max(1,view.total)+'%';
+  track.append(fill);
+  button.append(el('span','',TITLES[key]),el('strong','',view.counts[key]),track);
   button.addEventListener('click',()=>onSelect(key));
-  shortcuts.append(button);
+  buttons.push(button);
+  actions.append(button);
  }
- section.append(shortcuts);
+ section.append(heading,actions);
  host.append(section);
+ return buttons;
 }
 export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=()=>{},today=localDay}={}){
  if(!host||typeof host.replaceChildren!=='function')throw Error('EVIDENCE_HOST_INVALID');
- let disposed=false,controller=null,signalsController=null,view=null,selectedId=null;
+ let disposed=false,controller=null,signalsController=null,view=null,selectedId=null,chartButtons=[];
  const root=el('section','evi-dashboard');
- const heading=el('div','evi-intro');
- const headingText=el('div');
- headingText.append(el('span','evi-kicker','VAOS / GOVERNED INTELLIGENCE / VYNDI SIGNED READ'),
-  el('h2','evi-title','Decision evidence, not decorative numbers.'),
-  el('p','evi-lede','Identify which enterprise sources can support a decision, which need attention, and where to inspect the original records.'));
- heading.append(headingText);
- const sourcePill=el('span','evi-source-pill','SOURCE NOT LOADED');
- heading.append(sourcePill);root.append(heading);
-
  const controls=el('div','evi-controls');
  const periodLabel=el('label','evi-field','Reporting period');
  const period=el('select','evi-period');
@@ -87,47 +62,50 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
   option.value=String(days);period.append(option);
  }
  period.value='30';periodLabel.append(period);
- const button=el('button','evi-refresh','Read signed departments');button.type='button';
- const signalsButton=el('button','evi-refresh evi-refresh-secondary','Read canonical executive aggregates');signalsButton.type='button';
+ const button=el('button','evi-refresh','Check department sources');button.type='button';
+ const signalsButton=el('button','evi-refresh evi-refresh-secondary','Load business summaries');signalsButton.type='button';
  const filterLabel=el('label','evi-field','Source status');
  const state=el('select','evi-state');
- for(const [id,name] of [['all','All'],['attention','Needs attention'],['partial','Partial / stale'],['observed','Observed'],['other','Other']]){
+ for(const [id,name] of [['all','All'],['attention','Needs attention'],['partial','Partial / stale'],['observed','Readable source'],['other','Other']]){
   const option=el('option','',name);option.value=id;state.append(option);
  }
  filterLabel.append(state);
  const searchLabel=el('label','evi-field','Find department');
  const search=el('input','evi-search');search.type='search';search.placeholder='Department or source';search.maxLength=90;
  searchLabel.append(search);
- controls.append(periodLabel,button,signalsButton,filterLabel,searchLabel);root.append(controls);
+ controls.append(periodLabel,button);root.append(controls);
+ const filters=el('div','evi-controls evi-filters');
+ filters.append(filterLabel,searchLabel);
 
- const notice=el('p','evi-notice','Not loaded. Select a period and read the founder-authorized signed VYNDI source.');notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
- const provenance=el('p','evi-provenance','No source read has occurred. Nothing is inferred from scenario graphs.');
+ const notice=el('p','evi-notice','Choose a reporting period to see which VYNDI OS sources need attention.');notice.setAttribute('role','status');notice.setAttribute('aria-live','polite');
+ const provenance=el('p','evi-provenance','Signed, read-only data from VYNDI OS.');
  root.append(notice,provenance);
- const metrics=el('div','evi-metrics');root.append(metrics);
- const signalStatus=el('p','evi-signal-status','Canonical CRM, HR and dispatch signals not loaded. Counts are independent and not period-filtered.');
+ const signalStatus=el('p','evi-signal-status','These are current source counts. The department date filter does not apply.');
  signalStatus.setAttribute('role','status');signalStatus.setAttribute('aria-live','polite');
  const signalsHost=el('div','evi-signal-host');
- root.append(signalStatus,signalsHost);
+ const summaries=el('details','evi-summaries');
+ summaries.append(el('summary','','CRM, HR and dispatch summaries'),signalStatus,signalsButton,signalsHost);
  const main=el('div','evi-content');
  const chartHost=el('div','evi-graphics');
  const rowsHost=el('div','evi-rows-host');
  const inspector=el('aside','evi-inspector');
- main.append(chartHost,rowsHost,inspector);root.append(main);
- const footer=el('p','evi-boundary','OBSERVED reports source readability, not verified business actuals. Period records and current attention counts are primary-ledger measures only; overlapping related ledgers are never summed. Engineering, finance, orders and agent authority remain governed separately.');
+ main.hidden=true;
+ main.append(chartHost,filters,rowsHost,inspector);root.append(main,summaries);
+ const footer=el('p','evi-boundary','A readable source returned records. Completeness and business results still need separate verification. Department counts refer to the primary source only.');
  root.append(footer);host.replaceChildren(root);
 
  function showDetails(row){
   inspector.replaceChildren();
   if(!row){
-   inspector.append(el('h3','','Inspect a department'),el('p','','Select a source status to review its provenance and next useful investigation.'));
+   inspector.append(el('h3','','Inspect a department'),el('p','','Choose a department to see when its source was checked and what to review.'));
    return;
   }
-  inspector.append(el('span','evi-kicker','SOURCE INSPECTOR'),el('h3','',row.name));
+  inspector.append(el('span','evi-kicker','Source details'),el('h3','',row.name));
   const detail=el('dl','evi-details');
   for(const [key,value] of [
    ['Reported state',row.status],['Source reference',row.sourceRef||'Not supplied'],
    ['Source revision',row.sourceRevision||'Not supplied'],
-   ['Source observed at',row.observedAt||'Not supplied'],
+   ['Source last reported (UTC)',row.observedAt||'Not supplied'],
    ['Related source coverage',row.expectedRelatedSources===null?'Not supplied':String(row.observedRelatedSources??'Unknown')+' / '+row.expectedRelatedSources+' observed'],
    ['Primary source records in selected period',row.periodEventCount===null?'Not supplied':String(row.periodEventCount)],
    ['Current primary-source attention records',row.currentAttentionCount===null?'Not supplied':String(row.currentAttentionCount)],
@@ -139,19 +117,23 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
   }
   inspector.append(detail);
   if(row.reason)inspector.append(el('p','evi-reason','Reported reason: '+row.reason));
-  inspector.append(el('h4','','Next investigation'),el('p','',row.nextStep));
+  inspector.append(el('h4','','What to check next'),el('p','',row.nextStep));
   const anchor=el('a','evi-open-source','Open related VAOS workspace ↗');
   anchor.href=row.href;inspector.append(anchor);
  }
  function drawRows(){
   rowsHost.replaceChildren();
   if(!view)return;
+  for(const chip of chartButtons)chip.setAttribute('aria-pressed',String(chip.dataset.category===state.value));
   const heading=el('div','evi-card-heading');
   const filtered=filterEvidenceRows(view.rows,{state:state.value,query:search.value});
-  heading.append(el('h3','','Department source register'),
+  heading.append(el('h3','','Departments'),
    el('p','',filtered.length+' matching of '+view.total+' returned departments · '+view.period.from+' to '+view.period.to));
+  const active=filtered.find(row=>row.id===selectedId)||filtered[0];
+  selectedId=active?.id??null;
+  showDetails(active);
   rowsHost.append(heading);
-  if(filtered.length===0){rowsHost.append(el('p','evi-empty','No source records match these filters. This is not a zero-business-activity claim.'));return;}
+  if(filtered.length===0){rowsHost.append(el('p','evi-empty','No departments match these filters.'));return;}
   const list=el('div','evi-source-list');
   for(const row of filtered){
    const entry=el('button','evi-source-row');entry.type='button';
@@ -161,32 +143,31 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
    first.append(el('small','',row.id));
    const second=el('span','evi-source-state',row.status+(row.coverageStatus==='PARTIAL_OR_UNAVAILABLE'?' · PARTIAL COVERAGE':''));
    entry.append(first,second);
-   entry.addEventListener('click',()=>{selectedId=row.id;showDetails(row);drawRows();});
+   entry.addEventListener('click',()=>{
+    selectedId=row.id;
+    for(const button of list.children)button.setAttribute('aria-pressed',String(button===entry));
+    showDetails(row);
+   });
    list.append(entry);
   }
   rowsHost.append(list);
  }
  function draw(){
-  chartHost.replaceChildren();metrics.replaceChildren();
-  if(!view){showDetails(null);return;}
-  addMetric(metrics,'Returned source records',view.total,'Bounded signed response only');
-  addMetric(metrics,'Observed sources',view.counts.observed,'Source state ≠ verified business actuals');
-  addMetric(metrics,'Needs attention',view.counts.attention,'Investigate unavailable or HOLD sources');
-  addMetric(metrics,'Partial / stale',view.counts.partial,'Coverage may be incomplete');
-  coverageChart(chartHost,view,key=>{state.value=key;drawRows();});
-  const insight=el('section','evi-insight');
-  insight.append(el('h3','','Evidence-led next priority'),el('p','',sourceSummary(view)));
-  chartHost.append(insight);
-  showDetails(view.rows.find(x=>x.id===selectedId)||view.rows[0]||null);
+  chartHost.replaceChildren();
+  main.hidden=!view;
+  if(!view)return;
+  chartButtons=coverageChart(chartHost,view,key=>{
+   state.value=state.value===key?'all':key;
+   drawRows();
+  });
   drawRows();
  }
  async function read(){
   if(disposed)return;
   controller?.abort();controller=new AbortController();
   button.disabled=true;view=null;selectedId=null;draw();
-  notice.textContent='Reading source status from signed VYNDI OS bridge…';
-  sourcePill.textContent='REQUEST IN PROGRESS';
-  provenance.textContent='Do not interpret this as a live or complete business result.';
+  notice.textContent='Checking department sources…';
+  provenance.textContent='Signed, read-only data from VYNDI OS.';
   try{
    const dates=resolveEvidencePeriod(today(),Number(period.value));
    const query=new URLSearchParams({...dates,employee:'all',limit:'5'});
@@ -198,17 +179,16 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
    const parsed=await response.json();
    const next=deriveEvidenceView(parsed?.data,dates);
    if(disposed)return;
-   view=next;sourcePill.textContent='SIGNED DEPARTMENTAL READ · '+(next.total?'RECORDS RETURNED':'NO RECORDS');
+   view=next;
    provenance.textContent='Reporting window: '+dates.from+' to '+dates.to+
-    ' · Returned statuses are source-reported; completeness and business truth remain unverified.';
+    ' (India time) · Signed VYNDI OS source';
    notice.textContent=sourceSummary(next);
    onState('Signed source status read completed. '+next.total+' departmental records returned; actual business results not certified.');
    draw();
   }catch(error){
    if(disposed||error?.name==='AbortError')return;
-   sourcePill.textContent='SOURCE HOLD';
-   notice.textContent='HOLD — '+(error?.message||'The signed source could not be checked')+'. No values have been inferred.';
-   provenance.textContent='The existing scenario charts are separate and are not substitutes for unavailable evidence.';
+   notice.textContent='HOLD — '+(error?.message||'The signed source could not be checked')+'.';
+   provenance.textContent='Department results are unavailable. Try checking sources again.';
    onState(notice.textContent);
   }finally{if(!disposed)button.disabled=false;}
  }
@@ -217,7 +197,7 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
   signalsController?.abort();signalsController=new AbortController();
   signalsButton.disabled=true;
   signalsHost.replaceChildren();
-  signalStatus.textContent='Reading seven canonical executive status aggregates…';
+  signalStatus.textContent='Loading current business summaries…';
   try{
    const dates=resolveEvidencePeriod(today(),Number(period.value));
    const query=new URLSearchParams({...dates,employee:'all',executive:'1',limit:'5'});
@@ -231,8 +211,8 @@ export function mountExecutiveEvidence(host,{fetchImpl=globalThis.fetch,onState=
    const result=deriveExecutiveSignals(packet,dates);
    if(disposed)return;
    renderExecutiveSignals(signalsHost,result);
-   signalStatus.textContent='Canonical source read returned '+result.observedCount+
-    ' of 7 observed families; '+result.holdCount+' remain HOLD. These aggregates are current source statuses, not selected-period trends.';
+   signalStatus.textContent='Loaded '+result.observedCount+
+    ' of 7 business summaries. '+result.holdCount+' on hold.';
    onState('Executive canonical status aggregates displayed; no cross-source summation or certified forecasts.');
   }catch(error){
    if(disposed||error?.name==='AbortError')return;

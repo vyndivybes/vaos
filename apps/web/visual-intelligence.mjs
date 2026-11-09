@@ -12,11 +12,11 @@ import {mountFactoryTwin} from './factory-twin-view.mjs';
 import {mountExecutiveEvidence} from './executive-evidence.mjs';
 
 const $=id=>document.getElementById(id);
-const tabs=[...document.querySelectorAll('[data-viz]')];
-const known=new Set(tabs.map(t=>t.dataset.viz));
+const viewPicker=$('av-view');
+const known=new Set(Array.from(viewPicker.options,option=>option.value));
 const descriptions={
- evidence:['Governed executive evidence','Inspect signed source coverage and operational holds, then drill into the original VAOS workspaces. No synthetic actuals.'],
- overview:['Executive intelligence cockpit','Information-dense visual workspace with linked scenario KPIs, Sankey flow, financial drivers, planning and operations.'],
+ evidence:['Source evidence','See which department sources are available and what needs a closer look.'],
+ overview:['Scenario overview','Explore example data for finance, planning and operations.'],
  sankey:['Sankey material-flow diagram','Observe quantities through scenario nodes and transfers without inferring real order or stock movements.'],
  factory:['Factory 3D layout','Rotate and inspect hypothetical manufacturing cells and their simulated states. Not a physical asset digital twin or MES telemetry feed.'],
  simulation:['Monte Carlo cash scenario','Use explicit hypothetical demand, costs, capacity and volatility to calculate probability bands. It is not a certified forecast.'],
@@ -26,7 +26,7 @@ const descriptions={
  timeline:['Production Gantt','Hypothetical planning intervals; tasks are not approved production orders.'],
  logistics:['Logistics coordinate sketch','Show supplied geographic points and straight connections, not delivery routes, location tracking or ETAs.']
 };
-let current='overview',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,evidenceDispose=null,simulation=null;
+let current='evidence',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,evidenceDispose=null,simulation=null;
 
 function setProvenance(){
  $('av-provenance').textContent=source;
@@ -34,29 +34,26 @@ function setProvenance(){
   ?'Illustration only — not VAOS business actuals.'
   :'User-supplied UNVERIFIED local scenario — not signed enterprise evidence.';
 }
-function fail(message){$('av-status').textContent='HOLD — '+message;}
+function fail(message){$('av-status').hidden=false;$('av-status').textContent='HOLD — '+message;}
 function renderCurrent(){
  factoryDispose?.();factoryDispose=null;
  evidenceDispose?.();evidenceDispose=null;
- for(const tab of tabs)tab.setAttribute('aria-current',tab.dataset.viz===current?'page':'false');
+ viewPicker.value=current;
  const [title,description]=descriptions[current];
  $('av-heading').textContent=title;
  $('av-description').textContent=description;
- $('av-kind').textContent=current==='evidence'?'GOVERNED SIGNED SOURCE':current==='simulation'?'HYPOTHETICAL DISTRIBUTION':'SCENARIO · '+current.toUpperCase();
  $('av-import').hidden=current==='evidence';
  const scenarioNotice=document.querySelector('.av-evidence');
  if(scenarioNotice)scenarioNotice.hidden=current==='evidence';
  if(current==='evidence'){
-  $('av-provenance').textContent='GOVERNED SOURCE · AWAITING READ';
-  $('av-provenance-desc').textContent='Department coverage from the signed VYNDI endpoint. Not business KPI certification.';
+  $('av-provenance').textContent='VYNDI OS sources';
+  $('av-provenance-desc').textContent='Read-only source checks. Business results require separate verification.';
  }else setProvenance();
  $('av-simulation-controls').hidden=current!=='simulation';
  const host=$('av-display');
  host.replaceChildren();
  try{
-  if(current==='evidence')evidenceDispose=mountExecutiveEvidence(host,{
-   onState:message=>{$('av-status').textContent=message;}
-  });
+  if(current==='evidence')evidenceDispose=mountExecutiveEvidence(host);
   else if(current==='overview')renderVisualOverview(host,scenario,{provenance:source,onNavigate:kind=>select(kind)});
    else if(current==='sankey')renderSankey(host,scenario.sankey);
   else if(current==='factory')factoryDispose=mountFactoryTwin(host,scenario.factory);
@@ -69,8 +66,9 @@ function renderCurrent(){
    if(simulation)renderSimulation(host,simulation);
    else {const p=document.createElement('p');p.className='av-placeholder';p.textContent='Enter explicit assumptions and run a reproducible simulation below, or load the labeled illustrative values. No financial result is generated automatically.';host.append(p);}
   }
-  $('av-status').textContent=current==='evidence'
-   ?'GOVERNED READ · Select a reporting period and request signed source evidence. No sample data is substituted.'
+  $('av-status').hidden=current==='evidence';
+ $('av-status').textContent=current==='evidence'
+   ?''
    :source+' · Graph is generated only from the current scenario. No live source result has been inferred.';
  }catch(error){fail(error?.message||'This scenario cannot be visualized');}
 }
@@ -133,11 +131,11 @@ function businessDay(){
 }
 async function checkSources(){
  const status=$('av-source-status'),button=$('av-source-check');
- button.disabled=true;status.textContent='Checking founder-authorized signed source reachability…';
+ button.disabled=true;status.textContent='Checking VYNDI OS department sources…';
  try{
   const to=businessDay();
   const from=new Date(Date.parse(to+'T00:00:00Z')-30*86_400_000).toISOString().slice(0,10);
-  const q=new URLSearchParams({from,to,employee:'all',executive:'1',limit:'5'});
+  const q=new URLSearchParams({from,to,employee:'all',limit:'5'});
   const response=await fetch('/api/enterprise-bi?'+q,{credentials:'same-origin',cache:'no-store'});
   if(response.status===401){location.assign('/login');return;}
   if(response.status===403){status.textContent='Access denied: founder-only source. Scenario graphics remain unverified.';return;}
@@ -152,7 +150,7 @@ async function checkSources(){
  finally{button.disabled=false;}
 }
 function bind(){
- for(const t of tabs)t.addEventListener('click',()=>select(t.dataset.viz));
+ viewPicker.addEventListener('change',()=>select(viewPicker.value));
  $('av-simulation-form').addEventListener('submit',event=>{
   event.preventDefault();
   try{runScenario();}catch(error){fail(error.message);}
@@ -183,7 +181,7 @@ async function bootstrap(){
   $('av-json').value=JSON.stringify(scenario,null,2);
   setProvenance();bind();
   const kind=new URL(location.href).searchParams.get('viz');
-  select(known.has(kind)?kind:'overview',{push:false});
+  select(known.has(kind)?kind:'evidence',{push:false});
  }catch(error){sessionStatus.textContent='HOLD — '+(error?.message||'Session unavailable')+'. Sign in through VAOS.';}
 }
 void bootstrap();

@@ -15,10 +15,11 @@ export function renderExecutiveSignals(host,view){
  host.replaceChildren();
  const section=el('section','evi-aggregates');
  const top=el('div','evi-signal-head');
- top.append(el('span','evi-kicker','SIGNED EXECUTIVE AGGREGATES'),
-  el('h3','','Seven independent sources. One clear investigation path.'),
-  el('p','',view.observedCount+' source families observed; '+view.holdCount+
-   ' on HOLD. These are current canonical aggregates, not period-filtered time series or certified forecasts.'));
+ top.append(el('span','evi-kicker','VYNDI OS · Read only'),
+  el('h3','','Current business summaries'),
+  el('p','',view.observedCount+' summaries available · '+view.holdCount+
+   ' on hold. The department date filter does not apply here.'));
+ if(view.observedAt)top.append(el('p','','Source checked '+new Intl.DateTimeFormat('en-IN',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Kolkata'}).format(new Date(view.observedAt))+' IST'));
  section.append(top);
  const cards=el('div','evi-signal-grid');
  const detail=el('section','evi-signal-detail');
@@ -32,9 +33,9 @@ export function renderExecutiveSignals(host,view){
    el('p','',active.context+'. Record counts belong to this dataset only.'));
   detail.append(header);
   if(active.status!=='OBSERVED'){
-   detail.append(el('p','evi-empty','HOLD — canonical source unavailable or did not satisfy aggregate integrity checks. No zero was inferred.'));
+   detail.append(el('p','evi-empty','On hold. The source was unavailable or its counts could not be validated.'));
   }else if(!active.rows.length){
-   detail.append(el('p','evi-empty','The qualified canonical aggregate returned no status rows. This is not a forecast or evidence of future demand.'));
+   detail.append(el('p','evi-empty','The source returned no status groups.'));
   }else{
    const list=el('div','evi-signal-breakdown');
    const ordered=[...active.rows].sort((a,b)=>b.recordCount-a.recordCount);
@@ -53,7 +54,7 @@ export function renderExecutiveSignals(host,view){
    if(ordered.length>20)detail.append(el('p','evi-source-note','Showing the largest 20 of '+ordered.length+' returned source status groups; totals include all groups.'));
   }
   detail.append(el('p','evi-signal-review',active.nextReview));
-  const link=el('a','evi-open-source','Inspect original VAOS source ↗');
+  const link=el('a','evi-open-source','Open source workspace ↗');
   link.href=active.href;detail.append(link);
   detail.append(el('p','evi-source-note',
    'Record status groups can overlap across families. Do not sum CRM customer, order, HR or dispatch totals. Dispatch statuses do not prove carrier delivery.'));
@@ -74,7 +75,7 @@ export function renderExecutiveSignals(host,view){
  }
  section.append(cards,detail);
  const footer=el('p','evi-boundary',
-  'Aggregate counts refer to complete canonical source status groups as of the source read, not to the selected reporting period. No cross-family totals, financial consolidation, order forecasts or payroll decisions are inferred.');
+  'Use each summary on its own. Records can overlap across sources.');
  section.append(footer);
  host.append(section);show();
 }

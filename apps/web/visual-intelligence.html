@@ -23,30 +23,29 @@
  <div id="av-session-status" role="status" class="av-session">Verifying your VAOS session…</div>
  <main id="av-main" hidden>
   <section class="av-intro">
-   <div><h1>Analytics</h1><p>Check VYNDI OS sources or explore what-if scenarios.</p></div>
-   <div class="av-status-block"><strong id="av-provenance">SYNTHETIC DEMO</strong><span id="av-provenance-desc">Illustration only — not VAOS business actuals.</span></div>
+   <h1>Analytics</h1>
+   <label class="av-view-picker" for="av-view">
+    View
+    <select id="av-view">
+     <option value="evidence" data-viz="evidence">Source evidence</option>
+     <optgroup label="What-if scenarios">
+      <option value="overview" data-viz="overview">Scenario overview</option>
+      <option value="sankey" data-viz="sankey">Material flow</option>
+      <option value="factory" data-viz="factory">3D factory</option>
+      <option value="simulation" data-viz="simulation">Cash simulation</option>
+      <option value="heatmap" data-viz="heatmap">Utilization heatmap</option>
+      <option value="waterfall" data-viz="waterfall">Financial waterfall</option>
+      <option value="funnel" data-viz="funnel">CRM funnel</option>
+      <option value="timeline" data-viz="timeline">Production schedule</option>
+      <option value="logistics" data-viz="logistics">Logistics map</option>
+     </optgroup>
+    </select>
+   </label>
   </section>
-  <div class="av-shell">
-  <nav class="av-tabs" aria-label="Analytics views">
-   <button type="button" data-viz="evidence">Source evidence</button>
-   <button type="button" data-viz="overview">Scenario overview</button>
-   <details class="av-chart-menu" id="av-chart-menu">
-    <summary>Explore scenario charts</summary>
-    <div class="av-chart-options">
-   <button type="button" data-viz="sankey">Material flow</button>
-   <button type="button" data-viz="factory">3D factory</button>
-   <button type="button" data-viz="simulation">Cash simulation</button>
-   <button type="button" data-viz="heatmap">Heatmap</button>
-   <button type="button" data-viz="waterfall">Waterfall</button>
-   <button type="button" data-viz="funnel">CRM funnel</button>
-   <button type="button" data-viz="timeline">Production schedule</button>
-   <button type="button" data-viz="logistics">Logistics map</button>
-    </div>
-   </details>
-  </nav>
+  <div class="av-shell av-shell--single">
   <section class="av-panel" aria-labelledby="av-heading">
    <div class="av-panel-head">
-    <div><p class="av-kicker" id="av-kind">SCENARIO</p><h2 id="av-heading">Sankey flow</h2><p id="av-description">Material flow across workstations in a synthetic supply chain.</p></div>
+    <div><h2 id="av-heading">Source evidence</h2><p id="av-description">Check which department sources need attention.</p><p class="av-provenance-line"><strong id="av-provenance">VYNDI OS sources</strong><span id="av-provenance-desc">Read-only source checks.</span></p></div>
     <a href="/visual-command.html?visual=bi">Open source connections</a>
    </div>
    <p class="av-integrity" role="status" id="av-status" aria-live="polite">Ready to display illustration. No live business data is implied.</p>

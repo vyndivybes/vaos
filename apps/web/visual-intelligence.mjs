@@ -12,8 +12,8 @@ import {mountFactoryTwin} from './factory-twin-view.mjs';
 import {mountExecutiveEvidence} from './executive-evidence.mjs';
 
 const $=id=>document.getElementById(id);
-const tabs=[...document.querySelectorAll('[data-viz]')];
-const known=new Set(tabs.map(t=>t.dataset.viz));
+const viewPicker=$('av-view');
+const known=new Set(Array.from(viewPicker.options,option=>option.value));
 const descriptions={
  evidence:['Source evidence','See which department sources are available and what needs a closer look.'],
  overview:['Scenario overview','Explore example data for finance, planning and operations.'],
@@ -38,11 +38,10 @@ function fail(message){$('av-status').hidden=false;$('av-status').textContent='H
 function renderCurrent(){
  factoryDispose?.();factoryDispose=null;
  evidenceDispose?.();evidenceDispose=null;
- for(const tab of tabs)tab.setAttribute('aria-current',tab.dataset.viz===current?'page':'false');
+ viewPicker.value=current;
  const [title,description]=descriptions[current];
  $('av-heading').textContent=title;
  $('av-description').textContent=description;
- $('av-kind').textContent=current==='evidence'?'Signed VYNDI OS data':current==='simulation'?'HYPOTHETICAL DISTRIBUTION':'SCENARIO · '+current.toUpperCase();
  $('av-import').hidden=current==='evidence';
  const scenarioNotice=document.querySelector('.av-evidence');
  if(scenarioNotice)scenarioNotice.hidden=current==='evidence';
@@ -76,7 +75,6 @@ function renderCurrent(){
 function select(kind,{push=true}={}){
  if(!known.has(kind))return;
  current=kind;simulation=null;
- if($('av-chart-menu').querySelector('[data-viz="'+kind+'"]'))$('av-chart-menu').open=true;
  renderCurrent();
  if(push){const url=new URL(location.href);url.searchParams.set('viz',kind);history.replaceState(null,'',url);}
 }
@@ -152,7 +150,7 @@ async function checkSources(){
  finally{button.disabled=false;}
 }
 function bind(){
- for(const t of tabs)t.addEventListener('click',()=>select(t.dataset.viz));
+ viewPicker.addEventListener('change',()=>select(viewPicker.value));
  $('av-simulation-form').addEventListener('submit',event=>{
   event.preventDefault();
   try{runScenario();}catch(error){fail(error.message);}

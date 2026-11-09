@@ -1,5 +1,5 @@
 const MODULES = Object.freeze([
-  { id: 'command', label: 'Command Centre', group: 'Operate', glyph: 'CC', description: 'Your team, recent work and decisions waiting for review.' },
+  { id: 'command', label: 'Overview', group: 'Operate', glyph: 'CC', description: 'Company status and daily work.' },
   { id: 'portfolio', label: 'Group Overview', group: 'Business', glyph: 'GO', description: 'Check your six divisions, their sources and planning records.' },
   { id: 'crm', label: 'CRM & Sales', group: 'Business', glyph: 'CR', description: 'Sales and customer pipeline records from VYNDI.' },
   { id: 'hr', label: 'Human Resources', group: 'Business', glyph: 'HR', description: 'People records, team readiness and outstanding reviews.' },

@@ -969,42 +969,31 @@ body.va-premium.workspace-body .fc-metrics>*:focus-visible{border-color:#cfff59!
  .kinetic-exhibition__hint>span:last-child{transition:none!important}
 }
 
-/* The overview groups existing records and JARVIS into two readable panels. */
-.workspace-body .workspace-quick-links{
- display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;
- margin:12px 0 20px;
-}
-.workspace-quick-links a{
- display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:9px;
- min-height:48px;padding:8px 12px;border:1px solid #424643;border-radius:6px;
- color:#f2f2ee;text-decoration:none;background:#171917;
-}
-.workspace-quick-links a:hover{background:#222621;border-color:#a5b292}
-.workspace-quick-links a span{font:600 .75rem/1 ui-monospace,monospace;color:#bac5b4}
-.workspace-quick-links a strong{font-size:.875rem;line-height:1.3}
+/* Overview uses a single reading column. Secondary work is disclosed on demand. */
 .workspace-body .workspace-workbench{
- display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);
- gap:16px;align-items:start;margin-bottom:24px;
+ max-width:1060px;margin:16px 0 24px;display:grid;gap:20px;
 }
-.workspace-body .workspace-workbench > *{min-width:0;margin:0!important}
-.workspace-brief{border:1px solid #424643;border-radius:6px;background:#161816;padding:clamp(14px,2vw,22px)}
-body.va-premium.workspace-body .workspace-brief .fc-intro{display:flex;flex-wrap:wrap;gap:12px;margin:0!important}
+body.va-premium.workspace-body .workspace-workbench > .va-voice-widget{
+ margin:0!important;border-color:#444844!important;background:#171917!important;
+}
+body.va-premium.workspace-body .workspace-brief .fc-intro{
+ display:flex;flex-wrap:wrap;gap:12px;margin:0!important;
+}
 body.va-premium.workspace-body .workspace-brief .fc-metrics{
- display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:16px 0 0!important;
+ display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:8px;margin:12px 0 0!important;
 }
 body.va-premium.workspace-body .workspace-brief .fc-metrics > *{
  min-width:0;padding:12px!important;border-top-width:1px!important;
 }
 body.va-premium.workspace-body .workspace-brief .fc-metrics strong{
- font-size:clamp(1.125rem,2vw,1.75rem)!important;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;
+ font-size:clamp(1rem,2vw,1.5rem)!important;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;
 }
+.workspace-body .workspace-details{margin:0 0 12px;max-width:1060px}
+.workspace-body .workspace-details > summary{
+ padding:13px 15px;border:1px solid #444844;border-radius:4px;cursor:pointer;color:#f3f4ef;
+}
+.workspace-body .workspace-details[open] > summary{margin-bottom:12px}
 .workspace-body #kinetic-title{font-size:1.25rem;margin:0 0 8px}
-@media(max-width:1180px){
- .workspace-body .workspace-workbench{grid-template-columns:minmax(0,1fr)}
-}
-@media(max-width:760px){
- .workspace-body .workspace-quick-links{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-@media(max-width:360px){
- .workspace-body .workspace-quick-links{grid-template-columns:minmax(0,1fr)}
+@media(max-width:720px){
+ .founder-cockpit .workspace-brief .fc-intro h2{display:block;font-size:1.125rem}
 }

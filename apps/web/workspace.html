@@ -79,20 +79,263 @@
         </div>
       </section>
 
-      <section class="kinetic-intro" aria-labelledby="kinetic-title">
-        <p class="kinetic-intro__eyebrow">VAOS / A NEW WAY TO SEE YOUR BUSINESS / GOVERNED INTELLIGENCE</p>
-        <h2 class="kinetic-intro__title" id="kinetic-title"><span>COMPLEXITY.</span><em>MEET CLARITY.</em></h2>
-        <div class="kinetic-intro__heading">
-          <h3>One intelligence ecosystem. Every decision connected to its evidence.</h3>
-          <p>Explore source-linked insight, visual operations and your governed JARVIS command in their real workspaces.</p>
+      <form class="workspace-search metallic-gold-rim" id="command-bar">
+        <span class="workspace-search__icon" aria-hidden="true">⌕</span>
+        <label class="workspace-search__copy" for="command-bar-input">
+          <input id="command-bar-input" type="text" autocomplete="off"
+            placeholder="Find a workspace or prepare an action…" />
+          <small>Actions still need the required permissions and approval.</small>
+        </label>
+        <button class="workspace-search__action" id="command-button" type="submit">Go →</button>
+      </form>
+      <p class="command-status" id="command-status" aria-live="polite"></p>
+
+      <section id="command-view" class="workspace-view">
+        <section id="founder-cockpit" class="fc-intro"><div><h2>Today at Vāyū Shastr</h2><p>Review a decision, check your sources or pick up a conversation.</p></div><div class="va-dashboard-actions"><a href="/prelaunch-workspace.html" class="va-button va-button--outline">Startup brief ↗</a><button id="cockpit-refresh" type="button" class="va-button va-button--outline">Refresh sources</button></div></section>
+        <div class="fc-metrics" aria-label="Company overview">
+          <article><small>Company stage</small><strong>Pre-operations</strong><span>Operating baselines still need review</span></article>
+          <a href="/workforce-analytics.html"><small>Team</small><strong id="cockpit-employee-count">—</strong><span>Registered roles ↗</span></a>
+          <button type="button" data-view="approvals"><small>Decisions waiting</small><strong id="cockpit-decision-count">—</strong><span id="cockpit-decision-note">Review approvals →</span></button>
+          <a href="#cockpit-business"><small>Connected sources</small><strong id="cockpit-source-count">—</strong><span>View source connections ↓</span></a>
+        </div>
+        <section class="va-voice-widget" id="vaos-main-voice" aria-label="VAOS read-only voice assistant">
+          <div class="va-voice-widget__intro">
+            <span class="va-voice-avatar" aria-hidden="true">◉</span>
+            <div><p class="va-eyebrow">A place to think things through</p><h2>Ask JARVIS</h2>
+              <p>Find an answer in your company records, or talk through what to do next.</p>
+            </div>
+            <span class="va-voice-badge">Answers only</span>
+          </div>
+          <label class="va-voice-label" for="vaos-voice-question">Your question</label>
+          <div class="va-voice-compose">
+            <input id="vaos-voice-question" type="text" maxlength="300" autocomplete="off"
+              placeholder="What needs my attention today?" />
+            <button type="button" id="vaos-voice-mic" class="va-voice-icon-button" aria-label="Ask a question once using microphone" title="Ask once, then stop listening" disabled>🎙</button>
+            <button type="button" id="vaos-voice-ask" class="va-button va-button--primary">Ask JARVIS</button>
+          </div>
+          <p class="va-voice-status" id="vaos-voice-status" role="status" aria-live="polite">Getting JARVIS ready…</p>
+          <div class="va-voice-response" aria-live="polite">
+            <strong>JARVIS</strong><div id="vaos-voice-answer">Your answer will appear here, with links to its sources. Asking a question won't change your records.</div>
+            <div id="vaos-voice-sources" class="va-voice-sources"></div>
+          </div>
+          <div class="fc-prompts" aria-label="Suggested questions">
+            <button type="button" data-jarvis-question="What needs my attention today?">What needs my attention?</button>
+            <button type="button" data-jarvis-question="What is our project status?">Project status</button>
+            <button type="button" data-jarvis-question="Show engineering verification evidence">Engineering evidence</button>
+            <a href="/jarvis-multimodal.html" title="Permission-controlled live camera and source inspection">Open JARVIS camera &amp; files ↗</a>
+          </div>
+          <div class="va-wake-controls">
+            <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>Start conversation</button>
+            <div class="va-wake-readiness">
+              <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Wake-word microphone is off">Microphone off</span>
+              <span class="va-wake-instructions">Tap the microphone for one question, or start a hands-free conversation for repeated questions. In hands-free mode ask “What is our production status?” or “Hey JARVIS, what is the latest aerospace industry news?” Public headlines are unverified context, not business facts. A paired companion is needed only for browsing arbitrary public pages.</span>
+            </div>
+          </div>
+          <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Hands-free listening is off.</p>
+          <div class="va-voice-toolbar">
+            <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
+            <div><button id="vaos-voice-test" type="button">◉ Test speaker</button><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
+              <button id="vaos-voice-stop" type="button" disabled>■ Stop</button></div>
+          </div>
+          <details class="fc-voice-settings"><summary>Voice &amp; answer preferences</summary>
+          <label class="va-adaptive-toggle" for="vaos-voice-adaptive">
+            <input id="vaos-voice-adaptive" type="checkbox" checked />
+            <span><strong>JARVIS X · supervised decision-room preview (read-only)</strong><small>Uses existing authorized evidence for advisory review. Ask “Show recorded links from project risk to engineering” to trace persisted governed links; other questions use a transient source-status graph and hypothetical review slots. Source versions, freshness and causality remain unverified. Nothing is dispatched and no production forecast is qualified. V3 autonomous commissioning remains on HOLD; free-tier model limits and existing access controls remain unchanged.</small></span>
+          </label>
+          <div class="va-advisor-options">
+            <p>Ask VAOS for business analysis, alternative plans, what-if scenarios or web comparisons. Recommendations are advisory and external headlines are not verified facts.</p>
+            <label for="vaos-voice-language">Advisor reply language</label>
+            <select id="vaos-voice-language" aria-label="Advisor report language">
+              <option value="en" selected>English</option>
+              <option value="ta">தமிழ் — Tamil</option>
+              <option value="ml">മലയാളം — Malayalam</option>
+              <option value="hi">हिन्दी — Hindi</option>
+            </select>
+            <small>Ask in English. When supported, the advisory report is translated and spoken in your chosen language. Translation is subject to a small free-tier daily limit.</small>
+          </div>
+          <div class="va-mic-diagnostic">
+            <button type="button" id="vaos-voice-mic-check" class="va-mic-diagnostic__button">Check microphone access</button>
+            <span id="vaos-voice-mic-diagnostic" role="status" aria-live="polite">Checking microphone readiness…</span>
+          </div>
+          <p class="va-voice-privacy">Microphone is OFF by default. Hands-free listens only after you explicitly enable it, while this VAOS tab remains visible. The single microphone button listens for one question only. Business questions and paired computer tool requests may be asked directly in hands-free mode; “Hey VAOS” is optional. Say “stop listening” or select Stop to end the conversation. Browser speech recognition may use a vendor service; business actions remain blocked. PC actions and document creation require a separate clicked approval. No business approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
+          </details>
+          <a class="va-button va-button--outline" id="jarvis-google-calendar-connect" href="/api/google-workspace/start" aria-label="Connect Google Calendar to JARVIS">Connect Google Calendar ↗</a>
+          <a class="fc-command-link" href="/founder-console.html">Need to make a change? Review it in Founder Command ↗</a>
+        </section>
+
+        <section class="fc-business" id="ontology-evidence" aria-labelledby="ontology-evidence-title">
+          <div class="fc-section-head"><div><h2 id="ontology-evidence-title">Knowledge source checks</h2>
+            <p>Check when connected knowledge sources last responded. This does not verify inventory or production.</p></div>
+            <button type="button" class="va-small-link" id="ontology-health-refresh">Refresh evidence</button></div>
+          <p id="ontology-health-status" role="status" aria-live="polite">Loading source verification status…</p>
+          <ul id="ontology-health-sources">
+            <li data-ontology-kind="inventory"><strong>Inventory</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="inventory" aria-label="Capture inventory signed receipt" disabled>Capture receipt</button></li>
+            <li data-ontology-kind="shortages"><strong>Shortages</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="shortages" aria-label="Capture shortages signed receipt" disabled>Capture receipt</button></li>
+            <li data-ontology-kind="purchaseOrders"><strong>Open purchase orders</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="purchaseOrders" aria-label="Capture open purchase orders signed receipt" disabled>Capture receipt</button></li>
+          </ul>
+          <p id="ontology-capture-status" role="status" aria-live="polite">Founder-only manual capture. Receipts remain unverified and cannot authorize business actions.</p>
+        </section>
+
+        <section id="cockpit-business" class="fc-business" aria-labelledby="cockpit-business-title">
+          <div class="fc-section-head"><div><h2 id="cockpit-business-title">Your workspaces</h2></div><button type="button" class="va-small-link" data-view="portfolio">Group overview →</button></div>
+          <p id="cockpit-source-status" class="fc-source-note" role="status">Checking connections…</p>
+          <div id="cockpit-domains" class="fc-domain-grid"></div>
+          <p class="fc-source-note fc-directory-note">A connected source means VAOS can read its records. It doesn't confirm business performance.</p>
+        </section>
+        <section class="fc-workforce" aria-labelledby="cockpit-workforce-title">
+          <div class="fc-section-head"><div><h2 id="cockpit-workforce-title">Team &amp; connections</h2></div><a href="/workforce-analytics.html">View team records ↗</a></div>
+          <p id="cockpit-workforce-status" class="fc-source-note" role="status">Loading team records…</p>
+          <div class="fc-team-layout">
+            <div class="fc-team-charts" aria-label="Founder's visual intelligence overview">
+              <div class="fc-chart-card">
+                <div class="fc-chart-heading"><h3>Registered roles</h3></div>
+                <div id="cockpit-workforce-chart" role="region" aria-label="Recorded employee lifecycle distribution"></div>
+                <p>Registration status, not a measure of live activity.</p>
+              </div>
+              <div class="fc-chart-card">
+                <div class="fc-chart-heading"><h3>Source connections</h3></div>
+                <div id="cockpit-source-chart" role="region" aria-label="Authorized source connectivity chart"></div>
+                <p>Read access to your systems, not revenue or production results.</p>
+              </div>
+            </div>
+            <details class="fc-roster-disclosure">
+              <summary>Browse team records <span>Search roles and departments</span></summary>
+              <div class="fc-team-filters">
+                <label for="cockpit-employee-search">Find an employee<input id="cockpit-employee-search" type="search" placeholder="Name or department" /></label>
+                <label for="cockpit-lifecycle">Lifecycle<select id="cockpit-lifecycle"><option value="all">All lifecycle states</option></select></label>
+              </div>
+              <p id="cockpit-roster-count" class="fc-source-note" aria-live="polite"></p>
+              <div id="cockpit-roster" class="fc-roster"></div>
+            </details>
+          </div>
+        </section>
+        <details class="fc-runtime-details"><summary>Control plane activity &amp; decision inbox</summary>
+        <div class="section-strapline">LIVE CONTROL PLANE / GOVERNED ACTIVITY</div>
+        <div class="pulse-grid" id="pulse-grid"></div>
+        <div class="va-home-insights">
+          <section class="va-panel va-home-chart" aria-label="Agent fleet status chart">
+            <div class="va-panel__heading"><div><p class="va-eyebrow">TEAM &amp; SYSTEMS</p><h3>Digital workforce overview</h3></div><button class="va-small-link" data-view="agents">View agents ↗</button></div>
+            <div id="overview-agent-chart" class="va-agent-chart" role="img" aria-label="Agent fleet grouped by persisted runtime status"></div>
+            <p class="va-chart-footnote">Derived from the current VAOS control-plane snapshot, not estimated workforce capacity.</p>
+          </section>
+          <section class="va-panel va-home-group" aria-label="Business group summary">
+            <p class="va-eyebrow">BUSINESS OVERVIEW</p>
+            <h3>Vāyú Shastr <span>× 6</span></h3>
+            <p>Explore each business area and check its source status.</p>
+            <div class="va-home-group__status"><span>Consolidated financials</span><strong>HOLD · awaiting attribution</strong></div>
+            <button class="va-button va-button--outline" data-view="portfolio">View divisions &amp; source health ↗</button>
+          </section>
         </div>
 
+        <div class="workspace-grid workspace-grid--primary">
+          <section class="control-panel control-panel--agents metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">AGENT FLEET · CONTROL-PLANE SNAPSHOT</span><h2>Agent Control Centre</h2><p id="visible-agent-count" class="va-control-plane-count">Loading registered agents…</p></div>
+              <button class="panel-action" data-view="agents">Open fleet →</button>
+            </div>
+            <div class="agent-grid" id="agent-grid"></div>
+          </section>
+
+          <section class="control-panel control-panel--approvals metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">HUMAN GATE</span><h2>Decision inbox</h2></div>
+              <span class="count-badge" id="approval-count">0</span>
+            </div>
+            <div class="approval-list" id="approval-list"></div>
+          </section>
+        </div>
+
+        <div class="workspace-grid workspace-grid--secondary">
+          <section class="control-panel metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">EVENT FABRIC</span><h2>Live enterprise events</h2></div>
+              <span class="live-badge"><i></i>Live model</span>
+            </div>
+            <div class="event-list" id="event-list"></div>
+          </section>
+
+          <section class="control-panel metallic-gold-rim">
+            <div class="panel-heading">
+              <div><span class="panel-kicker">RISK RADAR</span><h2>Current exposure</h2></div>
+              <button class="panel-action" data-view="risk">Risk register →</button>
+            </div>
+            <div class="risk-list" id="risk-list"></div>
+          </section>
+        </div>
+        </details>
+        <details class="fc-runtime-details"><summary>Delivery evidence &amp; implementation notes</summary>
+        <section class="va-founder-operations va-panel" id="va-founder-operations" aria-labelledby="va-founder-operations-title">
+          <div class="va-founder-operations__head">
+            <div>
+              <p class="va-eyebrow">OPERATIONS REVIEW</p>
+              <h2 id="va-founder-operations-title">Agent activity and verification</h2>
+              <p>Inspect all 16 digital employees in the dedicated founder view. Control-plane agent cards below are a separate runtime snapshot; a registered employee is not automatically a running, qualified agent.</p>
+            </div>
+          </div>
+          <nav class="va-founder-operations__links" aria-label="Workforce and founder tools">
+            <a href="/prelaunch-workspace.html"><strong>Founder operational launch ↗</strong><span>Open the saved 16-employee startup plan and next preparation actions</span></a>
+            <a href="/workforce-analytics.html"><strong>16-employee analytics ↗</strong><span>Individual work, reviewed audits, CAPA, plans and forecast holds</span></a>
+            <a href="/mission-status.html"><strong>Mission tracking ↗</strong><span>Look up mission progress and independent handoff evidence</span></a>
+            <a href="/agent-supervision.html"><strong>Agent monitoring ↗</strong><span>Inspect lifecycle, qualification, approvals and supervised handoffs</span></a>
+            <a href="/founder-console.html"><strong>Founder command lab ↗</strong><span>Prepare and inspect governed commands; drafts are not dispatches</span></a>
+          </nav>
+          <div class="va-founder-operations__delivery">
+            <h3>Implementation and acceptance map</h3>
+            <div class="va-founder-operations__table-scroll">
+              <table aria-label="Implemented features versus acceptance">
+                <thead><tr><th>Capability</th><th>Implementation</th><th>Acceptance</th></tr></thead>
+                <tbody>
+                  <tr><td>16-employee performance, audits and CAPA</td><td><a href="https://github.com/vyndivybes/vaos/pull/296" rel="noopener noreferrer" target="_blank">Dashboard and protected evidence ledgers</a></td><td>Evidence qualification pending</td></tr>
+                  <tr><td>Mission tracking and monitoring</td><td><a href="https://github.com/vyndivybes/vaos/pull/298" rel="noopener noreferrer" target="_blank">Browser dependency repaired</a></td><td>Live acceptance pending</td></tr>
+                  <tr><td>G3.1 engineering and source cross-checks</td><td><a href="https://github.com/vyndivybes/vaos/pull/300" rel="noopener noreferrer" target="_blank">Read-only source crosswalk</a></td><td>Backend diagnostics only; engineering release HOLD</td></tr>
+                  <tr><td>Founder reports and employee messaging</td><td><a href="/founder-console.html">Recorded draft and report preview</a></td><td>Outbound dispatch not commissioned</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="va-founder-operations__notice">Source-linked implementation map, reviewed 13 October 2026; not a real-time certification screen. Operational status and permitted actions must be checked against authoritative records in each linked view. Missing evidence never means PASS.</p>
+          </div>
+        </section>
+
+        </details>
+      </section>
+
+      <section class="kinetic-intro" aria-labelledby="kinetic-title">
+        <div class="kinetic-command">
+          <div class="kinetic-command__copy">
+            <p class="kinetic-intro__eyebrow">MORE TO EXPLORE</p>
+            <h2 class="kinetic-intro__title" id="kinetic-title"><span>Explore your</span><em>workspaces.</em></h2>
+            <p class="kinetic-command__lede">Open a workspace to review its records, check what needs attention, or continue a task.</p>
+            <div class="kinetic-command__actions">
+              <a class="kinetic-command__primary" href="/visual-intelligence.html?viz=evidence">Review source evidence <span aria-hidden="true">↗</span></a>
+              <a class="kinetic-command__secondary" href="#command-bar">Back to command search <span aria-hidden="true">↓</span></a>
+            </div>
+          </div>
+          <div class="kinetic-command__scene" aria-label="Quick access to governed VAOS intelligence">
+            <div class="kinetic-command__scene-top"><span>JARVIS / KNOWLEDGE / MISSIONS</span><span class="kinetic-command__signal" aria-hidden="true"></span></div>
+            <div class="kinetic-command__diagram" aria-hidden="true"><i></i><i></i><i></i><span>VAOS</span></div>
+            <nav class="kinetic-command__scene-links" aria-label="Featured command workspaces">
+              <a href="/founder-console.html"><span>01 / REASON</span><strong>JARVIS Command</strong><b aria-hidden="true">↗</b></a>
+              <a href="/neural-knowledge.html"><span>02 / CONNECT</span><strong>Knowledge Atlas</strong><b aria-hidden="true">↗</b></a>
+              <a href="/mission-status.html"><span>03 / REVIEW</span><strong>Mission Control</strong><b aria-hidden="true">↗</b></a>
+            </nav>
+          </div>
+        </div>
+
+        <nav class="kinetic-routes" aria-label="Start with an operational workspace">
+          <a href="/visual-intelligence.html?viz=evidence"><span>01</span><strong>Executive evidence</strong><b aria-hidden="true">↗</b></a>
+          <a href="/visual-command.html"><span>02</span><strong>Visual Command</strong><b aria-hidden="true">↗</b></a>
+          <a href="/neural-knowledge.html"><span>03</span><strong>Brain Graph</strong><b aria-hidden="true">↗</b></a>
+          <a href="/mission-status.html"><span>04</span><strong>Mission status</strong><b aria-hidden="true">↗</b></a>
+        </nav>
+
+        <details class="kinetic-exhibition" id="kinetic-exhibition">
+          <summary class="kinetic-exhibition__toggle"><span class="kinetic-exhibition__eyebrow">EXPLORE THE VAOS EXPERIENCE</span><strong>10 illustrated workspaces</strong><span class="kinetic-exhibition__hint"><span class="kinetic-exhibition__show">Expand atlas</span><span class="kinetic-exhibition__hide">Collapse atlas</span><span aria-hidden="true">＋</span></span></summary>
         <section class="kinetic-gallery" aria-labelledby="kinetic-gallery-title">
           <div class="kinetic-gallery__heading">
-            <div><span class="kinetic-gallery__index">THE VAOS EXPERIENCE / 01—10</span>
-              <h3 id="kinetic-gallery-title">SEE THE <em>SYSTEM.</em><br>FOLLOW THE EVIDENCE.</h3>
+            <div><span class="kinetic-gallery__index">WORKSPACE TOUR / 01—10</span>
+              <h3 id="kinetic-gallery-title">EXPLORE THE <em>WORKSPACES.</em></h3>
             </div>
-            <p>Explore the entire operating system through interactive interface studies. Select a domain, then open its authenticated workspace.</p>
+            <p>These visual previews help you find the right place to work. Open any one to see the actual records.</p>
           </div>
           <div class="kinetic-gallery__controls" role="group" aria-label="Filter illustrated workspaces">
             <button type="button" data-kinetic-filter="all" aria-pressed="true">All systems <span>10</span></button>
@@ -238,232 +481,13 @@
             </a>
           </div>
           <div class="kinetic-gallery__footer">
-            <span>AN ORIGINAL VAOS INTERFACE EXHIBITION</span>
+            <span>WORKSPACE TOUR</span>
             <span>Illustrated previews, not live data. Open a workspace for source-authorized current status.</span>
             <a href="/visual-command.html">ENTER VISUAL COMMAND <b aria-hidden="true">↗</b></a>
           </div>
         </section>
+        </details>
         <p class="kinetic-intro__footnote"><strong>Interface previews only.</strong> Open each workspace for authenticated source data, permission checks and current HOLD states.</p>
-      </section>
-
-      <form class="workspace-search metallic-gold-rim" id="command-bar">
-        <span class="workspace-search__icon" aria-hidden="true">⌕</span>
-        <label class="workspace-search__copy" for="command-bar-input">
-          <input id="command-bar-input" type="text" autocomplete="off"
-            placeholder="Find a workspace or prepare an action…" />
-          <small>Actions still need the required permissions and approval.</small>
-        </label>
-        <button class="workspace-search__action" id="command-button" type="submit">Go →</button>
-      </form>
-      <p class="command-status" id="command-status" aria-live="polite"></p>
-
-      <section id="command-view" class="workspace-view">
-        <section id="founder-cockpit" class="fc-intro"><div><h2>Today at Vāyū Shastr</h2><p>Review a decision, check your sources or pick up a conversation.</p></div><div class="va-dashboard-actions"><a href="/prelaunch-workspace.html" class="va-button va-button--outline">Startup brief ↗</a><button id="cockpit-refresh" type="button" class="va-button va-button--outline">Refresh sources</button></div></section>
-        <div class="fc-metrics" aria-label="Company overview">
-          <article><small>Company stage</small><strong>Pre-operations</strong><span>Operating baselines still need review</span></article>
-          <a href="/workforce-analytics.html"><small>Team</small><strong id="cockpit-employee-count">—</strong><span>Registered roles ↗</span></a>
-          <button type="button" data-view="approvals"><small>Decisions waiting</small><strong id="cockpit-decision-count">—</strong><span id="cockpit-decision-note">Review approvals →</span></button>
-          <a href="#cockpit-business"><small>Connected sources</small><strong id="cockpit-source-count">—</strong><span>View source connections ↓</span></a>
-        </div>
-        <section class="va-voice-widget" id="vaos-main-voice" aria-label="VAOS read-only voice assistant">
-          <div class="va-voice-widget__intro">
-            <span class="va-voice-avatar" aria-hidden="true">◉</span>
-            <div><p class="va-eyebrow">A place to think things through</p><h2>Ask JARVIS</h2>
-              <p>Find an answer in your company records, or talk through what to do next.</p>
-            </div>
-            <span class="va-voice-badge">Answers only</span>
-          </div>
-          <label class="va-voice-label" for="vaos-voice-question">Your question</label>
-          <div class="va-voice-compose">
-            <input id="vaos-voice-question" type="text" maxlength="300" autocomplete="off"
-              placeholder="What needs my attention today?" />
-            <button type="button" id="vaos-voice-mic" class="va-voice-icon-button" aria-label="Ask a question once using microphone" title="Ask once, then stop listening" disabled>🎙</button>
-            <button type="button" id="vaos-voice-ask" class="va-button va-button--primary">Ask JARVIS</button>
-          </div>
-          <p class="va-voice-status" id="vaos-voice-status" role="status" aria-live="polite">Getting JARVIS ready…</p>
-          <div class="va-voice-response" aria-live="polite">
-            <strong>JARVIS</strong><div id="vaos-voice-answer">Your answer will appear here, with links to its sources. Asking a question won't change your records.</div>
-            <div id="vaos-voice-sources" class="va-voice-sources"></div>
-          </div>
-          <div class="fc-prompts" aria-label="Suggested questions">
-            <button type="button" data-jarvis-question="What needs my attention today?">What needs my attention?</button>
-            <button type="button" data-jarvis-question="What is our project status?">Project status</button>
-            <button type="button" data-jarvis-question="Show engineering verification evidence">Engineering evidence</button>
-            <a href="/jarvis-multimodal.html" title="Permission-controlled live camera and source inspection">Open JARVIS camera &amp; files ↗</a>
-          </div>
-          <div class="va-wake-controls">
-            <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>Start conversation</button>
-            <div class="va-wake-readiness">
-              <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Wake-word microphone is off">Microphone off</span>
-              <span class="va-wake-instructions">Tap the microphone for one question, or start a hands-free conversation for repeated questions. In hands-free mode ask “What is our production status?” or “Hey JARVIS, what is the latest aerospace industry news?” Public headlines are unverified context, not business facts. A paired companion is needed only for browsing arbitrary public pages.</span>
-            </div>
-          </div>
-          <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Hands-free listening is off.</p>
-          <div class="va-voice-toolbar">
-            <label class="va-voice-switch"><input id="vaos-voice-speech-toggle" type="checkbox" checked /> Speak verified replies aloud</label>
-            <div><button id="vaos-voice-test" type="button">◉ Test speaker</button><button id="vaos-voice-speak" type="button" disabled>▶ Replay answer</button>
-              <button id="vaos-voice-stop" type="button" disabled>■ Stop</button></div>
-          </div>
-          <details class="fc-voice-settings"><summary>Voice &amp; answer preferences</summary>
-          <label class="va-adaptive-toggle" for="vaos-voice-adaptive">
-            <input id="vaos-voice-adaptive" type="checkbox" checked />
-            <span><strong>JARVIS X · supervised decision-room preview (read-only)</strong><small>Uses existing authorized evidence for advisory review. Ask “Show recorded links from project risk to engineering” to trace persisted governed links; other questions use a transient source-status graph and hypothetical review slots. Source versions, freshness and causality remain unverified. Nothing is dispatched and no production forecast is qualified. V3 autonomous commissioning remains on HOLD; free-tier model limits and existing access controls remain unchanged.</small></span>
-          </label>
-          <div class="va-advisor-options">
-            <p>Ask VAOS for business analysis, alternative plans, what-if scenarios or web comparisons. Recommendations are advisory and external headlines are not verified facts.</p>
-            <label for="vaos-voice-language">Advisor reply language</label>
-            <select id="vaos-voice-language" aria-label="Advisor report language">
-              <option value="en" selected>English</option>
-              <option value="ta">தமிழ் — Tamil</option>
-              <option value="ml">മലയാളം — Malayalam</option>
-              <option value="hi">हिन्दी — Hindi</option>
-            </select>
-            <small>Ask in English. When supported, the advisory report is translated and spoken in your chosen language. Translation is subject to a small free-tier daily limit.</small>
-          </div>
-          <div class="va-mic-diagnostic">
-            <button type="button" id="vaos-voice-mic-check" class="va-mic-diagnostic__button">Check microphone access</button>
-            <span id="vaos-voice-mic-diagnostic" role="status" aria-live="polite">Checking microphone readiness…</span>
-          </div>
-          <p class="va-voice-privacy">Microphone is OFF by default. Hands-free listens only after you explicitly enable it, while this VAOS tab remains visible. The single microphone button listens for one question only. Business questions and paired computer tool requests may be asked directly in hands-free mode; “Hey VAOS” is optional. Say “stop listening” or select Stop to end the conversation. Browser speech recognition may use a vendor service; business actions remain blocked. PC actions and document creation require a separate clicked approval. No business approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
-          </details>
-          <a class="va-button va-button--outline" id="jarvis-google-calendar-connect" href="/api/google-workspace/start" aria-label="Connect Google Calendar to JARVIS">Connect Google Calendar ↗</a>
-          <a class="fc-command-link" href="/founder-console.html">Need to make a change? Review it in Founder Command ↗</a>
-        </section>
-
-        <section class="fc-business" id="ontology-evidence" aria-labelledby="ontology-evidence-title">
-          <div class="fc-section-head"><div><h2 id="ontology-evidence-title">Ontology source evidence</h2>
-            <p>Signed-source receipts and processing watermarks. This is not certified stock or a digital twin.</p></div>
-            <button type="button" class="va-small-link" id="ontology-health-refresh">Refresh evidence</button></div>
-          <p id="ontology-health-status" role="status" aria-live="polite">Loading source verification status…</p>
-          <ul id="ontology-health-sources">
-            <li data-ontology-kind="inventory"><strong>Inventory</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="inventory" aria-label="Capture inventory signed receipt" disabled>Capture receipt</button></li>
-            <li data-ontology-kind="shortages"><strong>Shortages</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="shortages" aria-label="Capture shortages signed receipt" disabled>Capture receipt</button></li>
-            <li data-ontology-kind="purchaseOrders"><strong>Open purchase orders</strong> <small>HOLD — Not checked</small> <button type="button" class="va-small-link" data-ontology-canary="purchaseOrders" aria-label="Capture open purchase orders signed receipt" disabled>Capture receipt</button></li>
-          </ul>
-          <p id="ontology-capture-status" role="status" aria-live="polite">Founder-only manual capture. Receipts remain unverified and cannot authorize business actions.</p>
-        </section>
-
-        <section id="cockpit-business" class="fc-business" aria-labelledby="cockpit-business-title">
-          <div class="fc-section-head"><div><h2 id="cockpit-business-title">Your workspaces</h2></div><button type="button" class="va-small-link" data-view="portfolio">Group overview →</button></div>
-          <p id="cockpit-source-status" class="fc-source-note" role="status">Checking connections…</p>
-          <div id="cockpit-domains" class="fc-domain-grid"></div>
-          <p class="fc-source-note fc-directory-note">A connected source means VAOS can read its records. It doesn't confirm business performance.</p>
-        </section>
-        <section class="fc-workforce" aria-labelledby="cockpit-workforce-title">
-          <div class="fc-section-head"><div><h2 id="cockpit-workforce-title">Team &amp; connections</h2></div><a href="/workforce-analytics.html">View team records ↗</a></div>
-          <p id="cockpit-workforce-status" class="fc-source-note" role="status">Loading team records…</p>
-          <div class="fc-team-layout">
-            <div class="fc-team-charts" aria-label="Founder's visual intelligence overview">
-              <div class="fc-chart-card">
-                <div class="fc-chart-heading"><h3>Registered roles</h3></div>
-                <div id="cockpit-workforce-chart" role="region" aria-label="Recorded employee lifecycle distribution"></div>
-                <p>Registration status, not a measure of live activity.</p>
-              </div>
-              <div class="fc-chart-card">
-                <div class="fc-chart-heading"><h3>Source connections</h3></div>
-                <div id="cockpit-source-chart" role="region" aria-label="Authorized source connectivity chart"></div>
-                <p>Read access to your systems, not revenue or production results.</p>
-              </div>
-            </div>
-            <details class="fc-roster-disclosure">
-              <summary>Browse team records <span>Search roles and departments</span></summary>
-              <div class="fc-team-filters">
-                <label for="cockpit-employee-search">Find an employee<input id="cockpit-employee-search" type="search" placeholder="Name or department" /></label>
-                <label for="cockpit-lifecycle">Lifecycle<select id="cockpit-lifecycle"><option value="all">All lifecycle states</option></select></label>
-              </div>
-              <p id="cockpit-roster-count" class="fc-source-note" aria-live="polite"></p>
-              <div id="cockpit-roster" class="fc-roster"></div>
-            </details>
-          </div>
-        </section>
-        <details class="fc-runtime-details"><summary>Control plane activity &amp; decision inbox</summary>
-        <div class="section-strapline">LIVE CONTROL PLANE / GOVERNED ACTIVITY</div>
-        <div class="pulse-grid" id="pulse-grid"></div>
-        <div class="va-home-insights">
-          <section class="va-panel va-home-chart" aria-label="Agent fleet status chart">
-            <div class="va-panel__heading"><div><p class="va-eyebrow">OPERATING CAPACITY</p><h3>Digital workforce overview</h3></div><button class="va-small-link" data-view="agents">View agents ↗</button></div>
-            <div id="overview-agent-chart" class="va-agent-chart" role="img" aria-label="Agent fleet grouped by persisted runtime status"></div>
-            <p class="va-chart-footnote">Derived from the current VAOS control-plane snapshot, not estimated workforce capacity.</p>
-          </section>
-          <section class="va-panel va-home-group" aria-label="Business group summary">
-            <p class="va-eyebrow">GROUP COMMAND</p>
-            <h3>Vāyú Shastr <span>× 6</span></h3>
-            <p>Carbon bicycles, aluminium, software, Vybes, merchandise and corporate — organized for one founder view.</p>
-            <div class="va-home-group__status"><span>Consolidated financials</span><strong>HOLD · awaiting attribution</strong></div>
-            <button class="va-button va-button--outline" data-view="portfolio">View divisions &amp; source health ↗</button>
-          </section>
-        </div>
-
-        <div class="workspace-grid workspace-grid--primary">
-          <section class="control-panel control-panel--agents metallic-gold-rim">
-            <div class="panel-heading">
-              <div><span class="panel-kicker">AGENT FLEET · CONTROL-PLANE SNAPSHOT</span><h2>Agent Control Centre</h2><p id="visible-agent-count" class="va-control-plane-count">Loading registered agents…</p></div>
-              <button class="panel-action" data-view="agents">Open fleet →</button>
-            </div>
-            <div class="agent-grid" id="agent-grid"></div>
-          </section>
-
-          <section class="control-panel control-panel--approvals metallic-gold-rim">
-            <div class="panel-heading">
-              <div><span class="panel-kicker">HUMAN GATE</span><h2>Decision inbox</h2></div>
-              <span class="count-badge" id="approval-count">0</span>
-            </div>
-            <div class="approval-list" id="approval-list"></div>
-          </section>
-        </div>
-
-        <div class="workspace-grid workspace-grid--secondary">
-          <section class="control-panel metallic-gold-rim">
-            <div class="panel-heading">
-              <div><span class="panel-kicker">EVENT FABRIC</span><h2>Live enterprise events</h2></div>
-              <span class="live-badge"><i></i>Live model</span>
-            </div>
-            <div class="event-list" id="event-list"></div>
-          </section>
-
-          <section class="control-panel metallic-gold-rim">
-            <div class="panel-heading">
-              <div><span class="panel-kicker">RISK RADAR</span><h2>Current exposure</h2></div>
-              <button class="panel-action" data-view="risk">Risk register →</button>
-            </div>
-            <div class="risk-list" id="risk-list"></div>
-          </section>
-        </div>
-        </details>
-        <details class="fc-runtime-details"><summary>Delivery evidence &amp; implementation notes</summary>
-        <section class="va-founder-operations va-panel" id="va-founder-operations" aria-labelledby="va-founder-operations-title">
-          <div class="va-founder-operations__head">
-            <div>
-              <p class="va-eyebrow">FOUNDER OPERATIONS · VISIBLE DELIVERY</p>
-              <h2 id="va-founder-operations-title">Digital workforce command and evidence</h2>
-              <p>Inspect all 16 digital employees in the dedicated founder view. Control-plane agent cards below are a separate runtime snapshot; a registered employee is not automatically a running, qualified agent.</p>
-            </div>
-          </div>
-          <nav class="va-founder-operations__links" aria-label="Workforce and founder tools">
-            <a href="/prelaunch-workspace.html"><strong>Founder operational launch ↗</strong><span>Open the saved 16-employee startup plan and next preparation actions</span></a>
-            <a href="/workforce-analytics.html"><strong>16-employee analytics ↗</strong><span>Individual work, reviewed audits, CAPA, plans and forecast holds</span></a>
-            <a href="/mission-status.html"><strong>Mission tracking ↗</strong><span>Look up mission progress and independent handoff evidence</span></a>
-            <a href="/agent-supervision.html"><strong>Agent monitoring ↗</strong><span>Inspect lifecycle, qualification, approvals and supervised handoffs</span></a>
-            <a href="/founder-console.html"><strong>Founder command lab ↗</strong><span>Prepare and inspect governed commands; drafts are not dispatches</span></a>
-          </nav>
-          <div class="va-founder-operations__delivery">
-            <h3>Implementation and acceptance map</h3>
-            <div class="va-founder-operations__table-scroll">
-              <table aria-label="Implemented features versus acceptance">
-                <thead><tr><th>Capability</th><th>Implementation</th><th>Acceptance</th></tr></thead>
-                <tbody>
-                  <tr><td>16-employee performance, audits and CAPA</td><td><a href="https://github.com/vyndivybes/vaos/pull/296" rel="noopener noreferrer" target="_blank">Dashboard and protected evidence ledgers</a></td><td>Evidence qualification pending</td></tr>
-                  <tr><td>Mission tracking and monitoring</td><td><a href="https://github.com/vyndivybes/vaos/pull/298" rel="noopener noreferrer" target="_blank">Browser dependency repaired</a></td><td>Live acceptance pending</td></tr>
-                  <tr><td>G3.1 engineering and source cross-checks</td><td><a href="https://github.com/vyndivybes/vaos/pull/300" rel="noopener noreferrer" target="_blank">Read-only source crosswalk</a></td><td>Backend diagnostics only; engineering release HOLD</td></tr>
-                  <tr><td>Founder reports and employee messaging</td><td><a href="/founder-console.html">Recorded draft and report preview</a></td><td>Outbound dispatch not commissioned</td></tr>
-                </tbody>
-              </table>
-            </div>
-            <p class="va-founder-operations__notice">Source-linked implementation map, reviewed 13 October 2026; not a real-time certification screen. Operational status and permitted actions must be checked against authoritative records in each linked view. Missing evidence never means PASS.</p>
-          </div>
-        </section>
-
-        </details>
       </section>
 
       <section id="module-view" class="workspace-view" hidden>

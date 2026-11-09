@@ -18,7 +18,7 @@
  <a class="av-skip" href="#av-display">Skip to visualization</a>
  <header class="av-top">
   <a class="av-home" href="/visual-command.html"><img src="/assets/vayu-shastr-original.webp" width="36" height="36" alt="" /><span><strong>VAOS</strong><small>Analytics</small></span></a>
-  <nav><a href="/visual-command.html">Visual Command</a><a href="/workspace">Workspace</a><a href="/workforce-analytics.html">Governed BI</a></nav>
+  <nav><a href="/visual-command.html">Visual Command</a><a href="/workspace">Workspace</a><a href="/workforce-analytics.html">Team analytics</a></nav>
  </header>
  <div id="av-session-status" role="status" class="av-session">Verifying your VAOS session…</div>
  <main id="av-main" hidden>
@@ -28,9 +28,11 @@
   </section>
   <div class="av-shell">
   <nav class="av-tabs" aria-label="Analytics views">
-   <span class="av-rail-label">Views</span>
-   <button type="button" data-viz="overview">Scenario overview</button>
    <button type="button" data-viz="evidence">Source evidence</button>
+   <button type="button" data-viz="overview">Scenario overview</button>
+   <details class="av-chart-menu" id="av-chart-menu">
+    <summary>Explore scenario charts</summary>
+    <div class="av-chart-options">
    <button type="button" data-viz="sankey">Material flow</button>
    <button type="button" data-viz="factory">3D factory</button>
    <button type="button" data-viz="simulation">Cash simulation</button>
@@ -39,14 +41,16 @@
    <button type="button" data-viz="funnel">CRM funnel</button>
    <button type="button" data-viz="timeline">Production schedule</button>
    <button type="button" data-viz="logistics">Logistics map</button>
+    </div>
+   </details>
   </nav>
   <section class="av-panel" aria-labelledby="av-heading">
    <div class="av-panel-head">
     <div><p class="av-kicker" id="av-kind">SCENARIO</p><h2 id="av-heading">Sankey flow</h2><p id="av-description">Material flow across workstations in a synthetic supply chain.</p></div>
-    <a href="/visual-command.html?visual=bi">Inspect governed BI sources</a>
+    <a href="/visual-command.html?visual=bi">Open source connections</a>
    </div>
    <p class="av-integrity" role="status" id="av-status" aria-live="polite">Ready to display illustration. No live business data is implied.</p>
-   <section id="av-display" class="av-display" aria-label="Advanced visualization" tabindex="-1"></section>
+   <section id="av-display" class="av-display" aria-label="Analytics results" tabindex="-1"></section>
    <section id="av-simulation-controls" class="av-simulation-controls" hidden aria-label="Monte Carlo scenario assumptions">
     <div class="av-simulation-heading"><h3>Hypothetical unit-economics assumptions</h3><button type="button" id="av-load-assumptions">Load illustrative assumptions</button></div>
     <p>These numbers are never imported from company financial statements. Model demand uncertainty and monthly cash after fixed costs and CAPEX; tax, financing and working capital are excluded.</p>
@@ -70,14 +74,14 @@
   </section>
   </div>
   <details class="av-import" id="av-import">
-   <summary>Import or export an unverified scenario (JSON)</summary>
+   <summary>Import or export scenario data (JSON)</summary>
    <p>Paste your own data with the schema below, or inspect the current example. Imported records stay in this browser session and are never approved or certified by VAOS. JSON is processed client-side and is not sent to any server.</p>
    <textarea id="av-json" rows="9" spellcheck="false" aria-label="Scenario JSON"></textarea>
    <div class="av-actions"><button type="button" id="av-apply">Apply JSON locally</button><button type="button" id="av-copy">Copy current example</button><button type="button" id="av-reset">Reset to SYNTHETIC DEMO</button></div>
    <p id="av-import-status" role="status" aria-live="polite">No scenario uploaded.</p>
   </details>
   <aside class="av-evidence">
-   <h3>Operational evidence boundary</h3>
+   <h3>About scenario data</h3>
    <p>These graphics render synthetic or user-supplied, unverified scenarios. They cannot independently certify asset uptime, real inventory, approved budgets, CRM conversions, orders or shipment ETAs. Financial and operational actuals remain in existing governed VAOS/VYNDI OS source workspaces.</p>
    <button type="button" id="av-source-check">Check department sources</button>
    <p id="av-source-status" role="status" aria-live="polite">Not checked. Source reachability is not a digital twin or financial reconciliation.</p>

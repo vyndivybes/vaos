@@ -26,7 +26,7 @@ const descriptions={
  timeline:['Production Gantt','Hypothetical planning intervals; tasks are not approved production orders.'],
  logistics:['Logistics coordinate sketch','Show supplied geographic points and straight connections, not delivery routes, location tracking or ETAs.']
 };
-let current='overview',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,evidenceDispose=null,simulation=null;
+let current='evidence',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,evidenceDispose=null,simulation=null;
 
 function setProvenance(){
  $('av-provenance').textContent=source;
@@ -76,6 +76,7 @@ function renderCurrent(){
 function select(kind,{push=true}={}){
  if(!known.has(kind))return;
  current=kind;simulation=null;
+ if($('av-chart-menu').querySelector('[data-viz="'+kind+'"]'))$('av-chart-menu').open=true;
  renderCurrent();
  if(push){const url=new URL(location.href);url.searchParams.set('viz',kind);history.replaceState(null,'',url);}
 }
@@ -182,7 +183,7 @@ async function bootstrap(){
   $('av-json').value=JSON.stringify(scenario,null,2);
   setProvenance();bind();
   const kind=new URL(location.href).searchParams.get('viz');
-  select(known.has(kind)?kind:'overview',{push:false});
+  select(known.has(kind)?kind:'evidence',{push:false});
  }catch(error){sessionStatus.textContent='HOLD — '+(error?.message||'Session unavailable')+'. Sign in through VAOS.';}
 }
 void bootstrap();

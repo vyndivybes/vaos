@@ -319,3 +319,15 @@ body::before{
 .av-intro h1{margin:0;font-size:clamp(30px,4vw,46px);line-height:1.1;letter-spacing:-.045em}
 .av-intro p:not(.av-kicker){margin:6px 0 0}
 .av-integrity[hidden]{display:none}
+
+/* Keep source evidence and scenario navigation distinct at every width. */
+.av-tabs:has(.av-chart-menu){display:grid;align-content:start;gap:6px;overflow:visible;padding:10px}
+.av-tabs:has(.av-chart-menu) button{width:100%;white-space:normal;text-align:left;border-radius:5px}
+.av-chart-menu{border-top:1px solid #435053;margin-top:4px;padding-top:4px;min-width:0}
+.av-chart-menu summary{color:#eef1ed;cursor:pointer;padding:12px 8px;font-size:.875rem;min-height:44px}
+.av-chart-options{display:grid;gap:4px}
+@media(max-width:900px){
+ .av-tabs:has(.av-chart-menu){grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:12px}
+ .av-chart-menu{grid-column:1/-1}
+ .av-chart-options{grid-template-columns:repeat(auto-fit,minmax(min(100%,140px),1fr))}
+}

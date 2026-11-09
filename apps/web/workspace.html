@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="theme-color" content="#101318" />
-  <meta name="description" content="VAOS Agentic AI Autonomous Ecosystem. Your workspace for company updates, decisions and projects." />
+  <meta name="description" content="Company updates, decisions and projects for Vāyū Shastr." />
   <title>VAOS · Workspace</title>
   <link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp" />
   <link rel="manifest" href="/manifest.webmanifest" />
@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="/vaos-kinetic.css" />
 </head>
 <body data-app-page="workspace" class="va-premium workspace-body landscape-workspace founder-cockpit">
-  <a class="fc-skip" href="#command-view">Skip to cockpit</a>
+  <a class="fc-skip" href="#command-view">Skip to workspace</a>
   <div class="control-shell metallic-gold-rim" id="control-shell" hidden>
     <header class="control-header">
       <div class="header-brand">
@@ -54,14 +54,12 @@
       </section>
 
       <div class="sidebar-section-title">
-        <span>Apps & workspaces</span>
-        <small>governed</small>
+        <span>Workspaces</span>
       </div>
 
       <nav class="module-nav" id="module-nav"></nav>
 
       <div class="sidebar-footer">
-        <span class="sidebar-footer__note">You stay in control.</span>
         <button class="sidebar-signout" id="logout-button" type="button"><span>↪</span> Sign out</button>
       </div>
     </aside>
@@ -82,27 +80,36 @@
       <form class="workspace-search metallic-gold-rim" id="command-bar">
         <span class="workspace-search__icon" aria-hidden="true">⌕</span>
         <label class="workspace-search__copy" for="command-bar-input">
-          <input id="command-bar-input" type="text" autocomplete="off"
-            placeholder="Find a workspace or prepare an action…" />
+          <input id="command-bar-input" aria-label="Find a workspace or prepare an action" type="text" autocomplete="off"
+            placeholder="Find a workspace or prepare an action" />
           <small>Actions still need the required permissions and approval.</small>
         </label>
-        <button class="workspace-search__action" id="command-button" type="submit">Go →</button>
+        <button class="workspace-search__action" id="command-button" type="submit">Go</button>
       </form>
       <p class="command-status" id="command-status" aria-live="polite"></p>
 
       <section id="command-view" class="workspace-view">
-        <section id="founder-cockpit" class="fc-intro"><div><h2>Today at Vāyū Shastr</h2><p>Review a decision, check your sources or pick up a conversation.</p></div><div class="va-dashboard-actions"><a href="/prelaunch-workspace.html" class="va-button va-button--outline">Startup brief ↗</a><button id="cockpit-refresh" type="button" class="va-button va-button--outline">Refresh sources</button></div></section>
+        <nav class="workspace-quick-links" aria-label="Quick links">
+          <a href="/visual-intelligence.html?viz=evidence"><span aria-hidden="true">01</span><strong>Source evidence</strong><span aria-hidden="true">↗</span></a>
+          <a href="/visual-command.html"><span aria-hidden="true">02</span><strong>Visual Command</strong><span aria-hidden="true">↗</span></a>
+          <a href="/neural-knowledge.html"><span aria-hidden="true">03</span><strong>Knowledge graph</strong><span aria-hidden="true">↗</span></a>
+          <a href="/mission-status.html"><span aria-hidden="true">04</span><strong>Missions</strong><span aria-hidden="true">↗</span></a>
+        </nav>
+        <div class="workspace-workbench">
+          <div class="workspace-brief">
+        <section id="founder-cockpit" class="fc-intro"><div><h2>Today at Vāyū Shastr</h2><p>Company stage, decisions and source connections.</p></div><div class="va-dashboard-actions"><a href="/prelaunch-workspace.html" class="va-button va-button--outline">Startup brief ↗</a><button id="cockpit-refresh" type="button" class="va-button va-button--outline">Refresh sources</button></div></section>
         <div class="fc-metrics" aria-label="Company overview">
           <article><small>Company stage</small><strong>Pre-operations</strong><span>Operating baselines still need review</span></article>
           <a href="/workforce-analytics.html"><small>Team</small><strong id="cockpit-employee-count">—</strong><span>Registered roles ↗</span></a>
           <button type="button" data-view="approvals"><small>Decisions waiting</small><strong id="cockpit-decision-count">—</strong><span id="cockpit-decision-note">Review approvals →</span></button>
           <a href="#cockpit-business"><small>Connected sources</small><strong id="cockpit-source-count">—</strong><span>View source connections ↓</span></a>
         </div>
+          </div>
         <section class="va-voice-widget" id="vaos-main-voice" aria-label="VAOS read-only voice assistant">
           <div class="va-voice-widget__intro">
             <span class="va-voice-avatar" aria-hidden="true">◉</span>
-            <div><p class="va-eyebrow">A place to think things through</p><h2>Ask JARVIS</h2>
-              <p>Find an answer in your company records, or talk through what to do next.</p>
+            <div><h2>Ask JARVIS</h2>
+              <p>Ask about company records and follow the links in the answer.</p>
             </div>
             <span class="va-voice-badge">Answers only</span>
           </div>
@@ -115,7 +122,7 @@
           </div>
           <p class="va-voice-status" id="vaos-voice-status" role="status" aria-live="polite">Getting JARVIS ready…</p>
           <div class="va-voice-response" aria-live="polite">
-            <strong>JARVIS</strong><div id="vaos-voice-answer">Your answer will appear here, with links to its sources. Asking a question won't change your records.</div>
+            <strong>JARVIS</strong><div id="vaos-voice-answer">Answers and source links will appear here.</div>
             <div id="vaos-voice-sources" class="va-voice-sources"></div>
           </div>
           <div class="fc-prompts" aria-label="Suggested questions">
@@ -163,6 +170,8 @@
           <a class="fc-command-link" href="/founder-console.html">Need to make a change? Review it in Founder Command ↗</a>
         </section>
 
+        </div>
+
         <section class="fc-business" id="ontology-evidence" aria-labelledby="ontology-evidence-title">
           <div class="fc-section-head"><div><h2 id="ontology-evidence-title">Knowledge source checks</h2>
             <p>Check when connected knowledge sources last responded. This does not verify inventory or production.</p></div>
@@ -209,8 +218,8 @@
             </details>
           </div>
         </section>
-        <details class="fc-runtime-details"><summary>Control plane activity &amp; decision inbox</summary>
-        <div class="section-strapline">LIVE CONTROL PLANE / GOVERNED ACTIVITY</div>
+        <details class="fc-runtime-details"><summary>System activity and decisions</summary>
+        <div class="section-strapline">Recent activity</div>
         <div class="pulse-grid" id="pulse-grid"></div>
         <div class="va-home-insights">
           <section class="va-panel va-home-chart" aria-label="Agent fleet status chart">
@@ -300,36 +309,9 @@
       </section>
 
       <section class="kinetic-intro" aria-labelledby="kinetic-title">
-        <div class="kinetic-command">
-          <div class="kinetic-command__copy">
-            <p class="kinetic-intro__eyebrow">MORE TO EXPLORE</p>
-            <h2 class="kinetic-intro__title" id="kinetic-title"><span>Explore your</span><em>workspaces.</em></h2>
-            <p class="kinetic-command__lede">Open a workspace to review its records, check what needs attention, or continue a task.</p>
-            <div class="kinetic-command__actions">
-              <a class="kinetic-command__primary" href="/visual-intelligence.html?viz=evidence">Review source evidence <span aria-hidden="true">↗</span></a>
-              <a class="kinetic-command__secondary" href="#command-bar">Back to command search <span aria-hidden="true">↓</span></a>
-            </div>
-          </div>
-          <div class="kinetic-command__scene" aria-label="Quick access to governed VAOS intelligence">
-            <div class="kinetic-command__scene-top"><span>JARVIS / KNOWLEDGE / MISSIONS</span><span class="kinetic-command__signal" aria-hidden="true"></span></div>
-            <div class="kinetic-command__diagram" aria-hidden="true"><i></i><i></i><i></i><span>VAOS</span></div>
-            <nav class="kinetic-command__scene-links" aria-label="Featured command workspaces">
-              <a href="/founder-console.html"><span>01 / REASON</span><strong>JARVIS Command</strong><b aria-hidden="true">↗</b></a>
-              <a href="/neural-knowledge.html"><span>02 / CONNECT</span><strong>Knowledge Atlas</strong><b aria-hidden="true">↗</b></a>
-              <a href="/mission-status.html"><span>03 / REVIEW</span><strong>Mission Control</strong><b aria-hidden="true">↗</b></a>
-            </nav>
-          </div>
-        </div>
-
-        <nav class="kinetic-routes" aria-label="Start with an operational workspace">
-          <a href="/visual-intelligence.html?viz=evidence"><span>01</span><strong>Executive evidence</strong><b aria-hidden="true">↗</b></a>
-          <a href="/visual-command.html"><span>02</span><strong>Visual Command</strong><b aria-hidden="true">↗</b></a>
-          <a href="/neural-knowledge.html"><span>03</span><strong>Brain Graph</strong><b aria-hidden="true">↗</b></a>
-          <a href="/mission-status.html"><span>04</span><strong>Mission status</strong><b aria-hidden="true">↗</b></a>
-        </nav>
-
+        <h2 id="kinetic-title">Workspace tour</h2>
         <details class="kinetic-exhibition" id="kinetic-exhibition">
-          <summary class="kinetic-exhibition__toggle"><span class="kinetic-exhibition__eyebrow">EXPLORE THE VAOS EXPERIENCE</span><strong>10 illustrated workspaces</strong><span class="kinetic-exhibition__hint"><span class="kinetic-exhibition__show">Expand atlas</span><span class="kinetic-exhibition__hide">Collapse atlas</span><span aria-hidden="true">＋</span></span></summary>
+          <summary class="kinetic-exhibition__toggle"><span class="kinetic-exhibition__eyebrow">Optional guide</span><strong>Browse 10 workspace previews</strong><span class="kinetic-exhibition__hint"><span class="kinetic-exhibition__show">Show previews</span><span class="kinetic-exhibition__hide">Hide previews</span><span aria-hidden="true">＋</span></span></summary>
         <section class="kinetic-gallery" aria-labelledby="kinetic-gallery-title">
           <div class="kinetic-gallery__heading">
             <div><span class="kinetic-gallery__index">WORKSPACE TOUR / 01—10</span>

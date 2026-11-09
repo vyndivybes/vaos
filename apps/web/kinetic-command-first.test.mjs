@@ -13,14 +13,14 @@ test('live cockpit precedes the optional and collapsed gallery on initial load',
  assert.ok(command>=0&&cockpit>command&&start>cockpit&&module>start,
   'Search and live command cockpit must appear before the optional illustrated tour');
  const first=html.slice(start,module);
- assert.match(first,/class="kinetic-command"/);
- assert.match(first,/Explore your/);
+ assert.match(first,/Workspace tour/);
+ const workbench=html.slice(cockpit,start);
+ assert.match(workbench,/class="workspace-workbench"/);
+ assert.ok(workbench.indexOf("workspace-quick-links")<workbench.indexOf("founder-cockpit"));
  assert.doesNotMatch(html.slice(command,cockpit),/class="kinetic-gallery"/);
  assert.match(first,/<details\b[^>]*class="kinetic-exhibition"[^>]*>/);
  assert.doesNotMatch(first,/<details\b[^>]*class="kinetic-exhibition"[^>]*\bopen\b/);
  assert.ok(first.indexOf('<summary')<first.indexOf('class="kinetic-gallery"'));
- assert.match(first,/<nav\s+class="kinetic-routes"/);
- assert.ok(first.indexOf('class="kinetic-routes"')<first.indexOf('class="kinetic-gallery"'));
  assert.match(html,/id="command-bar"/);
  assert.match(html,/id="command-view"/);
  assert.match(html,/id="founder-cockpit"/);
@@ -28,20 +28,21 @@ test('live cockpit precedes the optional and collapsed gallery on initial load',
 
 test('quick actions lead to original governed workspaces, not simulated data or action execution',()=>{
  const html=read('./workspace.html');
- const first=html.slice(html.indexOf('<section class="kinetic-intro"'),html.indexOf('<section class="kinetic-gallery"'));
- for(const route of ['/visual-intelligence.html?viz=evidence','/founder-console.html','/neural-knowledge.html','/mission-status.html']){
+ const first=html.match(/<nav class="workspace-quick-links"[^>]*>[\s\S]*?<\/nav>/)?.[0];
+ assert.ok(first);
+ for(const route of ['/visual-intelligence.html?viz=evidence','/visual-command.html','/neural-knowledge.html','/mission-status.html']){
   assert.ok(first.includes('href="'+route+'"'),route);
  }
- assert.match(first,/source-backed|signed|governed/i);
+ assert.match(first,/Source evidence/);
  assert.match(html,/Interface previews only\./);
  assert.doesNotMatch(first,/<iframe\b|<script\b|formaction=|onclick=/i);
 });
 
 test('compact style removes poster-scale typography and duplicate sidebar logo',()=>{
  const css=read('./vaos-kinetic.css');
- assert.match(css,/\.kinetic-command\s*\{/);
+ assert.match(css,/\.workspace-workbench\s*\{/);
  assert.match(css,/\.kinetic-exhibition\s*\{/);
- assert.match(css,/\.kinetic-routes\s*\{/);
+ assert.match(css,/\.workspace-quick-links\s*\{/);
  assert.match(css,/\.workspace-body \.sidebar-brand-card\s*\{\s*display:none!important/);
  assert.match(css,/\.workspace-body #module-title/);
  assert.match(css,/prefers-reduced-motion:reduce/);

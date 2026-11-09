@@ -14,6 +14,8 @@ test('advanced studio exposes eight working graphics and a source distinction',(
   assert.match(app,new RegExp("'"+kind+"'"));
  }
  assert.match(page,/SYNTHETIC DEMO/);
+ assert.match(page,/<details class="av-chart-menu" id="av-chart-menu">/);
+ assert.match(app,/select\(known\.has\(kind\)\?kind:'evidence'/);
  assert.match(app,/USER_SUPPLIED_UNVERIFIED/);
  assert.match(app,/\/api\/session/);
  assert.match(render,/renderSankey/);

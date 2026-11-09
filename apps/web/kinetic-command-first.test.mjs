@@ -4,13 +4,18 @@ import {readFileSync} from 'node:fs';
 
 const read=(path)=>readFileSync(new URL(path,import.meta.url),'utf8');
 
-test('workspace is command-first; gallery is discoverable but collapsed on initial load',()=>{
+test('live cockpit precedes the optional and collapsed gallery on initial load',()=>{
  const html=read('./workspace.html');
  const start=html.indexOf('<section class="kinetic-intro"');
  const command=html.indexOf('<form class="workspace-search');
- assert.ok(start>=0&&command>start);
- const first=html.slice(start,command);
+ const cockpit=html.indexOf('<section id="command-view"');
+ const module=html.indexOf('<section id="module-view"');
+ assert.ok(command>=0&&cockpit>command&&start>cockpit&&module>start,
+  'Search and live command cockpit must appear before the optional illustrated tour');
+ const first=html.slice(start,module);
  assert.match(first,/class="kinetic-command"/);
+ assert.match(first,/Explore your/);
+ assert.doesNotMatch(html.slice(command,cockpit),/class="kinetic-gallery"/);
  assert.match(first,/<details\b[^>]*class="kinetic-exhibition"[^>]*>/);
  assert.doesNotMatch(first,/<details\b[^>]*class="kinetic-exhibition"[^>]*\bopen\b/);
  assert.ok(first.indexOf('<summary')<first.indexOf('class="kinetic-gallery"'));

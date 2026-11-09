@@ -13,7 +13,7 @@ test('premium dashboard is a visual-first overview rather than one bare chart',(
  assert.match(page,/data-viz="overview"/);
  assert.match(page,/visual-premium\.css/);
  assert.match(js,/renderVisualOverview/);
- assert.match(js,/current='overview'/);
+ assert.match(js,/current==='overview'\)renderVisualOverview\(/);
  assert.match(overview,/av-dashboard-kpis/);
  assert.match(overview,/av-dashboard-grid/);
  assert.match(overview,/av-dashboard-chart/);

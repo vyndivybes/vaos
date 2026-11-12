@@ -297,11 +297,45 @@ body.vaos-shell.cinematic-login .access-console {
   }
 }
 
+
+body.vaos-shell.va-premium.workspace-body .vaos-command-disclosure {
+  width: min(100%, 920px);
+  margin: 0 auto;
+}
+
+body.vaos-shell.va-premium.workspace-body .vaos-command-disclosure > summary {
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--shell-line);
+  border-radius: 7px;
+  background: var(--shell-surface) !important;
+  color: var(--shell-muted) !important;
+  cursor: pointer;
+}
+
+body.vaos-shell.va-premium.workspace-body .vaos-command-disclosure[open] > summary {
+  margin-bottom: 8px;
+}
+
 body.vaos-shell.cinematic-login :is(.cinematic-scene, .cinematic-identity, .access-console__scan) {
-  display: none;
+  display: none !important;
 }
 
 body.vaos-shell.cinematic-login .cinematic-chrome {
-  background: var(--shell-surface);
-  border-bottom: 1px solid var(--shell-line);
+  background: var(--shell-surface) !important;
+}
+
+body.vaos-shell.cinematic-login .access-console :is(label, p, .access-console__head, .access-console__eyebrow) {
+  color: var(--shell-muted) !important;
+}
+
+body.vaos-shell.cinematic-login .access-console h1 em {
+  color: var(--shell-accent) !important;
+  -webkit-text-fill-color: var(--shell-accent);
+}
+
+body.vaos-shell.cinematic-login .access-console #submit-button {
+  background: var(--shell-accent) !important;
+  border-color: var(--shell-accent) !important;
+  color: #17253a !important;
 }

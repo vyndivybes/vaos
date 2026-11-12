@@ -5,15 +5,19 @@ import {readFile,readdir} from 'node:fs/promises';
 const read=async path=>readFile(new URL(path,import.meta.url),'utf8');
 const themePath='./vaos-kinetic.css';
 
-test('all VAOS HTML workspaces load one final editorial presentation layer',async()=>{
+test('all VAOS HTML workspaces load the shared application shell',async()=>{
  const pages=(await readdir(new URL('./',import.meta.url))).filter(name=>name.endsWith('.html'));
  assert.ok(pages.length>=17,'all existing workspaces should remain available');
  for(const page of pages){
   const html=await read('./'+page);
   const styles=[...html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi)].map(match=>match[0]);
   assert.ok(styles.length>=1,page+' has styles');
-  assert.match(styles.at(-1),/href=["']\/vaos-kinetic\.css["']/i,page+' loads the new theme last');
-  assert.equal(styles.filter(link=>link.includes('/vaos-kinetic.css')).length,1,page+' loads the theme once');
+  assert.match(styles.at(-1),/href=["']\/vaos-shell\.css["']/i,page+' loads the application shell last');
+  assert.equal(styles.filter(link=>link.includes('/vaos-shell.css')).length,1,page+' loads the application shell once');
+  if (!['index.html','login.html'].includes(page)) {
+   assert.match(html,/data-vaos-header/);
+   assert.match(html,/src="\/vaos-shell\.mjs"/);
+  }
  }
 });
 

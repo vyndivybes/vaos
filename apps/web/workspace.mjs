@@ -613,7 +613,7 @@ function renderModule(module) {
 function setView(view, { push = true } = {}) {
   const module = model.modules.find((item) => item.id === view) || model.modules[0];
   currentView = module.id;
-  moduleTitle.textContent = module.id === 'command' ? 'Your workspace' : module.label; moduleGroup.textContent = module.group; moduleDescription.textContent = module.id === 'command' ? 'Your company, projects and decisions.' : module.description;
+  moduleTitle.textContent = module.id === 'command' ? 'JARVIS' : module.label; moduleGroup.textContent = module.group; moduleDescription.textContent = module.id === 'command' ? 'Ask about your business or open a workspace.' : module.description;
   commandView.hidden = module.id !== 'command'; moduleView.hidden = module.id === 'command';
   if (module.id !== 'command') {
     renderModule(module);

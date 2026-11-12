@@ -16,7 +16,8 @@ test('live cockpit precedes the optional and collapsed gallery on initial load',
  assert.match(first,/Workspace tour/);
  const workbench=html.slice(cockpit,start);
  assert.match(workbench,/class="workspace-workbench"/);
- assert.ok(workbench.indexOf("vaos-main-voice")<workbench.indexOf("founder-cockpit"));
+ assert.ok(workbench.indexOf("founder-cockpit")<workbench.indexOf("vaos-main-voice"));
+ assert.match(workbench,/<details class="workspace-suggestions">\s*<summary>Suggested questions<\/summary>/);
  assert.match(workbench,/<details class="workspace-details">/);
  assert.doesNotMatch(workbench,/<details class="workspace-details" open/);
  assert.doesNotMatch(html.slice(command,cockpit),/class="kinetic-gallery"/);

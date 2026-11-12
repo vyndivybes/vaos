@@ -71,7 +71,7 @@
           <div>
             <p class="workspace-overline">THE VĀYÚ BUSINESS COMMAND CENTRE</p>
             <h1 id="module-title">Overview</h1>
-            <p id="module-description">Company status and daily work.</p>
+            <p id="module-description">Company status, decisions and connected sources.</p>
           </div>
           <span class="hero-status hero-status--connecting" id="control-plane-status"><i></i> Control plane connecting</span>
         </div>
@@ -81,7 +81,7 @@
         <span class="workspace-search__icon" aria-hidden="true">⌕</span>
         <label class="workspace-search__copy" for="command-bar-input">
           <input id="command-bar-input" aria-label="Find a workspace or prepare an action" type="text" autocomplete="off"
-            placeholder="Find a workspace or prepare an action" />
+            placeholder="Find a workspace or prepare an action…" />
           <small>Actions still need the required permissions and approval.</small>
         </label>
         <button class="workspace-search__action" id="command-button" type="submit">Go</button>
@@ -90,13 +90,22 @@
 
       <section id="command-view" class="workspace-view">
         <div class="workspace-workbench">
+          <div class="workspace-brief">
+            <section id="founder-cockpit" class="fc-intro">
+              <h2>Company snapshot</h2>
+              <button id="cockpit-refresh" type="button" class="va-button va-button--outline">Refresh sources</button>
+            </section>
+            <div class="fc-metrics" aria-label="Company overview">
+              <a href="/prelaunch-workspace.html"><small>Company stage</small><strong>Pre-operations</strong><span>Open startup brief ↗</span></a>
+              <a href="/workforce-analytics.html"><small>Team</small><strong id="cockpit-employee-count">—</strong><span>Registered roles ↗</span></a>
+              <button type="button" data-view="approvals"><small>Decisions waiting</small><strong id="cockpit-decision-count">—</strong><span id="cockpit-decision-note">Review approvals →</span></button>
+              <a href="/visual-intelligence.html?viz=evidence"><small>Connected sources</small><strong id="cockpit-source-count">—</strong><span>Open source checks</span></a>
+            </div>
+          </div>
         <section class="va-voice-widget" id="vaos-main-voice" aria-label="VAOS read-only voice assistant">
           <div class="va-voice-widget__intro">
-            
-            <div><h2>Ask JARVIS</h2>
-              <p>Ask about your company records.</p>
-            </div>
-            <span class="va-voice-badge">Answers only</span>
+            <h2>Ask JARVIS</h2>
+            <span class="va-voice-badge">Read-only answers</span>
           </div>
           <label class="va-voice-label" for="vaos-voice-question">Your question</label>
           <div class="va-voice-compose">
@@ -110,12 +119,15 @@
             <div id="vaos-voice-answer">Answers and source links will appear here.</div>
             <div id="vaos-voice-sources" class="va-voice-sources"></div>
           </div>
-          <div class="fc-prompts" aria-label="Suggested questions">
-            <button type="button" data-jarvis-question="What needs my attention today?">What needs my attention?</button>
-            <button type="button" data-jarvis-question="What is our project status?">Project status</button>
-            <button type="button" data-jarvis-question="Show engineering verification evidence">Engineering evidence</button>
-            <a href="/jarvis-multimodal.html" title="Permission-controlled live camera and source inspection">Open JARVIS camera &amp; files ↗</a>
-          </div>
+          <details class="workspace-suggestions">
+            <summary>Suggested questions</summary>
+            <div class="fc-prompts" aria-label="Suggested questions">
+              <button type="button" data-jarvis-question="What needs my attention today?">What needs my attention?</button>
+              <button type="button" data-jarvis-question="What is our project status?">Project status</button>
+              <button type="button" data-jarvis-question="Show engineering verification evidence">Engineering evidence</button>
+              <a href="/jarvis-multimodal.html" title="Permission-controlled live camera and source inspection">Open JARVIS camera &amp; files ↗</a>
+            </div>
+          </details>
           <div class="va-wake-controls">
             <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>Start conversation</button>
             <div class="va-wake-readiness">
@@ -154,15 +166,6 @@
           <a class="va-button va-button--outline" id="jarvis-google-calendar-connect" href="/api/google-workspace/start" aria-label="Connect Google Calendar to JARVIS">Connect Google Calendar ↗</a>
           <a class="fc-command-link" href="/founder-console.html">Open Founder Command ↗</a>
         </section>
-          <div class="workspace-brief">
-        <section id="founder-cockpit" class="fc-intro"><div><h2>Today at Vāyū Shastr</h2></div><div class="va-dashboard-actions"><a href="/prelaunch-workspace.html" class="va-button va-button--outline">Startup brief</a><button id="cockpit-refresh" type="button" class="va-button va-button--outline">Refresh sources</button></div></section>
-        <div class="fc-metrics" aria-label="Company overview">
-          <article><small>Company stage</small><strong>Pre-operations</strong><span>Operating baselines still need review</span></article>
-          <a href="/workforce-analytics.html"><small>Team</small><strong id="cockpit-employee-count">—</strong><span>Registered roles ↗</span></a>
-          <button type="button" data-view="approvals"><small>Decisions waiting</small><strong id="cockpit-decision-count">—</strong><span id="cockpit-decision-note">Review approvals →</span></button>
-          <a href="/visual-intelligence.html?viz=evidence"><small>Connected sources</small><strong id="cockpit-source-count">—</strong><span>Open source checks</span></a>
-        </div>
-          </div>
         </div>
 
         <details class="workspace-details">
@@ -307,12 +310,10 @@
       <section class="kinetic-intro" aria-labelledby="kinetic-title">
         <h2 id="kinetic-title">Workspace tour</h2>
         <details class="kinetic-exhibition" id="kinetic-exhibition">
-          <summary class="kinetic-exhibition__toggle"><span class="kinetic-exhibition__eyebrow">Optional guide</span><strong>Browse 10 workspace previews</strong><span class="kinetic-exhibition__hint"><span class="kinetic-exhibition__show">Show previews</span><span class="kinetic-exhibition__hide">Hide previews</span><span aria-hidden="true">＋</span></span></summary>
+          <summary class="kinetic-exhibition__toggle"><strong>Browse workspace previews</strong><span class="kinetic-exhibition__hint" aria-hidden="true"><span>＋</span></span></summary>
         <section class="kinetic-gallery" aria-labelledby="kinetic-gallery-title">
           <div class="kinetic-gallery__heading">
-            <div><span class="kinetic-gallery__index">WORKSPACE TOUR / 01—10</span>
-              <h3 id="kinetic-gallery-title">EXPLORE THE <em>WORKSPACES.</em></h3>
-            </div>
+            <h3 id="kinetic-gallery-title">Explore the workspaces</h3>
             <p>These visual previews help you find the right place to work. Open any one to see the actual records.</p>
           </div>
           <div class="kinetic-gallery__controls" role="group" aria-label="Filter illustrated workspaces">

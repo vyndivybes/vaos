@@ -1,5 +1,6 @@
 const primary = [
   ['JARVIS', '/workspace', 'workspace'],
+  ['Spatial Command', '/spatial-command.html', 'spatial-command'],
   ['Analytics', '/visual-intelligence.html?viz=overview', 'visual-intelligence'],
   ['Knowledge', '/neural-knowledge.html', 'neural-knowledge'],
   ['Missions', '/mission-status.html', 'mission-status']

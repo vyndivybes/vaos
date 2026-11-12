@@ -969,31 +969,167 @@ body.va-premium.workspace-body .fc-metrics>*:focus-visible{border-color:#cfff59!
  .kinetic-exhibition__hint>span:last-child{transition:none!important}
 }
 
-/* Overview uses a single reading column. Secondary work is disclosed on demand. */
-.workspace-body .workspace-workbench{
- max-width:1060px;margin:16px 0 24px;display:grid;gap:20px;
+/* The overview puts operating status and JARVIS in the same reading flow. */
+body.va-premium.workspace-body .workspace-hero {
+  background: transparent !important;
+  border: 0 !important;
+  padding: 8px 0 16px !important;
 }
-body.va-premium.workspace-body .workspace-workbench > .va-voice-widget{
- margin:0!important;border-color:#444844!important;background:#171917!important;
+
+body.va-premium.workspace-body #command-view {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
 }
-body.va-premium.workspace-body .workspace-brief .fc-intro{
- display:flex;flex-wrap:wrap;gap:12px;margin:0!important;
+
+.workspace-body .workspace-workbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 16px;
+  margin: 18px 0;
 }
-body.va-premium.workspace-body .workspace-brief .fc-metrics{
- display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,170px),1fr));gap:8px;margin:12px 0 0!important;
+
+body.va-premium.workspace-body .workspace-brief,
+body.va-premium.workspace-body .workspace-workbench > #vaos-main-voice {
+  grid-area: auto;
+  min-width: 0;
+  margin: 0 !important;
+  padding: clamp(14px, 2vw, 22px) !important;
+  border: 1px solid var(--kinetic-border) !important;
+  border-radius: 8px !important;
+  background: var(--kinetic-surface) !important;
+  box-shadow: none !important;
 }
-body.va-premium.workspace-body .workspace-brief .fc-metrics > *{
- min-width:0;padding:12px!important;border-top-width:1px!important;
+
+body.va-premium.workspace-body .workspace-brief .fc-intro,
+body.va-premium.workspace-body .workspace-workbench .va-voice-widget__intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-flow: row wrap;
+  gap: 8px 12px;
+  margin: 0 0 14px !important;
 }
-body.va-premium.workspace-body .workspace-brief .fc-metrics strong{
- font-size:clamp(1rem,2vw,1.5rem)!important;overflow-wrap:anywhere;font-variant-numeric:tabular-nums;
+
+body.va-premium.workspace-body .workspace-workbench h2 {
+  display: block;
+  margin: 0;
+  font-size: 1.125rem;
+  letter-spacing: -.02em;
 }
-.workspace-body .workspace-details{margin:0 0 12px;max-width:1060px}
-.workspace-body .workspace-details > summary{
- padding:13px 15px;border:1px solid #444844;border-radius:4px;cursor:pointer;color:#f3f4ef;
+
+body.va-premium.workspace-body .workspace-brief .fc-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0 !important;
+  border: 1px solid var(--kinetic-border);
+  border-radius: 5px;
+  background: var(--kinetic-border);
 }
-.workspace-body .workspace-details[open] > summary{margin-bottom:12px}
-.workspace-body #kinetic-title{font-size:1.25rem;margin:0 0 8px}
-@media(max-width:720px){
- .founder-cockpit .workspace-brief .fc-intro h2{display:block;font-size:1.125rem}
+
+body.va-premium.workspace-body .workspace-brief .fc-metrics > * {
+  min-width: 0;
+  padding: 12px !important;
+  border: 0 !important;
+  border-radius: 0;
+  background: var(--kinetic-surface) !important;
+  box-shadow: none !important;
+  text-align: left;
+}
+
+body.va-premium.workspace-body .workspace-brief .fc-metrics > :hover {
+  background: var(--kinetic-elevated) !important;
+}
+
+body.va-premium.workspace-body .workspace-brief .fc-metrics > :focus-visible {
+  position: relative;
+  outline-offset: -3px !important;
+}
+
+body.va-premium.workspace-body .workspace-brief .fc-metrics :is(small, strong, span) {
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+body.va-premium.workspace-body .workspace-brief .fc-metrics strong {
+  font-size: clamp(1rem, 1.7vw, 1.4rem) !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.workspace-body .workspace-suggestions {
+  margin: 10px 0;
+}
+
+.workspace-body .workspace-suggestions > summary {
+  width: fit-content;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.workspace-body .workspace-suggestions .fc-prompts {
+  margin: 8px 0 0;
+}
+
+.workspace-body .workspace-details {
+  margin: 0 0 12px;
+}
+
+.workspace-body .workspace-details > summary {
+  padding: 13px 15px;
+  border: 1px solid var(--kinetic-border);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.workspace-body .workspace-details[open] > summary {
+  margin-bottom: 12px;
+}
+
+.workspace-body #kinetic-title {
+  font-size: 1.125rem;
+  margin: 0 0 8px;
+}
+
+.workspace-body .kinetic-exhibition > summary {
+  grid-template-columns: 1fr auto;
+}
+
+.workspace-body .kinetic-exhibition__hint > span:last-child {
+  font-size: 22px;
+}
+
+@media (min-width: 1024px) {
+  .workspace-body .workspace-workbench {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  }
+}
+
+@media (max-width: 900px) {
+  body.va-premium.workspace-body .control-shell:not([hidden]) {
+    display: block;
+  }
+
+  body.va-premium.workspace-body .va-module-toggle {
+    display: flex !important;
+    justify-content: space-between;
+    width: calc(100% - 32px);
+    min-height: 44px;
+    margin: 12px 16px 0;
+    padding: 10px 12px;
+    border: 1px solid var(--kinetic-border) !important;
+    background: var(--kinetic-surface) !important;
+    color: var(--kinetic-ink) !important;
+  }
+
+  body.va-premium.workspace-body .control-sidebar {
+    display: none;
+    position: static;
+    width: auto;
+    height: auto;
+  }
+
+  body.va-premium.workspace-body[data-modules-open] .control-sidebar {
+    display: block;
+  }
 }

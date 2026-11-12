@@ -136,7 +136,7 @@ body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a:hover, a[aria-current
 }
 
 .vaos-workspace-menu > summary::after {
-  content: "?";
+  content: "⌄";
   margin-inline-start: 6px;
 }
 

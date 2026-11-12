@@ -1,0 +1,307 @@
+:root {
+  --shell-canvas: #101318;
+  --shell-surface: #181d25;
+  --shell-raised: #222a36;
+  --shell-line: #394455;
+  --shell-text: #f0f4f8;
+  --shell-muted: #aebbc9;
+  --shell-accent: #a5c7ff;
+  --shell-accent-bg: #233653;
+  --shell-width: 1440px;
+  --shell-radius: 12px;
+  --shell-font: Manrope, "Segoe UI", system-ui, sans-serif;
+}
+
+body.vaos-shell,
+body.vaos-shell.va-premium.workspace-body,
+body.vaos-shell.knowledge-workspace {
+  --kinetic-bg: var(--shell-canvas);
+  --kinetic-surface: var(--shell-surface);
+  --kinetic-elevated: var(--shell-raised);
+  --kinetic-border: var(--shell-line);
+  --kinetic-ink: var(--shell-text);
+  --kinetic-muted: var(--shell-muted);
+  --kinetic-soft: var(--shell-muted);
+  --kinetic-accent: var(--shell-accent);
+  --vaos-bg: var(--shell-canvas);
+  --vaos-surface: var(--shell-surface);
+  --vaos-panel: var(--shell-raised);
+  --vaos-line: var(--shell-line);
+  --vaos-ink: var(--shell-text);
+  --vaos-muted: var(--shell-muted);
+  --vaos-accent: var(--shell-accent);
+  --vaos-focus: var(--shell-accent);
+  color: var(--shell-text) !important;
+  background: var(--shell-canvas) !important;
+  font-family: var(--shell-font) !important;
+}
+
+body.vaos-shell :is(a, button, input, select, textarea, summary):focus-visible {
+  outline: 2px solid var(--shell-accent) !important;
+  outline-offset: 3px !important;
+}
+
+body.vaos-shell [data-vaos-header][data-vaos-ready] {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px 24px;
+  min-height: 64px;
+  height: auto;
+  padding: 10px clamp(16px, 3vw, 44px);
+  border-bottom: 1px solid var(--shell-line) !important;
+  background: var(--shell-surface) !important;
+  color: var(--shell-text);
+  box-shadow: none !important;
+  z-index: 100;
+}
+
+body.vaos-shell [data-vaos-header] > nav[hidden] {
+  display: none !important;
+}
+
+body.vaos-shell [data-vaos-header] :is(.brand, .av-home, .vc-brand, .va-app-brand, .header-brand) {
+  flex: 0 0 auto;
+  color: var(--shell-text) !important;
+  text-decoration: none;
+}
+
+body.vaos-shell [data-vaos-header] :is(.brand, .av-home, .vc-brand, .va-app-brand, .header-brand) small {
+  color: var(--shell-muted) !important;
+}
+
+body.vaos-shell [data-vaos-header] .vaos-primary-nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 0;
+  width: auto;
+}
+
+body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a, summary) {
+  display: block;
+  padding: 9px 12px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent !important;
+  color: var(--shell-muted) !important;
+  font: 650 .85rem/1.5 var(--shell-font) !important;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  text-decoration: none !important;
+}
+
+body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a:hover, a[aria-current="page"], summary:hover, details[open] > summary) {
+  background: var(--shell-accent-bg) !important;
+  color: var(--shell-accent) !important;
+}
+
+.vaos-workspace-menu {
+  position: relative;
+}
+
+.vaos-workspace-menu > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.vaos-workspace-menu > summary::-webkit-details-marker {
+  display: none;
+}
+
+.vaos-workspace-menu > summary::after {
+  content: "⌄";
+  margin-inline-start: 6px;
+}
+
+.vaos-workspace-directory {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 110;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(560px, calc(100vw - 32px));
+  padding: 12px;
+  border: 1px solid var(--shell-line);
+  border-radius: var(--shell-radius);
+  background: var(--shell-surface);
+  box-shadow: 0 16px 40px #0005;
+}
+
+.vaos-workspace-directory ul {
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.vaos-workspace-directory .vaos-workspace-group {
+  padding: 6px 12px;
+  color: var(--shell-muted);
+  font-size: .75rem;
+  font-weight: 700;
+}
+
+body.vaos-shell [data-vaos-header] .vaos-workspace-directory a {
+  white-space: normal;
+}
+
+body.vaos-shell :is(.vc-stage, .vc-command, .av-panel, .av-import, .av-evidence, .mission-panel,
+  .summary > div, .explorer, .source-panel, .inspector, .universe, .knowledge-search) {
+  background: var(--shell-surface) !important;
+  border-color: var(--shell-line) !important;
+  box-shadow: none !important;
+}
+
+body.vaos-shell :is(.vc-stage-heading, .av-panel-head, .explorer-head) {
+  background: var(--shell-raised) !important;
+  border-color: var(--shell-line) !important;
+}
+
+body.vaos-shell :is(.vc-hero, .av-hero, .market-hero, .mission-hero, .premium-hero, .premium-analytics-hero) {
+  border-color: var(--shell-line) !important;
+  background: var(--shell-surface) !important;
+  box-shadow: none !important;
+}
+
+body.vaos-shell :is(.vc-hero, .av-hero, .market-hero, .mission-hero, .premium-hero, .premium-analytics-hero) h1 {
+  color: var(--shell-text) !important;
+  font-size: clamp(1.7rem, 3.5vw, 3rem) !important;
+  line-height: 1.12;
+}
+
+body.vaos-shell :is(.graph-stage, .universe-canvas) {
+  background: var(--shell-canvas) !important;
+}
+
+body.vaos-shell.knowledge-workspace .graph-node circle {
+  fill: var(--shell-accent);
+}
+
+body.vaos-shell.knowledge-workspace #load-graph {
+  color: #102039 !important;
+}
+
+body.vaos-shell.va-premium.workspace-body :is(.control-sidebar, .sidebar-footer) {
+  background: var(--shell-surface) !important;
+  border-color: var(--shell-line) !important;
+}
+
+body.vaos-shell.va-premium.workspace-body :is(.workspace-search, .workspace-brief, #vaos-main-voice) {
+  background: var(--shell-surface) !important;
+  border-color: var(--shell-line) !important;
+}
+
+body.vaos-shell.va-premium.workspace-body .control-main {
+  width: min(100%, var(--shell-width));
+  margin-inline: auto;
+}
+
+body.vaos-shell.va-premium.workspace-body .workspace-workbench {
+  grid-template-columns: minmax(0, 1fr);
+  width: min(100%, 920px);
+  margin-inline: auto;
+  gap: 24px;
+}
+
+body.vaos-shell.va-premium.workspace-body .workspace-hero,
+body.vaos-shell.va-premium.workspace-body .workspace-search,
+body.vaos-shell.va-premium.workspace-body .command-status,
+body.vaos-shell.va-premium.workspace-body :is(.workspace-details, .kinetic-intro) {
+  width: min(100%, 920px);
+  margin-inline: auto !important;
+}
+
+body.vaos-shell.va-premium.workspace-body #module-title {
+  font-size: clamp(2rem, 4.4vw, 3.8rem) !important;
+  letter-spacing: -.05em !important;
+}
+
+body.vaos-shell.va-premium.workspace-body .workspace-workbench > #vaos-main-voice {
+  border-radius: var(--shell-radius) !important;
+  padding: clamp(16px, 3vw, 30px) !important;
+}
+
+body.vaos-shell.va-premium.workspace-body #vaos-main-voice .va-voice-widget__intro h2 {
+  font-size: clamp(1.2rem, 2.4vw, 1.7rem);
+}
+
+body.vaos-shell.va-premium.workspace-body #vaos-main-voice :is(.va-voice-response, .va-wake-controls, .va-voice-toolbar, .fc-voice-settings) {
+  background: var(--shell-canvas) !important;
+  border-color: var(--shell-line) !important;
+}
+
+body.vaos-shell.va-premium.workspace-body .workspace-brief {
+  padding: clamp(14px, 2vw, 20px) !important;
+}
+
+body.vaos-shell.va-premium.workspace-body .workspace-brief .fc-metrics {
+  border-radius: 8px;
+}
+
+@media (min-width: 1000px) {
+  body.vaos-shell.va-premium.workspace-body .workspace-brief .fc-metrics {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+body.vaos-shell.cinematic-login .cinematic-layout {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 560px;
+  margin-inline: auto;
+  padding-inline: 18px;
+}
+
+body.vaos-shell.cinematic-login .access-console {
+  max-width: 100%;
+  width: 100%;
+  border-color: var(--shell-line) !important;
+  background: var(--shell-surface) !important;
+  box-shadow: none !important;
+}
+
+@media (max-width: 760px) {
+  body.vaos-shell [data-vaos-header][data-vaos-ready] {
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  body.vaos-shell [data-vaos-header] .vaos-primary-nav {
+    flex: 1 0 100%;
+    width: 100%;
+    order: 3;
+    position: relative;
+  }
+
+  body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a, summary) {
+    padding-inline: 7px;
+    font-size: .78rem !important;
+  }
+
+  .vaos-workspace-menu {
+    position: static;
+  }
+
+  .vaos-workspace-directory {
+    left: 0;
+    right: 0;
+    width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: 64vh;
+    overflow: auto;
+  }
+}
+
+body.vaos-shell.cinematic-login :is(.cinematic-scene, .cinematic-identity, .access-console__scan) {
+  display: none;
+}
+
+body.vaos-shell.cinematic-login .cinematic-chrome {
+  background: var(--shell-surface);
+  border-bottom: 1px solid var(--shell-line);
+}

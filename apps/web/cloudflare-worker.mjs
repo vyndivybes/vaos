@@ -193,7 +193,7 @@ function jsonError(status, code, message) {
 }
 
 function uncachedWorkspaceAsset(path, response) {
-  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html', '/market-intelligence.html', '/neural-knowledge.html'].includes(path);
+  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html', '/market-intelligence.html', '/neural-knowledge.html', '/spatial-command.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
   const isWorkspaceStylesheet = path.endsWith('.css');
   if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;

@@ -1041,3 +1041,12 @@ body.vaos-shell .av-dashboard-error {
   color: #805016 !important;
   background: #fff1da !important;
 }
+body.vaos-shell :is(footer,footer span,.explorer-footer,.explorer-footer span,
+ .notice,.connected-list,.node-results,.vc-auth-status,.orb-caption,#source-count,
+ .section-divider span,.public-market-box span) { color: var(--shell-muted) !important; }
+body.vaos-shell :is(.notice,.notice.is-ready) {
+  background: var(--shell-raised) !important;
+  border-color: var(--shell-line) !important;
+}
+body.vaos-shell .notice.is-hold { color: #805016 !important; background: #fff1da !important; }
+body.vaos-shell #personal-google-connect { color: var(--shell-accent) !important; }

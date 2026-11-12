@@ -73,7 +73,8 @@ export function mountFactoryTwin(host,source){
   if(!ctx||disposed)return;
   const {w,h}=resize();
   ctx.clearRect(0,0,w,h);
-  ctx.fillStyle='#091520';ctx.fillRect(0,0,w,h);
+  const theme=getComputedStyle(canvas),paper=theme.getPropertyValue('--shell-canvas').trim()||'#f7f6f1',ink=theme.getPropertyValue('--shell-text').trim()||'#192a23';
+  ctx.fillStyle=paper;ctx.fillRect(0,0,w,h);
   const size=Math.min(w/24,h/18)*zoom;
   const center={x:w/2,y:h*.54};
   const projection=(p)=>{
@@ -82,7 +83,7 @@ export function mountFactoryTwin(host,source){
    const dist=Math.max(.6,1+depth*.018);
    return {x:center.x+dx*size/dist,y:center.y-(p.y*Math.cos(pitch)-depth*Math.sin(pitch))*size/dist,depth};
   };
-  const segment=(a,b,color='#23424c',thickness=1)=>{
+  const segment=(a,b,color='#cbd6cb',thickness=1)=>{
    const p=projection(a),q=projection(b);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.lineTo(q.x,q.y);ctx.strokeStyle=color;ctx.lineWidth=thickness;ctx.stroke();
   };
   for(let i=-8;i<=8;i++){
@@ -107,8 +108,8 @@ export function mountFactoryTwin(host,source){
    polygon([A,B,C,D],colors[0],'#b8c5c7');
    const point=projection({x,y:base+h+.2,z});pick.push({...point,id:s.id});
    ctx.font='600 12px system-ui';ctx.textAlign='center';
-   ctx.strokeStyle='#08131d';ctx.lineWidth=3;ctx.strokeText(s.label,point.x,point.y-10);
-   ctx.fillStyle='#e9f3f3';ctx.fillText(s.label,point.x,point.y-10);
+   ctx.strokeStyle=paper;ctx.lineWidth=3;ctx.strokeText(s.label,point.x,point.y-10);
+   ctx.fillStyle=ink;ctx.fillText(s.label,point.x,point.y-10);
    if(selected===s.id){
     ctx.beginPath();ctx.arc(point.x,point.y-4,8,0,Math.PI*2);ctx.strokeStyle='#ffe1a1';ctx.lineWidth=2;ctx.stroke();
    }
@@ -119,9 +120,9 @@ export function mountFactoryTwin(host,source){
    segment({...stations[i-1],y:.15},{...stations[i],y:.15},'#bba675',1.6);
   }
   ctx.setLineDash([]);ctx.lineDashOffset=0;
-  ctx.fillStyle='#c6d4da';ctx.font='12px system-ui';ctx.textAlign='left';
+  ctx.fillStyle=ink;ctx.font='12px system-ui';ctx.textAlign='left';
   ctx.fillText('CONCEPTUAL 3D TOPOLOGY · NO LIVE TELEMETRY',20,26);
-  ctx.fillStyle='#94aabd';ctx.fillText('Drag to orbit · Scroll to zoom · Click station',20,h-21);
+  ctx.fillStyle=ink;ctx.fillText('Drag to orbit · Scroll to zoom · Click station',20,h-21);
   canvas._stationPick=pick;
  }
  const pointerDown=e=>{drag={x:e.clientX,y:e.clientY,moved:false};canvas.setPointerCapture(e.pointerId);};

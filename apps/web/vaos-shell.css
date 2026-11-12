@@ -1,15 +1,36 @@
 :root {
-  --shell-canvas: #101318;
-  --shell-surface: #181d25;
-  --shell-raised: #222a36;
-  --shell-line: #394455;
-  --shell-text: #f0f4f8;
-  --shell-muted: #aebbc9;
-  --shell-accent: #a5c7ff;
-  --shell-accent-bg: #233653;
+  color-scheme: light;
+  --shell-canvas: #f7f6f1;
+  --shell-surface: #fff;
+  --shell-raised: #eeefe8;
+  --shell-line: #d9ded5;
+  --shell-text: #192a23;
+  --shell-muted: #506458;
+  --shell-accent: #205b45;
+  --shell-accent-bg: #e4eee4;
   --shell-width: 1440px;
   --shell-radius: 12px;
   --shell-font: Manrope, "Segoe UI", system-ui, sans-serif;
+}
+
+/* Shared palette aliases keep legacy page components on the same theme. */
+html {
+  background: var(--shell-canvas);
+}
+
+body.vaos-shell {
+  --bg: var(--shell-canvas);
+  --surface: var(--shell-surface);
+  --surface2: var(--shell-raised);
+  --line: var(--shell-line);
+  --text: var(--shell-text);
+  --muted: var(--shell-muted);
+  --gold: var(--shell-accent);
+  --cyan: var(--shell-accent);
+  --vaos-elevated: var(--shell-raised);
+  --vaos-accent-hover: #174633;
+  --p-deep: var(--shell-raised) !important;
+  color-scheme: light !important;
 }
 
 body.vaos-shell,
@@ -115,7 +136,7 @@ body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a:hover, a[aria-current
 }
 
 .vaos-workspace-menu > summary::after {
-  content: "⌄";
+  content: "?";
   margin-inline-start: 6px;
 }
 
@@ -718,4 +739,305 @@ body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .fc-voice-sett
   body.vaos-shell.workspace-body[data-jarvis-home] #vaos-wake-toggle {
     width: auto;
   }
+}
+/* One application theme. Page layouts remain owned by their feature styles. */
+body.vaos-shell:is(.va-premium, .knowledge-workspace, [data-vaos-view]) {
+  color-scheme: light !important;
+}
+body.vaos-shell :is(h1,h2,h3,h4,strong,dt,dd,label,legend) {
+  color: var(--shell-text) !important;
+}
+body.vaos-shell :is(p,small,figcaption,.eyebrow,.av-kicker,.vc-eyebrow) {
+  color: var(--shell-muted) !important;
+}
+body.vaos-shell :is(a,summary) { color: var(--shell-accent); }
+body.vaos-shell :is(h1,h2,h3,h4) { text-shadow: none !important; }
+body.vaos-shell :is(h1 em,h2 em) {
+  color: var(--shell-accent) !important;
+  -webkit-text-fill-color: var(--shell-accent);
+  background: none !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(input,select,textarea) {
+  background: var(--shell-surface) !important;
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+  border-radius: 7px !important;
+  accent-color: var(--shell-accent);
+}
+body.vaos-shell :is(input,textarea)::placeholder { color: var(--shell-muted) !important; opacity: 1; }
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(button,.va-button,.secondary,.mission-link,.founder-back) {
+  background: var(--shell-surface) !important;
+  color: var(--shell-accent) !important;
+  border: 1px solid var(--shell-line) !important;
+  border-radius: 7px !important;
+  box-shadow: none !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(button,.va-button):hover:not(:disabled) {
+  background: var(--shell-accent-bg) !important;
+  border-color: var(--shell-accent) !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(button[type=submit],.primary,.primary-button,.vc-primary,.av-primary,.primary-action,.universe-primary,.launch-cta,.knowledge-form button),
+body.vaos-shell #load-graph,
+body.vaos-shell.cinematic-login .access-console #submit-button,
+body.vaos-shell.workspace-body .workspace-search__action {
+  background: var(--shell-accent) !important;
+  color: #fff !important;
+  border-color: var(--shell-accent) !important;
+}
+body.vaos-shell :is(button,.va-button):disabled { opacity: .55; cursor: not-allowed; }
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(
+ .founder-panel,.mission-panel,.skills-panel,.prelaunch-panel,.jarvis-panel,
+ .mission-report,.mission-lookup,.mission-stats>div,.launch-brief,.launch-metric,
+ .launch-track,.launch-role,.employee,.source,.panel,.capabilities,.voice-stage,
+ .voice-core,.job,.answer,.saved-output,.g3-card,.data-agent-panel,.wa-stat,
+ .wa-period-card,.wa-action-card,.wa-role-card,.fc-metrics>*,.fc-chart-card,
+ .fc-domain,.fc-roster-disclosure,.domain-summary-card,.va-dashboard-fold,
+ .va-metric-dash,.va-voice-widget,.fc-employee,.vc-stage,.vc-command,.vc-assurance,
+ .av-panel,.av-import,.av-evidence,.summary>div,.explorer,.source-panel,.inspector,
+ .universe,.knowledge-search,.universe-stage,.universe-inspector,.trust-strip,
+ .va-panel,.va-subpanel,.insight-card,.module-panel,.control-panel,.domain-workspace,
+ .operational-workspace,.pulse-card,.sidebar-brand-card,.kinetic-feature,.kinetic-feature__body) {
+  background: var(--shell-surface) !important;
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+  border-radius: var(--shell-radius) !important;
+  box-shadow: none !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(
+ .vc-stage-heading,.av-panel-head,.explorer-head,.av-integrity,.av-chart-note,
+ .graph-toolbar,.graph-status,.source-icon,.read-only,.system-chip,.identity-chip,
+ .hero-status,.va-voice-response,.va-wake-controls,.va-voice-toolbar,.fc-voice-settings,
+ .av-status-block,.node-item,.related-item,.universe-toolbar,.universe-status,
+ .source-item,.vc-menu-item,.av-tab,summary) {
+  background: var(--shell-raised) !important;
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+  box-shadow: none !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(
+ .workspace-hero,.vc-hero,.av-hero,.market-hero,.mission-hero,.premium-hero,.premium-analytics-hero,
+ .login-shell,.login-brandbar,.auth-panel,.cinematic-chrome) {
+  background: var(--shell-canvas) !important;
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+  box-shadow: none !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(table,pre,code) {
+  background: var(--shell-surface) !important;
+  color: var(--shell-text) !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) :is(th,td) {
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+}
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) th,
+body.vaos-shell:is(.va-premium,.knowledge-workspace,[data-vaos-view]) tr:hover td {
+  background: var(--shell-raised) !important;
+}
+body.vaos-shell :is(.av-plot,.graph-stage,.universe-canvas) {
+  background: var(--shell-canvas) !important;
+  border-color: var(--shell-line) !important;
+}
+body.vaos-shell.knowledge-workspace .graph-node text {
+  fill: var(--shell-text);
+  stroke: var(--shell-canvas);
+}
+body.vaos-shell.knowledge-workspace .graph-node circle {
+  fill: var(--shell-accent);
+  stroke: var(--shell-surface);
+}
+body.vaos-shell.knowledge-workspace .graph-node:is(:hover,:focus,.is-selected) circle {
+  fill: #54876b;
+  stroke: var(--shell-text);
+}
+body.vaos-shell.knowledge-workspace .graph-link { stroke: #879a8d; }
+body.vaos-shell :is(.source-item[aria-pressed=true],.vc-menu-item[aria-current=page],.av-tab[aria-current=page]) {
+  background: var(--shell-accent-bg) !important;
+  color: var(--shell-accent) !important;
+  border-color: var(--shell-accent) !important;
+}
+body.vaos-shell :is(.source-item,.node-item,.related-item) :is(span,small,strong),
+body.vaos-shell :is(.summary,.inspector,.av-status-block,.av-chart-note,.av-integrity) :is(span,small,strong,dd) {
+  color: var(--shell-text) !important;
+}
+body.vaos-shell .vaos-workspace-directory {
+  box-shadow: 0 12px 30px #172a211f;
+}
+body.vaos-shell.workspace-body :is(.control-sidebar,.sidebar-footer) {
+  background: var(--shell-canvas) !important;
+}
+body.vaos-shell.workspace-body .control-sidebar .nav-item {
+  color: var(--shell-text) !important;
+  background: transparent !important;
+}
+body.vaos-shell.workspace-body .control-sidebar .nav-item:is(:hover,[aria-current=page]) {
+  background: var(--shell-accent-bg) !important;
+  color: var(--shell-accent) !important;
+}
+body.vaos-shell.workspace-body :is(.sidebar-footer a,.sidebar-footer span,.identity-chip strong) {
+  color: var(--shell-muted) !important;
+}
+body.vaos-shell .graph-status[data-state=hold],
+body.vaos-shell .login-status[data-state=error] {
+  background: #fff1da !important;
+  color: #805016 !important;
+}
+/* All authenticated pages share the home navigation rail. */
+@media (min-width:1024px) {
+  body.vaos-shell:has([data-vaos-header]) { padding-left: 205px !important; }
+  body.vaos-shell.workspace-body #control-shell:not([hidden]) { display: block !important; }
+  body.vaos-shell [data-vaos-header][data-vaos-ready] {
+    position: fixed !important;
+    inset: 0 auto 0 0;
+    width: 205px;
+    height: 100dvh;
+    padding: 22px 14px 80px !important;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 20px;
+    border: 0 !important;
+    border-right: 1px solid var(--shell-line) !important;
+    background: var(--shell-canvas) !important;
+    backdrop-filter: none;
+  }
+  body.vaos-shell [data-vaos-header] .vaos-primary-nav {
+    display: grid;
+    width: 100%;
+    flex: 1 0 auto;
+    align-content: start;
+  }
+  body.vaos-shell [data-vaos-header] :is(.brand,.va-app-brand,.vc-brand,.av-home,.header-brand) {
+    flex-wrap: wrap;
+    white-space: normal;
+    gap: 8px;
+  }
+  body.vaos-shell [data-vaos-header] .va-app-brand small { margin: 0; }
+  body.vaos-shell [data-vaos-header] .topbar-actions {
+    position: static;
+    margin-top: auto;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+  body.vaos-shell .vaos-workspace-directory {
+    top: 0;
+    left: calc(100% + 10px);
+    right: auto;
+    max-height: 70dvh;
+    overflow: auto;
+  }
+  body.vaos-shell.workspace-body .va-module-toggle {
+    display: flex !important;
+    justify-content: space-between;
+    position: fixed;
+    z-index: 101;
+    bottom: 16px;
+    left: 12px;
+    width: 181px;
+    min-height: 40px;
+    margin: 0;
+    padding: 9px;
+  }
+  body.vaos-shell.workspace-body .control-sidebar {
+    display: none;
+    position: fixed;
+    inset: auto auto 64px 12px;
+    z-index: 102;
+    width: 248px;
+    height: auto;
+    max-height: min(75vh,650px);
+    overflow: auto;
+    border: 1px solid var(--shell-line) !important;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px #172a2126 !important;
+  }
+  body.vaos-shell.workspace-body[data-modules-open] .control-sidebar { display: block; }
+}
+/* Feature surfaces, including content inserted after authentication. */
+body.vaos-shell :is(.av-intro,.av-dashboard-kpi,.av-dashboard-chart,.av-dashboard-legend,
+ .av-tabs,.vs-deck,.vs-stage,.vs-inspector,.vs-boundary,.vs-metrics>div,
+ .evi-summaries,.evi-source-row,.evi-empty,.evi-aggregates,.evi-signal-card,
+ .evi-signal-detail,.evi-signal-review,.evi-notice,.evi-card,.evi-inspector,
+ .public-market-box,.result,.kpi,.signal-list li,.archive-list li,.reference-list li,
+ .hero-steps span,.search-box,.filter-wrap,.visual-caption,.login-license,.cinematic-portal,
+ .vc-integrity,.av-panel-head a,#vc-open-view,.evi-open-source,.av-dashboard-open,
+ .vs-relation,.vs-mobile-node,.vs-footer,.vs-header,.vs-metric) {
+  background: var(--shell-surface) !important;
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+  box-shadow: none !important;
+}
+body.vaos-shell :is(.av-intro,.vs-header,.av-dashboard-kpi,.av-dashboard-chart)::before,
+body.vaos-shell :is(.av-intro,.vs-header,.av-dashboard-kpi,.av-dashboard-chart)::after {
+  background: none !important;
+  box-shadow: none !important;
+}
+body.vaos-shell :is(.av-intro,.vs-header) h1 {
+  color: var(--shell-text) !important;
+  -webkit-text-fill-color: var(--shell-text);
+}
+body.vaos-shell :is(.av-dashboard-chart,.av-plot,.av-dashboard-trend,.av-factory-preview) text {
+  fill: var(--shell-text) !important;
+}
+body.vaos-shell :is(.av-dashboard-chart,.av-dashboard-kpi,.av-dashboard-legend,
+ .vs-inspector,.vs-header,.evi-aggregates,.evi-summaries,.evi-inspector) :is(span,li) {
+  color: var(--shell-muted) !important;
+}
+body.vaos-shell :is(.av-heat-unknown,.bar-track,.evi-signal-track) {
+  background: var(--shell-raised) !important;
+  color: var(--shell-muted) !important;
+  border-color: var(--shell-line) !important;
+}
+body.vaos-shell .av-heat-measured {
+  background: rgba(68,130,98,var(--intensity));
+  color: var(--shell-text) !important;
+}
+body.vaos-shell .evi-signal-fill { background: var(--shell-accent); }
+body.vaos-shell .evi-signal-bar[data-review=true] .evi-signal-fill { background: #a96336; }
+body.vaos-shell :is(.skip,.vc-skip,.av-skip,.premium-skip):focus {
+  background: var(--shell-surface) !important;
+  color: var(--shell-accent) !important;
+  z-index: 120;
+}
+body.vaos-shell .av-intro { box-shadow: none !important; }
+body.vaos-shell [data-vaos-header] .brand { min-width: 0; }
+body.vaos-shell :is(.vs-hero,.vs-source,.vs-flow-summary,.vs-inspector-metric,
+ .av-dashboard-card,.av-dashboard-disclaimer,.market-competitor-list li,
+ .empty-emblem,.jarvis-presence,.evi-chart-card,.evi-rows-host,.evi-signal-bars,
+ .evi-signal-section,.evi-signal-summary,.login-license) {
+  background: var(--shell-surface) !important;
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+  box-shadow: none !important;
+}
+body.vaos-shell :is(.vs-hero-title h2,#signin-title) {
+  background: none !important;
+  -webkit-text-fill-color: var(--shell-text);
+}
+body.vaos-shell :is(.vs-hero,.av-dashboard-card)::before { background: none !important; }
+body.vaos-shell :is(.vs-stage-label,.vs-flow-cell span,.vs-inspector-metric span,.av-kpi-label,
+ .av-kpi-unit,.av-legend-item,.evi-dashboard,.market-competitor-list li,.av-dashboard-card) {
+  color: var(--shell-muted) !important;
+}
+body.vaos-shell .vs-node-label { fill: var(--shell-text) !important; }
+body.vaos-shell .vs-node-number { fill: #fff !important; }
+body.vaos-shell .vs-node-core { fill: var(--shell-accent); stroke: var(--shell-accent); }
+body.vaos-shell .vs-node-ring { fill: var(--shell-accent-bg); stroke: #789885; }
+body.vaos-shell .vs-node:focus-visible .vs-node-halo { stroke: var(--shell-text); }
+body.vaos-shell .av-dashboard-card text { fill: var(--shell-text); }
+body.vaos-shell :is(#mesh,.av-factory-canvas) { background: var(--shell-canvas) !important; }
+body.vaos-shell :is(.evi-filter-chip,.evi-source-row,.evi-signal-card)[aria-pressed=true] {
+  background: var(--shell-accent-bg) !important;
+  border-color: var(--shell-accent) !important;
+}
+body.vaos-shell :is(.status-pill,.tag,.source-flag,.decision) {
+  background: var(--shell-raised);
+  color: var(--shell-muted);
+  border-color: var(--shell-line);
+}
+body.vaos-shell .graph-status.is-hold,
+body.vaos-shell .av-dashboard-error {
+  color: #805016 !important;
+  background: #fff1da !important;
 }

@@ -14,7 +14,7 @@
 <script type="module" src="/historical-search-ui.mjs"></script>
 <link rel="stylesheet" href="/vaos-kinetic.css" />
 </head>
-<body>
+<body class="knowledge-workspace">
 <a class="skip-link" href="#graph-stage">Skip to knowledge graph</a>
 <header class="topbar">
  <a class="brand" href="/workspace"><span class="brand-mark" aria-hidden="true">V</span><span><strong>VAOS</strong><small>VĀYÚ SHASTR · GOVERNED INTELLIGENCE</small></span></a>
@@ -24,12 +24,9 @@
 <main>
  <section class="hero" aria-labelledby="page-title">
   <div class="hero-copy">
-   <p class="eyebrow">JARVIS / NEURAL INTELLIGENCE / SOURCE PROVENANCE</p>
-   <h1 id="page-title">One intelligence layer.<br><em>Every source accountable.</em></h1>
-   <p>Explore the VYNDI OS authority graph and approved SPARK knowledge snapshots. Relationships remain source-linked, time-aware and independent of approval authority.</p>
-   <div class="hero-pills"><span>Source lineage</span><span>Temporal relationships</span><span>Zero fabricated records</span></div>
+   <h1 id="page-title">Knowledge graph</h1>
+   <p>Explore connections and verify where each record came from.</p>
   </div>
-  <div class="hero-art" aria-hidden="true"><div class="orbit orbit-one"></div><div class="orbit orbit-two"></div><div class="orbit orbit-three"></div><div class="orbit-core"><span>V</span></div><i class="star star-one"></i><i class="star star-two"></i><i class="star star-three"></i><i class="star star-four"></i></div>
  </section>
  <section class="summary" aria-label="Current source measurements">
   <div><small>Knowledge sources</small><strong id="metric-sources">7</strong><span>Available source contracts</span></div>
@@ -39,31 +36,30 @@
  </section>
  <section class="hub" aria-label="Neural intelligence workspace">
   <aside class="source-panel" aria-label="Knowledge sources">
-   <div class="panel-heading"><p class="eyebrow">01 / SOURCE REGISTRY</p><h2>Knowledge systems</h2><p id="source-status" role="status" aria-live="polite">Checking founder-authorized source registry…</p></div>
+   <div class="panel-heading"><h2>Sources</h2><p id="source-status" role="status" aria-live="polite">Checking founder-authorized source registry…</p></div>
    <div id="source-list" class="source-list" role="group" aria-label="Select knowledge source"></div>
    <div class="panel-note"><strong>Neural Schema</strong><p>A verified interchange format, not a live neural service. All snapshots require a reviewed revision and SHA-256 content pin.</p></div>
   </aside>
   <section class="explorer" aria-labelledby="explorer-title">
    <div class="explorer-head">
-    <div><p class="eyebrow">02 / INTERACTIVE EXPLORER</p><h2 id="explorer-title">VYNDI OS · Authority graph</h2><p id="source-description">Read the signed, reviewed engineering graph</p></div>
-    <button class="primary-action" id="load-graph" type="button">Read governed source</button>
+    <div><h2 id="explorer-title">VYNDI OS · Authority graph</h2><p id="source-description">Read the signed, reviewed engineering graph</p></div>
+    <button class="primary-action" id="load-graph" type="button">Load source</button>
    </div>
    <div class="toolbar">
     <label class="search-box"><span aria-hidden="true">⌕</span><span class="visually-hidden">Search graph nodes</span><input type="search" id="node-query" placeholder="Find node, relationship or source reference…" autocomplete="off" maxlength="120"></label>
     <label class="filter-wrap"><span class="visually-hidden">Filter node types</span><select id="kind-filter"><option value="all">All node types</option></select></label>
     <div class="zoom-controls" aria-label="Graph zoom"><button id="zoom-out" type="button" aria-label="Zoom out">−</button><button id="reset-view" type="button" aria-label="Reset graph view">⟳</button><button id="zoom-in" type="button" aria-label="Zoom in">+</button></div>
    </div>
-   <div class="notice" id="graph-status" role="status" aria-live="polite">No source graph has been loaded. Select a source, then choose Read governed source.</div>
+   <div class="notice" id="graph-status" role="status" aria-live="polite">No source graph has been loaded. Select a source, then choose Load source.</div>
    <div class="graph-stage" id="graph-stage">
-    <div class="graph-halo" aria-hidden="true"></div>
-    <svg id="graph-svg" viewBox="-520 -325 1040 650" role="img" aria-label="Interactive source graph, showing only verified-returned nodes and edges"><title>No graph loaded</title></svg>
+    <svg id="graph-svg" viewBox="-520 -325 1040 650" role="group" aria-label="Interactive source graph"><title>No graph loaded</title></svg>
     <div id="graph-empty" class="empty-state"><span class="empty-emblem" aria-hidden="true">◎</span><h3>Awaiting a qualified source</h3><p>No demo nodes are created. Connect an approved source to reveal its real graph.</p></div>
     <div class="graph-legend"><span><i class="legend-dot"></i>Observed nodes</span><span><i class="legend-line"></i>Source relationships</span><span>Drag to pan · Scroll to zoom</span></div>
    </div>
    <div class="explorer-footer"><span id="view-count">No data displayed</span><span>Read only · No inference-based approvals</span></div>
   </section>
   <aside class="inspector" aria-label="Node details and source lineage">
-   <div class="panel-heading"><p class="eyebrow">03 / EVIDENCE INSPECTOR</p><h2 id="selected-title">Select a graph node</h2><p>Inspect the original source and associated facts before making decisions.</p></div>
+   <div class="panel-heading"><h2 id="selected-title">Select a graph node</h2><p>Inspect the original source and associated facts before making decisions.</p></div>
    <section class="inspector-section"><h3>Node details</h3><dl id="details"><dt>State</dt><dd>No node selected</dd></dl></section>
    <section class="inspector-section"><h3>Connected nodes</h3><div id="related-nodes" class="connected-list">Select a node to inspect relationships.</div></section>
    <section class="inspector-section"><h3>Source evidence</h3><dl id="lineage"><dt>Qualification</dt><dd>Awaiting source retrieval</dd></dl></section>

@@ -83,7 +83,7 @@ function chooseSource(source){
  clearDisplay('No synthetic records are displayed. '+guidance(activeSource));
  const registry=sourceRegistry.get(activeSource);
  if(registry?.status==='NOT_COMMISSIONED')status(sourceReadiness(registry.status)+'. '+guidance(activeSource),'hold');
- else status('Selected '+SOURCE_INFO.find(s=>s.id===activeSource).label+'. Choose Read governed source.');
+ else status('Selected '+SOURCE_INFO.find(s=>s.id===activeSource).label+'. Choose Load source.');
 }
 async function readRegistry(){
  try{
@@ -155,7 +155,7 @@ function renderGraph(){
  const layout=new Map(graphPositions(view.nodes).map(row=>[row.id,row]));
  svg.replaceChildren();
  const title=svgNode('title');title.textContent=currentGraph.source+' graph, '+view.nodes.length+' visible nodes and '+view.edges.length+' visible relationships';svg.append(title);
- const plot=svgNode('g');plotGroup=plot;
+ const plot=svgNode('g',{class:view.nodes.length>18?'graph-dense':'graph-sparse'});plotGroup=plot;
  const links=svgNode('g',{'aria-hidden':'true'});
  for(const edge of view.edges){
   const a=layout.get(edge.from),b=layout.get(edge.to);
@@ -170,9 +170,17 @@ function renderGraph(){
   const attrs={class:'graph-node'+(selectedNodeId===node.id?' is-selected':''),tabindex:0,role:'button','aria-label':'Inspect '+node.label,transform:'translate('+pos.x+' '+pos.y+')'};
   const g=svgNode('g',attrs);
   g.append(svgNode('circle',{r:selectedNodeId===node.id?9:6.5,cx:0,cy:0}));
-  if(view.nodes.length<=70){const text=svgNode('text',{x:12,y:3});text.textContent=node.label.slice(0,30);g.append(text);}
+  const labelOnLeft=pos.x>180;
+  const text=svgNode('text',{x:labelOnLeft?-12:12,y:4,'text-anchor':labelOnLeft?'end':'start','aria-hidden':'true'});
+  text.textContent=node.label.length>40?node.label.slice(0,39)+'…':node.label;
+  g.append(text);
   g.addEventListener('click',()=>inspectNode(node.id));
-  g.addEventListener('keydown',event=>{if(event.key==='Enter'||event.key===' '){event.preventDefault();inspectNode(node.id);}});
+  g.addEventListener('keydown',event=>{
+   if(event.key!=='Enter'&&event.key!==' ')return;
+   event.preventDefault();
+   inspectNode(node.id);
+   svg.querySelector('.graph-node.is-selected')?.focus();
+  });
   nodes.append(g);
  }
  plot.append(nodes);svg.append(plot);updateTransform();

@@ -10,17 +10,17 @@ test('live cockpit precedes the optional and collapsed gallery on initial load',
  const command=html.indexOf('<form class="workspace-search');
  const cockpit=html.indexOf('<section id="command-view"');
  const module=html.indexOf('<section id="module-view"');
- assert.ok(command>=0&&cockpit>command&&start>cockpit&&module>start,
-  'Search and live command cockpit must appear before the optional illustrated tour');
+ assert.ok(cockpit>=0&&command>cockpit&&start>command&&module>start,
+  'The JARVIS home and governed command form must appear before the optional tour');
  const first=html.slice(start,module);
  assert.match(first,/Workspace tour/);
  const workbench=html.slice(cockpit,start);
  assert.match(workbench,/class="workspace-workbench"/);
  assert.ok(workbench.indexOf("vaos-main-voice")<workbench.indexOf("founder-cockpit"));
- assert.match(workbench,/<details class="workspace-suggestions">\s*<summary>Suggested questions<\/summary>/);
+ assert.match(workbench,/class="fc-prompts workspace-suggestions"/);
  assert.match(workbench,/<details class="workspace-details">/);
  assert.doesNotMatch(workbench,/<details class="workspace-details" open/);
- assert.doesNotMatch(html.slice(command,cockpit),/class="kinetic-gallery"/);
+ assert.doesNotMatch(html.slice(cockpit,command),/class="kinetic-gallery"/);
  assert.match(first,/<details\b[^>]*class="kinetic-exhibition"[^>]*>/);
  assert.doesNotMatch(first,/<details\b[^>]*class="kinetic-exhibition"[^>]*\bopen\b/);
  assert.ok(first.indexOf('<summary')<first.indexOf('class="kinetic-gallery"'));

@@ -339,3 +339,383 @@ body.vaos-shell.cinematic-login .access-console #submit-button {
   border-color: var(--shell-accent) !important;
   color: #17253a !important;
 }
+
+/* JARVIS home uses a light, single-column reading surface. */
+body.vaos-shell.workspace-body[data-jarvis-home] {
+  --shell-canvas: #f7f6f1;
+  --shell-surface: #fff;
+  --shell-raised: #eeefe8;
+  --shell-line: #d9ded5;
+  --shell-text: #192a23;
+  --shell-muted: #506458;
+  --shell-accent: #205b45;
+  --shell-accent-bg: #e4eee4;
+  color-scheme: light !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] :is(.control-shell, .control-main, [data-vaos-header][data-vaos-ready], .control-sidebar, .sidebar-footer) {
+  background: var(--shell-canvas) !important;
+  color: var(--shell-text) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] [data-vaos-header] :is(.header-brand__copy strong, .header-brand__copy small, .identity-chip strong) {
+  color: var(--shell-text) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-workspace-directory {
+  background: var(--shell-surface);
+  box-shadow: 0 12px 30px #172a211f;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .control-main {
+  width: min(100%, 1060px);
+  padding: clamp(20px, 4vw, 52px) clamp(16px, 5vw, 64px) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-hero {
+  margin-bottom: 0 !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] :is(#module-description, #control-plane-status, .command-status) {
+  color: var(--shell-muted) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #control-plane-status {
+  background: var(--shell-accent-bg) !important;
+  border-color: var(--shell-line) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-workbench {
+  gap: 26px;
+  margin-top: 8px;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-workbench > :is(#vaos-main-voice, .workspace-brief) {
+  padding: 0 !important;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice :is(.va-voice-widget__intro, .va-voice-label) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-compose {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--shell-line);
+  border-radius: 10px;
+  background: var(--shell-surface);
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice :is(input:not([type="checkbox"]), select) {
+  border-color: var(--shell-line) !important;
+  background: var(--shell-surface) !important;
+  color: var(--shell-text) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-voice-question {
+  grid-column: auto;
+  border: 0 !important;
+  padding-inline: 10px;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-voice-question::placeholder {
+  color: var(--shell-muted);
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-voice-ask {
+  background: var(--shell-accent) !important;
+  border-color: var(--shell-accent) !important;
+  color: white !important;
+  border-radius: 6px !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice :is(.va-voice-response, .va-wake-controls, .va-voice-toolbar, .fc-voice-settings) {
+  background: var(--shell-surface) !important;
+  border-color: var(--shell-line) !important;
+  color: var(--shell-text) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice :is(#vaos-voice-answer, .va-voice-status, .va-wake-status, .va-wake-instructions, .va-wake-indicator, .va-voice-switch) {
+  color: var(--shell-muted) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .fc-prompts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .fc-prompts :is(button, a) {
+  padding: 4px 0;
+  border: 0 !important;
+  background: transparent !important;
+  color: var(--shell-accent) !important;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] :is(#vaos-voice-mic, #vaos-wake-toggle, #cockpit-refresh, #logout-button, .va-module-toggle) {
+  border-color: var(--shell-line) !important;
+  background: var(--shell-raised) !important;
+  color: var(--shell-accent) !important;
+  box-shadow: none !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-wake-controls {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .va-wake-indicator {
+  background: var(--shell-accent-bg);
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .va-wake-instructions {
+  font-size: .76rem;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-voice-stop:disabled {
+  display: none;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-intro {
+  flex-direction: row;
+  align-items: center;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0;
+  border: 0;
+  border-top: 1px solid var(--shell-line);
+  background: transparent;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics > :is(a, button) {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 3px 12px;
+  padding: 10px 2px !important;
+  border: 0 !important;
+  border-bottom: 1px solid var(--shell-line) !important;
+  background: transparent !important;
+  color: var(--shell-text) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics > :hover {
+  background: var(--shell-accent-bg) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics :is(small, strong) {
+  font-size: .96rem !important;
+  color: var(--shell-text) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics span {
+  grid-column: 1 / -1;
+  color: var(--shell-muted) !important;
+  font-size: .75rem;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-command-link {
+  display: inline-block;
+  margin-top: 14px;
+  color: var(--shell-accent) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] :is(.workspace-details, .vaos-command-disclosure, .kinetic-exhibition, .fc-voice-settings) > summary {
+  background: var(--shell-surface) !important;
+  color: var(--shell-accent) !important;
+  border-color: var(--shell-line) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .kinetic-exhibition > summary strong {
+  color: var(--shell-accent) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .control-sidebar .nav-item {
+  color: var(--shell-text) !important;
+  border-color: var(--shell-line) !important;
+  background: var(--shell-surface) !important;
+}
+
+@media (min-width: 1024px) {
+  body.vaos-shell.workspace-body[data-jarvis-home] #control-shell:not([hidden]) {
+    grid-template-columns: 205px minmax(0, 1fr) !important;
+    grid-template-rows: 1fr auto;
+    align-items: start;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] [data-vaos-header][data-vaos-ready] {
+    grid-area: 1 / 1 / 3 / 2;
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 20px;
+    padding: 22px 14px 80px;
+    border: 0 !important;
+    border-right: 1px solid var(--shell-line) !important;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] [data-vaos-header] .vaos-primary-nav {
+    display: grid;
+    width: 100%;
+    align-content: start;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] .vaos-workspace-directory {
+    top: 0;
+    left: calc(100% + 10px);
+    right: auto;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] .topbar-actions {
+    margin-top: auto;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] .control-main {
+    grid-area: 1 / 2 / 2 / 3;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] .va-module-toggle {
+    display: flex !important;
+    justify-content: space-between;
+    position: fixed;
+    z-index: 101;
+    bottom: 16px;
+    left: 12px;
+    width: 181px;
+    min-height: 40px;
+    margin: 0;
+    padding: 9px;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] .control-sidebar {
+    display: none;
+    position: fixed;
+    inset: auto auto 64px 12px;
+    z-index: 102;
+    width: 248px;
+    height: auto;
+    max-height: min(75vh, 650px);
+    overflow: auto;
+    border: 1px solid var(--shell-line) !important;
+    border-radius: 8px;
+    box-shadow: 0 10px 30px #172a2126 !important;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home][data-modules-open] .control-sidebar {
+    display: block;
+  }
+}
+
+@media (max-width: 520px) {
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-compose {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-voice-mic {
+    grid-column: 2;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-voice-ask {
+    grid-column: 1 / -1;
+  }
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-workbench > #vaos-main-voice {
+  order: -1;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .va-voice-response:has(#vaos-voice-answer:empty):has(#vaos-voice-sources:empty) {
+  display: none;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] :is(.fc-runtime-details, .kinetic-exhibition, .workspace-license) {
+  background: var(--shell-canvas) !important;
+  border-color: var(--shell-line) !important;
+  color: var(--shell-muted) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] :is(.fc-runtime-details, .kinetic-exhibition) > summary,
+body.vaos-shell.workspace-body[data-jarvis-home] #jarvis-google-calendar-connect {
+  background: var(--shell-surface) !important;
+  color: var(--shell-accent) !important;
+  border-color: var(--shell-line) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .kinetic-intro__footnote,
+body.vaos-shell.workspace-body[data-jarvis-home] .kinetic-intro__footnote strong {
+  color: var(--shell-muted) !important;
+}
+
+@media (min-width: 1024px) {
+  body.vaos-shell.workspace-body[data-jarvis-home] [data-vaos-header] .vaos-primary-nav {
+    flex: 1 0 auto;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] .topbar-actions {
+    position: static;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+  }
+}
+
+@media (max-width: 520px) {
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice #vaos-voice-question {
+    grid-area: 1 / 1;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice #vaos-voice-mic {
+    grid-area: 1 / 2;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice #vaos-voice-ask {
+    grid-area: 2 / 1 / 3 / 3;
+  }
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-wake-instructions {
+  display: none;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .fc-voice-settings > summary {
+  min-height: 36px;
+  padding: 6px 0;
+  border: 0 !important;
+  background: transparent !important;
+}
+
+@media (max-width: 520px) {
+  body.vaos-shell.workspace-body[data-jarvis-home] [data-vaos-header] .vaos-primary-nav > :is(a, details > summary) {
+    padding-inline: 5px;
+    font-size: .74rem !important;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-wake-controls {
+    flex-wrap: nowrap;
+  }
+
+  body.vaos-shell.workspace-body[data-jarvis-home] #vaos-wake-toggle {
+    width: auto;
+  }
+}

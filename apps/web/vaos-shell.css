@@ -265,7 +265,7 @@ body.vaos-shell.cinematic-login .access-console {
   box-shadow: none !important;
 }
 
-@media (max-width: 760px) {
+@media (max-width: 1023px) {
   body.vaos-shell [data-vaos-header][data-vaos-ready] {
     gap: 6px;
     flex-wrap: wrap;

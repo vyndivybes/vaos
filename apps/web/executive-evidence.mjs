@@ -5,7 +5,7 @@ import {deriveEvidenceView,filterEvidenceRows,resolveEvidencePeriod} from './lib
 import {deriveExecutiveSignals} from './lib/executive-signals-model.mjs';
 import {renderExecutiveSignals} from './executive-signals-view.mjs';
 
-const PALETTE={observed:'#cfff59',attention:'#ffb6aa',partial:'#f1cf84',other:'#a9abb8'};
+const PALETTE={observed:'var(--shell-accent, #205b45)',attention:'#a54732',partial:'#956b20',other:'#63746b'};
 const TITLES={observed:'Readable source',attention:'Needs attention',partial:'Partial or stale source',other:'Other or unknown'};
 const el=(tag,cls,text)=>{
  const node=document.createElement(tag);

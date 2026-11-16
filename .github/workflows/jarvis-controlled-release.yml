@@ -10,9 +10,9 @@ on:
       - 'apps/web/lib/adaptive-intelligence.mjs'
       - 'apps/web/main-voice.mjs'
       - 'apps/web/api/voice-speech.mjs'
-      - 'apps/web/lib/elevenlabs-speech.mjs'
+      - 'apps/web/lib/gemini-speech.mjs'
       - 'apps/web/lib/local-neural-speech.mjs'
-      - 'integrations/elevenlabs/**'
+      - 'integrations/gemini-tts/**'
       - 'apps/web/api/jarvis-multimodal.mjs'
       - 'apps/web/api/jarvis-multimodal.test.mjs'
       - 'apps/web/lib/g7-source-evidence.mjs'
@@ -114,7 +114,7 @@ jobs:
 
   # The only job that can reach Cloudflare. The `production-deploy` environment must
   # have required reviewers and be restricted to the main branch (repo Settings ->
-  # Environments); CLOUDFLARE_API_TOKEN and ELEVENLABS_API_KEY belong in that
+  # Environments); CLOUDFLARE_API_TOKEN belongs in that
   # environment's secrets, not repository secrets.
   deploy:
     needs: verify
@@ -145,13 +145,5 @@ jobs:
         run: |
           set -euo pipefail
           test "$(git ls-remote origin refs/heads/main | cut -f1)" = "$EXPECTED_SHA"
-      - name: Install approved personal-test ElevenLabs credential
-        env:
-          ELEVENLABS_API_KEY: ${{ secrets.ELEVENLABS_API_KEY }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          test -n "$ELEVENLABS_API_KEY"
-          printf '%s' "$ELEVENLABS_API_KEY" | npx --yes wrangler@4.157.0 secret put ELEVENLABS_API_KEY --config wrangler.jsonc
       - name: Deploy existing Worker with governance controls retained
         run: npx --yes wrangler@4.157.0 deploy --config wrangler.jsonc

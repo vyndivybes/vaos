@@ -96,8 +96,8 @@
             <button type="button" id="vaos-wake-toggle" class="va-wake-toggle" aria-pressed="false" disabled>Start conversation</button>
             <button id="vaos-voice-stop" type="button" disabled>■ Stop</button>
             <div class="va-wake-readiness">
-              <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Wake-word microphone is off">Microphone off</span>
-              <span class="va-wake-instructions">Start hands-free listening for follow-up questions. Say “stop listening” or use the conversation button to stop.</span>
+              <span id="vaos-wake-indicator" class="va-wake-indicator" aria-label="Conversation microphone is off">Microphone off</span>
+              <span class="va-wake-instructions">Start once, then ask and follow up aloud. “Hey JARVIS” is optional when listening. Say “Hey JARVIS, stop” to interrupt or “stop listening” to end.</span>
             </div>
           </div>
           <p id="vaos-wake-status" class="va-wake-status" role="status" aria-live="polite">Hands-free listening is off.</p>
@@ -126,7 +126,7 @@
             <button type="button" id="vaos-voice-mic-check" class="va-mic-diagnostic__button">Check microphone access</button>
             <span id="vaos-voice-mic-diagnostic" role="status" aria-live="polite">Checking microphone readiness…</span>
           </div>
-          <p class="va-voice-privacy">Microphone is OFF by default. Hands-free listens only after you explicitly enable it, while this VAOS tab remains visible. The single microphone button listens for one question only. Business questions and paired computer tool requests may be asked directly in hands-free mode; “Hey VAOS” is optional. Say “stop listening” or select Stop to end the conversation. Browser speech recognition may use a vendor service; business actions remain blocked. PC actions and document creation require a separate clicked approval. No business approvals or agent dispatches occur here. For governed actions use Founder Command.</p>
+          <p class="va-voice-privacy">The microphone starts when you enable conversation and turns off when you end it or hide this tab. Interruption during a reply depends on browser and microphone support. Browser recognition may send microphone audio to its speech provider with your consent. PC actions and document creation still require a separate approval.</p>
           <a class="va-button va-button--outline" id="jarvis-google-calendar-connect" href="/api/google-workspace/start" aria-label="Connect Google Calendar to JARVIS">Connect Google Calendar ↗</a>
           </details>
         </section>
@@ -702,7 +702,7 @@
 
   <script type="module" src="/ontology-health.mjs?v=20261105-evidence-v1"></script>
   <script type="module" src="/workspace.mjs?v=20261012-erp-group"></script>
-  <script type="module" src="/main-voice.mjs?v=20261016-official-site-research-voice-v4"></script>
+  <script type="module" src="/main-voice.mjs?v=20261116-hands-free"></script>
 <script type="module" src="/vaos-interface.mjs"></script>
   <script type="module" src="/kinetic-wall.mjs"></script>
 </body>

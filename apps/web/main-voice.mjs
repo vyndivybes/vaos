@@ -7,13 +7,13 @@ import {createG5ResponseTiming,formatG5ResponseTiming} from './lib/g5-response-t
 import {createG6Conversation,createG6BargeInListener} from './lib/g6-conversation.mjs';
 import {isAdvisoryQuestion,isPublicIndustryResearchQuestion} from './lib/business-advice.mjs?v=20261105-public-research';
 import {planAdaptiveReads} from './lib/adaptive-read-planner.mjs';
-import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261016-audible-wake-v1';
+import {createWakeListener,extractFinalTranscript} from './lib/hey-vaos.mjs?v=20261116-hands-free';
 import {createVoiceReadback} from './lib/voice-readback.mjs?v=20261105-voice-error-detail';
 import {getMicrophoneReadiness,probeMicrophonePermission} from './lib/microphone-diagnostics.mjs';
-import {prepareLocalSpeech,chooseConversationSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
+import {acquireEchoCancelledInput,prepareLocalSpeech,chooseConversationSpeech,configureSpeechRecognition,SPEECH_LOCALES} from './lib/local-speech.mjs';
 import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
 import {founderLoginGreeting} from './lib/founder-voice-identity.mjs';
-import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady,neuralSpeechFailureMessage} from './lib/local-neural-speech.mjs';
+import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady,voiceOutputAuthorized,authorizeVoiceOutput,neuralSpeechFailureMessage} from './lib/local-neural-speech.mjs';
 import {mountConversationMemory,historicalQuery,formatHistoricalAnswer} from './lib/conversation-memory-ui.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // Business reads retain their original gates. Local tools require pairing and
@@ -231,7 +231,7 @@ function init(){
   note=$('vaos-voice-status'),sources=$('vaos-voice-sources'),speakToggle=$('vaos-voice-speech-toggle'),
   wakeToggle=$('vaos-wake-toggle'),wakeIndicator=$('vaos-wake-indicator'),wakeStatus=$('vaos-wake-status'),testSpeaker=$('vaos-voice-test'),replyLanguage=$('vaos-voice-language'),adaptive=$('vaos-voice-adaptive'),micCheck=$('vaos-voice-mic-check'),micDiagnostic=$('vaos-voice-mic-diagnostic');
  const SpeechRecognition=window.SpeechRecognition||window.webkitSpeechRecognition;
- let localSpeech=null,interruption=null,speechSetupGeneration=0,speechSetupPending=false;
+ let localSpeech=null,conversationInput=null,speechSetupGeneration=0,speechSetupPending=false;
  let recognition=null,controller=null,voiceEnabled=false,lastAnswer='',spokenAnswer='',busy=false,speechRun=0,wake=null,answerLanguage='en',capability='loading',micPermission='unknown',voiceRequestPending=false;
  let pendingReminderTitle=null;
  let authenticatedFounder=false,loginWelcome='';
@@ -262,7 +262,7 @@ function init(){
    state();
    // Signed-in founder requested a spoken greeting. No microphone/camera is opened.
    // A browser may block automatic audio; Replay answer remains available.
-   if(authenticatedFounder&&speakToggle?.checked===true){
+   if(authenticatedFounder&&speakToggle?.checked===true&&voiceOutputAuthorized()){
     const queued=player.speak(welcome);
     if(!queued)setStatus('Welcome back, Sir. Select Replay answer to hear the greeting.');
    }
@@ -277,10 +277,10 @@ function init(){
  const player=createVoiceReadback({
   synthesis:neuralSynthesis,UtteranceClass:NeuralUtterance,startTimeout:125000,
   language:()=>({ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'}[answerLanguage]||'en-US'),
-  onState:mode=>{if(mode==='QUEUED')setStatus('Voice queued; checking audio output.');
+  onState:mode=>{if(mode==='QUEUED'){setStatus('Voice queued; checking audio output.');startInterruption();}
     if(mode==='SPEAKING'){setStatus('VAOS is speaking.');startInterruption();}},
-  onError:code=>setStatus(/^(?:ELEVENLABS|NEURAL)_/.test(code)?neuralSpeechFailureMessage(code):'Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
-  onFinished:mode=>{stopInterruption();if(mode==='FINISHED')setStatus('Spoken answer completed.');wake?.resume();state();}
+  onError:code=>setStatus(/^(?:GOOGLE_TTS|NEURAL)_/.test(code)?neuralSpeechFailureMessage(code):'Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
+  onFinished:mode=>{if(mode==='FINISHED')setStatus('Spoken answer completed.');resumeConversation();state();}
  });
  const acknowledgement=createVoiceAcknowledgement({
   synthesis:neuralSynthesis,UtteranceClass:NeuralUtterance,startTimeout:125000,
@@ -289,7 +289,7 @@ function init(){
   onError:()=>setStatus('JARVIS acknowledgement could not play. Check browser audio; you can still type or use the microphone.'),
   onFinished:phase=>{
    // Do not re-capture JARVIS's wake acknowledgement as a new user question.
-   if(phase==='WAKE_READY'){wake?.resume({preserveQuestion:true});state();}
+   if(phase==='WAKE_READY'){resumeConversation({preserveQuestion:true});state();}
   }
  });
  const readiness=()=>getMicrophoneReadiness({capability,
@@ -303,41 +303,60 @@ function init(){
   if(wakeToggle)wakeToggle.disabled=!micState.mayListen||speechSetupPending;
   stop.disabled=!recognition&&!controller&&!player.active()&&!wake?.isEnabled()&&!speechSetupPending;
   speech.disabled=!lastAnswer||(!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!speechOutputReady();};
- localCompanion.subscribe(()=>{player.cancel();acknowledgement.cancel();state();});
- // One consented, local-only microphone at a time during synthesized speech.
- // Re-arm bounded short windows on long replies while playback is active.
- const ondeviceBarge=createG6BargeInListener({
+ localCompanion.subscribe(()=>{player.cancel();acknowledgement.cancel();if(!busy)resumeConversation();state();});
+ const interruptionListener=createG6BargeInListener({
   RecognitionClass:SpeechRecognition,
   getLocalLocale:()=>localSpeech?.status==='LOCAL_READY'?localSpeech.locale:null,
-  isSpeechActive:()=>player.active(),
+  getBrowserLocale:()=>localSpeech?.status==='BROWSER_READY'?localSpeech.locale:null,
+  getEchoTrack:()=>conversationInput?.track,
+  isSpeechActive:()=>busy||player.active()||acknowledgement.active(),
   isOptedIn:()=>wake?.isEnabled()===true&&document.visibilityState==='visible',
   allowQuestion:question=>{
+   if(!player.active()||pendingReminderTitle)return false;
    const resolved=conversation.resolve(question);
-   if(resolveFounderGoogleIntent(resolved.question)||resolveFounderCalendarReadIntent(resolved.question))return true;
+   const google=resolveFounderGoogleIntent(resolved.question);
+   if(google)return google.kind==='MAIL';
+   if(resolveFounderCalendarReadIntent(resolved.question))return true;
    const candidate=classifyDashboardQuestion(resolved.question);
    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported'
     &&(conversation.canFollowUp(question)||isDirectBusinessQuestion(question));
   },
   onDecision:result=>{
-   player.cancel();
+   if(result.kind==='END'){endConversation('Conversation ended. Microphone off.');return;}
+   cancel();
    if(result.kind==='STOP'){
-    setStatus('Spoken interruption received. Playback stopped.');
-    wake?.resume();state();return;
+    setStatus('Stopped. Ask another question when ready.');
+    resumeConversation();state();return;
    }
-   input.value=result.question;
    setStatus('Voice interrupted. Retrieving a fresh read-only answer.');
-   ask.click();
+   submitVoiceTurn(result.question);
   },
   onActivity:activity=>{
    if(wakeStatus&&wake?.isEnabled()){
-    if(activity==='SPEECH_START')wakeStatus.textContent='On-device voice detected during playback.';
+    if(activity==='SPEECH_START')wakeStatus.textContent='Speech detected during this turn.';
     if(activity==='SPEECH_END')wakeStatus.textContent='Voice ended; waiting for final transcript.';
-    if(activity==='LOCAL_UNAVAILABLE')wakeStatus.textContent='Local interruption unavailable. Use the mic or Stop control.';
+    if(activity==='LOCAL_UNAVAILABLE')wakeStatus.textContent='Voice interruption unavailable on this device. The Stop button is available.';
    }
   },
  });
- function stopInterruption(){ondeviceBarge.stop();}
- function startInterruption(){ondeviceBarge.start();}
+ function stopInterruption(){interruptionListener.stop();}
+ function startInterruption(){interruptionListener.start();}
+ function resumeConversation(options){
+  stopInterruption();
+  return wake?.resume(options);
+ }
+ function releaseConversationInput(){
+  const input=conversationInput;
+  conversationInput=null;
+  input?.stop();
+ }
+ function submitVoiceTurn(question){
+  input.value=question;
+  voiceRequestPending=true;
+  ask.click();
+  if(busy||player.active()||acknowledgement.active())startInterruption();
+  else resumeConversation();
+ }
 
  const cancel=()=>{
   acknowledgement.cancel();
@@ -348,16 +367,29 @@ function init(){
   player.cancel();
   busy=false;state();
  };
+ function endConversation(message){
+  speechSetupGeneration++;
+  speechSetupPending=false;
+  wake?.disable(message);
+  releaseConversationInput();
+  voiceRequestPending=false;
+  pendingReminderTitle=null;
+  cancel();
+  conversation.clear();
+  setStatus(message);
+  state();
+ }
  const speakAnswer=()=>{
-  if((!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!lastAnswer)return false;
+  if((!voiceEnabled&&!(authenticatedFounder&&lastAnswer===loginWelcome))||!lastAnswer||!voiceOutputAuthorized())return false;
   acknowledgement.cancel();
   wake?.pause();
   stopInterruption();
   const started=player.speak(spokenAnswer||lastAnswer);
-  if(!started)wake?.resume();
+  if(!started)resumeConversation();
   state();return started;
  };
  testSpeaker?.addEventListener('click',()=>{
+  if(!authorizeVoiceOutput())return;
   wake?.pause();
   stopInterruption();
   const started=player.speak('VAOS speaker test. If you can hear this voice, your browser audio output is working.');
@@ -396,7 +428,7 @@ function init(){
     :'Speech recognition failed. Select Check microphone for diagnostics.');
    state();
   };
-  active.onend=()=>{if(recognition===active){recognition=null;wake?.resume();state();}};
+  active.onend=()=>{if(recognition===active){recognition=null;resumeConversation();state();}};
   try{active.start();setStatus(available.status==='LOCAL_READY'?'Listening on this device.':'Listening once. Browser speech recognition may use a vendor service.');}
   catch{recognition=null;micPermission='unavailable';setStatus('Microphone could not start. Select Check microphone for diagnostics, or type the question.');}
   state();
@@ -416,11 +448,9 @@ function init(){
   }
   // Stop while the mic, hands-free or source request is active still ends
   // the session, invalidates late callbacks and clears conversation context.
-  wake?.disable('Hey VAOS switched off. Microphone stopped.');
-  voiceRequestPending=false;pendingReminderTitle=null;
-  cancel();conversation.clear();setStatus('Stopped. No business actions authorized. Conversation context cleared.');
+  endConversation('Stopped. Microphone off. Conversation context cleared.');
  });
- speech.addEventListener('click',speakAnswer);
+ speech.addEventListener('click',()=>{if(authorizeVoiceOutput())speakAnswer();});
  ask.addEventListener('click',async()=>{
   if(busy)return;
   const requestCameFromVoice=voiceRequestPending;
@@ -442,7 +472,7 @@ function init(){
     setStatus('Tool receipt ready. Website text and PC receipts do not grant business authority.');
     if(voiceEnabled&&speakToggle?.checked)speakAnswer();
    }catch(e){if(controller===abort&&!abort.signal.aborted){lastAnswer='';spokenAnswer='';answer.textContent='Tool unavailable: '+e.message;setStatus('Tool request did not complete.');}}
-   finally{if(controller===abort){controller=null;busy=false;if(!player.active())wake?.resume();state();}}
+   finally{if(controller===abort){controller=null;busy=false;if(!player.active())resumeConversation();state();}}
    return;
   }
   const historyWords=historicalQuery(input.value);
@@ -458,7 +488,7 @@ function init(){
     lastExchange={question,answer:lastAnswer};setStatus('Historical reference retrieved. No current business facts or permissions inferred.');
     if(voiceEnabled&&speakToggle?.checked)speakAnswer();
    }catch{if(controller===abort){answer.textContent='Historical recall unavailable. Connect the local companion, check its memory policy, and try again.';lastAnswer='';spokenAnswer='';setStatus('History unavailable.');}}
-   finally{clearTimeout(timer);if(controller===abort){controller=null;busy=false;if(!player.active())wake?.resume();state();}}
+   finally{clearTimeout(timer);if(controller===abort){controller=null;busy=false;if(!player.active())resumeConversation();state();}}
    return;
   }
   const exchangeQuestion=input.value;
@@ -473,7 +503,7 @@ function init(){
    if(action.kind==='NEED_TIME'||action.kind==='NEED_TITLE'){
     if(action.kind==='NEED_TIME')pendingReminderTitle=(pendingReminderTitle||resolved.question.replace(/^(?:please\s+)?(?:remind me to|schedule)\s*/i,'')).slice(0,110);
     answer.textContent=action.message;lastAnswer=action.message;spokenAnswer=action.message;setStatus('Calendar details required.');
-    if(voiceEnabled&&speakToggle?.checked)speakAnswer();else wake?.resume();state();return;
+    if(voiceEnabled&&speakToggle?.checked)speakAnswer();else resumeConversation();state();return;
    }
    pendingReminderTitle=null;
    wake?.pause();cancel();busy=true;answer.textContent='Checking connected Google Workspace…';sources.replaceChildren();state();
@@ -490,6 +520,8 @@ function init(){
      headers:save?{'Content-Type':'application/json',Accept:'application/json'}:{Accept:'application/json'},
      ...(save?{body:JSON.stringify({title:action.title,start:action.start,end:action.end,requestId:reqId})}:{})});
     const data=await result.json();
+    if(controller!==abort)return;
+    if(abort.signal.aborted)throw Error('Google Workspace request timed out.');
     if(result.status===401||result.status===403)throw Error('Google Workspace requires an authenticated founder session.');
     if(save){
      lastAnswer=data.saved===true&&data.status==='PASS'
@@ -509,15 +541,15 @@ function init(){
      :readCalendar?(data.status==='PASS'?'Google Calendar appointments retrieved.':'Calendar read unavailable.')
      :'Google Workspace search complete.');
     if(speakToggle?.checked&&voiceEnabled)speaking=speakAnswer()===true;
-   }catch{lastAnswer='Google Workspace request failed; no calendar save is confirmed.';answer.textContent=lastAnswer;setStatus(lastAnswer)}
-   finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
+   }catch{if(controller===abort){lastAnswer='Google Workspace request failed; no calendar save is confirmed.';answer.textContent=lastAnswer;setStatus(lastAnswer);}}
+   finally{clearTimeout(timer);if(controller===abort){controller=null;busy=false;if(!speaking)resumeConversation();state();}}
    return;
   }
   const intent=classifyDashboardQuestion(resolved.question);
   if(intent.kind==='DENY'){conversation.clear();setStatus('Read-only questions only. Commands, approvals, payments and changes must use governed VAOS controls.');return;}
   wake?.pause();
   cancel();busy=true;lastAnswer='';spokenAnswer='';answerLanguage='en';answer.textContent='Retrieving verified evidence…';sources.replaceChildren();state();
-  if(requestCameFromVoice)acknowledgement.announce('SOURCE_REQUESTED',{enabled:voiceEnabled&&speakToggle?.checked===true});
+  if(requestCameFromVoice)acknowledgement.announce('SOURCE_REQUESTED',{enabled:voiceEnabled&&speakToggle?.checked===true&&voiceOutputAuthorized()&&!wake?.isEnabled()});
   const requestedAt=performance.now();
   const abort=new AbortController();controller=abort;
   const timer=setTimeout(()=>abort.abort(),25000);
@@ -591,13 +623,14 @@ function init(){
    setStatus((expired?'Request timed out. Try again or check source connections.':
     'Read-only lookup unavailable.')+' · '+formatG5ResponseTiming(measured));
    if(speakToggle.checked&&voiceEnabled)speaking=speakAnswer()===true;
-  }finally{clearTimeout(timer);if(controller===abort)controller=null;busy=false;if(!speaking)wake?.resume();state();}
+  }finally{clearTimeout(timer);if(controller===abort){controller=null;busy=false;if(!speaking)resumeConversation();state();}}
  });
  input.addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();ask.click();}});
  wake=createWakeListener({
   configureRecognition:r=>{if(localSpeech?.status!=='LOCAL_READY'&&localSpeech?.status!=='BROWSER_READY')throw Error('SPEECH_CONSENT_REQUIRED');if('processLocally' in r)r.processLocally=localSpeech.status==='LOCAL_READY';r.lang=localSpeech.locale;},
+  startRecognition:r=>{const track=conversationInput?.track;if(track?.readyState==='live')r.start(track);else r.start();},
   onInterim:text=>{if(wakeStatus)wakeStatus.textContent='Listening: '+text+' (partial; not submitted)';},
-  onActivity:activity=>{if(wakeStatus)wakeStatus.textContent=activity==='SPEECH_START'?'Local speech detected.':'Waiting for the final transcript.';},
+  onActivity:activity=>{if(wakeStatus)wakeStatus.textContent=activity==='SPEECH_START'?'Speech detected.':'Waiting for the final transcript.';},
   RecognitionClass:SpeechRecognition,
   isVisible:()=>document.visibilityState==='visible',
   validateQuestion:q=>{
@@ -609,21 +642,23 @@ function init(){
   acceptDirectQuestion:q=>{try{if(planJarvisTool(q))return true;}catch{return false;}return isDirectBusinessQuestion(q)||Boolean(resolveFounderGoogleIntent(q))||Boolean(resolveFounderCalendarReadIntent(q))||conversation.canFollowUp(q);},
   onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey JARVIS.');},
    onPrompt:()=>{
-    if(!(voiceEnabled&&speakToggle?.checked===true))return;
+   if(!(voiceEnabled&&speakToggle?.checked===true&&voiceOutputAuthorized()))return;
     // The founder opted in before this callback; speech must not feed the mic.
     wake?.pause({preserveQuestion:true});
     const queued=acknowledgement.announce('WAKE_READY',{enabled:true});
-    if(!queued){wake?.resume({preserveQuestion:true});state();}
-    else setStatus('JARVIS heard your wake phrase; acknowledgement queued. Ask your question when listening resumes.');
+    if(!queued){resumeConversation({preserveQuestion:true});state();}
+    else {startInterruption();setStatus('JARVIS heard you. Ask your question when listening resumes.');}
    },
   onDraft:q=>{input.value=q;state();},
-  onConfirm:q=>{input.value=q;voiceRequestPending=true;ask.click();},
+  onConfirm:submitVoiceTurn,
+  onEndConversation:()=>endConversation('Conversation ended. Microphone off.'),
   onStatus:message=>{if(wakeStatus)wakeStatus.textContent=message;},
   onChange:info=>{
+   if(!info.enabled){releaseConversationInput();stopInterruption();conversation.clear();}
    if(wakeToggle){wakeToggle.setAttribute('aria-pressed',String(info.enabled));wakeToggle.textContent=info.enabled?'Stop conversation':'Start conversation';}
    if(wakeIndicator){
     wakeIndicator.dataset.mode=info.active?'listening':info.enabled?'paused':'off';
-    const stateLabel=info.active?'Microphone listening':info.enabled?'Microphone paused':'Microphone off';
+    const stateLabel=info.active?'Microphone listening':info.enabled?'Microphone on':'Microphone off';
     wakeIndicator.textContent=stateLabel;wakeIndicator.setAttribute('aria-label',stateLabel);
    }
    state();
@@ -631,30 +666,43 @@ function init(){
  });
  wakeToggle?.addEventListener('click',async()=>{
   if(!voiceEnabled||speechSetupPending)return;
-  if(wake.isEnabled()){wake.disable('Hands-free voice disabled. This tab no longer listens.');conversation.clear();}
+  if(wake.isEnabled()){endConversation('Conversation ended. Microphone off.');}
   else {
+   if(speakToggle?.checked===true)authorizeVoiceOutput();
    const generation=++speechSetupGeneration;speechSetupPending=true;state();
    const stillCurrent=()=>generation===speechSetupGeneration&&document.visibilityState==='visible'&&voiceEnabled;
    try{
    setStatus('Checking the on-device speech language pack…');
-   localSpeech=await prepareLocalSpeech(SpeechRecognition,replyLanguage?.value||'en');
+   const language=replyLanguage?.value||'en';
+   let speechMode=await prepareLocalSpeech(SpeechRecognition,language);
    if(!stillCurrent())return;
-   if(localSpeech.status!=='LOCAL_READY'&&window.confirm('Install the free browser speech language pack for local hands-free listening?'))localSpeech=await prepareLocalSpeech(SpeechRecognition,replyLanguage?.value||'en',{install:true});
+   if(speechMode.status!=='LOCAL_READY'&&window.confirm('Install the free browser speech language pack for local hands-free listening?'))speechMode=await prepareLocalSpeech(SpeechRecognition,language,{install:true});
    if(!stillCurrent())return;
-   localSpeech=await chooseConversationSpeech(localSpeech,{RecognitionClass:SpeechRecognition,language:replyLanguage?.value||'en',consent:async()=>window.confirm('On-device recognition is unavailable. Use browser speech recognition for this conversation? Your microphone audio may be sent to the browser provider. VAOS does not save this audio. No paid AI tokens are used.')});
+   speechMode=await chooseConversationSpeech(speechMode,{RecognitionClass:SpeechRecognition,language,consent:async()=>window.confirm('On-device recognition is unavailable. Use browser speech recognition for this conversation? Your microphone audio may be sent to the browser provider. VAOS does not save this audio.')});
    if(!stillCurrent())return;
-   if(['LOCAL_READY','BROWSER_READY'].includes(localSpeech.status)){
-    wake.enable();
+   if(['LOCAL_READY','BROWSER_READY'].includes(speechMode.status)){
+    const capture=await acquireEchoCancelledInput(globalThis.navigator?.mediaDevices);
+    if(!stillCurrent()){capture?.stop();return;}
+    localSpeech=speechMode;
+    conversationInput=capture;
+    capture?.track.addEventListener?.('ended',()=>{
+     if(conversationInput===capture)endConversation('Microphone disconnected. Start a new conversation to reconnect.');
+    },{once:true});
+    const turnInProgress=busy||player.active()||acknowledgement.active();
+    if(!wake.enable({initiallyPaused:turnInProgress}))releaseConversationInput();
+    else if(turnInProgress)startInterruption();
     // The founder initiated this gesture; welcome speech must not start the microphone itself.
-    if(lastAnswer.startsWith('Welcome back. I am JARVIS')&&speakToggle?.checked===true)speakAnswer();
+    if(!turnInProgress&&lastAnswer.startsWith('Welcome back. I am JARVIS')&&speakToggle?.checked===true)speakAnswer();
    }
    else setStatus('Local wake recognition is unavailable for this browser/language. The microphone button and typed questions remain available.');
+   }catch{
+    if(stillCurrent())endConversation('Microphone access failed. Check browser permissions and start again.');
    }finally{if(generation===speechSetupGeneration){speechSetupPending=false;state();}}
   }
   state();
  });
- replyLanguage?.addEventListener('change',()=>{speechSetupGeneration++;speechSetupPending=false;stopInterruption();localSpeech=null;conversation.clear();wake?.disable('Language changed. Enable local hands-free listening for the selected language.');state();});
- document.addEventListener('visibilitychange',()=>{wake.onVisibilityChange();if(document.visibilityState!=='visible'){speechSetupGeneration++;speechSetupPending=false;cancel();conversation.clear();state();}});
+ replyLanguage?.addEventListener('change',()=>{localSpeech=null;endConversation('Language changed. Start a new conversation to use it.');});
+ document.addEventListener('visibilitychange',()=>{if(document.visibilityState!=='visible')endConversation('Conversation paused because the tab is hidden. Start again when you return.');});
  const refreshVoiceCapability=async()=>{
   let mode='unavailable';
   try{
@@ -691,6 +739,6 @@ function init(){
    setStatus(readiness().message);
   }finally{micCheck.disabled=false;state();}
  });
- window.addEventListener('pagehide',()=>{speechSetupGeneration++;speechSetupPending=false;wake?.disable('Session ended; microphone off.');cancel();conversation.clear();},{once:true});
+ window.addEventListener('pagehide',()=>endConversation('Session ended. Microphone off.'),{once:true});
 }
 if(typeof document!=='undefined')init();

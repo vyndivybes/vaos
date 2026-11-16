@@ -3,7 +3,8 @@
  * without founder voice qualification and explicit in-page user gesture.
  */
 const WAKE=/^(?:hey[ ,.!?]+)?(?:jarvis|vaos|v[ .-]?a[ .-]?o[ .-]?s|vay[ .-]?os|vay[ .-]?us)(?=$|[ ,.!?:-])/i;
-const COMMAND_END=/^(?:(?:hey )?jarvis[, ]+)?(?:stop listening|end conversation|stop conversation)[.! ]*$/i;
+const COMMAND_END=/^(?:(?:hey )?(?:jarvis|vaos)[, ]+)?(?:stop listening|end (?:the )?conversation|stop (?:the )?conversation)[.! ]*$/i;
+export const isEndConversation = text => typeof text==='string'&&COMMAND_END.test(text.trim());
 const COMMAND_CONFIRM=/^(?:confirm|yes confirm|confirm question)[.! ]*$/i;
 const COMMAND_CANCEL=/^(?:cancel|stop|never mind|no cancel)[.! ]*$/i;
 const initial=()=>({mode:'WAKE',pending:null});
@@ -47,7 +48,8 @@ export function createWakeListener({
  RecognitionClass,isVisible=()=>true,validateQuestion=()=>true,acceptDirectQuestion=()=>false,
  onStatus=()=>{},onDraft=()=>{},onConfirm=()=>{},onChange=()=>{},onHeard=()=>{},onPrompt=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
- clock=()=>Date.now(),configureRecognition=()=>{},onInterim=()=>{},onActivity=()=>{},
+ clock=()=>Date.now(),configureRecognition=()=>{},startRecognition=r=>r.start(),
+ onInterim=()=>{},onActivity=()=>{},onEndConversation=()=>{},
 }={}){
  let enabled=false,paused=false,current=null,turn=initial(),generation=0,timer=null,restart=null;
  let starts=[],transientFailures=0;
@@ -76,14 +78,15 @@ export function createWakeListener({
   current=next;
   next.lang='en-IN';next.continuous=false;next.interimResults=true;next.maxAlternatives=1;
   try{configureRecognition(next);}catch{disable('On-device wake recognition is unavailable. Use the microphone button or type your question.');return;}
-  next.onspeechstart=()=>onActivity('SPEECH_START');
-  next.onspeechend=()=>onActivity('SPEECH_END');
   const g=generation;
+  const ownsRecognition=()=>current===next&&enabled&&!paused&&generation===g&&isVisible();
+  next.onspeechstart=()=>{if(ownsRecognition())onActivity('SPEECH_START');};
+  next.onspeechend=()=>{if(ownsRecognition())onActivity('SPEECH_END');};
   next.onresult=event=>{
-   if(current!==next||!enabled||paused||generation!==g||!isVisible())return;
+   if(!ownsRecognition())return;
    const transcript=extractFinalTranscript(event);
    if(!transcript){const rows=event?.results;let text='';if(rows)for(let i=0;i<rows.length;i++)if(rows[i]?.isFinal!==true)text+=rows[i]?.[0]?.transcript||'';if(text)onInterim(text.slice(0,300));return;}
-   if(COMMAND_END.test(transcript)){disable('Conversation ended. Microphone off.');return;}
+   if(isEndConversation(transcript)){disable('Conversation ended. Microphone off.');onEndConversation();return;}
    const result=advanceWakeTurn(turn,transcript,validateQuestion,{acceptDirectQuestion});
    onHeard(result.event);
    turn=result.state;
@@ -127,16 +130,18 @@ export function createWakeListener({
    if(!enabled||paused||!isVisible())return;
    restart=schedule(()=>{restart=null;listen();},550);
   };
-  try{next.start();tell(turn.mode==='WAKE'?'Hands-free listening. Ask a business question directly, or say “Hey VAOS”.':'Listening for your question.');}
+  try{startRecognition(next);tell(turn.mode==='WAKE'?'Hands-free listening. Ask a business question directly, or say “Hey JARVIS”.':'Listening for your question.');}
   catch{current=null;transientFailures++;if(transientFailures>=3)disable('Microphone cannot be restarted. Hey VAOS is off.');
    else restart=schedule(()=>{restart=null;listen();},1000);}
  }
- function enable(){
+ function enable({initiallyPaused=false}={}){
   if(enabled)return true;
   if(typeof RecognitionClass!=='function'){tell('Wake phrase unavailable: this browser has no speech recognition.');return false;}
   if(!isVisible()){tell('Bring the VAOS tab into view before enabling the microphone.');return false;}
-  enabled=true;paused=false;generation++;transientFailures=0;starts=[];turn=initial();
-  listen();return enabled;
+  enabled=true;paused=initiallyPaused;generation++;transientFailures=0;starts=[];turn=initial();
+  if(paused)tell('Conversation on. Finishing the current turn.');
+  else listen();
+  return enabled;
  }
  function pause({preserveQuestion=false}={}){
   if(!enabled)return;
@@ -146,6 +151,10 @@ export function createWakeListener({
  }
  function resume({preserveQuestion=false}={}){
   if(!enabled||!isVisible())return false;
+  if(!paused){
+   if(!current&&restart===null)listen();
+   return enabled;
+  }
   paused=false;generation++;
   if(!preserveQuestion||turn.mode!=='QUESTION')turn=initial();
   clearTimers();listen();

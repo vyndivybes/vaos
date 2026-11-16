@@ -104,8 +104,8 @@ test('current voice handoff module and wake listener use distinct cache-busted p
  const {readFile}=await import('node:fs/promises');
  const html=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  const script=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
- assert.match(html,/main-voice\.mjs\?v=202610\d{2}-[a-z0-9-]+/);
- assert.match(script,/hey-vaos\.mjs\?v=20261016-audible-wake-v1/);
+ assert.match(html,/main-voice\.mjs\?v=20261116-hands-free/);
+ assert.match(script,/hey-vaos\.mjs\?v=20261116-hands-free/);
 });
 
 test('main voice offering distinguishes the two controls in accessible copy',async()=>{
@@ -113,7 +113,7 @@ test('main voice offering distinguishes the two controls in accessible copy',asy
  const markup=await readFile(new URL('./workspace.html',import.meta.url),'utf8');
  assert.match(markup,/Start conversation/);
  assert.match(markup,/title="Ask once, then stop listening"/);
- assert.match(markup,/“Hey VAOS” is optional/);
+ assert.match(markup,/“Hey JARVIS” is optional/);
 });
 
 test('disabled microphone shows an actionable diagnosis without requesting mic access during page load',async()=>{
@@ -151,9 +151,17 @@ test('G6 app wires prior successful read into the existing question flow, never 
 });
 
 
-test('G6: pressing Stop during spoken readback keeps bounded context for two real mission follow-up GETs',async()=>{
+test('G6: spoken follow-ups, playback interruption and conversation shutdown use the existing read-only routes',async()=>{
  const saved={document:globalThis.document,window:globalThis.window,fetch:globalThis.fetch,Audio:globalThis.Audio};
- const requests=[],speech={utterances:[],cancels:0};
+ const requests=[],speech={utterances:[],cancels:0},listeners=[];
+ const navigatorDescriptor=Object.getOwnPropertyDescriptor(globalThis,'navigator');
+ let released=0;
+ const track={readyState:'live',label:'Test microphone',getSettings:()=>({echoCancellation:true}),
+  addEventListener(){},stop(){released++;this.readyState='ended';}};
+ const mediaDevices={async getUserMedia(constraints){
+  assert.equal(constraints.audio.echoCancellation.ideal,true);
+  return {getAudioTracks:()=>[track],getTracks:()=>[track]};
+ }};
  const el=id=>{
   const listeners=new Map();
   return {id,listeners,checked:false,disabled:false,value:'',textContent:'',dataset:{},
@@ -175,7 +183,7 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
  class Recognition{
   processLocally=false;
   static async available(){return 'available';}
-  start(){}
+  start(inputTrack){this.inputTrack=inputTrack;listeners.push(this);}
   abort(){this.onend?.();}
   stop(){this.onend?.();}
  }
@@ -200,6 +208,7 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
   }})};
  };
  try{
+  Object.defineProperty(globalThis,'navigator',{configurable:true,value:{mediaDevices}});
   completeDocument(globalThis.document,root);
   globalThis.Audio=class{async play(){speech.utterances.push(this);this.onplaying?.();}pause(){speech.cancels++;}};
   const businessFetch=globalThis.fetch;
@@ -233,35 +242,60 @@ test('G6: pressing Stop during spoken readback keeps bounded context for two rea
   assert.match(decodeURIComponent(third[2]),/latest completed departmental mission/);
   assert.doesNotMatch(decodeURIComponent(third[2]),/q=And the latest result/);
 
-  // Unlike playback-only Stop, stopping while hands-free listening is enabled
-  // must discard the short-lived conversation for privacy and consent.
+  // Start once, interrupt ongoing playback, then issue a follow-up by voice.
   await nodes['vaos-wake-toggle'].click();
-  await nodes['vaos-voice-stop'].click();
-  assert.match(nodes['vaos-voice-status'].textContent,/Conversation context cleared/);
-  nodes['vaos-voice-question'].value='And the blockers?';
-  await nodes['vaos-voice-ask'].click();
+  const hear=(listener,transcript)=>listener.onresult({results:[{isFinal:true,0:{transcript}}]});
+  const playback= listeners.at(-1);
+  assert.ok(playback?.processLocally);
+  assert.equal(playback.inputTrack,track);
+  hear(playback,'Hey JARVIS, stop');
+  const listening=listeners.at(-1);
+  assert.notEqual(listening,playback);
+  hear(listening,'And the blockers?');
+  await new Promise(resolve=>setImmediate(resolve));
   const fourth=requests.filter(x=>x.startsWith('/api/voice-insight?'));
   assert.equal(fourth.length,4);
-  assert.match(decodeURIComponent(fourth[3]),/q=And the blockers/);
-  assert.doesNotMatch(decodeURIComponent(fourth[3]),/Which assigned missions remain unfinished and what blockers/);
+  assert.match(decodeURIComponent(fourth[3]),/Which assigned missions remain unfinished and what blockers/);
+  assert.equal(nodes['vaos-wake-toggle'].attributes['aria-pressed'],'true');
+  const previousListener=listeners.at(-1);
+  speech.utterances.at(-1).onended();
+  const nextQuestion=listeners.at(-1);
+  assert.notEqual(nextQuestion,previousListener,'the microphone reopens when playback ends');
+  hear(nextQuestion,'Which assigned missions remain unfinished?');
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(requests.filter(x=>x.startsWith('/api/voice-insight?')).length,5);
+  const duringReply=listeners.at(-1);
+  hear(duringReply,'Stop listening');
+  assert.equal(nodes['vaos-wake-toggle'].attributes['aria-pressed'],'false');
+  assert.equal(nodes['vaos-wake-indicator'].textContent,'Microphone off');
+  assert.equal(released,1);
+  hear(duringReply,'Hey JARVIS, what is our production status?');
+  assert.equal(requests.filter(x=>x.startsWith('/api/voice-insight?')).length,5);
+  nodes['vaos-voice-question'].value='And the blockers?';
+  await nodes['vaos-voice-ask'].click();
+  const sixth=requests.filter(x=>x.startsWith('/api/voice-insight?'));
+  assert.equal(sixth.length,6);
+  assert.match(decodeURIComponent(sixth[5]),/q=And the blockers/);
+  await nodes['vaos-voice-stop'].click();
 
  }finally{
   localCompanion.disconnect();
+  if(navigatorDescriptor)Object.defineProperty(globalThis,'navigator',navigatorDescriptor);
+  else delete globalThis.navigator;
   Object.assign(globalThis,saved);
  }
 });
 
 
-test('G6: existing voice UI manages long-reply barge-in through local-only consent and VAD, not remote speech fallback',async()=>{
+test('G6: voice UI scopes interruption to an active, visible conversation',async()=>{
  const {readFile}=await import('node:fs/promises');
  const app=await readFile(new URL('./main-voice.mjs',import.meta.url),'utf8');
  const module=await readFile(new URL('./lib/g6-conversation.mjs',import.meta.url),'utf8');
  assert.match(app,/getLocalLocale:\(\)=>localSpeech\?\.status==='LOCAL_READY'/);
  assert.match(app,/isOptedIn:\(\)=>wake\?\.isEnabled\(\)===true&&document\.visibilityState==='visible'/);
- assert.match(app,/isSpeechActive:\(\)=>player\.active\(\)/);
- assert.match(app,/function stopInterruption\(\)\{ondeviceBarge\.stop\(\);\}/);
- assert.match(app,/function startInterruption\(\)\{ondeviceBarge\.start\(\);\}/);
- assert.match(module,/recognition\.processLocally=true/);
+ assert.match(app,/getBrowserLocale:\(\)=>localSpeech\?\.status==='BROWSER_READY'/);
+ assert.match(app,/getEchoTrack:\(\)=>conversationInput\?\.track/);
+ assert.match(app,/isSpeechActive:\(\)=>busy\|\|player\.active\(\)/);
  assert.match(module,/onActivity\('SPEECH_START'\)/);
  assert.match(module,/onActivity\('SPEECH_END'\)/);
  assert.doesNotMatch(module,/fetch\(|localStorage|sessionStorage|navigator\.mediaDevices\.getUserMedia/);

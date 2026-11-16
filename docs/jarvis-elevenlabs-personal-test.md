@@ -1,5 +1,7 @@
 # ElevenLabs voice for the approved personal test
 
+This is the previous hosted voice rollout. See the [Google Cloud voice guide](jarvis-google-cloud-voice.md) for the replacement.
+
 The user rejected the previous development-only voice result because the live `/workspace` still served Windows/browser TTS. Read-only inspection confirmed that production had not received the branch. The user subsequently approved deployment using ElevenLabs, required strictly zero-paid usage, completed ElevenLabs onboarding, and confirmed personal/non-commercial use.
 
 ## Runtime behavior

@@ -18,7 +18,7 @@ test('companion authenticates, isolates origins, reviews skills, denies action r
    const source=await response.text();
    for(const match of source.matchAll(/\bimport\s+(?:[^;\n]+?\s+from\s*)?['"]([^'"]+)['"]/g))if(match[1].startsWith('.'))await checkModule(new URL(match[1],origin+path).pathname);
   }
-  await checkModule('/skills.mjs');assert.ok(visited.has('/lib/elevenlabs-speech.mjs'));
+  await checkModule('/skills.mjs');assert.ok(visited.has('/lib/gemini-speech.mjs'));
   assert.equal((await fetch(origin+'/api/status')).status,401);
   assert.equal((await request('/api/status','GET',undefined,{Origin:'https://evil.example'})).status,403);
   assert.equal((await request('/api/status','GET',undefined,{Origin:'https://vaos.vayushastr.workers.dev'})).status,200);

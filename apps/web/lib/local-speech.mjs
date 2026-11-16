@@ -1,4 +1,18 @@
 export const SPEECH_LOCALES=Object.freeze({en:'en-IN',ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'});
+
+export async function acquireEchoCancelledInput(mediaDevices){
+ if(typeof mediaDevices?.getUserMedia!=='function')return null;
+ const stream=await mediaDevices.getUserMedia({audio:{echoCancellation:{ideal:true},
+  noiseSuppression:{ideal:true},autoGainControl:{ideal:true}},video:false});
+ const stop=()=>{for(const track of stream.getTracks())track.stop();};
+ const track=stream.getAudioTracks()[0];
+ if(!track||track.readyState!=='live'||track.getSettings?.().echoCancellation!==true
+    ||/stereo mix|loopback|what [uy] hear/i.test(track.label||'')){
+  stop();return null;
+ }
+ return {track,stop};
+}
+
 // A remote browser recognizer is a separate opt-in, never an automatic fallback.
 export async function chooseConversationSpeech(local,{RecognitionClass,language='en',consent=async()=>false}={}){
  if(local?.status==='LOCAL_READY')return local;
@@ -10,8 +24,7 @@ export function interimTranscript(event){
  let text='';for(let i=Math.max(0,event.resultIndex||0);i<rows.length;i++)if(rows[i]?.isFinal!==true&&typeof rows[i]?.[0]?.transcript==='string')text+=rows[i][0].transcript+' ';
  return text.trim().slice(0,300);
 }
-// Local mode is mandatory for wake listening. Never silently fall back to a
-// browser vendor's remote recognizer after an on-device availability failure.
+// Prefer on-device recognition. A browser provider requires separate consent.
 export async function prepareLocalSpeech(RecognitionClass,language,{install=false}={}){
  if(typeof RecognitionClass!=='function'||typeof RecognitionClass.available!=='function')return {status:'LOCAL_UNAVAILABLE'};
  let probe;try{probe=new RecognitionClass();}catch{return {status:'LOCAL_UNAVAILABLE'};}

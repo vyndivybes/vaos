@@ -42,13 +42,13 @@ test('neural browser playback reports actual playing, blocks stale synthesis and
 });
 
 test('neural preview preserves safe provider failures and distinguishes browser playback permission',async()=>{
- for(const [failure,expected] of [[Error('GOOGLE_TTS_AUTH_UNAVAILABLE'),'GOOGLE_TTS_AUTH_UNAVAILABLE'],[Error('provider response with a private key'),'NEURAL_SPEECH_UNAVAILABLE']]){
+ for(const [failure,expected] of [[Error('VOICE_TTS_AUTH_UNAVAILABLE'),'VOICE_TTS_AUTH_UNAVAILABLE'],[Error('provider response with a private key'),'NEURAL_SPEECH_UNAVAILABLE']]){
   let observed;
   const player=createNeuralSynthesis({transport:{request:async()=>{throw failure;}}});
   const u=new NeuralUtterance('Hello');u.onerror=e=>observed=e;
   player.speak(u);await new Promise(r=>setImmediate(r));
   assert.equal(observed.code,expected);assert.ok(!JSON.stringify(observed).includes('private key'));
-  assert.match(neuralSpeechFailureMessage(observed.code),expected==='GOOGLE_TTS_AUTH_UNAVAILABLE'?/authorization/i:/unavailable/i);player.dispose();
+  assert.match(neuralSpeechFailureMessage(observed.code),expected==='VOICE_TTS_AUTH_UNAVAILABLE'?/authorization/i:/unavailable/i);player.dispose();
  }
  let observed;
  const player=createNeuralSynthesis({transport:{request:async()=>new Blob([Buffer.alloc(48)],{type:'audio/mpeg'})},makeAudio:()=>({play:async()=>{throw Object.assign(Error('not permitted'),{name:'NotAllowedError'});},pause(){}}),urls:{createObjectURL:()=> 'blob:test',revokeObjectURL(){}}});

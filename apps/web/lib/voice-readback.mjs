@@ -15,7 +15,7 @@ export function splitVoiceText(value,max=180){
  return parts.slice(0,24);
 }
 export function createVoiceReadback({
- synthesis,UtteranceClass,language=()=> 'en-US',startTimeout=5000,
+ synthesis,UtteranceClass,language=()=> 'en-US',startTimeout=5000,chunkSize=180,
  onState=()=>{},onError=()=>{},onFinished=()=>{},
  schedule=(fn,delay)=>setTimeout(fn,delay),clear=id=>clearTimeout(id),
 }={}){
@@ -35,7 +35,7 @@ export function createVoiceReadback({
  function speak(text){
   cancel();
   if(!ready()){onError('SPEECH_UNAVAILABLE');return false;}
-  const chunks=splitVoiceText(text);
+  const chunks=splitVoiceText(text,chunkSize);
   if(!chunks.length){onError('SPEECH_TEXT_INVALID');return false;}
   const st={chunks,index:0,started:false,timer:null};
   active=st;
@@ -58,7 +58,7 @@ export function createVoiceReadback({
     utterance.onerror=event=>{
      if(active!==st)return;
      const allowed=new Set(['audio-busy','audio-hardware','network','synthesis-unavailable','synthesis-failed','language-unavailable','voice-unavailable','text-too-long','invalid-argument','not-allowed','canceled','interrupted']);
-     const providerCode=typeof event?.code==='string'&&/^(?:GOOGLE_TTS|NEURAL)_[A-Z_]{4,55}$/.test(event.code)?event.code:null;
+     const providerCode=typeof event?.code==='string'&&/^(?:VOICE_TTS|NEURAL)_[A-Z_]{4,55}$/.test(event.code)?event.code:null;
      const reason=providerCode||(allowed.has(event?.error)?'SPEECH_'+event.error.replaceAll('-','_').toUpperCase():'SPEECH_ERROR');
      conclude(st,'ERROR',reason);
     };

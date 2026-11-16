@@ -1,5 +1,7 @@
 # JARVIS Gemini free-tier voice
 
+This describes the original Gemini rollout. Current hosted voice uses [Cloudflare Workers AI with the optional local companion](jarvis-hosted-voice.md).
+
 Hosted JARVIS uses the Gemini Developer API with the Charon voice and a British English speaking instruction. Start a conversation once, then speak and follow up without clicking. “Hey JARVIS, stop” interrupts a turn where browser support permits it. “Stop listening” ends the session. The standalone companion uses local Kokoro.
 
 On the free tier Google may use the submitted text to improve its products. VAOS asks for consent before sending reply text and keeps that consent in the current tab. Use hosted readback only for text you are allowed to share with Google. This endpoint sends reply text for synthesis. Microphone recognition has its own browser permission and consent.

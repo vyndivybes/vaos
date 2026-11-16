@@ -49,7 +49,8 @@ cloudflare-worker.mjs
 !lib/engineering-viewer-intents.mjs
 
 !lib/local-neural-speech.mjs
-!lib/gemini-speech.mjs
+!lib/hosted-speech.mjs
+!lib/spatial-view-memory.mjs
 !lib/conversation-memory-ui.mjs
 
 !lib/jarvis-tools.mjs

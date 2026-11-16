@@ -15,6 +15,7 @@ import {createVoiceAcknowledgement} from './lib/voice-acknowledgement.mjs';
 import {founderLoginGreeting} from './lib/founder-voice-identity.mjs';
 import {localCompanion,createNeuralSynthesis,NeuralUtterance,mountNeuralConnection,speechOutputReady,voiceOutputAuthorized,authorizeVoiceOutput,neuralSpeechFailureMessage} from './lib/local-neural-speech.mjs';
 import {mountConversationMemory,historicalQuery,formatHistoricalAnswer} from './lib/conversation-memory-ui.mjs';
+import {currentSpatialMemory,isSpatialRecall} from './lib/spatial-view-memory.mjs';
 // Same signed VYNDI reads and repository evidence used by existing Founder Voice.
 // Business reads retain their original gates. Local tools require pairing and
 // exact clicked approval for effectful tasks; results cannot grant authority.
@@ -245,6 +246,7 @@ function init(){
   input.value=transcript;voiceRequestPending=true;
  });
  const conversation=createG6Conversation();
+ const spatialMemory=currentSpatialMemory();
  const neuralSynthesis=createNeuralSynthesis();
  mountNeuralConnection(root);
  const computerTools=mountJarvisTools(root);
@@ -275,11 +277,11 @@ function init(){
    :/\bretriev|\bchecking|\brequesting|\bthinking/i.test(message)?'working':'ready';
  };
  const player=createVoiceReadback({
-  synthesis:neuralSynthesis,UtteranceClass:NeuralUtterance,startTimeout:125000,
+  synthesis:neuralSynthesis,UtteranceClass:NeuralUtterance,startTimeout:125000,chunkSize:550,
   language:()=>({ta:'ta-IN',ml:'ml-IN',hi:'hi-IN'}[answerLanguage]||'en-US'),
   onState:mode=>{if(mode==='QUEUED'){setStatus('Voice queued; checking audio output.');startInterruption();}
     if(mode==='SPEAKING'){setStatus('VAOS is speaking.');startInterruption();}},
-  onError:code=>setStatus(/^(?:GOOGLE_TTS|NEURAL)_/.test(code)?neuralSpeechFailureMessage(code):'Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
+  onError:code=>setStatus(/^(?:VOICE_TTS|NEURAL)_/.test(code)?neuralSpeechFailureMessage(code):'Audio unavailable ('+code+'). Read the displayed answer or test your speaker.'),
   onFinished:mode=>{if(mode==='FINISHED')setStatus('Spoken answer completed.');resumeConversation();state();}
  });
  const acknowledgement=createVoiceAcknowledgement({
@@ -313,6 +315,7 @@ function init(){
   isOptedIn:()=>wake?.isEnabled()===true&&document.visibilityState==='visible',
   allowQuestion:question=>{
    if(!player.active()||pendingReminderTitle)return false;
+   if(isSpatialRecall(question))return true;
    const resolved=conversation.resolve(question);
    const google=resolveFounderGoogleIntent(resolved.question);
    if(google)return google.kind==='MAIL';
@@ -455,6 +458,22 @@ function init(){
   if(busy)return;
   const requestCameFromVoice=voiceRequestPending;
   voiceRequestPending=false;
+  if(isSpatialRecall(sanitizeVoiceTranscript(input.value))){
+   wake?.pause();
+   cancel();
+   const previous=spatialMemory.recall();
+   lastExchange=null;
+   lastAnswer=previous?'You last viewed the '+previous.label+'.':'There is no recent Spatial Command view in this tab.';
+   spokenAnswer=lastAnswer;answerLanguage='en';answer.textContent=lastAnswer;answer.className='';
+   sources.replaceChildren();
+   if(previous){
+    const link=document.createElement('a');link.href=previous.href;link.textContent='Return to '+previous.label;
+    sources.append(link);
+   }
+   setStatus('Workspace view recalled from this tab.');
+   if(!speakToggle?.checked||!speakAnswer())resumeConversation();
+   state();return;
+  }
   let toolPlan;
   try{toolPlan=planJarvisTool(input.value);}catch(e){setStatus(e.message);return;}
   if(toolPlan?.kind==='site.open'){
@@ -634,12 +653,13 @@ function init(){
   RecognitionClass:SpeechRecognition,
   isVisible:()=>document.visibilityState==='visible',
   validateQuestion:q=>{
+   if(isSpatialRecall(q))return true;
    try{if(planJarvisTool(q))return true;}catch{return false;}
    if(resolveFounderGoogleIntent(q)||resolveFounderCalendarReadIntent(q))return true;
    const candidate=classifyDashboardQuestion(conversation.resolve(q).question);
    return candidate.kind!=='DENY'&&candidate.domain!=='unsupported';
   },
-  acceptDirectQuestion:q=>{try{if(planJarvisTool(q))return true;}catch{return false;}return isDirectBusinessQuestion(q)||Boolean(resolveFounderGoogleIntent(q))||Boolean(resolveFounderCalendarReadIntent(q))||conversation.canFollowUp(q);},
+  acceptDirectQuestion:q=>{try{if(isSpatialRecall(q)||planJarvisTool(q))return true;}catch{return false;}return isDirectBusinessQuestion(q)||Boolean(resolveFounderGoogleIntent(q))||Boolean(resolveFounderCalendarReadIntent(q))||conversation.canFollowUp(q);},
   onHeard:event=>{if(event==='IGNORED')setStatus('Speech heard, but not an actionable business question. Ask about sales, production or HR directly, or say Hey JARVIS.');},
    onPrompt:()=>{
    if(!(voiceEnabled&&speakToggle?.checked===true&&voiceOutputAuthorized()))return;

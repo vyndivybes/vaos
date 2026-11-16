@@ -1,8 +1,11 @@
 import {projectSpatialSignals, selectSheetRows, SPATIAL_DATASETS, GRAPH_NODES} from './spatial-command-model.mjs';
+import {currentSpatialMemory, spatialViewFromHash} from './lib/spatial-view-memory.mjs';
 
 const $=id=>document.getElementById(id);
 const snapshot={current:projectSpatialSignals(null)};
 let motion='subtle';
+let selectedNode='VAOS';
+const viewMemory=currentSpatialMemory();
 const nodeDescriptions={
  'VAOS':'JARVIS orchestration, analytical reasoning and governed agent control. Production source status must be verified separately.',
  'VYNDI OS':'Canonical ERP, MES, financial and workforce authorities. Source observations arrive through signed, scoped reads.',
@@ -21,7 +24,7 @@ const layout=[
  ['Brain Graph','-15px','158px','5px'],['LLM Wiki','185px','-7px','-170px'],['VEDM','-190px','-154px','-190px']
 ];
 function text(id,value){$(id).textContent=String(value)}
-function setTab(id){
+function setTab(id,remember=true){
  const key=['overview','sheets','lineage'].includes(id)?id:'overview';
  for(const element of document.querySelectorAll('[role="tab"]')){
   const selected=element.dataset.tab===key;element.setAttribute('aria-selected',String(selected));element.tabIndex=selected?0:-1;
@@ -29,6 +32,7 @@ function setTab(id){
  for(const element of document.querySelectorAll('.sp-panel-view'))element.hidden=element.id!=='sp-'+key;
  if(key==='sheets')renderSheet();
  if(key==='lineage')renderGraph();
+ if(remember)viewMemory.save(key,key==='sheets'?$('sp-dataset').value:key==='lineage'?selectedNode:null);
 }
 function observedDate(){const pieces=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const get=t=>pieces.find(p=>p.type===t)?.value;return get('year')+'-'+get('month')+'-'+get('day')}
 function windowPeriod(){const to=observedDate(),[y,m,d]=to.split('-').map(Number);const from=new Date(Date.UTC(y,m-1,d)-29*86400000).toISOString().slice(0,10);return {from,to}}
@@ -104,11 +108,13 @@ function renderGraph(){
   button.append(category);
   button.addEventListener('click',()=>selectNode(id));host.append(button);
  }
- selectNode('VAOS');
+ selectNode('VAOS',false);
 }
-function selectNode(id){
+function selectNode(id,remember=true){
+ selectedNode=id;
  for(const node of $('sp-graph-world').querySelectorAll('button'))node.setAttribute('aria-pressed',String(node.firstChild.textContent===id));
  text('sp-node-name',id);text('sp-node-note',nodeDescriptions[id]||'Architecture reference only; runtime linkage not certified.');
+ if(remember)viewMemory.save('lineage',id);
 }
 function attachSpatialMotion(){
  const stage=$('sp-graph-stage'),world=$('sp-graph-world');
@@ -143,9 +149,15 @@ async function initialize(){
   msg.hidden=true;$('sp-main').hidden=false;
   const select=$('sp-dataset');for(const item of SPATIAL_DATASETS){const opt=document.createElement('option');opt.value=item.id;opt.textContent=item.label;select.append(opt);}
   document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
-  select.addEventListener('change',renderSheet);$('sp-filter').addEventListener('input',renderSheet);
+  select.addEventListener('change',()=>{renderSheet();viewMemory.save('sheets',select.value);});
+  $('sp-filter').addEventListener('input',renderSheet);
   $('sp-refresh').addEventListener('click',refreshSignals);$('sp-export').addEventListener('click',exportCsv);
-  attachSpatialMotion();setTab('overview');await refreshSignals();
+  const initial=spatialViewFromHash(window.location.hash)||viewMemory.recall();
+  if(initial?.tab==='sheets')select.value=initial.selection;
+  attachSpatialMotion();setTab(initial?.tab||'overview',false);
+  if(initial?.tab==='lineage')selectNode(initial.selection);
+  else viewMemory.save(initial?.tab||'overview',initial?.selection||null);
+  await refreshSignals();
  }catch{
   msg.replaceChildren();msg.append(document.createTextNode('Authentication required. '));
   const login=document.createElement('a');login.href='/login';login.textContent='Sign in to VAOS';msg.append(login);

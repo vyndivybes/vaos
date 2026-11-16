@@ -14,7 +14,7 @@ Baseline: `292f86f663cca6a68b9c19e3d4697d347bb8d463` on `main`.
 | `jarvis-project-memory.mjs` | Founder-only R2 object, up to eight short notes, 60-day read filtering | Existing hosted notes are not silently migrated or imported |
 | `g6-conversation.mjs` | Short-lived in-page follow-up context | Retained; historical recall is a separate explicit local read |
 
-The follow-up also replaces the older qualification pilot, visual JARVIS, engineering viewer and diagnostics output bindings. All shipping browser consumers use an explicit neural adapter, with no platform TTS fallback. Hosted output uses Gemini Developer API speech; the standalone companion retains offline Kokoro. Existing business evidence/model routes, calendars and autonomy gates are unchanged.
+The qualification pilot, visual JARVIS, engineering viewer and diagnostics use an explicit neural speech adapter. Hosted output uses Cloudflare Workers AI by default. Pair the companion to use offline Kokoro. [Voice settings and spatial recall](jarvis-hosted-voice.md)
 
 ## Run locally
 

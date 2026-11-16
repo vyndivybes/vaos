@@ -70,9 +70,9 @@ test('speech diagnostics whitelist browser reasons and never echo arbitrary even
 test('configured hosted voice errors report their actual provider reason, not a generic synthesis message',()=>{
  const errors=[];
  const player=createVoiceReadback({
-  synthesis:{speak:u=>u.onerror({error:'synthesis-unavailable',code:'GOOGLE_TTS_NOT_CONFIGURED'}),cancel(){}},
+  synthesis:{speak:u=>u.onerror({error:'synthesis-unavailable',code:'VOICE_TTS_NOT_CONFIGURED'}),cancel(){}},
   UtteranceClass:class {},onError:code=>errors.push(code),schedule:()=>1,clear:()=>{},
  });
  assert.equal(player.speak('Testing host voice.'),false);
- assert.deepEqual(errors,['GOOGLE_TTS_NOT_CONFIGURED']);
+ assert.deepEqual(errors,['VOICE_TTS_NOT_CONFIGURED']);
 });

@@ -32,11 +32,11 @@ test('unapproved names cannot be resolved from the bundle',()=>{
  assert.equal(featureControl(env,'GOOGLE_OAUTH_CLIENT_SECRET'),undefined);
 });
 
-test('Google Cloud voice control uses the existing bundle without adding a plain-text variable slot',async()=>{
+test('Workers AI voice control uses the existing bundle without adding a plain-text variable slot',async()=>{
  const config=JSON.parse(await readFile(new URL('../../../wrangler.jsonc',import.meta.url),'utf8'));
- assert.equal(Object.hasOwn(config.vars,'VAOS_GOOGLE_TTS_CONTROL'),false);
+ assert.equal(Object.hasOwn(config.vars,'VAOS_AURA_VOICE_CONTROL'),false);
  assert.equal(Object.hasOwn(config.vars,'VAOS_GEMINI_FREE_TTS_API_KEY'),false);
- assert.equal(featureControl(config.vars,'VAOS_GOOGLE_TTS_CONTROL'),'founder-gemini-free-v1');
+ assert.equal(featureControl(config.vars,'VAOS_AURA_VOICE_CONTROL'),'founder-workers-free-v1');
  for(const [name,value] of Object.entries(flags))assert.equal(featureControl(config.vars,name),value);
 });
 

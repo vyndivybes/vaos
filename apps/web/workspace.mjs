@@ -2,6 +2,7 @@ import {initializeFounderCockpit} from './founder-cockpit.mjs';
 import { resolveCommand } from './command-router.mjs?v=20261008-q2-workforce';
 import {showGroupDashboard} from './group-dashboard.mjs?v=20261012-group';
 import {renderModuleDashboard} from './module-dashboard.mjs';
+import {currentSpatialMemory} from './lib/spatial-view-memory.mjs';
 
 const shell = document.querySelector('#control-shell');
 const loading = document.querySelector('#workspace-loading');
@@ -1135,6 +1136,7 @@ async function bootstrap() {
 }
 
 logout?.addEventListener('click', async () => {
+  currentSpatialMemory().clear();
   try { await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' }); }
   finally { window.location.replace('/login'); }
 });

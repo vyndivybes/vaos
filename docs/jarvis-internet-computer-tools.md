@@ -42,7 +42,7 @@ PC actions, browser workflows and conversation-created documents require a click
 - Generated files stay in companion artifacts until explicitly downloaded or deleted. This change does not add arbitrary file deletion or shell access.
 - Existing conversation-memory provenance, tenant scope, retention/deletion and approval controls are unchanged. Tool results and microphone transcripts are not automatically imported into memory.
 - Start a conversation once in the visible workspace tab. JARVIS accepts spoken questions and follow-ups, speaks replies, and automatically returns to listening. Say “Hey JARVIS, stop” to interrupt the current turn or “stop listening” to release the microphone and clear the conversation. Interruption can use on-device recognition or an explicitly authorized browser recognizer with an echo-cancelled microphone track. Browser speech services may process audio under their own policy. Physical microphone and speaker behavior still requires a device check.
-- Hosted readback uses Gemini Developer API speech with a founder-only 1,000-character and 12-request daily cap after the [Google voice cutover](jarvis-google-cloud-voice.md).
+- Hosted readback uses Cloudflare Workers AI. The optional paired companion speaks locally. [Voice settings and spatial recall](jarvis-hosted-voice.md)
 
 ## Verification
 

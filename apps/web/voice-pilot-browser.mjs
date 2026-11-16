@@ -151,7 +151,7 @@ function multiTurnOpen(){return !['IDLE','EXPIRED'].includes(multiTurn.state());
 const audioDiagnostics=createVoiceAudioDiagnostics({
   SpeechSynthesisUtteranceClass:NeuralUtterance,
   speechSynthesis:neuralSpeech,
-  describeProvider:()=> 'Hosted JARVIS uses the Charon voice from the Gemini Developer API.',
+  describeProvider:()=> 'Hosted JARVIS uses the Orpheus voice through Cloudflare Workers AI.',
   AudioContextClass:window.AudioContext||window.webkitAudioContext,
   onStatus:message=>{diagnosticsStatus.textContent=message;},
 });

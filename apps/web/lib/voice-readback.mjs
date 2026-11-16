@@ -58,7 +58,7 @@ export function createVoiceReadback({
     utterance.onerror=event=>{
      if(active!==st)return;
      const allowed=new Set(['audio-busy','audio-hardware','network','synthesis-unavailable','synthesis-failed','language-unavailable','voice-unavailable','text-too-long','invalid-argument','not-allowed','canceled','interrupted']);
-     const providerCode=typeof event?.code==='string'&&/^(?:ELEVENLABS|NEURAL)_[A-Z_]{4,55}$/.test(event.code)?event.code:null;
+     const providerCode=typeof event?.code==='string'&&/^(?:GOOGLE_TTS|NEURAL)_[A-Z_]{4,55}$/.test(event.code)?event.code:null;
      const reason=providerCode||(allowed.has(event?.error)?'SPEECH_'+event.error.replaceAll('-','_').toUpperCase():'SPEECH_ERROR');
      conclude(st,'ERROR',reason);
     };

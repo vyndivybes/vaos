@@ -43,7 +43,7 @@ export function mountConversationMemory({container,getExchange=()=>null}={}){
  function label(text,input){const l=document.createElement('label');l.append(document.createTextNode(text),input);return l;}
  const memoryAddress=document.createElement('input');memoryAddress.value='http://127.0.0.1:47831';memoryAddress.setAttribute('aria-label','Local memory address');
  const memoryCode=document.createElement('input');memoryCode.type='password';memoryCode.autocomplete='off';memoryCode.setAttribute('aria-label','Local memory pairing code');
- const pairingNote=document.createElement('p');pairingNote.textContent='Memory stays on your paired computer. This connection is separate from hosted ElevenLabs speech. The pairing code stays in this tab only.';
+ const pairingNote=document.createElement('p');pairingNote.textContent='Memory stays on your paired computer. This connection is separate from hosted Google Cloud speech. The pairing code stays in this tab only.';
  details.append(notice,pairingNote,label('Local memory address',memoryAddress),label('Local memory pairing code',memoryCode),button('Connect local memory',async()=>{
   try{
    localCompanion.connect(memoryAddress.value,memoryCode.value);memoryCode.value='';

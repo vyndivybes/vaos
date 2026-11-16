@@ -151,7 +151,7 @@ function multiTurnOpen(){return !['IDLE','EXPIRED'].includes(multiTurn.state());
 const audioDiagnostics=createVoiceAudioDiagnostics({
   SpeechSynthesisUtteranceClass:NeuralUtterance,
   speechSynthesis:neuralSpeech,
-  describeProvider:()=> 'ElevenLabs personal/non-commercial test selected on hosted VAOS. Free credits only. No Windows TTS fallback.',
+  describeProvider:()=> 'Hosted JARVIS uses the Charon voice from the Gemini Developer API.',
   AudioContextClass:window.AudioContext||window.webkitAudioContext,
   onStatus:message=>{diagnosticsStatus.textContent=message;},
 });

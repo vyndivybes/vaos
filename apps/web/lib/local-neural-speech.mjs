@@ -1,10 +1,12 @@
 // Local pairing stays in page memory. Hosted audio uses the authenticated
-// ElevenLabs proxy. Neither path falls back to platform TTS.
-import {elevenLabsSpeech,ELEVENLABS_SAMPLE} from './elevenlabs-speech.mjs';
+// Gemini voice proxy. Neither path falls back to platform TTS.
+import {geminiSpeech,GOOGLE_TTS_SAMPLE} from './gemini-speech.mjs';
 let connection=null;
 const listeners=new Set();
 const hostedSpeech=()=>!!globalThis.location&&!['127.0.0.1','localhost'].includes(globalThis.location.hostname);
 export const speechOutputReady=()=>hostedSpeech()||localCompanion.ready();
+export const voiceOutputAuthorized=()=>!hostedSpeech()||geminiSpeech.accepted();
+export const authorizeVoiceOutput=()=>!hostedSpeech()||geminiSpeech.authorize();
 export const localCompanion={
  ready:()=>connection!==null,
  connect(endpoint,token){
@@ -34,28 +36,27 @@ export const localCompanion={
 };
 export class NeuralUtterance{constructor(text){this.text=text;this.lang='en-US';}}
 const speechFailures=Object.freeze({
- ELEVENLABS_NOT_CONFIGURED:'ElevenLabs is not configured on the server.',
- ELEVENLABS_ACCOUNT_UNAVAILABLE:'ElevenLabs account check failed on the server.',
- ELEVENLABS_ZERO_COST_POLICY_REQUIRED:'The account does not meet the free-only, no-overage policy.',
- ELEVENLABS_FREE_CREDITS_EXHAUSTED:'The included free credits are exhausted.',
- ELEVENLABS_VOICE_NOT_QUALIFIED:'The selected ElevenLabs voice could not be verified.',
- ELEVENLABS_BUDGET_UNAVAILABLE:'The server could not access the voice quota ledger.',
- ELEVENLABS_BUSY:'Another voice request is active. Wait before trying again.',
- ELEVENLABS_DAILY_LIMIT:'The daily free voice limit has been reached.',
- ELEVENLABS_SYNTHESIS_UNAVAILABLE:'ElevenLabs did not return usable speech.',
- ELEVENLABS_AUDIO_TOO_LARGE:'The returned voice audio exceeded the size limit.',
- ELEVENLABS_AUDIO_INVALID:'The returned voice audio was invalid.',
- ELEVENLABS_TEXT_INVALID:'The text cannot be spoken within the current limits.',
- ELEVENLABS_LANGUAGE_UNAVAILABLE:'This test voice supports English only.',
+ GOOGLE_TTS_NOT_CONFIGURED:'Gemini voice is not configured on the server.',
+ GOOGLE_TTS_CONSENT_REQUIRED:'Enable Gemini voice in Voice settings to hear replies.',
+ GOOGLE_TTS_AUTH_UNAVAILABLE:'Gemini voice authorization is unavailable.',
+ GOOGLE_TTS_PROVIDER_LIMIT:'Gemini voice quota has been reached.',
+ GOOGLE_TTS_BUDGET_UNAVAILABLE:'The server could not access the voice quota ledger.',
+ GOOGLE_TTS_BUSY:'Another voice request is active. Wait before trying again.',
+ GOOGLE_TTS_DAILY_LIMIT:'The daily voice limit has been reached.',
+ GOOGLE_TTS_SYNTHESIS_UNAVAILABLE:'Gemini did not return usable speech.',
+ GOOGLE_TTS_AUDIO_TOO_LARGE:'The returned voice audio exceeded the size limit.',
+ GOOGLE_TTS_AUDIO_INVALID:'The returned voice audio was invalid.',
+ GOOGLE_TTS_TEXT_INVALID:'The text cannot be spoken within the current limits.',
+ GOOGLE_TTS_LANGUAGE_UNAVAILABLE:'This test voice supports English only.',
  NEURAL_PLAYBACK_BLOCKED:'Your browser blocked audio playback. Allow sound for this site and try again.',
  NEURAL_AUDIO_INVALID:'The server did not return valid voice audio.',
  NEURAL_PROVIDER_UNVERIFIED:'The audio provider could not be verified.',
- NEURAL_SPEECH_UNAVAILABLE:'ElevenLabs preview unavailable.'
+ NEURAL_SPEECH_UNAVAILABLE:'Voice is temporarily unavailable.'
 });
 export function neuralSpeechFailureMessage(code){return (speechFailures[code]||speechFailures.NEURAL_SPEECH_UNAVAILABLE)+' ['+(Object.hasOwn(speechFailures,code)?code:'NEURAL_SPEECH_UNAVAILABLE')+'] No Windows voice was substituted.';}
 export function mountNeuralConnection(container){
  if(!container||container.querySelector?.('[data-neural-connection]'))return;
- if(hostedSpeech())return mountElevenLabsVoice(container);
+ if(hostedSpeech())return mountGeminiVoice(container);
  const details=document.createElement('details'),summary=document.createElement('summary');summary.textContent='Local neural voice connection';details.append(summary);
  details.setAttribute('data-neural-connection','');
  const notice=document.createElement('p');notice.textContent='Connect the free local companion for the original VAOS English voice. No Windows voice fallback. Other reply languages remain available as text.';
@@ -82,21 +83,21 @@ export function mountNeuralConnection(container){
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')sampleSpeech.cancel();});
  window.addEventListener('pagehide',()=>sampleSpeech.dispose(),{once:true});
 }
-function mountElevenLabsVoice(container){
- const details=document.createElement('details'),summary=document.createElement('summary');details.setAttribute('data-neural-connection','');summary.textContent='Voice connection · ElevenLabs';details.append(summary);
- const notice=document.createElement('p');notice.textContent='Voice by ElevenLabs · elevenlabs.io. Personal/non-commercial use only, with free credits and no overages. Spoken text is sent to ElevenLabs under its retention policy. Deleting VAOS memories does not remove their speech history. There is no Windows voice fallback.';
+function mountGeminiVoice(container){
+ const details=document.createElement('details'),summary=document.createElement('summary');details.setAttribute('data-neural-connection','');summary.textContent='JARVIS voice · Gemini free tier';details.append(summary);
+ const notice=document.createElement('p');notice.textContent='JARVIS uses Google Gemini’s Charon voice. Google may use spoken reply text to improve its products. This workspace allows up to 12 voice requests and 1,000 characters a day.';
  const status=document.createElement('p');status.setAttribute('role','status');
  const check=document.createElement('button');check.type='button';check.textContent='Check connection';
  const play=document.createElement('button');play.type='button';play.textContent='Play a sample';play.disabled=true;
  const stop=document.createElement('button');stop.type='button';stop.textContent='Stop sample';
- const speech=createNeuralSynthesis({transport:elevenLabsSpeech});
- check.addEventListener('click',async()=>{try{const {data}=await elevenLabsSpeech.request();play.disabled=data?.ready!==true;status.textContent=data?.ready?'George by ElevenLabs is configured. Play a sample to check the sound. Free personal use is limited to 1,000 characters a day.':'Voice is not configured yet. No Windows voice will be substituted.';}catch{play.disabled=true;status.textContent='Could not check the voice connection. Sign in and try again.';}});
- play.addEventListener('click',()=>{const u=new NeuralUtterance(ELEVENLABS_SAMPLE);status.textContent='Preparing your sample…';u.onstart=()=>status.textContent='Playing George by ElevenLabs…';u.onend=()=>status.textContent='Sample finished.';u.onerror=e=>status.textContent=neuralSpeechFailureMessage(e.code);speech.speak(u);});
+ const speech=createNeuralSynthesis({transport:geminiSpeech});
+ check.addEventListener('click',async()=>{try{const {data}=await geminiSpeech.request();play.disabled=data?.ready!==true;status.textContent=data?.ready?'Gemini voice is configured. Play a sample to check the sound.':'Gemini voice is awaiting a free-tier connection.';}catch{play.disabled=true;status.textContent='Could not check the voice connection. Sign in and try again.';}});
+ play.addEventListener('click',()=>{if(!authorizeVoiceOutput())return;const u=new NeuralUtterance(GOOGLE_TTS_SAMPLE);status.textContent='Preparing your sample…';u.onstart=()=>status.textContent='Playing JARVIS with Gemini…';u.onend=()=>status.textContent='Sample finished.';u.onerror=e=>status.textContent=neuralSpeechFailureMessage(e.code);speech.speak(u);});
  stop.addEventListener('click',()=>{speech.cancel();status.textContent='Sample stopped.';});
  details.append(notice,check,play,stop,status);container.append(details);
  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')speech.cancel();});window.addEventListener('pagehide',()=>speech.dispose(),{once:true});
 }
-export function createNeuralSynthesis({transport=hostedSpeech()?elevenLabsSpeech:localCompanion,makeAudio=()=>new Audio(),urls=URL,schedule=setTimeout,clear=clearTimeout}={}){
+export function createNeuralSynthesis({transport=hostedSpeech()?geminiSpeech:localCompanion,makeAudio=()=>new Audio(),urls=URL,schedule=setTimeout,clear=clearTimeout}={}){
  let current=null;
  function cancel(){const st=current;current=null;if(!st)return;st.abort.abort();clear(st.timer);st.audio?.pause();if(st.url)urls.revokeObjectURL(st.url);}
  function speak(utterance){

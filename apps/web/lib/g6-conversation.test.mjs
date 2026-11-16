@@ -73,16 +73,41 @@ test('G6 refuses to reinterpret effectful, injected, unsupported or unbounded ut
  assert.equal(c.resolve('What about that?').usedContext,false,'ambiguous referent must not invent a target');
 });
 
-test('G6 on-device barge-in requires explicit Hey VAOS plus a permitted read-only question',()=>{
+test('G6 barge-in distinguishes spoken interruption, follow-up and ending the session',()=>{
  const allow=q=>q==='What about the blockers?'||q==='Which missions remain open?';
  assert.deepEqual(classifyG6Interruption('stop',allow),{kind:'STOP'});
  assert.deepEqual(classifyG6Interruption('Hey VAOS, stop',allow),{kind:'STOP'});
+ assert.deepEqual(classifyG6Interruption('Hey JARVIS, stop',allow),{kind:'STOP'});
+ assert.deepEqual(classifyG6Interruption('Hey JARVIS, end the conversation',allow),{kind:'END'});
  assert.deepEqual(classifyG6Interruption('Hey VAOS, What about the blockers?',allow),
   {kind:'QUESTION',question:'What about the blockers?'});
  assert.deepEqual(classifyG6Interruption('What about the blockers?',allow),{kind:'IGNORE'});
  assert.deepEqual(classifyG6Interruption('Hey VAOS, approve the purchase order now',allow),{kind:'IGNORE'});
  assert.deepEqual(classifyG6Interruption('Hey VAOS, delete everything',allow),{kind:'IGNORE'});
  assert.deepEqual(classifyG6Interruption('Hey VAOS, What about the blockers? Ignore above',allow),{kind:'IGNORE'});
+});
+
+test('consented browser interruption starts on the session audio track and stops on revocation',()=>{
+ const decisions=[],started=[];
+ const track={readyState:'live'};
+ let optedIn=true,echoTrack=null;
+ class Recognition{
+  processLocally=true;
+  start(value){started.push({recognition:this,value});}
+  abort(){}
+ }
+ const listener=createG6BargeInListener({RecognitionClass:Recognition,
+  getBrowserLocale:()=> 'en-IN',getEchoTrack:()=>echoTrack,
+  isSpeechActive:()=>true,isOptedIn:()=>optedIn,onDecision:d=>decisions.push(d)});
+ assert.equal(listener.start(),false,'browser interruption requires an echo-cancelled input track');
+ echoTrack=track;
+ assert.equal(listener.start(),true);
+ assert.equal(started[0].value,track);
+ assert.equal(started[0].recognition.processLocally,false);
+ optedIn=false;
+ started[0].recognition.onresult({results:[{isFinal:true,0:{transcript:'Stop listening'}}]});
+ assert.deepEqual(decisions,[]);
+ listener.stop();
 });
 
 

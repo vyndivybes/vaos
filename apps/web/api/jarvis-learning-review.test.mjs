@@ -27,7 +27,7 @@ test('twenty perfect declared outcomes do not commission learning or founder liv
  assert.ok(data.holds.includes('LIVE_ACCEPTANCE_REQUIRED'));
 });
 test('denied sessions, foreign origin and incorrect media cannot review',async()=>{
- assert.equal((await app.fetch(request(batch(),{method:'GET',body:undefined}))).status,405);
+ assert.equal((await app.fetch(request(batch(),{method:'PUT',body:undefined}))).status,405);
  const withQuery=new Request('https://vaos.example/api/jarvis-learning-review?promote=true',{
   method:'POST',headers:{cookie:`${SESSION_COOKIE}=${createSessionToken(founder)}`,origin:'https://vaos.example','content-type':'application/json'},body:JSON.stringify(batch())});
  assert.equal((await app.fetch(withQuery)).status,422);
@@ -45,4 +45,38 @@ test('raw content, self-review, malformed JSON, empty evidence and oversized inp
  assert.equal((await app.fetch(request({question:'a'.repeat(262145)}))).status,413);
  const r=await app.fetch(request({mode:'SYNTHETIC_ONLY',pairs:[]}));const {data}=await r.json();
  assert.equal(data.candidate.accuracy,null);assert.ok(data.holds.includes('EVALUATION_SAMPLE_INSUFFICIENT'));
+});
+
+test('explicit founder archive consent persists only aggregate metrics and replays by receipt',async()=>{
+ const objects=new Map();
+ const bucket={async put(key,value){objects.set(key,value)},async get(key){const value=objects.get(key);return value?{text:async()=>value}:null;}};
+ const archiveApp=createCloudflareApp({apiHandlers:{'/api/jarvis-learning-review':createJarvisLearningReviewHandler()},
+  assetFetcher:()=>new Response('',{status:404}),runtimeEnv:{VAOS_ARTIFACTS:bucket}});
+ const saved=await archiveApp.fetch(request({operation:'SAVE',confirm:true,batch:batch()}));
+ assert.equal(saved.status,200);
+ const {data}=await saved.json();
+ assert.equal(data.stored,true);assert.equal(data.autoPromotionAuthorized,false);
+ assert.equal(objects.size,1);
+ const stored=[...objects.values()][0];
+ assert.doesNotMatch(stored,/independent-reviewer|sampleId|subjectId|sample-0/);
+ const replayRequest=new Request('https://vaos.example/api/jarvis-learning-review?receipt='+encodeURIComponent(data.receipt),{
+  headers:{cookie:SESSION_COOKIE+'='+createSessionToken(founder)}});
+ const replay=await archiveApp.fetch(replayRequest);
+ assert.equal(replay.status,200);
+ const read=(await replay.json()).data;
+ assert.equal(read.sha256,data.sha256);
+ assert.equal(read.summary.candidate.sampleCount,20);
+ assert.equal(read.learningCertified,false);
+ assert.equal(read.modelChanged,false);
+ assert.equal(read.policyChangesAuthorized,false);
+});
+test('archive requests fail closed without storage, consent or a valid receipt',async()=>{
+ assert.equal((await app.fetch(request({operation:'SAVE',confirm:true,batch:batch()}))).status,503);
+ assert.equal((await app.fetch(request({operation:'SAVE',confirm:false,batch:batch()}))).status,422);
+ const invalid=new Request('https://vaos.example/api/jarvis-learning-review?receipt=../secrets',{
+  headers:{cookie:SESSION_COOKIE+'='+createSessionToken(founder)}});
+ assert.equal((await app.fetch(invalid)).status,422);
+ const unknown=new Request('https://vaos.example/api/jarvis-learning-review?receipt=2026-11-18%2F11111111-1111-4111-8111-111111111111',{
+  headers:{cookie:SESSION_COOKIE+'='+createSessionToken('kaaviyam1519@gmail.com')}});
+ assert.equal((await app.fetch(unknown)).status,403);
 });

@@ -1,3 +1,7 @@
+import { startSceneParallax } from './scene-parallax.mjs';
+
+startSceneParallax(document.querySelector('[data-jarvis-scene]'));
+
 const primary = [
   ['JARVIS', '/workspace', 'workspace'],
   ['Spatial Command', '/spatial-command.html', 'spatial-command'],

@@ -10,7 +10,16 @@
   --shell-accent-bg: #e4eee4;
   --shell-width: 1440px;
   --shell-radius: 12px;
+  --shell-stage: #111b17;
+  --shell-amber: #ffd693;
   --shell-font: Manrope, "Segoe UI", system-ui, sans-serif;
+}
+
+@font-face {
+  font-family: Manrope;
+  src: url("/assets/manrope-latin.woff2") format("woff2");
+  font-weight: 400 800;
+  font-display: swap;
 }
 
 /* Shared palette aliases keep legacy page components on the same theme. */
@@ -1050,3 +1059,150 @@ body.vaos-shell :is(.notice,.notice.is-ready) {
 }
 body.vaos-shell .notice.is-hold { color: #805016 !important; background: #fff1da !important; }
 body.vaos-shell #personal-google-connect { color: var(--shell-accent) !important; }
+
+/* The scene sits behind the page title. Forms and navigation remain in the document plane. */
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] {
+  --stage-ink: #fff8ec;
+  --stage-muted: #e6e9dc;
+  --stage-amber: var(--shell-amber);
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  min-block-size: 212px;
+  align-content: center;
+  margin-block-end: clamp(16px, 2vw, 28px);
+  padding: clamp(22px, 3.5vw, 52px);
+  border: 1px solid #40554c !important;
+  border-radius: var(--shell-radius);
+  background: var(--shell-stage) !important;
+  color: var(--stage-ink) !important;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene]::before,
+body.vaos-shell[data-vaos-view] [data-jarvis-scene]::after {
+  position: absolute;
+  inset: -24px;
+  z-index: -1;
+  content: "";
+  pointer-events: none;
+  transition: transform 200ms ease-out;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene]::before {
+  background:
+    linear-gradient(90deg, #101b17 12%, #101b17f2 40%, #101b1799 61%, #101b1729 86%),
+    url('/assets/jarvis-stage.webp') right 49% / clamp(720px, 90vw, 1250px) auto no-repeat
+    !important;
+  transform: perspective(1080px)
+    translate3d(calc(var(--scene-x, 0px) * .72), calc(var(--scene-y, 0px) * .72), 0)
+    rotateX(calc(var(--scene-rx, 0deg) * .28)) rotateY(calc(var(--scene-ry, 0deg) * .28));
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene]::after {
+  inset: 46% -15% -38%;
+  background:
+    repeating-linear-gradient(90deg, #efd5a241 0 1px, transparent 1px 58px),
+    repeating-linear-gradient(0deg, #efd5a241 0 1px, transparent 1px 37px)
+    !important;
+  mask-image: radial-gradient(ellipse at 76% 48%, #000a, transparent 55%);
+  transform: perspective(300px)
+    translate3d(var(--scene-x, 0px), var(--scene-y, 0px), 0) rotateX(48deg);
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] h1,
+body.vaos-shell.workspace-body[data-vaos-view] [data-jarvis-scene] #module-title {
+  max-inline-size: 18ch;
+  margin: 0;
+  color: var(--stage-ink) !important;
+  -webkit-text-fill-color: currentColor;
+  font-family: var(--shell-font);
+  font-size: clamp(2rem, 4.3vw, 3.85rem);
+  font-weight: 750;
+  line-height: 1.06;
+  letter-spacing: -.045em;
+  overflow-wrap: anywhere;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] h1 em {
+  color: var(--stage-amber) !important;
+  -webkit-text-fill-color: currentColor;
+  font-style: normal;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] :is(.hero-copy > p, .sp-hero-copy > p,
+ .vc-hero > div > p, .va-intelligence-heading > div > p, .mission-intro,
+ .workspace-breadcrumb, .workspace-breadcrumb strong, #module-description, .sp-kicker,
+ .mission-overline, .workspace-overline, .premium-eyebrow),
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] > p,
+body.vaos-shell.workspace-body[data-vaos-view] [data-jarvis-scene] #module-description {
+  max-inline-size: 62ch;
+  color: var(--stage-muted) !important;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] :is(.workspace-overline, .premium-eyebrow,
+ .kicker, .eyebrow, .sp-kicker, .vc-eyebrow, .mission-overline) {
+  color: var(--stage-amber) !important;
+}
+
+body.vaos-shell[data-vaos-view] .jarvis-title-band h1 + p {
+  margin-block: .7rem 0;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] :is(.workspace-breadcrumb, .workspace-overline) {
+  margin-block-end: .65rem;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] label.av-view-picker {
+  color: var(--stage-ink) !important;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] .premium-text-link,
+body.vaos-shell[data-vaos-view] .va-command-intro[data-jarvis-scene] > a {
+  color: var(--stage-amber) !important;
+  background: #202d26;
+}
+
+body.vaos-shell[data-vaos-view] [data-jarvis-scene] :focus-visible {
+  outline-color: var(--stage-amber) !important;
+}
+
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-hero[data-jarvis-scene] {
+  padding: clamp(20px, 3vw, 42px) !important;
+  border-radius: var(--shell-radius);
+}
+
+body.vaos-shell[data-vaos-view] :is(.sp-hero, .vc-hero)[data-jarvis-scene] h1 {
+  font-size: clamp(2rem, 3.55vw, 3.3rem);
+}
+
+body.vaos-shell[data-vaos-view] .sp-hero[data-jarvis-scene]::before {
+  background: linear-gradient(90deg, #101b17, #172b22 62%, #24352d) !important;
+}
+
+@media (max-width: 680px) {
+  body.vaos-shell[data-vaos-view] [data-jarvis-scene] {
+    min-block-size: 178px;
+  }
+
+  body.vaos-shell[data-vaos-view] [data-jarvis-scene]::before {
+    background:
+      linear-gradient(90deg, #101b17f5, #101b17be 74%, #101b1770),
+      url('/assets/jarvis-stage.webp') right center / 680px auto no-repeat
+      !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce), (hover: none), (pointer: coarse) {
+  body.vaos-shell[data-vaos-view] [data-jarvis-scene]::before,
+  body.vaos-shell[data-vaos-view] [data-jarvis-scene]::after {
+    transition: none;
+  }
+
+  body.vaos-shell[data-vaos-view] [data-jarvis-scene]::before {
+    transform: none;
+  }
+
+  body.vaos-shell[data-vaos-view] [data-jarvis-scene]::after {
+    transform: perspective(300px) rotateX(48deg);
+  }
+}

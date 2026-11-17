@@ -3,96 +3,61 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="theme-color" content="#030405" />
-  <meta name="description" content="VAOS Agentic AI Autonomous Ecosystem by Vāyū Shastr Pvt. Ltd. Authorised command access." />
-  <title>VAOS Agentic AI Autonomous Ecosystem · Authorize Access</title>
+  <meta name="theme-color" content="#171b18" />
+  <meta name="description" content="Sign in to the VAOS Agentic AI Autonomous Ecosystem by Vāyū Shastr Pvt. Ltd." />
+  <title>Sign in · VAOS Agentic AI Autonomous Ecosystem</title>
   <link rel="icon" type="image/webp" href="/assets/vayu-shastr-original.webp" />
-  <link rel="preload" href="/assets/vayu-shastr-cinematic.webp" as="image" type="image/webp" />
   <link rel="manifest" href="/manifest.webmanifest" />
-  <link rel="stylesheet" href="/styles.css" />
   <link rel="stylesheet" href="/login-cinematic.css" />
-<link rel="stylesheet" href="/premium.css?v=20261015"/><link rel="stylesheet" href="/vaos-interface.css"/><link rel="stylesheet" href="/vaos-kinetic.css" />
   <link rel="stylesheet" href="/vaos-shell.css" />
 </head>
-<body data-app-page="login" class="vaos-shell va-premium login-body cinematic-login" data-vaos-view="login">
-  <div class="cinematic-scene" id="cinematic-scene" aria-hidden="true">
-    <div class="cinematic-scene__art" data-parallax-art>
-      <img class="cinematic-scene__image" loading="lazy" src="/assets/vayu-shastr-cinematic.webp"
-        alt="" fetchpriority="high" decoding="async" />
+<body data-app-page="login" class="cinematic-login" data-vaos-view="login">
+  <header class="cinematic-chrome">
+    <div class="cinematic-chrome__wordmark">
+      <img src="/assets/vayu-shastr-original.webp" alt="" width="36" height="36" />
+      <span>VAOS <small>Vāyū Shastr</small></span>
     </div>
-    <div class="cinematic-scene__grid"></div>
-    <div class="cinematic-scene__dust" id="cinematic-dust"></div>
-    <div class="cinematic-scene__glow"></div>
-    <div class="cinematic-scene__veil"></div>
-    <div class="cinematic-scene__flash"></div>
-    <div class="cinematic-scene__void"></div>
-  </div>
-
-  <header class="cinematic-chrome" aria-label="Vāyū Shastr secure access">
-    <span class="cinematic-chrome__wordmark"><img class="cinematic-chrome__logo" src="/assets/vayu-shastr-original.webp" alt="" decoding="async" /> VĀYŪ SHASTR <em>/</em> VAOS</span>
-    <span class="cinematic-chrome__node">VAOS Agentic AI Autonomous Ecosystem <span>Private workspace</span></span>
   </header>
 
   <main class="cinematic-layout">
-    <section class="cinematic-identity" aria-label="Vāyū Shastr Pvt Ltd">
-      <span class="cinematic-identity__tag"><i></i> Built for the work ahead.</span>
-      <div class="cinematic-identity__baseline"><span>01 — AUTHORITY</span><span>02 — EXECUTION</span><span>03 — EVIDENCE</span></div>
-    </section>
+    <div class="cinematic-scene" id="cinematic-scene" aria-hidden="true">
+      <div class="cinematic-scene__grid"></div>
+      <div class="cinematic-scene__volume">
+        <div class="cinematic-scene__orbit cinematic-scene__orbit--back"></div>
+        <div class="cinematic-scene__art">
+          <img src="/assets/vayu-shastr-cinematic.webp" width="1672" height="941" alt="" decoding="async" fetchpriority="high" />
+        </div>
+        <div class="cinematic-scene__orbit cinematic-scene__orbit--front"></div>
+      </div>
+    </div>
 
-    <section class="access-console" id="access-console" aria-labelledby="signin-title">
-      <div class="access-console__scan" aria-hidden="true"></div>
-      <header class="access-console__head">
-        <div><span class="access-console__indicator" aria-hidden="true"></span><span>VAOS sign in</span></div>
-        <span class="access-console__edition">Private workspace</span>
-      </header>
-      <div class="access-console__titleblock">
-        <span class="access-console__eyebrow">YOUR WORKSPACE</span>
-        <h1 id="signin-title">Welcome <em>back.</em></h1>
-        <p>Sign in with your VYNDI account to open your workspace.</p>
-      </div>
-      <div class="access-console__telemetry" aria-label="System safeguards">
-        <div><span>AUTHORITY</span><strong>GOVERNED</strong></div>
-        <div><span>SESSION</span><strong>HTTPONLY</strong></div>
-        <div><span>EVIDENCE</span><strong>TRACEABLE</strong></div>
-      </div>
-      <form id="login-form" class="login-form cinematic-form" novalidate>
-        <label for="email"><span>Email</span>
-          <input id="email" name="email" type="email" autocomplete="email" inputmode="email"
-            placeholder="operator@organisation.com" required />
-        </label>
-        <label for="password"><span>Password</span>
-          <input id="password" name="password" type="password" autocomplete="current-password"
-            placeholder="••••••••••••" minlength="8" required />
-        </label>
+    <section class="access-console" aria-labelledby="signin-title">
+      <h1 id="signin-title">Welcome back.</h1>
+      <p class="access-console__intro">Sign in with your VYNDI account.</p>
+      <form id="login-form" class="cinematic-form" method="post" action="/api/login">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" autocomplete="username" inputmode="email"
+          autocapitalize="none" spellcheck="false" required />
+        <label for="password">Password</label>
+        <div class="password-field">
+          <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required />
+          <button type="button" class="text-button password-toggle" id="password-toggle" aria-controls="password" hidden>Show</button>
+        </div>
         <div class="cinematic-form__row">
-          <label class="remember"><input type="checkbox" id="remember" /><span>Remember email</span></label>
-          <button type="button" class="cinematic-text-button" id="access-help">Access help ↗</button>
+          <label class="remember"><input type="checkbox" id="remember" /> Remember email</label>
+          <button type="button" class="text-button" id="access-help">Access help</button>
         </div>
         <button type="submit" class="cinematic-authorize" id="submit-button">
-          <span class="cinematic-authorize__icon" aria-hidden="true">⌁</span>
-          <span>Sign in</span>
-          <span aria-hidden="true">↗</span>
+          <span id="submit-label">Sign in to workspace</span><span aria-hidden="true">→</span>
         </button>
         <p class="login-status" id="login-status" role="status" aria-live="polite"></p>
       </form>
-      <footer class="access-console__footer"><span>●</span> Private session · 8-hour development access <span class="access-console__footer-mark"><img class="access-console__brandmark" src="/assets/vayu-shastr-original.webp" alt="" loading="lazy" /></span></footer>
     </section>
   </main>
 
   <footer class="cinematic-legal">
     <span>© 2026 Vāyū Shastr Pvt. Ltd. All Rights Reserved.</span>
-    <span>GOVERNED INTELLIGENCE · HUMAN AUTHORITY</span>
-    <span>DESIGNED &amp; DEVELOPED BY S. SHYAM SUNDHAR</span>
   </footer>
-
-  <div class="cinematic-portal" id="cinematic-portal" aria-hidden="true" role="status">
-    <div class="cinematic-portal__halo" aria-hidden="true"><span></span><span></span><span></span><img class="cinematic-portal__logo" src="/assets/vayu-shastr-original.webp" alt="" decoding="async" /></div>
-    <p class="cinematic-portal__kicker">AUTHORITY VERIFIED · SESSION ESTABLISHED</p>
-    <h2>ENTERING <em>VAOS</em></h2>
-    <div class="cinematic-portal__bar" aria-hidden="true"><span></span></div>
-    <p class="cinematic-portal__status" id="portal-status">Opening your workspace…</p>
-  </div>
-
-  <script type="module" src="/app.mjs?v=20261011-cinematic-access"></script>
-<script type="module" src="/vaos-interface.mjs"></script></body>
+  <script type="module" src="/app.mjs"></script>
+</body>
 </html>

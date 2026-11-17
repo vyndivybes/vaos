@@ -15,6 +15,7 @@ test('all VAOS HTML workspaces load the shared application shell',async()=>{
   assert.match(styles.at(-1),/href=["']\/vaos-shell\.css["']/i,page+' loads the application shell last');
   assert.equal(styles.filter(link=>link.includes('/vaos-shell.css')).length,1,page+' loads the application shell once');
   if (!['index.html','login.html'].includes(page)) {
+   assert.equal([...html.matchAll(/<section\b[^>]*\bdata-jarvis-scene\b/g)].length,1,page+' has one cinematic stage');
    assert.match(html,/data-vaos-header/);
    assert.match(html,/src="\/vaos-shell\.mjs"/);
   }

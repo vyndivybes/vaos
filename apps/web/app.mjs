@@ -1,13 +1,12 @@
 import { resolveRoute } from './router.mjs';
-import { createCinematicController } from './login-cinematic.mjs';
+import { startSceneParallax } from './scene-parallax.mjs';
 
 const route = resolveRoute(window.location.pathname);
 if (route.redirect && window.location.pathname !== route.redirect) {
   window.history.replaceState({}, '', route.redirect);
 }
 
-const cinematic = createCinematicController();
-cinematic.start();
+startSceneParallax(document.querySelector('#cinematic-scene'));
 
 const form = document.querySelector('#login-form');
 const emailInput = document.querySelector('#email');
@@ -15,7 +14,20 @@ const passwordInput = document.querySelector('#password');
 const rememberInput = document.querySelector('#remember');
 const status = document.querySelector('#login-status');
 const submitButton = document.querySelector('#submit-button');
+const submitLabel = document.querySelector('#submit-label');
 const helpButton = document.querySelector('#access-help');
+const passwordToggle = document.querySelector('#password-toggle');
+
+if (passwordToggle) {
+  passwordToggle.hidden = false;
+  passwordToggle.setAttribute('aria-label', 'Show password');
+  passwordToggle.addEventListener('click', () => {
+    const show = passwordInput.type === 'password';
+    passwordInput.type = show ? 'text' : 'password';
+    passwordToggle.textContent = show ? 'Hide' : 'Show';
+    passwordToggle.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
+}
 
 try {
   const rememberedEmail = localStorage.getItem('vaos_email');
@@ -27,19 +39,19 @@ try {
 
 async function checkExistingSession() {
   try {
-    const response = await fetch('/api/session', { credentials: 'same-origin' });
-    // Existing authorised sessions don't need to replay the login animation.
+    const response = await fetch('/api/session', { credentials: 'same-origin', cache: 'no-store' });
     if (response.ok) window.location.replace('/workspace.html');
   } catch { /* Login form remains available when session check fails. */ }
 }
 
 helpButton?.addEventListener('click', () => {
   status.dataset.state = '';
-  status.textContent = 'Development access is restricted to authorised VAOS test identities.';
+  status.textContent = 'Use your assigned VYNDI credentials. Contact your workspace administrator if you need access.';
 });
 
 form?.addEventListener('submit', async (event) => {
   event.preventDefault();
+  if (submitButton.disabled) return;
   status.textContent = '';
   status.dataset.state = '';
 
@@ -49,7 +61,8 @@ form?.addEventListener('submit', async (event) => {
   }
 
   submitButton.disabled = true;
-  status.textContent = 'Authenticating…';
+  submitLabel.textContent = 'Signing in…';
+  let signedIn = false;
 
   try {
     const response = await fetch('/api/login', {
@@ -61,7 +74,9 @@ form?.addEventListener('submit', async (event) => {
 
     if (!response.ok) {
       status.dataset.state = 'error';
-      status.textContent = 'Invalid authorised development credential.';
+      if (response.status === 401) status.textContent = 'The email or password is incorrect.';
+      else if (response.status === 429) status.textContent = 'Too many attempts. Wait a moment before trying again.';
+      else status.textContent = 'Sign-in is temporarily unavailable. Please try again.';
       return;
     }
 
@@ -71,15 +86,18 @@ form?.addEventListener('submit', async (event) => {
     } catch { /* Storage availability must not block a valid login. */ }
 
     status.dataset.state = 'success';
-    status.textContent = 'Authorized. Opening VAOS…';
-    try { await cinematic.complete(); }
-    finally { window.location.replace('/workspace.html'); }
+    status.textContent = 'Opening your workspace…';
+    submitLabel.textContent = 'Opening workspace…';
+    signedIn = true;
+    window.location.replace('/workspace.html');
   } catch {
-    // A network failure never triggers the success transition.
     status.dataset.state = 'error';
-    status.textContent = 'Authentication service is unavailable.';
+    status.textContent = 'Sign-in is temporarily unavailable. Please try again.';
   } finally {
-    submitButton.disabled = false;
+    if (!signedIn) {
+      submitButton.disabled = false;
+      submitLabel.textContent = 'Sign in to workspace';
+    }
   }
 });
 

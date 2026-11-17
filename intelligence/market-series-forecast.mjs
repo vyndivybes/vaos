@@ -2,7 +2,7 @@
  * NOT a commercial demand forecast; no independent reconciliation implied.
  */
 const hold=(reason='SERIES_NOT_QUALIFIED')=>({
- status:'HOLD',reason,nextValue:null,backtestMAE:null,
+ status:'HOLD',reason,nextValue:null,backtestMAE:null,backtestRMSE:null,baselineRMSE:null,foldErrors:[],empiricalErrorBand:null,productionForecastCertified:false,
  demandForecastQualified:false,forecastQualified:false,independentlyReconciled:false,
  actionAuthorized:false
 });
@@ -29,11 +29,26 @@ export function backtestPublicIndicator(series,{source='UNSPECIFIED',indicator='
  const naive=xs=>xs[xs.length-1],moving=xs=>mean(xs.slice(-3));
  const naiveMAE=score(naive),movingMAE=score(moving);
  const selected=movingMAE<naiveMAE?'MOVING_AVERAGE_3':'LAST_OBSERVATION';
- const predicted=(selected==='MOVING_AVERAGE_3'?moving:naive)(observations);
+ const model=selected==='MOVING_AVERAGE_3'?moving:naive;
+ const predicted=model(observations);
+ // Each fold uses only observations earlier than its holdout year.
+ const rollingErrors=fn=>Array.from({length:3},(_,j)=>{
+  const i=observations.length-3+j;
+  return observations[i]-fn(observations.slice(0,i));
+ });
+ const errors=rollingErrors(model),baselineErrors=rollingErrors(naive);
+ const rmse=xs=>round(Math.sqrt(mean(xs.map(e=>e*e))));
+ const maxAbsoluteError=round(Math.max(...errors.map(e=>Math.abs(e))));
+ const foldErrors=errors.map((e,j)=>({year:sorted[sorted.length-3+j].year,
+  signedError:round(e),absoluteError:round(Math.abs(e))}));
  return {status:'BACKTESTED_INDICATOR_EXTRAPOLATION',source,indicator,unit,
   model:selected,inputYears:sorted.length,firstYear:sorted[0].year,lastYear:sorted.at(-1).year,
   nextYear:sorted.at(-1).year+1,nextValue:round(predicted),
   backtestMAE:Math.min(movingMAE,naiveMAE),baselineMAE:naiveMAE,folds:3,
-  limitations:'Single-step rolling holdout, no exogenous drivers, intervals, independent replication, survey coverage or verified customer demand.',
+  backtestRMSE:rmse(errors),baselineRMSE:rmse(baselineErrors),foldErrors,
+  empiricalErrorBand:{method:'MAX_ABSOLUTE_ROLLING_ERROR_3_FOLDS',
+   lower:round(predicted-maxAbsoluteError),upper:round(predicted+maxAbsoluteError),
+   coverageCertified:false,statisticalInterval:false},productionForecastCertified:false,
+  limitations:'Single-step rolling holdout, no exogenous drivers, calibrated intervals, independent replication, survey coverage or verified customer demand.',
   demandForecastQualified:false,forecastQualified:false,independentlyReconciled:false,actionAuthorized:false};
 }

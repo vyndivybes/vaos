@@ -1,0 +1,39 @@
+name: JARVIS Five-Phase 5P Qualification
+on:
+  pull_request:
+    paths:
+      - 'intelligence/jarvis-coordination*'
+      - 'intelligence/market-series-forecast*'
+      - 'intelligence/market-forecast-quality.test.mjs'
+      - 'intelligence/jarvis-learning-ledger*'
+      - 'apps/web/api/jarvis-learning-review*'
+      - 'apps/web/api/neural-knowledge*'
+      - 'apps/web/api/enterprise-bi*'
+      - 'apps/web/api/jarvis-multimodal*'
+      - '.github/workflows/jarvis-five-phase-qualification.yml'
+      - 'package.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  five-phase:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 'Phase 1 - governed orchestration and read-only observer'
+        run: node --test intelligence/jarvis-coordination.test.mjs platform/execution/production-l5-observer.test.mjs
+      - name: 'Phase 2 - BI evidence and knowledge graph boundaries'
+        run: node --test apps/web/api/enterprise-bi.test.mjs apps/web/api/neural-knowledge.test.mjs
+      - name: 'Phase 3 - rolling-out forecast error'
+        run: node --test intelligence/market-series-forecast.test.mjs intelligence/market-forecast-quality.test.mjs
+      - name: 'Phase 4 - persisted learning aggregate consent and replay'
+        run: node --test intelligence/jarvis-learning-ledger.test.mjs apps/web/api/jarvis-learning-review.test.mjs
+      - name: 'Phase 5 - multimodal provenance and no-approval boundaries'
+        run: node --test apps/web/api/jarvis-multimodal.test.mjs
+      # A green workflow qualifies checked-in logic, not source freshness,
+      # authenticated live behavior, independent reviewers or commercial approval.

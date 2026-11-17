@@ -33,7 +33,7 @@
     "test:g3-sandbox": "node --test intelligence/g3-synthetic-sandbox.test.mjs intelligence/g3-source-readiness.test.mjs intelligence/g3-quantitative-contract.test.mjs intelligence/g3-cross-source-reconciliation.test.mjs intelligence/g3-provenance-preflight.test.mjs",
     "test:jarvis-evaluation": "node --test intelligence/jarvis-evaluation.test.mjs scripts/qualification/jarvis-paired-evaluation.test.mjs scripts/qualification/jarvis-requirements.test.mjs",
     "test:jarvis-coordination": "node --test intelligence/jarvis-coordination.test.mjs",
-    "test:jarvis-learning-review": "node --test apps/web/api/jarvis-learning-review.test.mjs",
+    "test:jarvis-learning-review": "node --test apps/web/api/jarvis-learning-review.test.mjs intelligence/jarvis-learning-ledger.test.mjs",
     "qualify:workforce-software": "node scripts/qualification/workforce-prelaunch.mjs",
     "test:workforce-role-training": "node --test platform/qualification/workforce-role-training.test.mjs && node scripts/qualification/workforce-role-exercises.mjs",
     "test:workforce-training-postgres": "node --test platform/qualification/workforce-training-postgres.test.mjs",

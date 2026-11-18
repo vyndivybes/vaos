@@ -115,6 +115,13 @@ test('A01 compares six cryptographically checked signed reads to separate durabl
  assert.equal(out.body.data.autonomyProgression.currentUnqualifiedStage,'A01');
  assert.equal(out.body.data.autonomyProgression.a02Plan.status,'PREPARE_ONLY');
  assert.equal(out.body.data.autonomyProgression.agentDispatchAuthorized,false);
+ assert.equal(out.body.data.a02OperationalPlan.schemaVersion,'VAOS_JARVIS_A02_OPERATIONAL_REVIEW_PLAN_V1');
+ assert.equal(out.body.data.a02OperationalPlan.sourceWorkItems.length,5);
+ assert.equal(out.body.data.a02OperationalPlan.investigationWorkItems.length,0);
+ assert.equal(out.body.data.a02OperationalPlan.readiness,'HOLD');
+ assert.equal(out.body.data.a02OperationalPlan.productionWriteAuthorized,false);
+ assert.ok(out.body.data.a02OperationalPlan.workItems.every(x=>x.executionEnabled===false));
+
  assert.equal(out.body.data.aiModelInvocations,0);
  assert.deepEqual(out.body.data.sources.map(x=>x.sourceKind),kinds);
  assert.ok(out.body.data.sources.every(x=>x.consistency==='MATCHED'&&x.authoritativeRevisionVerified===false));

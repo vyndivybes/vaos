@@ -10,6 +10,7 @@ import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createA01SourceEvidence,reconcileA01Sources,A01_SOURCE_KINDS} from '../../../intelligence/jarvis-a01-reconciliation.mjs';
 import {runA01SpecialistReview} from '../../../intelligence/jarvis-a01-specialists.mjs';
 import {assessJarvisA01A10} from '../../../intelligence/jarvis-a10-progression.mjs';
+import {planJarvisA02OperationalReview} from '../../../intelligence/jarvis-a02-operational-plan.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const getHealth=async env=>createSupabaseControlStore(resolveDurableControlConfig(env)).getOntologySourceHealth();
@@ -75,7 +76,8 @@ export function createJarvisA01Handler({
     }
    }
    const autonomyProgression=await assessJarvisA01A10({a01:result,specialists:specialistReview});
-   return res.status(200).json({data:{...result,specialistReview,autonomyProgression}});
+   const a02OperationalPlan=planJarvisA02OperationalReview({a01:result,specialistReview});
+   return res.status(200).json({data:{...result,specialistReview,autonomyProgression,a02OperationalPlan}});
   }catch{return res.status(503).json(apiError('A01_RECONCILIATION_HOLD','Evidence could not be reconciled'));}
  };
 }

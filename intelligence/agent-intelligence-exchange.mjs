@@ -1,10 +1,15 @@
 import { ORIGINAL_VAOS_AGENT_IDS, VYNDI_OPERATIONAL_AGENT_IDS } from '../platform/runtime/vaos-eight-operating-model.mjs';
 
-export const AGENT_EXCHANGE_CRONS = Object.freeze({
-  '30 2 * * *': 'daily',   // 08:00 IST: previous calendar day
-  '45 2 * * 1': 'weekly', // Monday 08:15 IST: previous Monday–Sunday
-  '0 3 1 * *': 'monthly', // 1st 08:30 IST: previous month
-});
+// Reuse the existing six-times-hourly trigger: zero additional Cron Trigger slots.
+export const AGENT_EXCHANGE_TRIGGER='5,15,25,35,45,55 * * * *';
+function reportKind(cron,when){
+  if(cron!==AGENT_EXCHANGE_TRIGGER)return null;
+  const hour=when.getUTCHours(),minute=when.getUTCMinutes();
+  if(hour===2&&minute===35)return 'daily'; // 08:05 IST, previous day
+  if(hour===2&&minute===45&&when.getUTCDay()===1)return 'weekly'; // Monday 08:15 IST
+  if(hour===3&&minute===5&&when.getUTCDate()===1)return 'monthly'; // 1st 08:35 IST
+  return null;
+}
 
 const MS_DAY=86400000;
 const shiftDay=(day,offset)=>new Date(Date.parse(day+'T00:00:00Z')+offset*MS_DAY).toISOString().slice(0,10);
@@ -13,10 +18,10 @@ const safeCount=(value)=>Number.isSafeInteger(value)&&value>=0&&value<=100000000
 const validInstant=value=>typeof value==='string'&&Number.isFinite(Date.parse(value))?new Date(value).toISOString():null;
 
 export function periodForCron(cron,scheduledTime){
-  const kind=AGENT_EXCHANGE_CRONS[cron];
-  if(!kind)return null;
   const when=new Date(scheduledTime);
   if(!Number.isFinite(when.getTime()))throw Error('EXCHANGE_SCHEDULE_INVALID');
+  const kind=reportKind(cron,when);
+  if(!kind)return null;
   // Reports follow the India civil calendar, not the Cloudflare host timezone.
   const day=new Date(when.getTime()+330*60000).toISOString().slice(0,10);
   if(kind==='daily'){

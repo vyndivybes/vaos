@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {reconcileA01Sources,createA01SourceEvidence} from '../../intelligence/jarvis-a01-reconciliation.mjs';
+import {reconcileA01Sources,createA01SourceEvidence} from '../../../intelligence/jarvis-a01-reconciliation.mjs';
 import {createJarvisA01Handler} from './jarvis-a01.mjs';
 import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
 

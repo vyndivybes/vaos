@@ -7,6 +7,8 @@ on:
       - 'apps/web/api/jarvis-autonomy-investigate*'
       - 'apps/web/api/jarvis-a01.mjs'
       - 'apps/web/api/jarvis-a01.test.mjs'
+      - 'apps/web/api/jarvis-a01-evidence*'
+      - 'intelligence/jarvis-a01-evidence-archive*'
       - 'intelligence/jarvis-a01-reconciliation.mjs'
       - 'intelligence/jarvis-a01-specialists*'
       - 'apps/web/lib/feature-flags.mjs'
@@ -40,7 +42,7 @@ jobs:
       - name: 'Phase 3 - rolling-out forecast error'
         run: node --test intelligence/market-series-forecast.test.mjs intelligence/market-forecast-quality.test.mjs
       - name: 'Phase 4 - persisted learning aggregate consent and replay'
-        run: node --test intelligence/jarvis-learning-ledger.test.mjs apps/web/api/jarvis-learning-review.test.mjs
+        run: node --test intelligence/jarvis-learning-ledger.test.mjs apps/web/api/jarvis-learning-review.test.mjs intelligence/jarvis-a01-evidence-archive.test.mjs apps/web/api/jarvis-a01-evidence.test.mjs
       - name: 'Phase 5 - multimodal provenance and no-approval boundaries'
         run: node --test apps/web/api/jarvis-multimodal.test.mjs
       # A green workflow qualifies checked-in logic, not source freshness,

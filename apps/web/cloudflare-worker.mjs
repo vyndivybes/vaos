@@ -78,6 +78,7 @@ import ontologySourceStatus from './api/ontology-source-status.mjs';
 import ontologyIngestCanary from './api/ontology-ingest-canary.mjs';
 import ontologyHealth from './api/ontology-health.mjs';
 import jarvisA01 from './api/jarvis-a01.mjs';
+import jarvisA01Evidence from './api/jarvis-a01-evidence.mjs';
 import nvidiaOntologyReadiness from './api/nvidia-ontology-readiness.mjs';
 import {runScheduledOntologyRefresh,ONTOLOGY_REFRESH_CRON} from './lib/ontology-scheduled-refresh.mjs';
 import voiceAiFocus from './api/voice-ai-focus.mjs';
@@ -176,6 +177,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/ontology/ingest-canary': ontologyIngestCanary,
   '/api/ontology/health': ontologyHealth,
   '/api/jarvis-a01': jarvisA01,
+  '/api/jarvis-a01-evidence': jarvisA01Evidence,
   '/api/nvidia/ontology/readiness': nvidiaOntologyReadiness,
   '/api/voice-ai-focus': voiceAiFocus,
 });

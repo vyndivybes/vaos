@@ -29,6 +29,7 @@ const workspaces = [
   ['Manage', [
     ['JARVIS skills', '/skills.html', 'skills'],
     ['JARVIS checks', '/founder-console.html#g3-intelligence-panel'],
+    ['A03 signed-read trial', '/jarvis-a03-canary.html', 'jarvis-a03-canary'],
     ['Slack connection', '/slack-qualification.html', 'slack-qualification']
   ]]
 ];

@@ -5,6 +5,9 @@ on:
       - 'intelligence/jarvis-coordination*'
       - 'intelligence/jarvis-readonly-autonomy*'
       - 'apps/web/api/jarvis-autonomy-investigate*'
+      - 'apps/web/api/jarvis-a01.mjs'
+      - 'apps/web/api/jarvis-a01.test.mjs'
+      - 'intelligence/jarvis-a01-reconciliation.mjs'
       - 'apps/web/lib/feature-flags.mjs'
       - 'wrangler.jsonc'
       - 'intelligence/market-series-forecast*'
@@ -32,7 +35,7 @@ jobs:
       - name: 'Phase 1 - governed orchestration and read-only observer'
         run: node --test intelligence/jarvis-coordination.test.mjs intelligence/jarvis-readonly-autonomy.test.mjs apps/web/api/jarvis-autonomy-investigate.test.mjs platform/execution/production-l5-observer.test.mjs
       - name: 'Phase 2 - BI evidence and knowledge graph boundaries'
-        run: node --test apps/web/api/enterprise-bi.test.mjs apps/web/api/neural-knowledge.test.mjs
+        run: node --test apps/web/api/enterprise-bi.test.mjs apps/web/api/neural-knowledge.test.mjs apps/web/api/jarvis-a01.test.mjs
       - name: 'Phase 3 - rolling-out forecast error'
         run: node --test intelligence/market-series-forecast.test.mjs intelligence/market-forecast-quality.test.mjs
       - name: 'Phase 4 - persisted learning aggregate consent and replay'

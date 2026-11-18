@@ -7,13 +7,15 @@ const primary = [
   ['Spatial Command', '/spatial-command.html', 'spatial-command'],
   ['Analytics', '/visual-intelligence.html?viz=overview', 'visual-intelligence'],
   ['Knowledge', '/neural-knowledge.html', 'neural-knowledge'],
-  ['Missions', '/mission-status.html', 'mission-status']
+  ['Missions', '/mission-status.html', 'mission-status'],
+  ['Agent Exchange', '/agent-exchange.html', 'agent-exchange']
 ];
 
 const workspaces = [
   ['Operate', [
     ['Founder Command', '/founder-console.html', 'founder-console'],
     ['Agent monitoring', '/agent-supervision.html', 'agent-supervision'],
+    ['Agent Exchange', '/agent-exchange.html', 'agent-exchange'],
     ['Team analytics', '/workforce-analytics.html', 'workforce-analytics'],
     ['Company startup', '/prelaunch-workspace.html', 'prelaunch-workspace'],
     ['Workforce exercises', '/workforce-exercise.html', 'workforce-exercise']

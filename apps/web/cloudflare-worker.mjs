@@ -66,6 +66,8 @@ import jarvisSourceAudit from './api/jarvis-source-audit.mjs';
 import jarvisG3Readiness from './api/jarvis-g3-readiness.mjs';
 import jarvisCoordination from './api/jarvis-coordination.mjs';
 import jarvisLearningReview from './api/jarvis-learning-review.mjs';
+import agentExchange from './api/agent-exchange.mjs';
+import {runScheduledAgentExchange} from '../../platform/execution/jarvis-agent-exchange.mjs';
 import engineeringKnowledge from './api/engineering-knowledge.mjs';
 import groupPortfolio from './api/group-portfolio.mjs';
 import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
@@ -165,6 +167,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/jarvis-g3-readiness': jarvisG3Readiness,
   '/api/jarvis-coordination': jarvisCoordination,
   '/api/jarvis-learning-review': jarvisLearningReview,
+  '/api/agent-exchange': agentExchange,
   '/api/engineering-knowledge': engineeringKnowledge,
   '/api/group-portfolio': groupPortfolio,
   '/api/voice-evidence-ai': voiceEvidenceAi,
@@ -199,7 +202,7 @@ function jsonError(status, code, message) {
 }
 
 function uncachedWorkspaceAsset(path, response) {
-  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html', '/market-intelligence.html', '/neural-knowledge.html', '/spatial-command.html'].includes(path);
+  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html', '/market-intelligence.html', '/neural-knowledge.html', '/spatial-command.html', '/agent-exchange.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
   const isWorkspaceStylesheet = path.endsWith('.css');
   if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;
@@ -423,6 +426,13 @@ export default {
       sourceStatus:result.evidence?.sourceQualification||null,
       demandForecastQualified:false,actionAuthorized:false
     }))).catch(()=>console.warn('VAOS_DAILY_MARKET_MONITOR_HOLD'));
+    // JIX reuses the existing ten-minute trigger at 08:05 daily,
+    // 08:15 Monday and 08:35 on the 1st (IST). Never block mission execution.
+    const agentExchange=Promise.resolve().then(()=>runScheduledAgentExchange({
+      env,cron:_controller?.cron,scheduledTime:_controller?.scheduledTime
+    })).then(result=>{
+      if(result.status!=='SKIP')console.log('VAOS_AGENT_EXCHANGE_DIGEST',JSON.stringify(result));
+    }).catch(()=>console.warn('VAOS_AGENT_EXCHANGE_DIGEST_HOLD'));
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.
     // Preserve the independently qualified four-provider scheduling contract.
@@ -431,7 +441,7 @@ export default {
     });
     // Keep the optional, fail-closed observer within waitUntil without changing
     // any existing mission/watchdog/synthetic/Stirling result semantics.
-    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert,googleDigest,marketMonitor]).then(results=>{
+    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert,googleDigest,marketMonitor,agentExchange]).then(results=>{
       if(results[0].status==='rejected')throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 

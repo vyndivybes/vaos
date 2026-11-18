@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const sql=readFileSync(new URL('../../supabase/migrations/20261118210200_a01_po_evidence_recording_v1.sql',import.meta.url),'utf8');
+const sql=readFileSync(new URL('../../supabase/migrations/20261118210405_a01_po_evidence_recording_v1.sql',import.meta.url),'utf8');
 
 test('A01 PO evidence remains scoped to one authorized procurement handoff',()=>{
   assert.match(sql,/v_a01_po\s*:=\s*\(/i);

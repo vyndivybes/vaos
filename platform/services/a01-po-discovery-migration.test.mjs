@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
-const source=readFileSync(new URL('../../supabase/migrations/20261118204000_a01_po_runnable_discovery_v1.sql',import.meta.url),'utf8');
+const source=readFileSync(new URL('../../supabase/migrations/20261118203940_a01_po_runnable_discovery_v1.sql',import.meta.url),'utf8');
 const active=source.split('-- A01-only active observation admission')[1]?.split('-- Independent-closure rule')[0];
 const closure=source.split('-- Independent-closure rule')[1];
 

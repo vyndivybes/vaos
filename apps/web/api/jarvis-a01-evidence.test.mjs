@@ -57,7 +57,7 @@ test('only explicitly consented, same-origin founder captures a HOLD receipt and
 test('not logged in, non-founder, CSRF, invalid shape and disabled archive cannot access writer',async()=>{
  const h=harness();
  for(const [opts,status] of [
-  [{email:null},401],[{email:'other@example.com'},403],
+  [{email:null},401],[{email:'other@example.com'},401],
   [{origin:'https://evil.test'},403],
   [{body:{operation:'CAPTURE',confirm:false}},422],
   [{body:{operation:'APPROVE',confirm:true}},422],

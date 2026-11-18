@@ -3,6 +3,52 @@ import assert from 'node:assert/strict';
 import {reconcileA01Sources,createA01SourceEvidence} from '../../../intelligence/jarvis-a01-reconciliation.mjs';
 import {createJarvisA01Handler} from './jarvis-a01.mjs';
 import {DEFAULT_API_HANDLERS} from '../cloudflare-worker.mjs';
+import {assessJarvisA01A10, JARVIS_A01_A10_GATES} from '../../../intelligence/jarvis-a10-progression.mjs';
+
+test('A01-A10 rejects advertised autonomy when independent source authority and verifier are missing',async()=>{
+ const source={schemaVersion:'VAOS_JARVIS_A01_SOURCE_RECONCILIATION_V1',consistencyGate:'PASS',
+  businessSourceAuthorityVerified:false,independentBusinessFactsCertified:false,
+  sources:[
+   {sourceKind:'inventory',consistency:'MATCHED',authoritativeRevisionVerified:false,sourceCompletenessVerified:false,records:[{sku:'PRIVATE-CARBON'}]},
+   {sourceKind:'shortages',consistency:'MATCHED',authoritativeRevisionVerified:false,sourceCompletenessVerified:false},
+   {sourceKind:'purchaseOrders',consistency:'MATCHED',authoritativeRevisionVerified:false,sourceCompletenessVerified:false}
+  ]};
+ const plan=await assessJarvisA01A10({a01:source,specialists:{status:'BOUNDED_EVIDENCE',sourceRevisionVerified:false}});
+ assert.equal(plan.stages.length,10);
+ assert.deepEqual(plan.stages.map(x=>x.id),JARVIS_A01_A10_GATES.map(x=>x.id));
+ assert.equal(plan.stages[0].status,'HOLD');
+ assert.equal(plan.stages[1].status,'HOLD');
+ assert.equal(plan.stages[9].status,'HOLD');
+ assert.equal(plan.a02Plan.status,'PREPARE_ONLY');
+ assert.equal(plan.a02Plan.workPackages.length,3);
+ assert.ok(plan.a02Plan.workPackages.every(x=>x.executionEnabled===false&&x.readOnly===true));
+ assert.equal(plan.productionWriteAuthorized,false);
+ assert.equal(plan.agentDispatchAuthorized,false);
+ assert.ok(!JSON.stringify(plan).includes('PRIVATE-CARBON'));
+});
+
+test('A01-A10 ignores forged evidence despite a permissive verifier when source-of-record is unverified',async()=>{
+ const a01={schemaVersion:'VAOS_JARVIS_A01_SOURCE_RECONCILIATION_V1',consistencyGate:'PASS',
+  businessSourceAuthorityVerified:false,independentBusinessFactsCertified:false,
+  sources:['inventory','shortages','purchaseOrders'].map(sourceKind=>({sourceKind,consistency:'MATCHED',authoritativeRevisionVerified:false,sourceCompletenessVerified:false}))};
+ const reported=Object.fromEntries(JARVIS_A01_A10_GATES.map(g=>[g.id,{
+  stageId:g.id,kind:g.proofKind,reviewer:'independent-qa',implementer:'developer',
+  releaseSha:'a'.repeat(40),proofSha256:'b'.repeat(64),
+  verifiedAt:'2026-11-18T21:00:00Z',expiresAt:'2026-11-20T21:00:00Z',
+  negativeControlsPassed:true
+ }]));
+ const r=await assessJarvisA01A10({a01,specialists:{status:'BOUNDED_EVIDENCE',sourceRevisionVerified:false},
+  attestations:reported,verifyEvidence:async()=>true,releaseSha:'a'.repeat(40),now:Date.parse('2026-11-19T00:00:00Z')});
+ assert.equal(r.status,'HOLD');
+ assert.ok(r.stages.every(g=>g.status==='HOLD'));
+ assert.equal(r.stages[0].reason,'SOURCE_AUTHORITY_UNVERIFIED');
+});
+
+test('A01-A10 rejects malformed source layouts instead of self-certifying a stage',async()=>{
+ await assert.rejects(assessJarvisA01A10({a01:{schemaVersion:'VAOS_JARVIS_A01_SOURCE_RECONCILIATION_V1',sources:[]}}),
+  /JARVIS_PROGRESSION_SOURCE_INVALID/);
+});
+
 
 const NOW='2026-11-18T00:40:00.000Z';
 const kinds=['inventory','shortages','purchaseOrders'];
@@ -65,6 +111,10 @@ test('A01 compares six cryptographically checked signed reads to separate durabl
  assert.equal(out.body.data.consistencyGate,'PASS');
  assert.equal(out.body.data.businessSourceAuthorityVerified,false);
  assert.equal(out.body.data.productionWriteAuthorized,false);
+ assert.equal(out.body.data.autonomyProgression.stages.length,10);
+ assert.equal(out.body.data.autonomyProgression.currentUnqualifiedStage,'A01');
+ assert.equal(out.body.data.autonomyProgression.a02Plan.status,'PREPARE_ONLY');
+ assert.equal(out.body.data.autonomyProgression.agentDispatchAuthorized,false);
  assert.equal(out.body.data.aiModelInvocations,0);
  assert.deepEqual(out.body.data.sources.map(x=>x.sourceKind),kinds);
  assert.ok(out.body.data.sources.every(x=>x.consistency==='MATCHED'&&x.authoritativeRevisionVerified===false));
@@ -149,4 +199,28 @@ test('A01 skips cross-domain specialist reads when source consistency gate fails
  assert.equal(x.body.data.specialistReview.status,'NOT_RUN_SOURCE_GATE_HOLD');
  assert.equal(specialists,0);
  assert.equal(calls,6);
+});
+
+test('A01-A10 gate controller can certify only sequential independently verified exact-SHA records',async()=>{
+ const a01={schemaVersion:'VAOS_JARVIS_A01_SOURCE_RECONCILIATION_V1',consistencyGate:'PASS',
+  businessSourceAuthorityVerified:true,independentBusinessFactsCertified:true,
+  sources:['inventory','shortages','purchaseOrders'].map(sourceKind=>({sourceKind,consistency:'MATCHED',authoritativeRevisionVerified:true,sourceCompletenessVerified:true}))};
+ const specialists={status:'BOUNDED_EVIDENCE',sourceRevisionVerified:true,completeDatasetVerified:true};
+ const releaseSha='a'.repeat(40);
+ const attestations=Object.fromEntries(JARVIS_A01_A10_GATES.map(g=>[g.id,{
+  stageId:g.id,kind:g.proofKind,reviewer:'independent-qa',implementer:'developer',
+  releaseSha,proofSha256:'b'.repeat(64),verifiedAt:'2026-11-18T21:00:00Z',
+  expiresAt:'2026-11-20T21:00:00Z',negativeControlsPassed:true
+ }]));
+ const verified=await assessJarvisA01A10({a01,specialists,attestations,releaseSha,
+  now:Date.parse('2026-11-19T00:00:00Z'),verifyEvidence:async r=>r.reviewer==='independent-qa'});
+ assert.equal(verified.status,'QUALIFICATION_EVIDENCE_COMPLETE');
+ assert.ok(verified.stages.every(g=>g.status==='PASS'));
+ assert.equal(verified.productionWriteAuthorized,false);
+ assert.equal(verified.executionAuthorityUnaffected,true);
+ attestations.A05={...attestations.A05,proofSha256:'tampered'};
+ const blocked=await assessJarvisA01A10({a01,specialists,attestations,releaseSha,
+  now:Date.parse('2026-11-19T00:00:00Z'),verifyEvidence:async()=>true});
+ assert.equal(blocked.stages.find(g=>g.id==='A05').status,'HOLD');
+ assert.equal(blocked.stages.find(g=>g.id==='A10').reason,'PREVIOUS_STAGE_HOLD');
 });

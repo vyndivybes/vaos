@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-const sql=readFileSync(new URL('../../supabase/migrations/20261118213500_l5_generic_claim_replay_fence_v1.sql',import.meta.url),'utf8');
+const sql=readFileSync(new URL('../../supabase/migrations/20261118213713_l5_generic_claim_replay_fence_v1.sql',import.meta.url),'utf8');
 const scope=/and not \(action_type='PRODUCTION\.OBSERVE_WIP'\s*and payload->>'monitoringScope'='PRODUCTION_L5_READ_ONLY_V1'\)/gi;
 
 test('generic claim excludes every scoped L5 job including pending, failed, and expired lease',()=>{

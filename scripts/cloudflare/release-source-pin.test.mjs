@@ -32,3 +32,16 @@ test('PR Cloudflare smoke uses same locked Wrangler and detects release workflow
   assert.match(smoke,/\.github\/workflows\/jarvis-controlled-release\.yml/);
   assert.match(smoke,/name: Verify Cloudflare release uses the tested Wrangler lockfile/);
 });
+
+test('core release paths use the current Node 24-capable setup action',()=>{
+  const webSmoke=read('../../.github/workflows/web-smoke.yml');
+  for(const [name,source,expected] of [
+    ['controlled release',workflow,2],
+    ['Cloudflare PR smoke',smoke,1],
+    ['web smoke',webSmoke,1],
+  ]){
+    assert.equal((source.match(/uses: actions\/setup-node@v7\b/g)||[]).length,expected,name+' action count');
+    assert.doesNotMatch(source,/uses: actions\/setup-node@v4\b/,name+' retains deprecated action');
+    assert.match(source,/runs-on: ubuntu-latest/,name+' requires supported GitHub-hosted runner');
+  }
+});

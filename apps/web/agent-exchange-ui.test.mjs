@@ -17,7 +17,8 @@ test('JARVIS Exchange is a first-party VAOS workspace with evidence and semantic
  assert.match(html,/data-exchange-period="monthly"/);
  assert.match(html,/vaos-shell\.mjs/);
  assert.match(html,/<section[^>]*data-jarvis-scene/);
- assert.match(html,/<link rel="stylesheet" href="\/vaos-shell\.css">\s*<\/head>/);
+ const styles=[...html.matchAll(/<link\b[^>]*rel=["']stylesheet["'][^>]*>/gi)].map(match=>match[0]);
+ assert.match(styles.at(-1),/href=["']\/vaos-shell\.css["']/i);
  assert.match(shell,/Agent Exchange.*\/agent-exchange\.html/);
  assert.match(source,/\/api\/agent-exchange\?period=/);
  assert.match(html,/agent-authored messages are not yet commissioned/i);

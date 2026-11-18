@@ -26,9 +26,9 @@ test('release preserves SHA fence, protected environment, and regression admissi
 });
 
 test('PR Cloudflare smoke uses same locked Wrangler and detects release workflow edits',()=>{
-  assert.match(smoke,/npx --no-install wrangler deploy --dry-run --config wrangler\\.jsonc/);
-  assert.doesNotMatch(smoke,/npx\\s+(?:--yes\\s+)?wrangler@/);
-  assert.match(smoke,/scripts\\/cloudflare\\/release-source-pin\\.test\\.mjs/);
-  assert.match(smoke,/\\.github\\/workflows\\/jarvis-controlled-release\\.yml/);
+  assert.match(smoke,/npx --no-install wrangler deploy --dry-run --config wrangler\.jsonc/);
+  assert.doesNotMatch(smoke,/npx\s+(?:--yes\s+)?wrangler@/);
+  assert.match(smoke,/scripts\/cloudflare\/release-source-pin\.test\.mjs/);
+  assert.match(smoke,/\.github\/workflows\/jarvis-controlled-release\.yml/);
   assert.match(smoke,/name: Verify Cloudflare release uses the tested Wrangler lockfile/);
 });

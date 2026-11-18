@@ -4,6 +4,7 @@ import {selectDocumentEvidence,validateMultimodalAdvisory,validateClientDocument
 import {reviewSpecialistExcerpt} from '../lib/jarvis-specialist-review.mjs';
 import {analyzeVideoSense} from '../lib/video-sense.mjs';
 import {featureControl} from '../lib/feature-flags.mjs';
+import {runDevelopmentProbe} from '../../../platform/ai-independence/development-probe.mjs';
 const digest=async bytes=>Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),v=>v.toString(16).padStart(2,'0')).join('');
 const decodedBytes=value=>Uint8Array.from(atob(value),c=>c.charCodeAt(0));
 function frameContext(value){
@@ -26,7 +27,7 @@ const imageValid=image=>{
  if(m[1]==='jpeg')return bytes.charCodeAt(0)===255&&bytes.charCodeAt(1)===216;
  return bytes.startsWith('RIFF')&&bytes.slice(8,12)==='WEBP';
 };
-export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE])}={}){
+export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE]),developmentProbe=runDevelopmentProbe}={}){
  return async function handler(req,res){
   res.setHeader('Cache-Control','no-store');res.setHeader('X-Content-Type-Options','nosniff');
   if(!['GET','POST'].includes(req.method))return reply(res,405,{error:{code:'METHOD_NOT_ALLOWED'}});
@@ -41,6 +42,11 @@ export function createJarvisMultimodalHandler({getSession=(req)=>verifySessionTo
   if(!req.body||typeof req.body!=='object'||Array.isArray(req.body)||JSON.stringify(req.body).length>1360000)return reply(res,413,{error:{code:'INPUT_INVALID_OR_TOO_LARGE'}});
   const b=req.body;
   if(b.confirm!==true)return reply(res,400,{error:{code:'EXPLICIT_CONSENT_REQUIRED'}});
+  if(b.operation==='DEVELOPMENT_TEXT_PROBE'){
+   if(Object.keys(b).sort().join(',')!=='confirm,operation')return reply(res,422,{error:{code:'SYNTHETIC_FIXTURE_ONLY'}});
+   const data=await developmentProbe({env:req.env,request:{confirm:true}});
+   return reply(res,data.status==='OK'?200:409,{data});
+  }
   if(b.operation==='CONVERT_DOCUMENT'){
    if(!enabled)return reply(res,409,{error:{code:'MULTIMODAL_DISABLED'}});
    const err=validateDocumentUpload(b);if(err)return reply(res,415,{error:{code:'DOCUMENT_REJECTED',message:err}});

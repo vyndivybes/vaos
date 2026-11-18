@@ -37,7 +37,8 @@ export function projectExecutiveIntelligence(enterprise,finance=null,{conversion
   finance:{...hold,companyRevenueInr:null,groupRevenueInr:null,groupConsolidationQualified:false},
   dataReadiness:Object.fromEntries(['crm','hr','logistics','finance','groupConsolidation']
    .map(id=>[id,{status:'HOLD',reason:'Signed executive source unavailable.'}]))};
- const customers=source(enterprise,'crmCustomers'),followups=source(enterprise,'crmFollowups');
+ const customers=source(enterprise,'crmCustomers'),followups=source(enterprise,'crmFollowups'),
+  crmLinks=source(enterprise,'crmOrderLinks');
  const staff=source(enterprise,'hrWorkforce'),attendance=source(enterprise,'hrAttendance'),
   payroll=source(enterprise,'hrPayrollReadiness'),dispatch=source(enterprise,'dispatch');
  const crmReady=customers!==null&&followups!==null,hrReady=staff!==null&&attendance!==null&&payroll!==null;
@@ -56,7 +57,8 @@ export function projectExecutiveIntelligence(enterprise,finance=null,{conversion
  const dataReadiness={
   crm:{status:'HOLD',reason:!crmReady?'CRM source unavailable or incomplete.':
    !crmRows?'No CRM customer and conversion history for a predictive forecast.':
-   'CRM win/loss history and dated conversion calibration are not available in this aggregate source.'},
+   crmLinks===null?'CRM customer-to-sales-order linkage unavailable; win/loss calibration is not qualified.':
+   'Customer-linked order statuses are observed but historical opportunity vintages and dated win/loss calibration remain unavailable.'},
   hr:{status:'HOLD',reason:!hrReady?'HR attendance and payroll sources unavailable or unqualified.':
    !attendanceRows||!payrollRows?'No attendance and payroll readiness evidence sufficient for HR qualification.':
    payrollHolds?'Payroll readiness holds prevent qualified HR operations.':
@@ -79,6 +81,10 @@ export function projectExecutiveIntelligence(enterprise,finance=null,{conversion
    overdueFollowups:crmReady?count(followups,r=>r.category==='followup'&&r.status==='overdue'):null,
    illustrativeConverts:prospects===null?null:Math.round(prospects*conversionPct/100*100)/100,
    assumptionPct:conversionPct,forecastQualified:false,
+   orderLinkStatus:crmLinks===null?'HOLD':'OBSERVED',
+   linkedSalesOrders:crmLinks===null?null:count(crmLinks,()=>true),
+   linkedConfirmedOrders:crmLinks===null?null:count(crmLinks,r=>r.status==='confirmed'),
+   linkedDeliveredOrders:crmLinks===null?null:count(crmLinks,r=>r.status==='delivered'),
    note:'Assumed conversion of current prospect records, not a dated sales or revenue forecast; existing CRM lacks qualified probability/timing vintages.'},
   hr:{status:hrReady?'OBSERVED':'HOLD',
    approvedPersonnelRecords:hrReady?count(staff,r=>r.status==='approved'):null,

@@ -30,6 +30,10 @@ function render(){
  const {crm,hr,logistics,finance:financial}=result;
  addMetric(host,'CRM prospects',display(crm.prospectCustomers),'Current customer master · '+crm.status);
  addMetric(host,'CRM overdue follow-ups',display(crm.overdueFollowups),'All recorded dates · '+crm.status);
+ addMetric(host,'Customer-linked confirmed orders',display(crm.linkedConfirmedOrders),
+  'Canonical order linkage · '+crm.orderLinkStatus);
+ addMetric(host,'Customer-linked delivered orders',display(crm.linkedDeliveredOrders),
+  'Order status, not receipt of cash · '+crm.orderLinkStatus);
  addMetric(host,'Possible prospect conversions · assumption',display(crm.illustrativeConverts),
   'What-if at '+$('wa-exec-conversion').value+'% · Not a forecast');
  addMetric(host,'Approved People records',display(hr.approvedPersonnelRecords),'Not verified active headcount · '+hr.status);
@@ -49,7 +53,7 @@ function render(){
    (readiness?.reason||'Source unqualified.')+' '+(domain.note||domain.reason||''));
  }
  addNote(detail,'Next governance actions',
-  'Approve CRM conversion assumptions and dated opportunity histories before predictive forecasts. Qualify human attendance and payroll sources. Add carrier tracking, lane cost and promised delivery dates before route/OTIF optimization. Complete division-level transaction attribution and independent elimination reconciliation before group P&L or cash consolidation.');
+  'Qualify dated CRM opportunity stage and win/loss histories before predictive conversion.  Qualify human attendance and payroll sources. Add carrier tracking, lane cost and promised delivery dates before route/OTIF optimization. Complete division-level transaction attribution and independent elimination reconciliation before group P&L or cash consolidation.');
 }
 async function read(url){
  const reply=await fetch(url,{credentials:'same-origin',cache:'no-store'});

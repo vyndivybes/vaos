@@ -66,6 +66,9 @@ import jarvisSourceAudit from './api/jarvis-source-audit.mjs';
 import jarvisG3Readiness from './api/jarvis-g3-readiness.mjs';
 import jarvisCoordination from './api/jarvis-coordination.mjs';
 import jarvisLearningReview from './api/jarvis-learning-review.mjs';
+import agentExchange from './api/agent-exchange.mjs';
+import {AGENT_EXCHANGE_CRONS} from '../../intelligence/agent-intelligence-exchange.mjs';
+import {runScheduledAgentExchange} from '../../platform/execution/jarvis-agent-exchange.mjs';
 import engineeringKnowledge from './api/engineering-knowledge.mjs';
 import groupPortfolio from './api/group-portfolio.mjs';
 import voiceEvidenceAi from './api/voice-evidence-ai.mjs';
@@ -165,6 +168,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/jarvis-g3-readiness': jarvisG3Readiness,
   '/api/jarvis-coordination': jarvisCoordination,
   '/api/jarvis-learning-review': jarvisLearningReview,
+  '/api/agent-exchange': agentExchange,
   '/api/engineering-knowledge': engineeringKnowledge,
   '/api/group-portfolio': groupPortfolio,
   '/api/voice-evidence-ai': voiceEvidenceAi,
@@ -199,7 +203,7 @@ function jsonError(status, code, message) {
 }
 
 function uncachedWorkspaceAsset(path, response) {
-  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html', '/market-intelligence.html', '/neural-knowledge.html', '/spatial-command.html'].includes(path);
+  const isWorkspaceHtml = ['/workspace', '/workspace.html', '/skills', '/skills.html', '/mission-status', '/mission-status.html', '/founder-console.html', '/workforce-analytics.html', '/prelaunch-workspace.html', '/engineering-viewer.html', '/visual-command.html', '/visual-intelligence.html', '/market-intelligence.html', '/neural-knowledge.html', '/spatial-command.html', '/agent-exchange.html'].includes(path);
   const isExecutableModule = path.endsWith('.mjs') || path.endsWith('.js');
   const isWorkspaceStylesheet = path.endsWith('.css');
   if (!isWorkspaceHtml && !isExecutableModule && !isWorkspaceStylesheet) return response;
@@ -285,6 +289,16 @@ export function createCloudflareApp({
 
 export default {
   async scheduled(_controller, env, ctx) {
+    // JIX has dedicated cron triggers: no existing mission, market, or watchdog tasks run.
+    if (Object.hasOwn(AGENT_EXCHANGE_CRONS,_controller?.cron||'')) {
+      const task=runScheduledAgentExchange({
+        env,cron:_controller.cron,scheduledTime:_controller.scheduledTime
+      }).then(summary=>console.log('VAOS_AGENT_EXCHANGE_DIGEST',JSON.stringify(summary)))
+        .catch(()=>{console.warn('VAOS_AGENT_EXCHANGE_DIGEST_HOLD');throw Error('VAOS_AGENT_EXCHANGE_DIGEST_HOLD');});
+      if(ctx?.waitUntil)ctx.waitUntil(task);
+      else await task;
+      return;
+    }
     // Dedicated signed-reader cron cannot dispatch any existing hourly mission or watchdog.
     if (_controller?.cron===ONTOLOGY_REFRESH_CRON) {
       const task=runScheduledOntologyRefresh({env,scheduledTime:_controller.scheduledTime})

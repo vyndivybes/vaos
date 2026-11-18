@@ -14,11 +14,11 @@ This is a private, founder-read-only observation exchange. It does **not** certi
 - Memory: reports are review candidates; no memory promotion is performed by JIX v1.
 
 ## Reporting windows — Asia/Kolkata
-- 08:00 IST every day (Cloudflare 02:30 UTC): previous India calendar day.
+- 08:05 IST every day (Cloudflare 02:35 UTC): previous India calendar day.
 - 08:15 IST Monday (Cloudflare 02:45 UTC): previous Monday through Sunday.
-- 08:30 IST on the 1st (Cloudflare 03:00 UTC): previous calendar month.
+- 08:35 IST on the 1st (Cloudflare 03:05 UTC): previous calendar month.
 
-Existing hourly mission, watchdog, ontology, and market cron handlers are bypassed for these dedicated JIX triggers.
+JIX reuses VAOS's existing 5,15,25,35,45,55-minute cron trigger. Its asynchronous task is isolated from the existing mission, watchdog and market jobs, and adds zero Cloudflare Cron Trigger slots. Do not add extra account-level triggers on the Workers Free plan.
 
 ## Reporting truthfulness
 A source record is not a direct agent-authored submission or proof of runtime liveness. A report packet explicitly records its observation provenance. Unavailable data is a HOLD, never a zero or a green status. Stored output is allowlisted metadata only: no raw ledger, personal, CRM, audio, image, or document rows.
@@ -32,7 +32,7 @@ On a checkout of this feature branch, before merging or deploying:
    node --test intelligence/agent-intelligence-exchange.test.mjs platform/execution/jarvis-agent-exchange.test.mjs apps/web/api/agent-exchange.test.mjs apps/web/agent-exchange-ui.test.mjs
 2. Run npm run lint and npm run test:web; then the existing full repo gates as capacity allows. Do not bypass pre-existing security failures to turn the pipeline green.
 3. Verify the new page on mobile and desktop, session denial, missing archive HOLD, signed VYNDI qualification, duplicate-cron idempotency, R2 permissions, and Cloudflare free-tier trigger and storage quotas.
-4. Deploy only when qualified and authorized. Confirm all three cron expressions are active and that each period produces a correctly dated immutable archive and latest pointer.
+4. Deploy only when qualified and authorized. Confirm the existing cron expression is active and that each period produces a correctly dated immutable archive and latest pointer.
 
 ## Operational safeguards
 - No new paid services, secrets, API tokens, or storage buckets are introduced.

@@ -111,6 +111,10 @@ test('A01 compares six cryptographically checked signed reads to separate durabl
  assert.equal(out.body.data.consistencyGate,'PASS');
  assert.equal(out.body.data.businessSourceAuthorityVerified,false);
  assert.equal(out.body.data.productionWriteAuthorized,false);
+ assert.equal(out.body.data.autonomyProgression.stages.length,10);
+ assert.equal(out.body.data.autonomyProgression.currentUnqualifiedStage,'A01');
+ assert.equal(out.body.data.autonomyProgression.a02Plan.status,'PREPARE_ONLY');
+ assert.equal(out.body.data.autonomyProgression.agentDispatchAuthorized,false);
  assert.equal(out.body.data.aiModelInvocations,0);
  assert.deepEqual(out.body.data.sources.map(x=>x.sourceKind),kinds);
  assert.ok(out.body.data.sources.every(x=>x.consistency==='MATCHED'&&x.authoritativeRevisionVerified===false));
@@ -195,4 +199,28 @@ test('A01 skips cross-domain specialist reads when source consistency gate fails
  assert.equal(x.body.data.specialistReview.status,'NOT_RUN_SOURCE_GATE_HOLD');
  assert.equal(specialists,0);
  assert.equal(calls,6);
+});
+
+test('A01-A10 gate controller can certify only sequential independently verified exact-SHA records',async()=>{
+ const a01={schemaVersion:'VAOS_JARVIS_A01_SOURCE_RECONCILIATION_V1',consistencyGate:'PASS',
+  businessSourceAuthorityVerified:true,independentBusinessFactsCertified:true,
+  sources:['inventory','shortages','purchaseOrders'].map(sourceKind=>({sourceKind,consistency:'MATCHED',authoritativeRevisionVerified:true,sourceCompletenessVerified:true}))};
+ const specialists={status:'BOUNDED_EVIDENCE',sourceRevisionVerified:true,completeDatasetVerified:true};
+ const releaseSha='a'.repeat(40);
+ const attestations=Object.fromEntries(JARVIS_A01_A10_GATES.map(g=>[g.id,{
+  stageId:g.id,kind:g.proofKind,reviewer:'independent-qa',implementer:'developer',
+  releaseSha,proofSha256:'b'.repeat(64),verifiedAt:'2026-11-18T21:00:00Z',
+  expiresAt:'2026-11-20T21:00:00Z',negativeControlsPassed:true
+ }]));
+ const verified=await assessJarvisA01A10({a01,specialists,attestations,releaseSha,
+  now:Date.parse('2026-11-19T00:00:00Z'),verifyEvidence:async r=>r.reviewer==='independent-qa'});
+ assert.equal(verified.status,'QUALIFICATION_EVIDENCE_COMPLETE');
+ assert.ok(verified.stages.every(g=>g.status==='PASS'));
+ assert.equal(verified.productionWriteAuthorized,false);
+ assert.equal(verified.executionAuthorityUnaffected,true);
+ attestations.A05={...attestations.A05,proofSha256:'tampered'};
+ const blocked=await assessJarvisA01A10({a01,specialists,attestations,releaseSha,
+  now:Date.parse('2026-11-19T00:00:00Z'),verifyEvidence:async()=>true});
+ assert.equal(blocked.stages.find(g=>g.id==='A05').status,'HOLD');
+ assert.equal(blocked.stages.find(g=>g.id==='A10').reason,'PREVIOUS_STAGE_HOLD');
 });

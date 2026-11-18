@@ -10,7 +10,7 @@ test('dedicated schedule only scopes runnable mission to A01, never another miss
   const out=await runA01MissionTick({control:'signed-readonly-v1',service,
     readDepartment:()=>{},runSweep:async input=>{
       called++;assert.deepEqual(await input.service.listRunnableMissions({limit:1}),{missionIds:['JARVIS-A01-20261118']});
-      assert.equal(input.maxMissions,1);assert.equal(input.maxHandoffs,4);
+      assert.equal(input.maxMissions,1);assert.equal(input.maxHandoffs,1,'Cloudflare free tier must run only one maker/checker handoff per scheduled invocation');
       assert.equal(input.service.prepareMissionClosure,undefined);
       return {processed:1,submitted:2,verified:1,returned:0,preparedForClosure:0,failures:[]};
     }});

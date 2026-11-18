@@ -33,7 +33,7 @@ export async function runA01MissionTick({control,service,readDepartment,runSweep
       return {missionIds:[A01_MISSION_ID]};
     }
   });
-  const out=await runSweep({service:scoped,maxMissions:1,maxHandoffs:4,readDepartment});
+  const out=await runSweep({service:scoped,maxMissions:1,maxHandoffs:1,readDepartment});
   if(!out||!Number.isSafeInteger(out.processed)||out.processed<0||out.processed>1||
       !Array.isArray(out.failures)||out.failures.some(x=>x.missionId!==A01_MISSION_ID)||
       ['submitted','verified','returned','preparedForClosure'].some(k=>

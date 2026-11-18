@@ -30,7 +30,7 @@ test('server-key, bounded discovery, RLS boundary and service-only RPC remain fa
   assert.match(source,/perform vaos_private\.assert_server_key\(p_server_key\)/);
   assert.match(source,/p_limit < 1 or p_limit > 8/);
   assert.match(source,/security definer/i);
-  assert.match(source,/set search_path\s*=\s*''/);
+  assert.match(source,/set search_path\s*(?:to|=)\s*''/i);
   assert.match(source,/revoke all on function public\.vaos_list_runnable_missions\(text,integer\) from public, anon, authenticated/i);
   assert.match(source,/grant execute on function public\.vaos_list_runnable_missions\(text,integer\) to service_role/i);
   assert.doesNotMatch(source,/insert into|update vaos_private|delete from vaos_private/i);

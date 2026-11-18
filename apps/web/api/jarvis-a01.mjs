@@ -8,13 +8,15 @@ import {createOntologySignedReader,ONTOLOGY_SOURCE_ACTIONS} from './ontology-sou
 import {createSupabaseControlStore} from '../../../platform/persistence/supabase-store.mjs';
 import {resolveDurableControlConfig} from '../lib/durable-control-provider.mjs';
 import {createA01SourceEvidence,reconcileA01Sources,A01_SOURCE_KINDS} from '../../../intelligence/jarvis-a01-reconciliation.mjs';
+import {runA01SpecialistReview} from '../../../intelligence/jarvis-a01-specialists.mjs';
 
 const FOUNDER='shyamsundhar1982@gmail.com';
 const getHealth=async env=>createSupabaseControlStore(resolveDurableControlConfig(env)).getOntologySourceHealth();
 
 export function createJarvisA01Handler({
  getSession=req=>verifySessionToken(parseCookies(req.headers?.cookie||'')[SESSION_COOKIE]),
- getReader=createOntologySignedReader,getHealth:readHealth=getHealth,now=()=>Date.now(),
+ getReader=createOntologySignedReader,getHealth:readHealth=getHealth,
+ runSpecialists=runA01SpecialistReview,now=()=>Date.now(),
 }={}){
  return async(req,res)=>{
   res.setHeader('Cache-Control','no-store');
@@ -52,7 +54,26 @@ export function createJarvisA01Handler({
    // assigned its own random execution ID and signed nonce.
    const first=await read(),second=await read();
    const result=await reconcileA01Sources({first,second,health,now:now()});
-   return res.status(200).json({data:result});
+   // Only the consistency gate admits a bounded specialist evidence review.
+   // Even a successful review cannot promote CONTENT_DIGEST_ONLY to DB authority.
+   let specialistReview={status:'NOT_RUN_SOURCE_GATE_HOLD',
+    readOnly:true,actionAuthorized:false,productionWriteAuthorized:false,
+    aiModelInvocations:0,findings:[]};
+   if(result.consistencyGate==='PASS'){
+    try{
+     specialistReview=await runSpecialists({reader});
+     if(!specialistReview||
+      !['BOUNDED_EVIDENCE','SOURCE_HOLD'].includes(specialistReview.status)||
+      specialistReview.actionAuthorized!==false||
+      specialistReview.productionWriteAuthorized!==false||
+      specialistReview.aiModelInvocations!==0)throw Error('A01_SPECIALIST_INVALID');
+    }catch{
+     specialistReview={status:'SOURCE_HOLD',holds:['SPECIALIST_REVIEW_UNAVAILABLE'],
+      readOnly:true,actionAuthorized:false,productionWriteAuthorized:false,
+      aiModelInvocations:0,findings:[]};
+    }
+   }
+   return res.status(200).json({data:{...result,specialistReview}});
   }catch{return res.status(503).json(apiError('A01_RECONCILIATION_HOLD','Evidence could not be reconciled'));}
  };
 }

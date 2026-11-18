@@ -49,6 +49,8 @@ on:
       - 'apps/web/api/jarvis-a01.mjs'
       - 'apps/web/api/jarvis-a01.test.mjs'
       - 'intelligence/jarvis-a01-reconciliation.mjs'
+      - 'intelligence/jarvis-a01-specialists.mjs'
+      - 'intelligence/jarvis-a01-specialists.test.mjs'
       - 'intelligence/jarvis-readonly-autonomy.mjs'
       - 'intelligence/jarvis-readonly-autonomy.test.mjs'
       - 'apps/web/lib/feature-flags.mjs'

@@ -14,8 +14,8 @@ test('scheduled digest stores bounded report history and latest pointer without 
   const bucket=fakeArchive();
   const called=[];
   const result=await runScheduledAgentExchange({
-    env:{VAOS_ARTIFACTS:bucket},cron:'30 2 * * *',
-    scheduledTime:'2026-11-18T02:30:00Z',
+    env:{VAOS_ARTIFACTS:bucket},cron:'5,15,25,35,45,55 * * * *',
+    scheduledTime:'2026-11-18T02:35:00Z',
     readVaos:async()=>{
       called.push('vaos');
       return {schemaVersion:'VAOS_FOUNDER_ANALYTICS_V1',observedAt:'2026-11-18T02:29:00Z',
@@ -37,7 +37,7 @@ test('scheduled digest stores bounded report history and latest pointer without 
   assert.doesNotMatch(archived,/SHOULD_NOT_BE_STORED|SECRET_FINANCE/);
   assert.equal(JSON.parse(archived).summary.observedAgents,2);
   const replay=await runScheduledAgentExchange({env:{VAOS_ARTIFACTS:bucket},
-    cron:'30 2 * * *',scheduledTime:'2026-11-18T02:30:00Z',
+    cron:'5,15,25,35,45,55 * * * *',scheduledTime:'2026-11-18T02:35:00Z',
     readVaos:()=>{throw Error('SHOULD_NOT_CALL')},
     readVyndi:()=>{throw Error('SHOULD_NOT_CALL')}});
   assert.equal(replay.status,'ALREADY_ARCHIVED');
@@ -45,7 +45,7 @@ test('scheduled digest stores bounded report history and latest pointer without 
 test('missing external services produce an explicitly held archival result',async()=>{
   const bucket=fakeArchive();
   const result=await runScheduledAgentExchange({env:{VAOS_ARTIFACTS:bucket},
-    cron:'45 2 * * 1',scheduledTime:'2026-11-23T02:45:00Z',
+    cron:'5,15,25,35,45,55 * * * *',scheduledTime:'2026-11-23T02:45:00Z',
     readVaos:async()=>{throw Error('SOURCE_DOWN')},
     readVyndi:async()=>{throw Error('SIGNED_BRIDGE_UNAVAILABLE')}});
   assert.equal(result.status,'HOLD');
@@ -59,6 +59,6 @@ test('non-exchange cron never touches source or archive; required archive fails 
     scheduledTime:'2026-11-18T02:00:00Z',
     readVaos:()=>{throw Error('NO')},readVyndi:()=>{throw Error('NO')}});
   assert.equal(untouched.status,'SKIP');
-  await assert.rejects(()=>runScheduledAgentExchange({env:{},cron:'30 2 * * *',
-    scheduledTime:'2026-11-18T02:30:00Z'}),/EXCHANGE_ARCHIVE_UNAVAILABLE/);
+  await assert.rejects(()=>runScheduledAgentExchange({env:{},cron:'5,15,25,35,45,55 * * * *',
+    scheduledTime:'2026-11-18T02:35:00Z'}),/EXCHANGE_ARCHIVE_UNAVAILABLE/);
 });

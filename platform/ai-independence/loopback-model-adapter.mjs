@@ -19,7 +19,7 @@ export function createLoopbackModelAdapter({baseUrl=LOOPBACK,model,
         throw new Error('INVALID_LOCAL_TASK');
       try {
         const response=await fetchImpl(`${LOOPBACK}/api/generate`,{
-          method:'POST',headers:{'content-type':'application/json'},
+          method:'POST',redirect:'error',headers:{'content-type':'application/json'},
           body:JSON.stringify({model,prompt:task.input,stream:false,options:{num_predict:512}}),
           signal:AbortSignal.timeout(timeoutMs),
         });

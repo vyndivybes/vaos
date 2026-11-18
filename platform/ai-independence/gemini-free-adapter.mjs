@@ -30,7 +30,7 @@ export function createGeminiFreeAdapter({apiKey, model='gemini-3.8-flash', freeT
       requests += 1; // reserve before request, including concurrent requests and failures
       try {
         const response = await fetchImpl(url, {
-          method:'POST',
+          method:'POST',redirect:'error',
           headers:{'content-type':'application/json','x-goog-api-key':apiKey},
           body:JSON.stringify({contents:[{role:'user',parts:[{text:task.input}]}],
             generationConfig:{maxOutputTokens:512}}),
@@ -39,7 +39,7 @@ export function createGeminiFreeAdapter({apiKey, model='gemini-3.8-flash', freeT
         if (!response?.ok) throw new Error('UPSTREAM_STATUS');
         const payload=await response.json();
         const result=payload?.candidates?.[0]?.content?.parts
-          ?.filter(part=>typeof part?.text==='string').map(part=>part.text).join('');
+          ?.filter(part=>part?.thought!==true&&typeof part?.text==='string').map(part=>part.text).join('');
         if (typeof result !== 'string' || !result.trim() || result.length>MAX_OUTPUT)
           throw new Error('UPSTREAM_EMPTY_OR_OVERSIZED');
         return Object.freeze({text:result, model, evidenceStatus:'MODEL_OUTPUT_UNVERIFIED'});

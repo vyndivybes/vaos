@@ -47,8 +47,8 @@
     "test:five-phase": "node --test intelligence/jarvis-coordination.test.mjs platform/execution/production-l5-observer.test.mjs apps/web/api/enterprise-bi.test.mjs apps/web/api/neural-knowledge.test.mjs intelligence/market-series-forecast.test.mjs intelligence/market-forecast-quality.test.mjs intelligence/jarvis-learning-ledger.test.mjs apps/web/api/jarvis-learning-review.test.mjs apps/web/api/jarvis-multimodal.test.mjs intelligence/jarvis-readonly-autonomy.test.mjs apps/web/api/jarvis-autonomy-investigate.test.mjs apps/web/api/jarvis-a01.test.mjs intelligence/jarvis-a01-specialists.test.mjs intelligence/jarvis-a01-evidence-archive.test.mjs apps/web/api/jarvis-a01-evidence.test.mjs"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "0.5.9",
-    "wrangler": "4.157.0"
+    "@electric-sql/pglite": "0.5.16",
+    "wrangler": "4.162.0"
   },
   "overrides": {
     "exceljs": {
@@ -56,6 +56,6 @@
     }
   },
   "dependencies": {
-    "@langchain/langgraph": "1.4.21"
+    "@langchain/langgraph": "1.7.4"
   }
 }

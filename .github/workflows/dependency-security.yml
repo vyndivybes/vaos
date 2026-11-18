@@ -1,0 +1,45 @@
+name: Dependency security qualification
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - package.json
+      - package-lock.json
+      - .github/workflows/dependency-security.yml
+      - .github/dependabot.yml
+  push:
+    branches: [main]
+    paths:
+      - package.json
+      - package-lock.json
+      - .github/workflows/dependency-security.yml
+      - .github/dependabot.yml
+  schedule:
+    # Recheck published advisories against the pinned lockfile once each week.
+    - cron: "41 3 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: dependency-security-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install exact locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Fail on known production advisories (moderate or worse)
+        run: npm audit --omit=dev --audit-level=moderate
+      - name: Fail on any known advisory in the complete dependency graph
+        run: npm audit --audit-level=low

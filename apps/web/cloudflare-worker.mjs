@@ -67,7 +67,6 @@ import jarvisG3Readiness from './api/jarvis-g3-readiness.mjs';
 import jarvisCoordination from './api/jarvis-coordination.mjs';
 import jarvisLearningReview from './api/jarvis-learning-review.mjs';
 import agentExchange from './api/agent-exchange.mjs';
-import {AGENT_EXCHANGE_CRONS} from '../../intelligence/agent-intelligence-exchange.mjs';
 import {runScheduledAgentExchange} from '../../platform/execution/jarvis-agent-exchange.mjs';
 import engineeringKnowledge from './api/engineering-knowledge.mjs';
 import groupPortfolio from './api/group-portfolio.mjs';
@@ -289,16 +288,6 @@ export function createCloudflareApp({
 
 export default {
   async scheduled(_controller, env, ctx) {
-    // JIX has dedicated cron triggers: no existing mission, market, or watchdog tasks run.
-    if (Object.hasOwn(AGENT_EXCHANGE_CRONS,_controller?.cron||'')) {
-      const task=runScheduledAgentExchange({
-        env,cron:_controller.cron,scheduledTime:_controller.scheduledTime
-      }).then(summary=>console.log('VAOS_AGENT_EXCHANGE_DIGEST',JSON.stringify(summary)))
-        .catch(()=>{console.warn('VAOS_AGENT_EXCHANGE_DIGEST_HOLD');throw Error('VAOS_AGENT_EXCHANGE_DIGEST_HOLD');});
-      if(ctx?.waitUntil)ctx.waitUntil(task);
-      else await task;
-      return;
-    }
     // Dedicated signed-reader cron cannot dispatch any existing hourly mission or watchdog.
     if (_controller?.cron===ONTOLOGY_REFRESH_CRON) {
       const task=runScheduledOntologyRefresh({env,scheduledTime:_controller.scheduledTime})
@@ -437,6 +426,13 @@ export default {
       sourceStatus:result.evidence?.sourceQualification||null,
       demandForecastQualified:false,actionAuthorized:false
     }))).catch(()=>console.warn('VAOS_DAILY_MARKET_MONITOR_HOLD'));
+    // JIX reuses the existing ten-minute trigger at 08:05 daily,
+    // 08:15 Monday and 08:35 on the 1st (IST). Never block mission execution.
+    const agentExchange=Promise.resolve().then(()=>runScheduledAgentExchange({
+      env,cron:_controller?.cron,scheduledTime:_controller?.scheduledTime
+    })).then(result=>{
+      if(result.status!=='SKIP')console.log('VAOS_AGENT_EXCHANGE_DIGEST',JSON.stringify(result));
+    }).catch(()=>console.warn('VAOS_AGENT_EXCHANGE_DIGEST_HOLD'));
     // Settle both tasks before surfacing a failure; a failed watchdog cannot
     // terminate an otherwise pending mission sweep.
     // Preserve the independently qualified four-provider scheduling contract.
@@ -445,7 +441,7 @@ export default {
     });
     // Keep the optional, fail-closed observer within waitUntil without changing
     // any existing mission/watchdog/synthetic/Stirling result semantics.
-    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert,googleDigest,marketMonitor]).then(results=>{
+    const task = Promise.allSettled([scheduledCore,productionObservation,slackAgent,githubCiAlert,incidentAlert,googleDigest,marketMonitor,agentExchange]).then(results=>{
       if(results[0].status==='rejected')throw new Error('VAOS_SCHEDULED_TASK_FAILED');
     });
 

@@ -29,6 +29,7 @@ test('missing digest remains unavailable rather than an empty healthy briefing',
 });
 test('founder may inspect archived bounded digest but cannot see arbitrary storage contents',async()=>{
  const report={schemaVersion:'VAOS_AGENT_EXCHANGE_V1',period:{kind:'daily'},
+  readOnly:true,productionWriteAuthorized:false,
   summary:{observedAgents:0,heldAgents:16},agents:[],jarvis:{semanticMemoryUpdated:false}};
  const r=await app({VAOS_ARTIFACTS:bucketWith(report)}).fetch(new Request(repoOrigin+'/api/agent-exchange?period=daily',{
   headers:auth('shyamsundhar1982@gmail.com')}));

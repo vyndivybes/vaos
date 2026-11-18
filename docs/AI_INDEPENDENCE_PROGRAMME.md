@@ -32,8 +32,19 @@ These are target thresholds, NOT measurements. Good memory retrieval does not pr
 
 ## Focused test and release policy
 Run with Node.js 22: node --test platform/ai-independence/provider-router.test.mjs
-Local baseline test: 12/12 pass. The full monorepo suite, CI, live model integration and production deployment have NOT been qualified by this change.
+Local isolated foundation and adapter tests: 25/25 pass. The full monorepo suite, CI, live model integration and production deployment have NOT been qualified by this change.
 Never bypass protected release gates or use paid providers without explicit approval. Never store credentials, API keys, customer data or confidential engineering IP in free-tier model requests without approved terms.
+
+
+## Phase 2 adapter qualification (18 November 2026)
+
+- `platform/ai-independence/gemini-free-adapter.mjs`: explicit `freeTierVerified` opt-in; allowlisted `gemini-3.8-flash` text-only model; in-process request cap; 512-token output ceiling; no credentials in URL; confidential data denied; upstream errors sanitized.
+- `platform/ai-independence/loopback-model-adapter.mjs`: local-only Ollama-compatible endpoint `http://127.0.0.1:11434/api/generate`; no remote base URLs; tested with stub responses; does not install or start a model.
+- `platform/ai-independence/provider-adapters.test.mjs`: 13 additional provider policy, confidentiality, quota, output-validation and end-to-end mocked inference tests. Together with 12 existing foundation tests: 25 passed, 0 failed in isolated Node 22.
+- Development-only caution: setting `freeTierVerified` true is a **manual assertion**, not a cryptographic proof of billing status. The per-process quota is not a distributed budget across Cloudflare isolates.
+- **Runtime remains unconnected:** no Gemini API credentials or live requests; no Cloudflare secret injection, app route enablement, global production quota, live local model execution, multimodal acceptance or 72-hour provider-off trial has been performed.
+- Next gate: verify current Google account tier and model availability, add approved data classification and per-account enforced usage controls; only then commission a protected backend integration.
+- Reference: Google Gemini API free-tier pricing and terms https://ai.google.dev/gemini-api/docs/pricing and API endpoint specification https://ai.google.dev/api/generate-content
 
 ## Next work packages
 1. Inventory actual model callsites, runtime credentials/configuration and agent permissions in SPARK, VAOS and VYNDI OS.

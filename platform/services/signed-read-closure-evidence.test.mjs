@@ -4,7 +4,7 @@ import {readFileSync} from 'node:fs';
 import {SAFE_MISSION_JOBS} from '../execution/mission-consumer.mjs';
 import {getVyndiBridgeRoute} from '../../packages/contracts/vyndi-write-bridge.mjs';
 
-const sql=readFileSync(new URL('../../supabase/migrations/20261118214500_signed_read_closure_evidence_v1.sql',import.meta.url),'utf8');
+const sql=readFileSync(new URL('../../supabase/migrations/20261118214733_signed_read_closure_evidence_v1.sql',import.meta.url),'utf8');
 
 test('mission closure requires immutable report for every commissioned signed departmental read',()=>{
   const guard=sql.split('wp.action_type not in (')[1]?.split(')')[0];

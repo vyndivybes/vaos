@@ -35,3 +35,8 @@ Returned JSON contains bounded metadata and source SHA-256 values, not records, 
 
 ## Security
 A mismatch is a HOLD, never a repair authorization. Do not change upstream flags to falsely mark completeness or authorization. No new paid service, provider token or AI inference is required.
+
+## A01 persistent evidence archive — new opt-in delivery
+The `POST /api/jarvis-a01-evidence` endpoint accepts **only** founder-authenticated, same-origin JSON `{ "operation":"CAPTURE", "confirm":true }`. It re-runs the signed A01 GET on the server and records an immutable, allowlisted metadata-only R2 receipt under `jarvis/a01/evidence/v1/<UTC-date>/<UUID>.json`. It does NOT accept a client-supplied report. `GET /api/jarvis-a01-evidence?receipt=<UTC-date>/<UUID>` replays the receipt to the founder with content-integrity checking. Raw ERP rows, SKUs, customer/employee IDs, free-text remediation recommendations, or document contents are NEVER archived. Capturing a source HOLD is valid audit evidence, not a PASS.
+
+**Cost/commissioning gate:** The Cloudflare runtime flag `VAOS_A01_ARCHIVE_CONTROL` defaults to `off`, because current connected permissions do not prove R2 remains within free-tier billing. The exact manual value is `founder-manual-archive-v1`, to be configured **only after** confirming no-charge headroom; do not automatically enable. GET replay does not enable commercial writes. The archive hash verifies same-object content consistency but is NOT an independent cryptographic attestation, source revision, model evaluation or source-of-record certification. Production founder-authenticated save+replay requires separate live acceptance.

@@ -64,7 +64,7 @@ jobs:
             echo '::error::Missing separate read-only Windmill verifier credential'; exit 1
           fi
       - name: Retrieve prior GitHub execution evidence
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windmill-synthetic-live-evidence
           repository: vyndivybes/vaos

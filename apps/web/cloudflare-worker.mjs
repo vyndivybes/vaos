@@ -55,6 +55,7 @@ import voiceInsight from './api/voice-insight.mjs';
 import sparkBridge from './api/spark-bridge.mjs';
 import businessAdvisor from './api/business-advisor.mjs';
 import jarvisDataAgent from './api/jarvis-data-agent.mjs';
+import jarvisAutonomyInvestigate from './api/jarvis-autonomy-investigate.mjs';
 import marketCaseStudies from './api/market-case-studies.mjs';
 import marketPublicIntelligence from './api/market-public-intelligence.mjs';
 import {runScheduledMarketMonitor} from '../../intelligence/market-monitoring.mjs';
@@ -152,6 +153,7 @@ export const DEFAULT_API_HANDLERS = Object.freeze({
   '/api/spark-bridge': sparkBridge,
   '/api/business-advisor': businessAdvisor,
   '/api/jarvis-data-agent': jarvisDataAgent,
+  '/api/jarvis-autonomy-investigate': jarvisAutonomyInvestigate,
   '/api/market-case-studies': marketCaseStudies,
   '/api/market-public-intelligence': marketPublicIntelligence,
   '/api/market-case-bridge': marketCaseBridge,

@@ -53,3 +53,14 @@ test('Daily market monitor uses the consolidated feature flag with no new text b
  assert.equal(featureControl(config.vars,'VAOS_MARKET_MONITOR_CONTROL'),'founder-daily-readonly-v1');
  assert.equal(featureControl({VAOS_FEATURE_FLAGS:'{}'},'VAOS_MARKET_MONITOR_CONTROL'),undefined);
 });
+
+test('A01 dedicated read-only mission control and source crons are scoped in production config',async()=>{
+ const config=JSON.parse(await readFile(new URL('../../../wrangler.jsonc',import.meta.url),'utf8'));
+ assert.equal(featureControl(config.vars,'VAOS_A01_MISSION_CONTROL'),'signed-readonly-v1');
+ assert.equal(featureControl({VAOS_FEATURE_FLAGS:'{}'},'VAOS_A01_MISSION_CONTROL'),undefined);
+ assert.deepEqual(config.triggers.crons,[
+  '0 * * * *','5,15,25,35,45,55 * * * *','7,22,37,52 * * * *'
+ ]);
+ assert.equal(featureControl(config.vars,'VAOS_AUTONOMOUS_INVESTIGATION_CONTROL'),'off');
+ assert.equal(featureControl(config.vars,'VAOS_A01_ARCHIVE_CONTROL'),'off');
+});

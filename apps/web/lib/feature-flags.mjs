@@ -16,6 +16,7 @@ const NAMES = new Set([
   'VAOS_MARKET_MONITOR_CONTROL',
   'VAOS_AUTONOMOUS_INVESTIGATION_CONTROL',
   'VAOS_A01_ARCHIVE_CONTROL',
+  'VAOS_A01_MISSION_CONTROL',
 ]);
 
 export function featureControl(env, name) {

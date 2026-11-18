@@ -99,7 +99,7 @@ test('bounded cron is separate from existing hourly jobs and explicitly gated',a
  const config=JSON.parse(await readFile(new URL('../../../wrangler.jsonc',import.meta.url),'utf8'));
  const flags=JSON.parse(config.vars.VAOS_FEATURE_FLAGS);
  assert.equal(ONTOLOGY_REFRESH_CRON,'5,15,25,35,45,55 * * * *');
- assert.deepEqual(config.triggers.crons,['0 * * * *',ONTOLOGY_REFRESH_CRON]);
+ assert.deepEqual(config.triggers.crons,['0 * * * *',ONTOLOGY_REFRESH_CRON,'7,22,37,52 * * * *']);
  assert.equal(flags.VAOS_ONTOLOGY_AUTO_REFRESH_CONTROL,'signed-readonly-v1');
  assert.match(worker,/if\s*\(_controller\?\.cron===ONTOLOGY_REFRESH_CRON\)/);
  assert.match(worker,/runScheduledOntologyRefresh/);

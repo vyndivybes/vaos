@@ -86,6 +86,7 @@ import {runScheduledOntologyRefresh,ONTOLOGY_REFRESH_CRON} from './lib/ontology-
 import voiceAiFocus from './api/voice-ai-focus.mjs';
 import { getEightAgentOperatingService } from './lib/operating-provider.mjs';
 import { runScheduledMissionSweep } from '../../platform/execution/mission-scheduler.mjs';
+import { runA01MissionTick, A01_MISSION_CRON } from '../../platform/execution/jarvis-a01-mission-tick.mjs';
 import { readMissionDepartment } from './lib/mission-department-reader.mjs';
 import { invokeCloudflareHandler } from './lib/cloudflare-adapter.mjs';
 import {runSlackFounderAgent} from '../../platform/execution/slack-founder-agent.mjs';
@@ -288,6 +289,22 @@ export function createCloudflareApp({
 
 export default {
   async scheduled(_controller, env, ctx) {
+    // Isolated founder-commissioned A01 read-only mission tick; never invokes watchdog,
+    // AI inference, generic enterprise tasks or any production domain mutation.
+    if (_controller?.cron === A01_MISSION_CRON) {
+      const task=runA01MissionTick({
+        control:featureControl(env,'VAOS_A01_MISSION_CONTROL'),
+        service:getEightAgentOperatingService(env),
+        readDepartment:input=>readMissionDepartment({...input,env}),
+        runSweep:runScheduledMissionSweep,
+      }).then(result=>{
+        console.log('VAOS_JARVIS_A01_MISSION_TICK',JSON.stringify(result));
+        if(result.status==='HOLD')throw Error('VAOS_JARVIS_A01_HOLD');
+      });
+      if(ctx?.waitUntil)ctx.waitUntil(task);
+      else await task;
+      return;
+    }
     // Dedicated signed-reader cron cannot dispatch any existing hourly mission or watchdog.
     if (_controller?.cron===ONTOLOGY_REFRESH_CRON) {
       const task=runScheduledOntologyRefresh({env,scheduledTime:_controller.scheduledTime})

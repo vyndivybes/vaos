@@ -69,7 +69,9 @@ test('A01 compares six cryptographically checked signed reads to separate durabl
  assert.deepEqual(out.body.data.sources.map(x=>x.sourceKind),kinds);
  assert.ok(out.body.data.sources.every(x=>x.consistency==='MATCHED'&&x.authoritativeRevisionVerified===false));
  assert.ok(out.body.data.holds.includes('AUTHORITATIVE_DATABASE_REVISION_REQUIRED'));
- assert.equal(calls.length,6);
+ assert.equal(calls.length,10);
+ assert.equal(out.body.data.specialistReview.status,'SOURCE_HOLD');
+ assert.equal(out.body.data.specialistReview.productionWriteAuthorized,false);
  assert.ok(!JSON.stringify(out.body).includes('PRIVATE-SKU-DO-NOT-LEAK'));
  assert.equal(out.headers['Cache-Control'],'no-store');
 });
@@ -129,4 +131,22 @@ test('pure A01 cannot promote content digest or health projection to independent
  assert.equal(result.businessSourceAuthorityVerified,false);
  assert.equal(result.canPrepareBusinessAction,false);
  assert.equal(result.status,'HOLD');
+});
+
+test('A01 skips cross-domain specialist reads when source consistency gate fails',async()=>{
+ const originals=await snapshot();let calls=0, specialists=0;
+ const h=createJarvisA01Handler({getSession:()=>({email:'shyamsundhar1982@gmail.com'}),
+  getReader:()=>({execute:async job=>{
+   calls++;const kind=Object.keys(routes).find(x=>routes[x][0]===job.actionType);
+   const data=structuredClone(originals[kind]);
+   if(kind==='inventory')data.data.sourceRevision='b'.repeat(64);
+   return data;
+  }}),getHealth:async()=>health(),now:()=>Date.parse(NOW),
+  runSpecialists:async()=>{specialists++;throw Error('should not run');}});
+ const {x,res}=capture();await h(req(),res);
+ assert.equal(x.status,200);
+ assert.equal(x.body.data.consistencyGate,'HOLD');
+ assert.equal(x.body.data.specialistReview.status,'NOT_RUN_SOURCE_GATE_HOLD');
+ assert.equal(specialists,0);
+ assert.equal(calls,6);
 });

@@ -9,11 +9,22 @@ function normalizeRecoveryError(error) {
 export async function executeQualificationRecovery({ store, registry, workerId, failedJob }) {
   if (typeof store?.claimQualificationRecovery !== 'function') return null;
 
+  if (typeof registry?.get !== 'function' || !registry.get(failedJob?.actionType)) return null;
+
   const recoveryJob = await store.claimQualificationRecovery(failedJob, { workerId });
   if (!recoveryJob) return null;
 
   const adapter = registry.get(recoveryJob.actionType);
-  if (!adapter) return null;
+  if (!adapter) {
+    // The adapter registry may change between the preclaim guard and the
+    // claimed row. Never abandon a durable lease after a successful claim.
+    const failed = await store.failExecution(recoveryJob, {
+      code: 'QUALIFICATION_RECOVERY_ADAPTER_MISSING',
+      retryable: false,
+      message: 'Claimed recovery action has no registered execution adapter',
+    });
+    return { status: failed?.outcome || 'DEAD_LETTER', jobId: recoveryJob.id };
+  }
 
   try {
     const result = await adapter.execute(recoveryJob);

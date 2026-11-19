@@ -96,3 +96,84 @@ export async function assessJarvisA05ShadowHoldout(batch){
   sourceRecordsExported:false
  });
 }
+
+
+/**
+ * Project a stored A05 result into a fixed aggregate-only receipt.
+ * This rejects forged PASS/authority/rollback claims and discards arbitrary
+ * extra fields. An R2 JSON receipt is NOT an independent signed evaluation.
+ */
+export function projectJarvisA05ShadowReceipt(x){
+ const fail=()=>{throw Error('LEARNING_RECEIPT_UNVERIFIED')};
+ const decisions=new Set(['RETAIN_BASELINE','CONTINUE_SHADOW_ONLY',
+  'RETAIN_BASELINE_REVERT_CANDIDATE_IF_ALREADY_TESTING']);
+ const reasons=new Set(['UNQUALIFIED_OR_NO_CLEAR_HELDOUT_GAIN',
+  'DESCRIPTIVE_HOLDOUT_IMPROVEMENT_UNVERIFIED',
+  'HELDOUT_REGRESSION_OR_SAFETY_BOUNDARY']);
+ const mode=new Set(['SYNTHETIC_ONLY','DECLARED_REVIEW_RESULTS']);
+ const nonnegative=n=>Number.isSafeInteger(n)&&n>=0&&n<=1000;
+ const n01=n=>typeof n==='number'&&Number.isFinite(n)&&n>=0&&n<=1;
+ const metric=v=>{
+  if(!v||typeof v!=='object'||Array.isArray(v)||!nonnegative(v.sampleCount))fail();
+  const positive=v.sampleCount>0;
+  if(positive){
+   if(!n01(v.accuracy)||!n01(v.brierScore)||!n01(v.expectedCalibrationError)||
+    !Number.isFinite(v.latencyP95Ms)||v.latencyP95Ms<0||v.latencyP95Ms>300000)fail();
+  }else if(v.accuracy!==null||v.brierScore!==null||
+    v.expectedCalibrationError!==null||v.latencyP95Ms!==null)fail();
+  if(!nonnegative(v.unsupportedClaims)||!nonnegative(v.overconfidentErrors))fail();
+  return Object.freeze(Object.fromEntries(METRICS.map(k=>[k,v[k]])));
+ };
+ const group=v=>{
+  if(!v||typeof v!=='object'||Array.isArray(v))fail();
+  const baseline=metric(v.baseline),candidate=metric(v.candidate);
+  if(baseline.sampleCount!==candidate.sampleCount||
+   !nonnegative(v.regressions)||!nonnegative(v.improvements)||
+   !nonnegative(v.safetyRegressions)||
+   [v.regressions,v.improvements,v.safetyRegressions].some(n=>n>baseline.sampleCount))
+   fail();
+  return Object.freeze({baseline,candidate,
+   regressions:v.regressions,improvements:v.improvements,
+   safetyRegressions:v.safetyRegressions});
+ };
+ if(!x||typeof x!=='object'||Array.isArray(x)||x.schemaVersion!==VERSION||
+  x.stage!=='A05'||x.status!=='HOLD'||x.qualificationStatus!=='HOLD'||
+  !mode.has(x.mode)||x.partitionAlgorithm!=='FIXED_SHA256_SAMPLE_ID_MOD5_V1'||
+  x.heldoutAssignmentBasedOnOutcomes!==false||
+  x.holdoutIndependentlyLocked!==false||
+  !nonnegative(x.holdoutSampleCount)||!nonnegative(x.developmentSampleCount)||
+  x.holdoutSampleCount+x.developmentSampleCount>1000||
+  x.minimumHoldoutCount!==MIN_HOLDOUT||x.minimumDevelopmentCount!==MIN_DEVELOPMENT||
+  !decisions.has(x.reversionDecision)||!reasons.has(x.reason)||
+  !Array.isArray(x.holds)||x.holds.length<4||x.holds.length>20||
+  x.holds.some(k=>typeof k!=='string'||!/^[_A-Z0-9]{4,110}$/.test(k))||
+  !x.holds.includes('INDEPENDENT_HELDOUT_SOURCE_PROOF_REQUIRED')||
+  x.independentReviewerVerified!==false||
+  x.productionLearningCertified!==false||
+  x.heldoutImprovementIndependentlyVerified!==false||
+  x.productionModelChanged!==false||x.liveRollbackExecuted!==false||
+  x.autoPromotionAuthorized!==false||x.autoRollbackAuthorized!==false||
+  x.paidModelRoutingAuthorized!==false||x.businessActionAuthorized!==false||
+  x.productionWriteAuthorized!==false||x.actionAuthorized!==false||
+  x.readOnly!==true||x.modelInvocations!==0||x.sourceRecordsExported!==false)
+  fail();
+ const development=group(x.development),holdout=group(x.holdout);
+ if(development.baseline.sampleCount!==x.developmentSampleCount||
+  holdout.baseline.sampleCount!==x.holdoutSampleCount)fail();
+ return Object.freeze({
+  schemaVersion:VERSION,stage:'A05',status:'HOLD',qualificationStatus:'HOLD',
+  mode:x.mode,partitionAlgorithm:'FIXED_SHA256_SAMPLE_ID_MOD5_V1',
+  holdoutIndependentlyLocked:false,heldoutAssignmentBasedOnOutcomes:false,
+  holdoutSampleCount:x.holdoutSampleCount,developmentSampleCount:x.developmentSampleCount,
+  minimumHoldoutCount:MIN_HOLDOUT,minimumDevelopmentCount:MIN_DEVELOPMENT,
+  development,holdout,
+  reversionDecision:x.reversionDecision,reason:x.reason,holds:Object.freeze([...x.holds]),
+  independentReviewerVerified:false,productionLearningCertified:false,
+  heldoutImprovementIndependentlyVerified:false,
+  productionModelChanged:false,liveRollbackExecuted:false,
+  autoPromotionAuthorized:false,autoRollbackAuthorized:false,
+  paidModelRoutingAuthorized:false,businessActionAuthorized:false,
+  productionWriteAuthorized:false,actionAuthorized:false,readOnly:true,
+  modelInvocations:0,sourceRecordsExported:false
+ });
+}

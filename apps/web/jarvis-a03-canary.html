@@ -36,6 +36,15 @@
         <button id="a03-run" type="button" disabled>Run signed-read check</button>
       </div>
       <p id="a03-auth" class="a03-auth" role="status">Checking founder session… <a href="/login">Sign in to VAOS</a></p>
+      <div id="a03-archive-panel" class="a03-archive-panel" hidden>
+        <h3>Capture a durable trial receipt</h3>
+        <p>This is a separate, optional archive action. It performs a fresh three-source signed read, stores only aggregate receipt metadata in the existing VAOS R2 bucket, and reads that record back to check integrity. The previous on-screen result is not copied or certified.</p>
+        <p class="a03-archive-hold">Archive writes remain disabled until the account's remaining no-charge R2 allowance is independently verified. The source trial above remains available.</p>
+        <label class="a03-confirm"><input type="checkbox" id="a03-archive-confirm"/> <span>I authorize one fresh read-only source verification and one metadata-only VAOS audit capture, subject to the zero-cost gate.</span></label>
+        <button id="a03-capture" type="button" disabled>Capture and verify audit receipt</button>
+        <p id="a03-archive-status" role="status" aria-live="polite">No stored A03 audit receipt has been requested in this session.</p>
+      </div>
+
       <p class="a03-footnote">No purchase orders, stock, money or engineering releases are created or changed. No AI model, autonomous dispatcher or scheduled scan starts from this page.</p>
     </section>
     <section class="a03-card" aria-labelledby="a03-result-heading">

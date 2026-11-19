@@ -112,7 +112,8 @@ test('A03 explicit archive consent captures a FRESH server observation and indep
     status:'BOUNDED_READ_COMPLETE',qualificationStatus:'HOLD',
     sources:['inventory','shortages','purchaseOrders'].map((sourceKind,i)=>({
      sourceKind,status:'SIGNED_BOUNDED_OBSERVATION',sourceCount:[1,0,47][i],
-     rawRows:[{sku:'PRIVATE-SKU-600'}],contentDigest:'f'.repeat(64)
+     rawRows:[{sku:'PRIVATE-SKU-600'}],contentDigest:'f'.repeat(64),
+     independentlyCertified:false,sourceCompletenessVerified:false
     })) }
   }})};
  };

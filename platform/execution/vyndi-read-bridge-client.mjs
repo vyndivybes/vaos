@@ -112,6 +112,11 @@ export function createVyndiReadBridgeClient({
 
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
+        // Authoritative VYNDI source isolation gate: terminal, retrying cannot
+        // repair multi-venture aggregation and must never dispatch business work.
+        if(response.status===409 && payload?.error==='source_venture_scope_unverified'){
+          throw terminalError('VYNDI_BRIDGE_SOURCE_VENTURE_SCOPE_UNVERIFIED');
+        }
         const error = terminalError(
           'VYNDI_BRIDGE_READ_FAILED',
           `VYNDI_BRIDGE_READ_FAILED:${response.status}:${payload?.error || 'unknown'}`,

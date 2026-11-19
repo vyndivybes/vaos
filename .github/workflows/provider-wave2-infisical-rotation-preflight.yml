@@ -35,7 +35,7 @@ jobs:
       INFISICAL_CLIENT_SECRET: ${{ secrets.INFISICAL_NEXT_CLIENT_SECRET }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Credential presence preflight

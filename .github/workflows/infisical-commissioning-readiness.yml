@@ -23,7 +23,7 @@ jobs:
       VAOS_DB_RPC_SECRET: ${{ secrets.VAOS_DB_RPC_SECRET }}
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Run read-only commissioning audit tests

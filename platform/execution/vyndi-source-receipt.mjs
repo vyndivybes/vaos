@@ -27,6 +27,28 @@ function canonicalSourceIdentity(kind,row){
  // Line identity is global; parent job and stock code are still mandatory.
  return kind==='shortages'?JSON.stringify([row.job_card_line_id]):JSON.stringify(parts);
 }
+/** New VYNDI scope digest is an SQL-content observation, not a CDC revision.
+ * Legacy V1 receipts omit all four fields; partial/fake claims fail closed. */
+function checkDatabaseScopeObservation(data){
+ const names=['sourceScopeFingerprint','sourceMvccSnapshot',
+  'sourceFingerprintAuthority','sourceSnapshotAuthority'];
+ if(!names.some(k=>Object.hasOwn(data,k)))return;
+ if(names.some(k=>!Object.hasOwn(data,k)))bad();
+ if(!/^[a-f0-9]{64}$/.test(data.sourceScopeFingerprint||'')||
+  data.sourceFingerprintAuthority!=='SAME_STATEMENT_SQL_CONTENT_DIGEST'||
+  data.sourceSnapshotAuthority!=='PG_MVCC_SNAPSHOT_NOT_SOURCE_REVISION')
+  bad();
+ const token=data.sourceMvccSnapshot;
+ if(typeof token!=='string'||token.length>4096)bad();
+ const match=/^(\d+):(\d+):((?:\d+(?:,\d+)*)?)$/.exec(token);
+ if(!match)bad();
+ const low=BigInt(match[1]),high=BigInt(match[2]);
+ if(low>high)bad();
+ if(match[3]&&match[3].split(',').some(n=>{
+   const v=BigInt(n);return v<low||v>=high;
+ }))bad();
+}
+
 export async function checkVyndiSourceReceipt(actionType,data){
  const expected=VYNDI_SOURCE_RECEIPT_ROUTES[actionType];
  if(!expected||!data||typeof data!=='object'||data.schemaVersion===undefined)return false;
@@ -41,6 +63,7 @@ export async function checkVyndiSourceReceipt(actionType,data){
    data.complete!==(data.sourceCount===data.records.length)||
    data.hasMore!==(data.sourceCount>data.records.length)||
    !iso(data.asOf)||!/^[a-f0-9]{64}$/.test(data.sourceRevision||''))bad();
+ checkDatabaseScopeObservation(data);
  // Validate identity before treating an internally consistent hash as checked.
  // An empty first page when sourceCount is nonzero is not an admissible extract.
  if(data.sourceCount>0&&data.records.length===0)bad();

@@ -47,7 +47,13 @@ export function createJarvisA01Handler({
       actionType,payload:{missionId:'jarvis:a01:read-only-source-reconciliation',limit:100}
      });
      return [kind,data];
-    }catch{return [kind,null];}
+    }catch(error){
+      // Retain only a fixed safe reason code; never expose bridge payloads,
+      // inventory rows or the original exception to the founder response.
+      const hold=error?.code==='VYNDI_BRIDGE_SOURCE_VENTURE_SCOPE_UNVERIFIED'
+       ? {sourceHold:'SOURCE_VENTURE_SCOPE_UNVERIFIED'}:null;
+      return [kind,hold];
+    }
    }));
    return createA01SourceEvidence(Object.fromEntries(pairs));
   };

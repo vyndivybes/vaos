@@ -22,6 +22,7 @@ export function createA01SourceEvidence(reads){
 async function inspectSingle(kind,reply,now){
  const expected=ROUTES[kind];
  if(!reply)return {valid:false,hold:'SIGNED_READ_UNAVAILABLE'};
+ if(reply.sourceHold==='SOURCE_VENTURE_SCOPE_UNVERIFIED')return {valid:false,hold:'SOURCE_VENTURE_SCOPE_UNVERIFIED'};
  if(reply.actionType!==expected.actionType||reply.sourceAuthority!==expected.authority||
    reply.effectClass!=='read'||reply.readOnly!==true||
    reply.actionAuthorized!==false||reply.productionWriteAuthorized!==false||
@@ -105,8 +106,12 @@ export async function reconcileA01Sources({first,second,health,now=Date.now()}={
    ?['Obtain independently attributable VYNDI source revision/watermark',
      'Reconcile authorized inventory, shortage and PO ledger totals against source-of-record',
      'Qualify four-domain production investigation after source authority is established']
-   :['Resolve signed-read, bounded-page, staleness or projection discrepancies',
-     'Repeat signed source reconciliation before investigative recommendations'],
+   :sources.some(s=>s.holds.includes('SOURCE_VENTURE_SCOPE_UNVERIFIED'))
+    ?['Qualify venture-bound inventory and shortage source joins before relying on the records',
+      'Bind tenant identity to independently verified service membership and source scope',
+      'Retest full source proof with cross-tenant negative cases']
+    :['Resolve signed-read, bounded-page, staleness or projection discrepancies',
+      'Repeat signed source reconciliation before investigative recommendations'],
   businessSourceAuthorityVerified:false,canPrepareBusinessAction:false,
   independentBusinessFactsCertified:false,aiModelInvocations:0,
   userAuthorizationEscalated:false,readOnly:true,actionAuthorized:false,

@@ -130,7 +130,9 @@ test('A01 compares six cryptographically checked signed reads to separate durabl
  assert.deepEqual(out.body.data.sources.map(x=>x.sourceKind),kinds);
  assert.ok(out.body.data.sources.every(x=>x.consistency==='MATCHED'&&x.authoritativeRevisionVerified===false));
  assert.ok(out.body.data.holds.includes('AUTHORITATIVE_DATABASE_REVISION_REQUIRED'));
- assert.equal(calls.length,10);
+ assert.equal(calls.length,11);
+ assert.equal(out.body.data.sourceIsolationDiagnostics.status,'HOLD');
+ assert.equal(out.body.data.sourceIsolationDiagnostics.productionWriteAuthorized,false);
  assert.equal(out.body.data.specialistReview.status,'SOURCE_HOLD');
  assert.equal(out.body.data.specialistReview.productionWriteAuthorized,false);
  assert.ok(!JSON.stringify(out.body).includes('PRIVATE-SKU-DO-NOT-LEAK'));
@@ -209,7 +211,7 @@ test('A01 skips cross-domain specialist reads when source consistency gate fails
  assert.equal(x.body.data.consistencyGate,'HOLD');
  assert.equal(x.body.data.specialistReview.status,'NOT_RUN_SOURCE_GATE_HOLD');
  assert.equal(specialists,0);
- assert.equal(calls,6);
+ assert.equal(calls,7);
 });
 
 test('A01-A10 gate controller can certify only sequential independently verified exact-SHA records',async()=>{

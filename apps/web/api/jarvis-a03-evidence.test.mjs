@@ -68,7 +68,7 @@ test('A03 durable capture is a separate registered founder-only route and reads 
 test('A03 archive rejects unauthenticated, wrong principal, unconsented, CSRF, and oversized/shaped inputs before source execution',async()=>{
  const h=harness();
  for(const [args,status] of [
-  [{email:null},401],[{email:'other@example.org'},403],
+  [{email:null},401],[{email:'other@example.org'},401],
   [{origin:'https://evil.example.org'},403],
   [{contentType:'text/plain'},415],
   [{url:'/api/jarvis-a03-evidence?write=true'},422],
@@ -96,7 +96,7 @@ test('A03 archive refuses unauthorized, malformed and unrecognised GET receipt l
  const h=harness();
  for(const [args,status] of [
   [{method:'GET',email:null,url:'/api/jarvis-a03-evidence?receipt=x'},401],
-  [{method:'GET',email:'other@example.org',url:'/api/jarvis-a03-evidence?receipt=x'},403],
+  [{method:'GET',email:'other@example.org',url:'/api/jarvis-a03-evidence?receipt=x'},401],
   [{method:'GET',url:'/api/jarvis-a03-evidence?receipt=../private'},422],
   [{method:'GET',url:'/api/jarvis-a03-evidence?receipt=abc'},422],
   [{method:'GET',url:'/api/jarvis-a03-evidence?receipt=abc&execute=true'},422]

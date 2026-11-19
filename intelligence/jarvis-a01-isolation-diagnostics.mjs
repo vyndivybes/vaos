@@ -18,7 +18,19 @@ const HOLDS=new Set([
  'JOB_VENTURE_LINEAGE_INCOMPLETE',
  'RESERVATION_PARENT_REVISION_UNVERIFIED',
  'PO_PARENT_REVISION_UNVERIFIED',
+ 'HISTORICAL_SIMULATION_ONLY',
+ 'RECORD_LEVEL_CLASSIFICATION_PENDING',
+ 'AUTHENTICATED_OWNER_BINDING_PENDING',
+ 'REAL_SOURCE_REVISION_PENDING',
+ 'SIMULATION_DECLARATION_COHORT_DRIFT',
 ]);
+const MD_SIMULATION_BASELINE=Object.freeze({
+ salesOrders:5,purchaseOrders:48,jobCards:4,jobCardLines:56,
+ reservations:1,inventoryLedger:2,inventoryCostLedger:2,travellers:1,
+});
+const POLICY_HOLDS=['HISTORICAL_SIMULATION_ONLY',
+ 'RECORD_LEVEL_CLASSIFICATION_PENDING','AUTHENTICATED_OWNER_BINDING_PENDING',
+ 'REAL_SOURCE_REVISION_PENDING'];
 const INVENTORY_FIELDS=['ventureCount','sourceCount','overlappingKeyGroups',
  'unpairedCount','negativeCount','invalidIdentityCount'];
 const LINEAGE_FIELDS=['jobCardsTotal','jobCardsWithoutTravellerVenture','ambiguousJobVentureCount',
@@ -66,6 +78,32 @@ export function normalizeA01IsolationDiagnostic(response){
     !Array.isArray(data.holds)||data.holds.length<1||data.holds.length>32||
     data.holds.some(x=>!HOLDS.has(x))||
     !data.holds.includes('LEGAL_TENANT_MEMBERSHIP_UNVERIFIED'))return bad();
+ const governance=data.businessGovernance,simulation=data.simulationBoundary;
+ const expected=MD_SIMULATION_BASELINE;
+ const observed=allCounts(simulation?.observedCounts,Object.keys(expected));
+ const equal=observed && Object.keys(expected).every(k=>observed[k]===expected[k]);
+ if(!governance||typeof governance!=='object'||Array.isArray(governance)||
+    governance.declaredLegalEntity!=='Vāyú Shastr Pvt Ltd'||
+    governance.product!=='VYNDI OS'||
+    governance.businessOwnershipDecision!=='MD_DECLARED'||
+    governance.sourceAuthorityDecision!=='MD_APPROVED'||
+    governance.declaredSystemOfRecord!=='VYNDI_OS'||
+    governance.agentOrchestrationSystem!=='VAOS_JARVIS'||
+    governance.historicalDataClassification!=='SIMULATION_ONLY_DECLARED'||
+    governance.authenticatedOwnerBindingVerified!==false||
+    governance.recordLevelClassificationVerified!==false||
+    governance.realSourceCertified!==false||
+    !simulation||typeof simulation!=='object'||Array.isArray(simulation)||
+    simulation.status!=='HOLD'||simulation.baselineScope!=='ROW_COUNTS_ONLY_NOT_RECORD_IDENTITIES'||
+    typeof simulation.countsEqual!=='boolean'||!observed||
+    simulation.sourceRevisionCertified!==false||
+    simulation.productionBusinessDataCertified!==false||
+    simulation.productionWriteAuthorized!==false||
+    simulation.countsEqual!==equal||
+    POLICY_HOLDS.some(code=>!data.holds.includes(code))||
+    (!equal&&!data.holds.includes('SIMULATION_DECLARATION_COHORT_DRIFT'))||
+    (equal&&data.holds.includes('SIMULATION_DECLARATION_COHORT_DRIFT')))
+    return bad();
  const inventory=allCounts(data.inventory,INVENTORY_FIELDS);
  const lineage=allCounts(data.lineage,LINEAGE_FIELDS);
  if(!inventory||!lineage||
@@ -83,6 +121,23 @@ export function normalizeA01IsolationDiagnostic(response){
   status:'HOLD',readOnly:true,tenantIdentityVerified:false,
   sourceCompletenessVerified:false,availableToPromiseAuthorized:false,
   businessWritesAuthorized:false,productionWriteAuthorized:false,
+  businessGovernance:Object.freeze({
+   declaredLegalEntity:'Vāyú Shastr Pvt Ltd',
+   businessOwnershipDecision:'MD_DECLARED',
+   sourceAuthorityDecision:'MD_APPROVED',
+   declaredSystemOfRecord:'VYNDI_OS',
+   historicalDataClassification:'SIMULATION_ONLY_DECLARED',
+   authenticatedOwnerBindingVerified:false,
+   recordLevelClassificationVerified:false,
+   realSourceCertified:false,
+  }),
+  simulationBoundary:Object.freeze({
+   status:'HOLD',countsEqual:equal,
+   baselineScope:'ROW_COUNTS_ONLY_NOT_RECORD_IDENTITIES',
+   productionBusinessDataCertified:false,sourceRevisionCertified:false,
+   productionWriteAuthorized:false,
+   observedCounts:Object.freeze(observed),
+  }),
   inventory:Object.freeze({...inventory,boundedPageComplete:data.inventory.boundedPageComplete}),
   lineage:Object.freeze(lineage),
   holds:Object.freeze([...new Set(data.holds)]),

@@ -1,0 +1,30 @@
+name: A01 Independent VAOS Source Identity Contract
+on:
+  pull_request:
+    paths:
+      - 'platform/execution/vyndi-source-receipt.mjs'
+      - 'platform/execution/vyndi-source-identity-contract.test.mjs'
+      - 'platform/execution/vyndi-ontology-read-receipt.test.mjs'
+      - 'platform/ontology/durable-receipt-ingestor.test.mjs'
+      - '.github/workflows/a01-source-identity-contract.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'platform/execution/vyndi-source-receipt.mjs'
+      - 'platform/execution/vyndi-source-identity-contract.test.mjs'
+      - 'platform/execution/vyndi-ontology-read-receipt.test.mjs'
+      - '.github/workflows/a01-source-identity-contract.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  independent-canonical-identity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Independently validate hash-valid source receipt canonical identity
+        run: node --test platform/execution/vyndi-source-identity-contract.test.mjs platform/execution/vyndi-ontology-read-receipt.test.mjs platform/ontology/durable-receipt-ingestor.test.mjs

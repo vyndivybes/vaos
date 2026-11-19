@@ -19,6 +19,8 @@ const here = path.dirname(fileURLToPath(import.meta.url));
 // route -> how it is protected instead of the founder session cookie
 const EXEMPT = {
   "/api/login": { why: "issues sessions; throttled before any hashing", marker: /loginThrottle/ },
+  "/api/founder-sso-start": { why: "anonymous OIDC PKCE authorization launch with exact subject commissioning gate", marker: /beginFounderOidc/ },
+  "/api/founder-sso-callback": { why: "independently verified OIDC issuer, ID JWT, nonce and fixed founder before session issuance", marker: /finishFounderOidc/ },
   "/api/logout": { why: "clears/revokes the caller's own cookie", marker: /clearSessionCookie/ },
   "/api/control-plane": { why: "authenticates inside getControlPlanePayload and returns 401", marker: /getControlPlanePayload[\s\S]*401/ },
   "/api/windmill-live-do-qualification": { why: "GitHub workflow OIDC bearer", marker: /verifyWindmill\w*Oidc/ },

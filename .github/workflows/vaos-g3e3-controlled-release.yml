@@ -23,7 +23,7 @@ jobs:
       - name: Checkout reviewed release
         uses: actions/checkout@v4
       - name: Node 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Fail closed when production release credential is unavailable

@@ -16,7 +16,7 @@ jobs:
     environment: stage8-isolated-qualification
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Independently verify source run and signed audit gate

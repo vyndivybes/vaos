@@ -25,7 +25,7 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - run: node --test integrations/windmill/cancellation-controller.test.mjs platform/execution/windmill-cancellation-drill.test.mjs platform/security/windmill-cancellation-oidc.test.mjs apps/web/api/windmill-live-do-qualification.test.mjs
@@ -40,7 +40,7 @@ jobs:
       id-token: write
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Execute one admitted cancellation drill

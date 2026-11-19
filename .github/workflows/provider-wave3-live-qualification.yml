@@ -27,7 +27,7 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Contract and adapter qualification
@@ -51,7 +51,7 @@ jobs:
       WAVE3_PASSED_CHECKS: runtime-ready,pinned-runtime,kill-switch
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Start pinned n8n runtime
@@ -93,7 +93,7 @@ jobs:
       WAVE3_PASSED_CHECKS: runtime-ready,unauthenticated-api-denied,kill-switch
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Start pinned Activepieces runtime
@@ -132,7 +132,7 @@ jobs:
       WAVE3_PASSED_CHECKS: runtime-ready,authenticated-api,synthetic-document-ingest,kill-switch
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Start pinned Paperless-ngx runtime
@@ -187,7 +187,7 @@ jobs:
       WAVE3_PASSED_CHECKS: runtime-ready,synthetic-pdf-transform,output-pdf-verified,kill-switch
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: '22'
       - name: Start pinned Stirling PDF runtime

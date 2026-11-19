@@ -4,6 +4,7 @@
  */
 import {collectMarketPublicEvidence} from './market-public-sources.mjs';
 import {backtestPublicIndicator} from './market-series-forecast.mjs';
+import {assessJarvisA04HistoricalReplay} from './jarvis-a04-historical-replay.mjs';
 export const LATEST_KEY='jarvis/founder/market-intel/v2/latest.json';
 const control='founder-daily-readonly-v1';
 export async function refreshMarketIntelligence({bucket,fetchImpl=globalThis.fetch,collect,now=()=>new Date()}={}){
@@ -27,6 +28,7 @@ export async function refreshMarketIntelligence({bucket,fetchImpl=globalThis.fet
   indicatorBacktests:Object.fromEntries(['gdp','inflation'].map(k=>[k,
    backtestPublicIndicator(bank[k]?.series||[],{source:'WORLD_BANK_V2',
     indicator:bank[k]?.indicator||'UNAVAILABLE',unit:bank[k]?.unit||'UNAVAILABLE'})])),
+  a04HistoricalReplay:assessJarvisA04HistoricalReplay(evidence),
   competitorChanges:{
    initialBaseline:previous===null,newCount:previous===null?0:newArticles.length,
    items:previous===null?[]:newArticles.slice(0,10),

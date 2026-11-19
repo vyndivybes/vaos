@@ -105,6 +105,14 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
     verificationRefs:['vyndi_inventory_balance'],description:'Read canonical shared inventory balance.'
   }),
   route({
+    actionType:'INVENTORY.OBSERVE_ISOLATION_DIAGNOSTICS',employeeId:'inventory',
+    effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/vaos-isolation-diagnostics.mjs',authority:'getInventoryIsolationDiagnostics',
+    verificationRefs:['epr_inventory_ledger','epr_inventory_cost_ledger',
+      'epr_inventory_reservations','epr_production_job_cards','vyndi_purchase_orders'],
+    description:'Signed redacted inventory and owner-lineage HOLD counters only; no tenant, source or procurement authority.'
+  }),
+  route({
     actionType:'INVENTORY.RESERVE_MATERIAL',employeeId:'inventory',effectClass:EFFECT.MUTATION,state:ROUTE_STATE.WRITE_PREPARED,
     sourceFile:'src/lib/production-job-card.ts',authority:'refreshProductionReservations',
     verificationRefs:['epr_inventory_reservations','epr_production_job_cards'],

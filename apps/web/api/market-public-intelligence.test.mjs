@@ -1,9 +1,17 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {createMarketPublicIntelligenceHandler} from './market-public-intelligence.mjs';
+const series=(offset=0)=>Array.from({length:12},(_,i)=>({
+ year:2014+i,value:offset+i/4+(i%3)*0.1,
+ unit:'PERCENT_ANNUAL',observedFrom:'WORLD_BANK_INDICATOR_API'}));
 const sample=()=>({schemaVersion:'VAOS_MARKET_PUBLIC_EVIDENCE_V1',
- worldBank:{gdp:{status:'OBSERVED',indicator:'NY.GDP.MKTP.KD.ZG',unit:'PERCENT_ANNUAL',
- series:Array.from({length:9},(_,i)=>({year:2017+i,value:i+1}))}},
+ collectedAt:'2026-11-06T01:00:00.000Z',readOnly:true,
+ sourceQualification:'UPSTREAM_RECORDS_NOT_INDEPENDENTLY_RECONCILED',
+ worldBank:{
+  gdp:{status:'OBSERVED',source:'WORLD_BANK_V2',indicator:'NY.GDP.MKTP.KD.ZG',
+   unit:'PERCENT_ANNUAL',series:series()},
+  inflation:{status:'OBSERVED',source:'WORLD_BANK_V2',indicator:'FP.CPI.TOTL.ZG',
+   unit:'PERCENT_ANNUAL',series:series(3)}},
  comtrade:{status:'HOLD',observations:[]},
  competitors:{status:'HOLD',items:[]},
  demandForecastQualified:false,actionAuthorized:false});
@@ -40,10 +48,17 @@ test('manual REFRESH enforces explicit origin, consent and structured JSON',asyn
  assert.equal(refresh.status,200);
  assert.equal(refresh.json.data.snapshot.indicatorBacktests.gdp.status,'BACKTESTED_INDICATOR_EXTRAPOLATION');
  assert.equal(refresh.json.data.snapshot.demandForecastQualified,false);
+ assert.equal(refresh.json.data.snapshot.a04HistoricalReplay.evidenceStatus,'TWO_INDICATORS_REPLAYED');
+ assert.equal(refresh.json.data.snapshot.a04HistoricalReplay.status,'HOLD');
+ assert.equal(refresh.json.data.snapshot.a04HistoricalReplay.indicators.gdp.folds.length,4);
+ assert.equal(refresh.json.data.snapshot.a04HistoricalReplay.actionAuthorized,false);
  assert.equal(f.writes(),1);
  const replay=await f.call();
  assert.equal(replay.status,200);
  assert.equal(replay.json.data.snapshot.actionAuthorized,false);
+ assert.equal(replay.json.data.snapshot.a04HistoricalReplay.evidenceStatus,'TWO_INDICATORS_REPLAYED');
+ assert.equal(replay.json.data.snapshot.a04HistoricalReplay.productionWritesAuthorized,false);
+ assert.equal(f.writes(),1,'GET did not require another persisted snapshot');
 });
 test('query parameters and mutations beyond REFRESH are rejected',async()=>{
  const f=fixture();

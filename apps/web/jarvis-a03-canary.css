@@ -28,3 +28,11 @@
 .a03-back{padding-top:25px}
 @media(max-width:760px){.a03-columns{grid-template-columns:1fr}.a03-wrap{padding-top:28px}.a03-card{padding:20px}}
 @media(prefers-reduced-motion:reduce){.a03-card,#a03-run{scroll-behavior:auto;transition:none}}
+
+.a03-archive-panel{margin-top:24px;padding:20px;border:1px solid var(--shell-line);border-radius:10px;background:var(--shell-canvas)}
+.a03-archive-panel h3{font-size:1.03rem;margin:0 0 8px}
+.a03-archive-panel p{line-height:1.6;font-size:.89rem}
+.a03-archive-hold{border-left:3px solid #b08736;padding:8px 12px;color:#725319;background:#fcf6e7}
+#a03-capture{border:1px solid var(--shell-accent);border-radius:9px;background:var(--shell-surface);color:var(--shell-accent);font:inherit;font-weight:750;padding:12px 16px;cursor:pointer}
+#a03-capture:disabled{cursor:not-allowed;opacity:.48}
+#a03-archive-status{overflow-wrap:anywhere}

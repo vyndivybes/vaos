@@ -7,7 +7,7 @@ on:
       - 'apps/web/api/jarvis-autonomy-investigate*'
       - 'apps/web/api/jarvis-a01.mjs'
       - 'apps/web/api/jarvis-a01.test.mjs'
-      - 'apps/web/api/jarvis-a01-venture-hold.test.mjs'
+      - 'apps/web/api/jarvis-a01-venture-hold.test.mjs apps/web/api/jarvis-a01-isolation-diagnostics.test.mjs'
       - 'platform/execution/vyndi-read-bridge-client.mjs'
       - 'apps/web/api/jarvis-a01-evidence*'
       - 'intelligence/jarvis-a01-evidence-archive*'

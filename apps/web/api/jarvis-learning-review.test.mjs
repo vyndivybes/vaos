@@ -80,3 +80,39 @@ test('archive requests fail closed without storage, consent or a valid receipt',
   headers:{cookie:SESSION_COOKIE+'='+createSessionToken('kaaviyam1519@gmail.com')}});
  assert.equal((await app.fetch(unknown)).status,403);
 });
+
+
+test('A05 founder POST runs held-out shadow decision with no new storage or model mutation',async()=>{
+ const batch100={mode:'DECLARED_REVIEW_RESULTS',pairs:Array.from({length:100},(_,i)=>({
+  ...pair(i),
+  baseline:{...pair(i).baseline,correct:false,confidence:0.05},
+  candidate:{...pair(i).candidate,correct:true,confidence:0.95}
+ }))};
+ const r=await app.fetch(request(batch100));
+ assert.equal(r.status,200);
+ const {data}=await r.json(),s=data.a05ShadowReview;
+ assert.equal(s.schemaVersion,'VAOS_JARVIS_A05_SHADOW_HOLDOUT_V1');
+ assert.equal(s.stage,'A05');assert.equal(s.status,'HOLD');
+ assert.equal(s.reversionDecision,'CONTINUE_SHADOW_ONLY');
+ assert.ok(s.holdoutSampleCount>=10);
+ assert.equal(s.holdoutIndependentlyLocked,false);
+ assert.equal(s.autoPromotionAuthorized,false);
+ assert.equal(s.liveRollbackExecuted,false);
+ assert.equal(s.productionModelChanged,false);
+ assert.equal(s.businessActionAuthorized,false);
+ assert.equal(data.stored,false);
+ assert.doesNotMatch(JSON.stringify(data),/sample-0|independent-reviewer|subjectId/);
+});
+test('A05 founder POST recommends baseline retention if heldout regressions worsen, without live rollback',async()=>{
+ const input={mode:'DECLARED_REVIEW_RESULTS',pairs:Array.from({length:100},(_,i)=>({
+  ...pair(i),baseline:{...pair(i).baseline,correct:true,confidence:0.95},
+  candidate:{...pair(i).candidate,correct:false,confidence:0.99}
+ }))};
+ const r=await app.fetch(request(input));assert.equal(r.status,200);
+ const s=(await r.json()).data.a05ShadowReview;
+ assert.equal(s.reversionDecision,'RETAIN_BASELINE_REVERT_CANDIDATE_IF_ALREADY_TESTING');
+ assert.ok(s.holdout.regressions>0);
+ assert.equal(s.liveRollbackExecuted,false);
+ assert.equal(s.autoRollbackAuthorized,false);
+ assert.equal(s.productionWriteAuthorized,false);
+});

@@ -32,3 +32,30 @@ test('missing or malformed stored records fail closed',async()=>{
  b.store.set('jarvis/founder/learning-review/v1/'+receipt+'.json','{"unsafe":"x"}');
  await assert.rejects(readLearningReview({bucket:b,receipt}),/LEARNING_RECEIPT_UNVERIFIED/);
 });
+
+
+test('A05 stores only allowlisted heldout aggregate in existing consented receipt and rejects forged status',async()=>{
+ const {assessJarvisA05ShadowHoldout}=await import('./jarvis-a05-shadow-holdout.mjs');
+ const full={mode:'DECLARED_REVIEW_RESULTS',pairs:Array.from({length:100},(_,i)=>({
+  sampleId:'PRIVATE-RAW-SAMPLE-'+i,reviewerId:'reviewer-qa',
+  baseline:{subjectId:'base',confidence:.05,correct:false,unsupportedClaims:0,latencyMs:100},
+  candidate:{subjectId:'candidate',confidence:.95,correct:true,unsupportedClaims:0,latencyMs:100}
+ }))};
+ const a05=await assessJarvisA05ShadowHoldout(full);
+ const b=bucket();
+ const existing={...summary,a05ShadowReview:a05};
+ const saved=await saveLearningReview({bucket:b,batch:full,summary:existing,now,
+  uuid:()=> '11111111-1111-4111-8111-111111111111'});
+ assert.equal(b.store.size,1);
+ const raw=[...b.store.values()][0];
+ assert.doesNotMatch(raw,/PRIVATE-RAW-SAMPLE|reviewer-qa|subjectId|sampleId/);
+ const verified=await readLearningReview({bucket:b,receipt:saved.receipt});
+ assert.equal(verified.summary.a05ShadowReview.status,'HOLD');
+ assert.equal(verified.summary.a05ShadowReview.reversionDecision,'CONTINUE_SHADOW_ONLY');
+ assert.equal(verified.summary.a05ShadowReview.liveRollbackExecuted,false);
+ assert.equal(verified.summary.a05ShadowReview.productionModelChanged,false);
+ const key=[...b.store.keys()][0],tampered=JSON.parse(b.store.get(key));
+ tampered.summary.a05ShadowReview.status='PRODUCTION_QUALIFIED';
+ b.store.set(key,JSON.stringify(tampered));
+ await assert.rejects(readLearningReview({bucket:b,receipt:saved.receipt}),/LEARNING_RECEIPT_UNVERIFIED/);
+});

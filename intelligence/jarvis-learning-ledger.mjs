@@ -1,3 +1,4 @@
+import {projectJarvisA05ShadowReceipt} from './jarvis-a05-shadow-holdout.mjs';
 /** Founder-consented, append-only-by-API aggregate evaluation receipts.
  * The system retains no raw prompt, answer, reviewer identity, or sample ID.
  * A record is NOT proof of independent review, self-learning or model improvement.
@@ -30,6 +31,8 @@ export async function saveLearningReview({bucket,batch,summary,now=new Date(),uu
   'operationalOutcomesVerified','productionForecastCertified','autoPromotionAuthorized',
   'actionAuthorized','modelInvocations','sourceRecordsExported'];
  const safe=Object.fromEntries(allowed.filter(k=>Object.hasOwn(summary,k)).map(k=>[k,summary[k]]));
+ if(Object.hasOwn(summary,'a05ShadowReview'))
+  safe.a05ShadowReview=projectJarvisA05ShadowReceipt(summary.a05ShadowReview);
  const record={schemaVersion:'VAOS_JARVIS_AGGREGATE_LEARNING_RECEIPT_V1',
   recordedAt:now.toISOString(),receipt,inputSha256:sha256,summary:safe,
   declaredReviewerProvenanceUnverified:true,modelChanged:false,learningCertified:false,
@@ -48,7 +51,22 @@ export async function readLearningReview({bucket,receipt}){
   record.receipt!==receipt||!/^([a-f0-9]{64})$/.test(record.inputSha256||'')||
   !validSummary(record.summary)||record.learningCertified!==false||record.modelChanged!==false||
   record.businessActionAuthorized!==false)throw Error('LEARNING_RECEIPT_UNVERIFIED');
+ // Only project an allowlisted aggregate from archive. Never relay arbitrary
+ // R2 JSON or input sample IDs, and reject forged A05 certification flags.
+ let cleanA05;
+ try{if(Object.hasOwn(record.summary,'a05ShadowReview'))
+  cleanA05=projectJarvisA05ShadowReceipt(record.summary.a05ShadowReview);}
+ catch{throw Error('LEARNING_RECEIPT_UNVERIFIED');}
+ const cleanSummary=Object.fromEntries([
+  'schemaVersion','mode','status','baseline','candidate','regressions',
+  'improvements','safetyRegressions','calibrationMethod','latencyMethod',
+  'holds','reviewerIndependenceVerified','productionAccuracyCertified',
+  'confidenceCalibrationCertified','operationalOutcomesVerified',
+  'productionForecastCertified','autoPromotionAuthorized','actionAuthorized',
+  'modelInvocations','sourceRecordsExported'
+ ].filter(k=>Object.hasOwn(record.summary,k)).map(k=>[k,record.summary[k]]));
+ if(cleanA05)cleanSummary.a05ShadowReview=cleanA05;
  return {schemaVersion:record.schemaVersion,receipt:record.receipt,
-  recordedAt:record.recordedAt,sha256:record.inputSha256,summary:record.summary,
+  recordedAt:record.recordedAt,sha256:record.inputSha256,summary:cleanSummary,
   stored:true,learningCertified:false,modelChanged:false,policyChangesAuthorized:false};
 }

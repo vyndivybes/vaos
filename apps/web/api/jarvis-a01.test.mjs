@@ -72,7 +72,11 @@ async function snapshot(){
     sourceCompletenessVerified:false,readOnly:true,actionAuthorized:false,productionWriteAuthorized:false};
   // Nonempty source records for real complete pages must be actual rows.
   if(counts[kind]>0){
-   data.records=Array.from({length:counts[kind]},(_,i)=>({index:i,tag:'PRIVATE-SKU-DO-NOT-LEAK'}));
+   // Synthetic but canonical enterprise identities; no real customer data.
+   // Key insertion order matches the independently canonicalized digest.
+   data.records=Array.from({length:counts[kind]},(_,i)=>kind==='inventory'
+    ? {index:i,quantity_balance:1,sku:`SYNTH-SKU-${i}`,tag:'PRIVATE-SKU-DO-NOT-LEAK',unit:'pcs'}
+    : {id:`SYNTH-PO-${i}`,index:i,status:'draft',tag:'PRIVATE-SKU-DO-NOT-LEAK'});
    data.complete=true;data.hasMore=false;
    const canonical=JSON.stringify({records:data.records,sourceCount:counts[kind],sourceKind:kind,sourceScope});
    data.sourceRevision=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(canonical))),x=>x.toString(16).padStart(2,'0')).join('');

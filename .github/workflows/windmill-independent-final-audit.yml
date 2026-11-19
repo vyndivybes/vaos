@@ -57,7 +57,7 @@ jobs:
         with:
           node-version: '22'
       - name: Fetch original Windmill live execution evidence
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windmill-synthetic-live-evidence
           repository: vyndivybes/vaos
@@ -65,7 +65,7 @@ jobs:
           github-token: ${{ github.token }}
           path: audit-input/synthetic
       - name: Fetch separately credentialed GET-only verification evidence
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windmill-independent-verification-evidence
           repository: vyndivybes/vaos
@@ -73,7 +73,7 @@ jobs:
           github-token: ${{ github.token }}
           path: audit-input/independent
       - name: Fetch actual Cloudflare DO/alarms live evidence
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windmill-cloudflare-do-live-evidence
           repository: vyndivybes/vaos
@@ -82,7 +82,7 @@ jobs:
           path: audit-input/cloudflare
       - name: Fetch controlled cancellation evidence
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windmill-cancellation-live-evidence
           repository: vyndivybes/vaos
@@ -91,7 +91,7 @@ jobs:
           path: audit-input/cancellation
       - name: Fetch separately anchored real forced-restart evidence
         if: github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: windmill-cloudflare-restart-evidence
           repository: vyndivybes/vaos

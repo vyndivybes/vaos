@@ -21,7 +21,30 @@ function signedDiagnostic(){
    lineage:{jobCardsTotal:4,jobCardsWithoutTravellerVenture:3,ambiguousJobVentureCount:0,
      reservationsTotal:1,reservationsWithBrokenLineage:1,
      purchaseOrdersTotal:48,purchaseOrdersWithBrokenLineage:48},
-   holds:['LEGAL_TENANT_MEMBERSHIP_UNVERIFIED','PO_PARENT_REVISION_UNVERIFIED'],
+   holds:['LEGAL_TENANT_MEMBERSHIP_UNVERIFIED','PO_PARENT_REVISION_UNVERIFIED',
+      'HISTORICAL_SIMULATION_ONLY','RECORD_LEVEL_CLASSIFICATION_PENDING',
+      'AUTHENTICATED_OWNER_BINDING_PENDING','REAL_SOURCE_REVISION_PENDING'],
+   businessGovernance:{
+     declaredLegalEntity:'Vāyú Shastr Pvt Ltd',
+     product:'VYNDI OS',
+     businessOwnershipDecision:'MD_DECLARED',
+     sourceAuthorityDecision:'MD_APPROVED',
+     declaredSystemOfRecord:'VYNDI_OS',
+     agentOrchestrationSystem:'VAOS_JARVIS',
+     historicalDataClassification:'SIMULATION_ONLY_DECLARED',
+     authenticatedOwnerBindingVerified:false,
+     recordLevelClassificationVerified:false,
+     realSourceCertified:false,
+   },
+   simulationBoundary:{
+     status:'HOLD',countsEqual:true,
+     baselineScope:'ROW_COUNTS_ONLY_NOT_RECORD_IDENTITIES',
+     sourceRevisionCertified:false,
+     productionBusinessDataCertified:false,
+     productionWriteAuthorized:false,
+     observedCounts:{salesOrders:5,purchaseOrders:48,jobCards:4,jobCardLines:56,
+       reservations:1,inventoryLedger:2,inventoryCostLedger:2,travellers:1},
+   },
    records:[{sku:'FORBIDDEN-SKU',venture:'FORBIDDEN-VENTURE',amount:12345}],
   },
  };
@@ -41,6 +64,14 @@ test('A01 diagnostic strips all raw data and never certifies tenant or procureme
  assert.equal(d.tenantIdentityVerified,false);
  assert.equal(d.businessWritesAuthorized,false);
  assert.equal(d.productionWriteAuthorized,false);
+ assert.equal(d.businessGovernance.declaredLegalEntity,'Vāyú Shastr Pvt Ltd');
+ assert.equal(d.businessGovernance.businessOwnershipDecision,'MD_DECLARED');
+ assert.equal(d.businessGovernance.sourceAuthorityDecision,'MD_APPROVED');
+ assert.equal(d.businessGovernance.authenticatedOwnerBindingVerified,false);
+ assert.equal(d.businessGovernance.realSourceCertified,false);
+ assert.equal(d.simulationBoundary.countsEqual,true);
+ assert.equal(d.simulationBoundary.productionBusinessDataCertified,false);
+ assert.ok(d.holds.includes('HISTORICAL_SIMULATION_ONLY'));
  assert.equal(d.sourceCompletenessVerified,false);
  assert.equal(d.inventory.ventureCount,2);
  assert.equal(d.lineage.purchaseOrdersWithBrokenLineage,48);
@@ -54,6 +85,10 @@ test('A01 rejects forged authority, unknown HOLD code and unsafe counts',()=>{
   {...original,sourceAuthority:'getAuthoritativeInventory'},
   {...original,data:{...original.data,tenantIdentityVerified:true}},
   {...original,data:{...original.data,holds:['FAKE-APPROVAL']}},
+  {...original,data:{...original.data,businessGovernance:{...original.data.businessGovernance,authenticatedOwnerBindingVerified:true}}},
+  {...original,data:{...original.data,businessGovernance:{...original.data.businessGovernance,sourceAuthorityDecision:'UNAUTHORIZED'}}},
+  {...original,data:{...original.data,simulationBoundary:{...original.data.simulationBoundary,productionBusinessDataCertified:true}}},
+  {...original,data:{...original.data,simulationBoundary:{...original.data.simulationBoundary,observedCounts:{...original.data.simulationBoundary.observedCounts,jobCards:'4'}}}},
   {...original,data:{...original.data,inventory:{...original.data.inventory,ventureCount:-1}}},
   {...original,data:{...original.data,lineage:{...original.data.lineage,purchaseOrdersWithBrokenLineage:999}}},
  ]){

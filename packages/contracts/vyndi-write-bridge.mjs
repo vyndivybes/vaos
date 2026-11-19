@@ -105,6 +105,13 @@ export const VYNDI_BRIDGE_ROUTES=freeze([
     verificationRefs:['vyndi_inventory_balance'],description:'Read canonical shared inventory balance.'
   }),
   route({
+    actionType:'GOVERNANCE.OBSERVE_MD_IDENTITY',employeeId:'people',
+    effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
+    sourceFile:'src/lib/vaos-md-identity-read.mjs',authority:'readManagingDirectorIdentityEvidence',
+    verificationRefs:['user','vindy_user_roles','account','session'],
+    description:'Signed read-only Better Auth identity evidence; no SSO, session minting, role changes or business writes.'
+  }),
+  route({
     actionType:'INVENTORY.OBSERVE_ISOLATION_DIAGNOSTICS',employeeId:'inventory',
     effectClass:EFFECT.READ,state:ROUTE_STATE.READ_READY,executionEnabled:true,
     sourceFile:'src/lib/vaos-isolation-diagnostics.mjs',authority:'getInventoryIsolationDiagnostics',

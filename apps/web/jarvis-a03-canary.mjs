@@ -69,11 +69,69 @@ export async function runA03CanaryFromFounderClick({confirmed,fetcher=fetch}={})
   return summarizeA03Canary(body?.data);
  }catch{return HOLD;}
 }
+/**
+ * Separate founder consent: perform a NEW signed read on the server, store only
+ * metadata in R2, then GET the stored object to confirm integrity. Never treats
+ * the prior on-screen counts, local data, or screenshots as stored provenance.
+ */
+const INVALID_ARCHIVE=Object.freeze({status:'HOLD',qualificationStatus:'HOLD',
+ receipt:null,integrityVerified:false,independentSignatureVerified:false,
+ sourceCounts:Object.freeze([])});
+const RECEIPT=/^\d{4}-\d{2}-\d{2}\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+export async function captureA03DurableEvidence({confirmed,fetcher=fetch}={}){
+ if(confirmed!==true)throw Error('A03_ARCHIVE_CONFIRMATION_REQUIRED');
+ try{
+  const response=await fetcher('/api/jarvis-a03-evidence',{
+   method:'POST',credentials:'same-origin',cache:'no-store',
+   headers:{'Content-Type':'application/json'},
+   body:JSON.stringify({operation:'CAPTURE_FRESH_SIGNED_READ',confirm:true})
+  });
+  if(!response?.ok)return INVALID_ARCHIVE;
+  const created=(await response.json())?.data;
+  if(created?.stored!==true||created.status!=='HOLD'||
+    created.actionAuthorized!==false||created.productionWriteAuthorized!==false||
+    created.businessSourceAuthorityVerified!==false||
+    typeof created.receipt!=='string'||!RECEIPT.test(created.receipt))
+   return INVALID_ARCHIVE;
+  const raw=await fetcher('/api/jarvis-a03-evidence?receipt='+encodeURIComponent(created.receipt),{
+   method:'GET',credentials:'same-origin',cache:'no-store'
+  });
+  if(!raw?.ok)return INVALID_ARCHIVE;
+  const proof=(await raw.json())?.data;
+  if(proof?.receipt!==created.receipt||
+   proof.integrityVerified!==true||proof.independentSignatureVerified!==false||
+   proof.actionAuthorized!==false||proof.productionWriteAuthorized!==false||
+   proof.businessSourceAuthorityVerified!==false||
+   proof.evidence?.schemaVersion!=='VAOS_JARVIS_A03_ARCHIVED_OBSERVATION_V1'||
+   proof.evidence?.qualificationStatus!=='HOLD'||
+   proof.evidence?.status!=='BOUNDED_READ_COMPLETE'||
+   created.boundedReadCompleted!==true||
+   !Array.isArray(proof.evidence.sources)||proof.evidence.sources.length!==3)
+   return INVALID_ARCHIVE;
+  const sourceCounts=[];
+  for(let i=0;i<KINDS.length;i++){
+   const s=proof.evidence.sources[i];
+   if(s?.sourceKind!==KINDS[i]||s?.status!=='SIGNED_BOUNDED_OBSERVATION'||
+    !safeInt(s?.sourceCount)||s.independentlyCertified!==false||
+    s.sourceCompletenessVerified!==false)
+    return INVALID_ARCHIVE;
+   sourceCounts.push(s.sourceCount);
+  }
+  return Object.freeze({
+   status:'ARCHIVED_BOUNDED_OBSERVATION',qualificationStatus:'HOLD',
+   receipt:created.receipt,integrityVerified:true,
+   independentSignatureVerified:false,sourceCounts:Object.freeze(sourceCounts)
+  });
+ }catch{return INVALID_ARCHIVE;}
+}
+
 if(typeof document!=='undefined'){
  const $=id=>document.getElementById(id);
  const pane=$('a03-panel'),confirm=$('a03-confirm'),runButton=$('a03-run'),
   status=$('a03-status'),sourceList=$('a03-sources'),
   qualification=$('a03-qualification'),auth=$('a03-auth');
+ const archivePanel=$('a03-archive-panel'),archiveConfirm=$('a03-archive-confirm'),
+  captureButton=$('a03-capture'),archiveStatus=$('a03-archive-status');
  let running=false;
  function render(data){
   status.textContent=data.headline+' — '+data.explanation;
@@ -105,13 +163,29 @@ if(typeof document!=='undefined'){
   render(data);
   confirm.checked=false;confirm.disabled=false;running=false;runButton.disabled=true;
  });
+ archiveConfirm.addEventListener('change',()=>{
+  captureButton.disabled=running||archiveConfirm.checked!==true;
+ });
+ captureButton.addEventListener('click',async()=>{
+  if(running||archiveConfirm.checked!==true)return;
+  running=true;captureButton.disabled=true;archiveConfirm.disabled=true;
+  archiveStatus.textContent='Requesting a fresh bounded signed read and integrity-checked archive…';
+  const x=await captureA03DurableEvidence({confirmed:true});
+  archiveStatus.textContent=x.status==='ARCHIVED_BOUNDED_OBSERVATION'
+   ?'Metadata-only receipt stored and independently replay-checked: '+x.receipt+
+      ' · scoped counts: '+x.sourceCounts.join(' / ')+
+      '. Integrity verified; independent signature and business authority remain HOLD.'
+   :'Audit archive unavailable or unverified. No persisted evidence can be claimed. Storage must remain disabled until free-tier headroom is approved.';
+  archiveConfirm.checked=false;archiveConfirm.disabled=false;
+  running=false;captureButton.disabled=true;
+ });
  async function authenticate(){
   try{
    const response=await fetch('/api/session',{credentials:'same-origin',cache:'no-store'});
    if(!response.ok)throw Error('SESSION_NOT_AUTHENTICATED');
-   pane.hidden=false;auth.hidden=true;
+   pane.hidden=false;archivePanel.hidden=false;auth.hidden=true;
   }catch{
-   pane.hidden=true;
+   pane.hidden=true;archivePanel.hidden=true;
    auth.textContent='A current VAOS session is required. Sign in, then return to start your manual read-only trial.';
   }
  }

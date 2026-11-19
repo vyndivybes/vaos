@@ -1,6 +1,7 @@
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
 import {evaluateJarvisPairs} from '../../../intelligence/jarvis-evaluation.mjs';
+import {assessJarvisA05ShadowHoldout} from '../../../intelligence/jarvis-a05-shadow-holdout.mjs';
 import {saveLearningReview,readLearningReview} from '../../../intelligence/jarvis-learning-ledger.mjs';
 
 export function createJarvisLearningReviewHandler() {
@@ -41,6 +42,7 @@ export function createJarvisLearningReviewHandler() {
     save=true;input=input.batch;
    }
    data=evaluateJarvisPairs(input);
+   data={...data,a05ShadowReview:await assessJarvisA05ShadowHoldout(input)};
   }catch{
    return res.status(422).json(apiError('REVIEW_HOLD','Invalid paired outcomes; raw questions, answers and source documents are not accepted'));
   }

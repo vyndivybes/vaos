@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {runA03CanaryFromFounderClick,summarizeA03Canary} from './jarvis-a03-canary.mjs';
+import {runA03CanaryFromFounderClick,summarizeA03Canary,captureA03DurableEvidence} from './jarvis-a03-canary.mjs';
 const read=path=>readFile(new URL(path,import.meta.url),'utf8');
 const safe={
  schemaVersion:'VAOS_JARVIS_A03_SIGNED_READ_CANARY_V1',
@@ -95,4 +95,61 @@ test('A03 signed-read HOLD and all network failures remain HOLD with no private 
   fetcher:async()=>({ok:false,status:403,json:async()=>({error:'PRIVATE-RECORD'})})});
  assert.equal(rejected.status,'HOLD');
  assert.ok(!JSON.stringify(rejected).includes('PRIVATE-RECORD'));
+});
+
+test('A03 explicit archive consent captures a FRESH server observation and independently reads it back without leaking private source data',async()=>{
+ const sent=[];
+ const receipt='2026-11-19/5bef0e3a-27bb-4df1-8530-9f64dfb8a5fa';
+ const fetcher=async(url,options)=>{sent.push([url,options]);
+  if(options?.method==='POST')return {ok:true,json:async()=>({data:{
+   stored:true,receipt,status:'HOLD',boundedReadCompleted:true,
+   actionAuthorized:false,productionWriteAuthorized:false,businessSourceAuthorityVerified:false
+  }})};
+  return {ok:true,json:async()=>({data:{
+   receipt,integrityVerified:true,independentSignatureVerified:false,
+   businessSourceAuthorityVerified:false,actionAuthorized:false,productionWriteAuthorized:false,
+   evidence:{schemaVersion:'VAOS_JARVIS_A03_ARCHIVED_OBSERVATION_V1',
+    status:'BOUNDED_READ_COMPLETE',qualificationStatus:'HOLD',
+    sources:['inventory','shortages','purchaseOrders'].map((sourceKind,i)=>({
+     sourceKind,status:'SIGNED_BOUNDED_OBSERVATION',sourceCount:[1,0,47][i],
+     rawRows:[{sku:'PRIVATE-SKU-600'}],contentDigest:'f'.repeat(64)
+    })) }
+  }})};
+ };
+ const x=await captureA03DurableEvidence({confirmed:true,fetcher});
+ assert.equal(x.status,'ARCHIVED_BOUNDED_OBSERVATION');
+ assert.equal(x.qualificationStatus,'HOLD');
+ assert.equal(x.integrityVerified,true);
+ assert.equal(x.independentSignatureVerified,false);
+ assert.equal(x.receipt,receipt);
+ assert.deepEqual(x.sourceCounts,[1,0,47]);
+ assert.ok(!JSON.stringify(x).includes('PRIVATE-'));
+ assert.ok(!JSON.stringify(x).includes('contentDigest'));
+ assert.equal(sent.length,2);
+ assert.equal(sent[0][0],'/api/jarvis-a03-evidence');
+ assert.equal(sent[0][1].method,'POST');
+ assert.equal(sent[0][1].credentials,'same-origin');
+ assert.deepEqual(JSON.parse(sent[0][1].body),{operation:'CAPTURE_FRESH_SIGNED_READ',confirm:true});
+ assert.equal(sent[1][0],'/api/jarvis-a03-evidence?receipt='+encodeURIComponent(receipt));
+ assert.equal(sent[1][1].method,'GET');
+});
+test('A03 archive never executes without consent, never invents success from a rejected capture, and has no page-load auto capture',async()=>{
+ let calls=0;
+ await assert.rejects(captureA03DurableEvidence({confirmed:false,fetcher:async()=>{calls++;}}),
+  /A03_ARCHIVE_CONFIRMATION_REQUIRED/);
+ assert.equal(calls,0);
+ const bad=await captureA03DurableEvidence({confirmed:true,fetcher:async()=>{
+  calls++;return {ok:false,status:409,json:async()=>({error:'PRIVATE_TOKEN'})};
+ }});
+ assert.equal(bad.status,'HOLD');
+ assert.equal(bad.receipt,null);
+ assert.equal(calls,1);
+ assert.ok(!JSON.stringify(bad).includes('PRIVATE_TOKEN'));
+ const html=await read('./jarvis-a03-canary.html');
+ const js=await read('./jarvis-a03-canary.mjs');
+ for(const id of ['a03-archive-confirm','a03-capture','a03-archive-status'])
+  assert.match(html,new RegExp('id="'+id+'"'));
+ assert.match(html,/id="a03-capture"[^>]*disabled/);
+ assert.match(js,/addEventListener\('click'/);
+ assert.doesNotMatch(js,/setInterval\(|localStorage|sessionStorage/);
 });

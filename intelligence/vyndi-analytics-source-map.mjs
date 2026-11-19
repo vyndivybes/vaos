@@ -5,7 +5,7 @@ import {VYNDI_BRIDGE_ROUTES} from '../packages/contracts/vyndi-write-bridge.mjs'
 const DOMAINS=Object.freeze({
   ORCHESTRATOR:'Enterprise intelligence',PROJECT:'Programme',KNOWLEDGE:'Knowledge graph',COMMERCIAL:'Commercial',PROCUREMENT:'Procurement',
   INVENTORY:'Inventory',PRODUCTION:'Production',MAINTENANCE:'Maintenance',
-  FINANCE:'Finance',PEOPLE:'People & Office',ENGINEERING:'Engineering',
+  FINANCE:'Finance',PEOPLE:'People & Office',ENGINEERING:'Engineering',GOVERNANCE:'Identity & Governance',
 });
 export function buildVyndiAnalyticsSourceMap(routes=VYNDI_BRIDGE_ROUTES){
   if(!Array.isArray(routes))throw new TypeError('SOURCE_ROUTES_REQUIRED');

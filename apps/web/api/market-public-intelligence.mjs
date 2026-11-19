@@ -4,6 +4,7 @@
 import {parseCookies,SESSION_COOKIE,verifySessionToken} from '../lib/auth.mjs';
 import {apiError} from '../lib/api-contracts.mjs';
 import {refreshMarketIntelligence,LATEST_KEY} from '../../../intelligence/market-monitoring.mjs';
+import {assessJarvisA04HistoricalReplay} from '../../../intelligence/jarvis-a04-historical-replay.mjs';
 const FOUNDER='shyamsundhar1982@gmail.com';
 const fail=(res,status,code)=>res.status(status).json(apiError(code,code.replace(/_/g,' ')));
 export function createMarketPublicIntelligenceHandler({
@@ -30,7 +31,9 @@ export function createMarketPublicIntelligenceHandler({
     const snapshot=await object.json();
     if(snapshot?.schemaVersion!=='VAOS_PUBLIC_MARKET_SNAPSHOT_V2'||snapshot.actionAuthorized!==false)
      throw Error('MARKET_SNAPSHOT_INVALID');
-    return res.status(200).json({data:{snapshot,readOnly:true}});
+    // A04 readback is computed against existing immutable public observations. No new R2 writes or URLs.
+    const a04HistoricalReplay=assessJarvisA04HistoricalReplay(snapshot.evidence);
+    return res.status(200).json({data:{snapshot:{...snapshot,a04HistoricalReplay},readOnly:true}});
    }catch{return fail(res,503,'MARKET_ARCHIVE_READ_HOLD')}
   }
   if(req.headers?.origin!==url.origin)return fail(res,403,'ORIGIN_DENIED');

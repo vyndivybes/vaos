@@ -50,6 +50,28 @@ function renderBacktests(snapshot){
    'HOLD — not enough consecutive annual values to test this indicator'));
   host.append(row);
  }
+ const a04=snapshot.a04HistoricalReplay;
+ const summary=el('div',undefined,'market-metric');
+ summary.append(el('strong','A04 / TRAINING-ONLY HISTORICAL REPLAY · QUALIFICATION HOLD'));
+ if(a04?.schemaVersion!=='VAOS_JARVIS_A04_HISTORICAL_REPLAY_V1'){
+  summary.append(el('span','A04 HOLD — historical replay unavailable in this saved record. No business-demand or operational forecast is certified.'));
+ }else{
+  summary.append(el('span',a04.evidenceStatus==='TWO_INDICATORS_REPLAYED'
+   ?'Four genuinely held-out years per World Bank indicator, with separate earlier-year model selection. Descriptive error checks only; no independent forecast certification.'
+   :'A04 HOLD — one or both official historical indicator series are insufficient or lack source provenance.'));
+  for(const [id,label] of [['gdp','GDP growth'],['inflation','CPI inflation']]){
+   const r=a04.indicators?.[id];
+   const msg=r?.status==='HISTORICAL_REPLAY'?
+    label+' · outer folds '+r.outerFolds+
+    ' · replay RMSE '+numeral(r.backtestRMSE)+
+    ' vs last-year baseline '+numeral(r.baselineRMSE)+
+    ' · observed band coverage '+numeral((r.calibration?.observedCoverage??0)*100)+
+    '% (NOT calibrated or an interval guarantee).':
+    label+' · historical replay HOLD.';
+   summary.append(el('small',msg));
+  }
+ }
+ host.append(summary);
 }
 function renderCompetitors(snapshot){
  const host=$('market-competitor-articles');host.replaceChildren();

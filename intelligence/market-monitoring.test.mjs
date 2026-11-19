@@ -22,6 +22,10 @@ test('first monitored collection is a baseline and preserves immutable evidence 
  assert.equal(x.competitorChanges.newCount,0);
  assert.equal(x.indicatorBacktests.gdp.status,'BACKTESTED_INDICATOR_EXTRAPOLATION');
  assert.equal(x.indicatorBacktests.gdp.forecastQualified,false);
+ assert.equal(x.a04HistoricalReplay.stage,'A04');
+ assert.equal(x.a04HistoricalReplay.status,'HOLD');
+ assert.equal(x.a04HistoricalReplay.evidenceStatus,'NO_QUALIFIED_EVIDENCE');
+ assert.equal(x.a04HistoricalReplay.actionAuthorized,false);
  assert.equal(b.rows.get(LATEST_KEY).actionAuthorized,false);
 });
 test('later collection detects new article URLs but does not verify commercial claims',async()=>{
@@ -56,4 +60,25 @@ test('scheduled monitor accepts a pre-resolved consolidated feature flag',async(
   scheduledTime:Date.parse('2026-11-06T01:00:00Z')});
  assert.equal(result.status,'PARTIAL_OBSERVATIONS');
  assert.equal(b.rows.size,1);
+});
+
+test('A04 historical replay shares existing market collection and single R2 snapshot write',async()=>{
+ const b=bucket(),sample=evidence();
+ sample.collectedAt='2026-11-19T07:00:00.000Z';
+ sample.readOnly=true;
+ sample.sourceQualification='UPSTREAM_RECORDS_NOT_INDEPENDENTLY_RECONCILED';
+ for(const [name,code] of [['gdp','NY.GDP.MKTP.KD.ZG'],['inflation','FP.CPI.TOTL.ZG']]){
+  sample.worldBank[name]={status:'OBSERVED',source:'WORLD_BANK_V2',indicator:code,
+   unit:'PERCENT_ANNUAL',series:Array.from({length:12},(_,i)=>({
+    year:2014+i,value:i/4+(name==='gdp'?2:4),unit:'PERCENT_ANNUAL',
+    observedFrom:'WORLD_BANK_INDICATOR_API'}))};
+ }
+ const r=await refreshMarketIntelligence({bucket:b,collect:async()=>sample,
+  now:()=>new Date('2026-11-19T07:00:00Z')});
+ assert.equal(r.a04HistoricalReplay.evidenceStatus,'TWO_INDICATORS_REPLAYED');
+ assert.equal(r.a04HistoricalReplay.indicators.gdp.folds.length,4);
+ assert.equal(r.a04HistoricalReplay.status,'HOLD');
+ assert.equal(r.a04HistoricalReplay.productionWritesAuthorized,false);
+ assert.equal(b.rows.size,1);
+ assert.equal(b.rows.get(LATEST_KEY).a04HistoricalReplay.status,'HOLD');
 });

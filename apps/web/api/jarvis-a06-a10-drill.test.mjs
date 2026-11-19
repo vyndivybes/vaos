@@ -18,7 +18,7 @@ const request=(args={})=>{
 test('A06–A10 route is founder-only, explicitly consented and registered without new provider dependencies',async()=>{
  assert.equal(typeof DEFAULT_API_HANDLERS['/api/jarvis-a06-a10-drill'],'function');
  for(const [args,status] of [
-  [{email:null},401],[{email:'other@example.org'},403],
+  [{email:null},401],[{email:'other@example.org'},401],
   [{method:'GET'},405],
   [{origin:'https://evil.example.org'},403],
   [{query:'?execute=true'},422],

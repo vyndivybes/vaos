@@ -19,7 +19,7 @@ const MAX_PENDING_SECONDS=300;
 const KEY_FORMAT=/^[a-f0-9]{64,128}$/i;
 const SUBJECT_FORMAT=/^[a-f0-9]{64}$/i;
 const CLIENT_FORMAT=/^[A-Za-z0-9._:~-]{6,128}$/;
-const SAFE_CODE=/^[A-Za-z0-9._~+/-]{8,2048}$/;
+const SAFE_CODE=/^[A-Za-z0-9._~+\/-]{8,2048}$/;
 const B64URL=/^[A-Za-z0-9_-]+$/;
 const base64url=bytes=>Buffer.from(bytes).toString('base64url');
 const seconds=nowMs=>Math.floor(nowMs/1000);

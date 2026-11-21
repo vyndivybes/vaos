@@ -1,4 +1,5 @@
 import {SOURCE_INFO,selectGraphView,graphPositions,sourceReadiness} from './neural-knowledge-client.mjs';
+import {mountGraphifyArchitecture} from './graphify-architecture-ui.mjs';
 
 const byId=id=>document.getElementById(id);
 const svg=byId('graph-svg');
@@ -342,3 +343,5 @@ svg.addEventListener('pointermove',event=>{
 for(const eventName of ['pointerup','pointercancel','lostpointercapture'])svg.addEventListener(eventName,()=>{drag=null;svg.classList.remove('is-dragging');});
 sourceDescription();sourceButtons();
 void readRegistry();
+// Public Graphify code-index projection; independent of authenticated business source graphs.
+mountGraphifyArchitecture(byId('graphify-code-lens-neural'),{businessStatus:'NOT_CHECKED'});

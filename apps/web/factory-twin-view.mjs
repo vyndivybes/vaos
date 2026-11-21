@@ -188,6 +188,7 @@ export function mountFactoryTwin(host,source){
   canvas.hidden=false;
   vividToggle.disabled=false;vividToggle.setAttribute('aria-pressed','false');
   vividToggle.textContent='Enable 3D';
+  vividToggle.setAttribute('aria-label','Enable optional Three.js scenario factory');
   vividStatus.textContent='2D factory view. Scenario only.';
   if(!disposed){draw();if(!reduced&&!raf)raf=requestAnimationFrame(animate);}
  }
@@ -211,6 +212,7 @@ export function mountFactoryTwin(host,source){
    canvas.hidden=true;
    if(raf){cancelAnimationFrame(raf);raf=0;}
    vividToggle.textContent='Return to 2D';
+   vividToggle.setAttribute('aria-label','Return to interactive 2D scenario factory');
    vividToggle.setAttribute('aria-pressed','true');
    vividStatus.textContent='3D scenario view. Not live machinery or approved geometry.';
   }catch{

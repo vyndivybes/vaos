@@ -1,9 +1,11 @@
 import {projectSpatialSignals, selectSheetRows, SPATIAL_DATASETS, GRAPH_NODES} from './spatial-command-model.mjs';
 import {currentSpatialMemory, spatialViewFromHash} from './lib/spatial-view-memory.mjs';
+import {mountGraphifyArchitecture} from './graphify-architecture-ui.mjs';
 import {categoryForSpatialNode} from './spatial-visual-model.mjs';
 
 const $=id=>document.getElementById(id);
 const snapshot={current:projectSpatialSignals(null)};
+let architectureLens=null;
 let motion='subtle';
 let selectedNode='VAOS';
 let threeScene=null, threeLoading=false, threeRevision=0;
@@ -41,6 +43,7 @@ function observedDate(){const pieces=new Intl.DateTimeFormat('en-GB',{timeZone:'
 function windowPeriod(){const to=observedDate(),[y,m,d]=to.split('-').map(Number);const from=new Date(Date.UTC(y,m-1,d)-29*86400000).toISOString().slice(0,10);return {from,to}}
 function renderSignals(){
  const s=snapshot.current;
+ architectureLens?.setBusinessStatus(s.status);
  text('sp-observed',s.observed+' / '+s.expected);
  text('sp-observed-note',s.observed?s.observed+' signed aggregate families observed':'No trusted aggregate available');
  text('sp-confidence',s.status);
@@ -200,6 +203,8 @@ async function initialize(){
   const response=await fetch('/api/session',{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
   if(!response.ok || (await response.json()).authenticated!==true)throw new Error('AUTH_REQUIRED');
   msg.hidden=true;$('sp-main').hidden=false;
+  architectureLens=mountGraphifyArchitecture($('graphify-code-lens-spatial'),{businessStatus:snapshot.current.status});
+  window.addEventListener('pagehide',()=>architectureLens?.dispose(),{once:true});
   const select=$('sp-dataset');for(const item of SPATIAL_DATASETS){const opt=document.createElement('option');opt.value=item.id;opt.textContent=item.label;select.append(opt);}
   document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
   select.addEventListener('change',()=>{renderSheet();viewMemory.save('sheets',select.value);});

@@ -41,3 +41,27 @@ test('VAOS shell does not change permissions, API routes or operational authorit
   assert.doesNotMatch(shell, /fetch\(|XMLHttpRequest|\/api\//);
   assert.doesNotMatch(css.slice(css.indexOf('VAOS Taste v1 foundation')), /display:\s*none\s*!important/);
 });
+
+
+test('JARVIS home offers real command shortcuts and keeps live evidence controls', async () => {
+  const [html, css] = await Promise.all([
+    read('./workspace.html'), read('./vaos-shell.css')
+  ]);
+  assert.match(html, /class="vaos-action-rail"/);
+  for(const target of [
+    '/mission-status.html', '/agent-supervision.html',
+    '/founder-console.html', '/neural-knowledge.html'
+  ]) {
+    assert.ok(html.includes('href="' + target + '"'), 'preserves destination ' + target);
+  }
+  for(const id of [
+    'vaos-main-voice', 'cockpit-employee-count', 'cockpit-decision-count',
+    'cockpit-source-count', 'control-plane-status'
+  ]) {
+    assert.ok(html.includes('id="' + id + '"'), 'preserves live value ' + id);
+  }
+  assert.match(css, /Taste v1 founder-command composition/);
+  assert.match(css, /grid-template-columns:minmax\(0,1\.35fr\) minmax\(320px,\.83fr\)/);
+  assert.match(css, /@media\(max-width:600px\)/);
+  assert.match(css, /@media\(prefers-reduced-motion:reduce\)/);
+});

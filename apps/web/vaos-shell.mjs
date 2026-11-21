@@ -2,13 +2,13 @@ import { startSceneParallax } from './scene-parallax.mjs';
 
 startSceneParallax(document.querySelector('[data-jarvis-scene]'));
 
+// Five core destinations stay visible; specialist tools remain in the directory.
 const primary = [
   ['JARVIS', '/workspace', 'workspace'],
-  ['Spatial Command', '/spatial-command.html', 'spatial-command'],
-  ['Analytics', '/visual-intelligence.html?viz=overview', 'visual-intelligence'],
-  ['Knowledge', '/neural-knowledge.html', 'neural-knowledge'],
   ['Missions', '/mission-status.html', 'mission-status'],
-  ['Agent Exchange', '/agent-exchange.html', 'agent-exchange']
+  ['Intelligence', '/visual-intelligence.html?viz=overview', 'visual-intelligence'],
+  ['Agents', '/agent-supervision.html', 'agent-supervision'],
+  ['Knowledge', '/neural-knowledge.html', 'neural-knowledge']
 ];
 
 const workspaces = [
@@ -21,6 +21,7 @@ const workspaces = [
     ['Workforce exercises', '/workforce-exercise.html', 'workforce-exercise']
   ]],
   ['Explore', [
+    ['Spatial Command', '/spatial-command.html', 'spatial-command'],
     ['Visual Command', '/visual-command.html', 'visual-command'],
     ['Market intelligence', '/market-intelligence.html', 'market-intelligence'],
     ['Engineering viewer', '/engineering-viewer.html', 'engineering-viewer'],
@@ -54,7 +55,7 @@ nav.append(...primary.map(createLink));
 const menu = document.createElement('details');
 menu.className = 'vaos-workspace-menu';
 const toggle = document.createElement('summary');
-toggle.textContent = 'Workspaces';
+toggle.textContent = 'All workspaces';
 const directory = document.createElement('div');
 directory.className = 'vaos-workspace-directory';
 for (const [group, links] of workspaces) {

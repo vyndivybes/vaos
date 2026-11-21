@@ -27,6 +27,7 @@ const descriptions={
  timeline:['Production Gantt','Hypothetical planning intervals; tasks are not approved production orders.'],
  logistics:['Logistics coordinate sketch','Show supplied geographic points and straight connections, not delivery routes, location tracking or ETAs.']
 };
+let graphifyLens=null;
 let current='evidence',scenario=DEMO_VISUAL_SCENARIO,source='SYNTHETIC DEMO',factoryDispose=null,evidenceDispose=null,simulation=null;
 
 function setProvenance(){
@@ -133,21 +134,23 @@ function businessDay(){
 async function checkSources(){
  const status=$('av-source-status'),button=$('av-source-check');
  button.disabled=true;status.textContent='Checking VYNDI OS department sources…';
+ graphifyLens?.setBusinessStatus('NOT_CHECKED');
  try{
   const to=businessDay();
   const from=new Date(Date.parse(to+'T00:00:00Z')-30*86_400_000).toISOString().slice(0,10);
   const q=new URLSearchParams({from,to,employee:'all',limit:'5'});
   const response=await fetch('/api/enterprise-bi?'+q,{credentials:'same-origin',cache:'no-store'});
   if(response.status===401){location.assign('/login');return;}
-  if(response.status===403){status.textContent='Access denied: founder-only source. Scenario graphics remain unverified.';return;}
+  if(response.status===403){graphifyLens?.setBusinessStatus('HOLD');status.textContent='Access denied: founder-only source. Scenario graphics remain unverified.';return;}
   if(!response.ok)throw Error('Authorized source HOLD or unavailable ('+response.status+')');
   const packet=(await response.json()).data;
   if(packet?.schemaVersion!=='VYNDI_ENTERPRISE_BI_V1'||packet.readOnly!==true||
      packet.period?.from!==from||packet.period?.to!==to||!Array.isArray(packet.departments))
      throw Error('Signed source response did not pass the browser contract');
   const observed=packet.departments.filter(p=>p.status==='OBSERVED').length;
+  graphifyLens?.setBusinessStatus(observed===0?'HOLD':observed===packet.departments.length?'OBSERVED':'PARTIAL');
   status.textContent='Signed departmental read returned '+observed+' OBSERVED out of '+packet.departments.length+' returned departments for '+from+' to '+to+'. This is SOURCE REACHABILITY only. No machine telemetry, physical inventory, finance or route values were copied into scenario visuals.';
- }catch(error){status.textContent='HOLD — '+(error?.message||'Source qualification unavailable')+'. No visual actuals inferred.';}
+ }catch(error){graphifyLens?.setBusinessStatus('HOLD');status.textContent='HOLD — '+(error?.message||'Source qualification unavailable')+'. No visual actuals inferred.';}
  finally{button.disabled=false;}
 }
 function bind(){
@@ -179,7 +182,7 @@ async function bootstrap(){
   const result=await response.json();
   if(result?.authenticated!==true)throw Error('Session not authenticated');
   sessionStatus.hidden=true;$('av-main').hidden=false;
-  const graphifyLens=mountGraphifyArchitecture($('graphify-code-lens-analytics'),{businessStatus:'NOT_CHECKED'});
+  graphifyLens=mountGraphifyArchitecture($('graphify-code-lens-analytics'),{businessStatus:'NOT_CHECKED'});
   window.addEventListener('pagehide',()=>graphifyLens.dispose(),{once:true});
   $('av-json').value=JSON.stringify(scenario,null,2);
   setProvenance();bind();

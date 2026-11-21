@@ -103,3 +103,43 @@ body.vaos-shell.spatial-workspace {
 @media(max-width:790px){.sp-hero{grid-template-columns:1fr}.sp-hero-art{min-height:270px}.sp-stat-row{grid-template-columns:repeat(2,minmax(0,1fr))}.sp-two-column{grid-template-columns:1fr}.sp-hero-copy{padding:28px}.sp-hero h1{font-size:clamp(32px,6vw,49px)}.sp-graph-node{width:99px;font-size:10px;margin:-23px -49px}}
 @media(max-width:500px){.sp-main{padding:20px 13px}.sp-stat{padding:14px;min-height:100px}.sp-stat strong{font-size:18px}.sp-hero h1{font-size:33px}.sp-section-head{align-items:start;flex-direction:column}.sp-section-nav{max-width:none}.sp-section-nav button{padding:9px 5px}.sp-graph-stage{min-height:440px}.sp-graph-detail{display:flex}.sp-graph-node{scale:.84}.sp-motion-controls{width:100%}}
 @media(prefers-reduced-motion:reduce){.spatial-workspace *,.spatial-workspace *:before,.spatial-workspace *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}.sp-graph-world{transform:none!important}}
+
+
+/* Optional Three.js layer: event-free, behind the accessible DOM node selector. */
+.sp-graph-stage .sp-three-canvas {
+ position:absolute;
+ inset:0;
+ z-index:0;
+ width:100%;
+ height:100%;
+ display:block;
+ pointer-events:none;
+ opacity:.82;
+}
+.sp-graph-stage .sp-graph-world { z-index:1; }
+.sp-graph-stage .sp-graph-watermark { z-index:2; }
+.sp-three-toggle {
+ min-height:40px;
+ white-space:nowrap;
+ border:1px solid #91afa0;
+}
+.sp-three-toggle[aria-pressed="true"] {
+ border-color:#2b7460;
+ background:#e5eee9;
+ color:#1d4b3e;
+}
+.sp-three-toggle:focus-visible { outline:2px solid #206b57; outline-offset:3px; }
+.sp-three-toggle:disabled { opacity:.6; cursor:wait; }
+.sp-three-status {
+ max-width:28ch;
+ color:#657c6f;
+ font-size:11px;
+ font-weight:500;
+ line-height:1.4;
+}
+@media(max-width:790px){
+ .sp-three-status { flex-basis:100%; }
+}
+@media(prefers-reduced-motion:reduce){
+ .sp-graph-stage .sp-three-canvas { transition:none; }
+}

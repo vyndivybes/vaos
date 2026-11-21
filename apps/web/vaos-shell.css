@@ -1206,3 +1206,256 @@ body.vaos-shell[data-vaos-view] .sp-hero[data-jarvis-scene]::before {
     transform: perspective(300px) rotateX(48deg);
   }
 }
+
+
+/* VAOS Taste v1 foundation — variance 8 / motion 5 / density 5.
+ * Restrained navigation motion; no perpetual effects or business-state changes.
+ * Emil Kowalski-inspired responsive feedback, with reduced-motion fallback.
+ */
+body.vaos-shell {
+  --vaos-design-variance: 8;
+  --vaos-motion-intensity: 5;
+  --vaos-visual-density: 5;
+  --vaos-interaction-quick: 140ms;
+  --vaos-interaction-standard: 220ms;
+  --vaos-motion-ease: cubic-bezier(.22, 1, .36, 1);
+}
+
+body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a, summary) {
+  transition:
+    color var(--vaos-interaction-quick) var(--vaos-motion-ease),
+    background-color var(--vaos-interaction-quick) var(--vaos-motion-ease);
+}
+
+body.vaos-shell [data-vaos-header] .vaos-primary-nav a[aria-current="page"] {
+  box-shadow: inset 0 -2px 0 var(--shell-accent);
+}
+
+body.vaos-shell .vaos-workspace-menu[open] .vaos-workspace-directory {
+  transform-origin: top right;
+  animation: vaos-taste-reveal var(--vaos-interaction-standard) var(--vaos-motion-ease) both;
+}
+
+@keyframes vaos-taste-reveal {
+  from { opacity: 0; transform: translateY(-5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* An asymmetric but stable desktop hero; mobile retains the existing reading flow. */
+@media (min-width: 1100px) {
+  body.vaos-shell.workspace-body[data-jarvis-home] .workspace-hero__row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    column-gap: clamp(24px, 5vw, 72px);
+  }
+  body.vaos-shell.workspace-body[data-jarvis-home] .workspace-hero__row > :last-child {
+    justify-self: end;
+  }
+}
+
+@media (max-width: 640px) {
+  body.vaos-shell [data-vaos-header] .vaos-primary-nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2px;
+  }
+  body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a, summary) {
+    min-height: 44px;
+    padding: 10px 5px;
+    font-size: .75rem !important;
+    text-align: center;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  body.vaos-shell .vaos-workspace-directory {
+    grid-template-columns: minmax(0, 1fr);
+    max-height: 65dvh;
+    overflow-y: auto;
+  }
+}
+
+/* Mandatory motion opt-out: no browser animation when reduced motion is requested. */
+@media (prefers-reduced-motion: reduce) {
+  body.vaos-shell [data-vaos-header] .vaos-primary-nav :is(a, summary) {
+    transition: none;
+  }
+  body.vaos-shell .vaos-workspace-menu[open] .vaos-workspace-directory {
+    animation: none;
+  }
+}
+
+
+/* Taste v1 founder-command composition: information first, not decorative cards. */
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail {
+ display:grid;
+ grid-template-columns:repeat(4,minmax(0,1fr));
+ gap:1px;
+ max-width:1180px;
+ width:100%;
+ margin:0 auto clamp(22px,3vw,36px);
+ padding:1px;
+ border-radius:12px;
+ background:var(--shell-line);
+ overflow:hidden;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail a {
+ min-width:0;
+ min-height:90px;
+ display:grid;
+ grid-template-columns:auto minmax(0,1fr) auto;
+ align-items:start;
+ gap:10px;
+ padding:18px 15px;
+ background:var(--shell-surface);
+ color:var(--shell-text);
+ text-decoration:none;
+ transition:background-color var(--vaos-interaction-quick) var(--vaos-motion-ease);
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail a:hover,
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail a:focus-visible {
+ background:var(--shell-accent-bg);
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-index {
+ font-size:10px;
+ font-variant-numeric:tabular-nums;
+ font-weight:700;
+ letter-spacing:.08em;
+ color:var(--shell-accent);
+ margin-top:3px;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail strong {
+ display:block;
+ font-size:14px;
+ line-height:1.3;
+ font-weight:720;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail small {
+ display:block;
+ margin-top:6px;
+ font-size:11px;
+ line-height:1.5;
+ color:var(--shell-muted);
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail a > span:last-child {
+ font-size:15px;
+ color:var(--shell-accent);
+}
+@media (min-width:1120px) {
+ body.vaos-shell.workspace-body[data-jarvis-home] .workspace-hero,
+ body.vaos-shell.workspace-body[data-jarvis-home] #command-view,
+ body.vaos-shell.workspace-body[data-jarvis-home] .workspace-details,
+ body.vaos-shell.workspace-body[data-jarvis-home] .kinetic-intro {
+  width:min(100%,1180px) !important;
+  max-width:1180px !important;
+  margin-inline:auto !important;
+ }
+ body.vaos-shell.workspace-body[data-jarvis-home] #command-view .workspace-workbench {
+  display:grid;
+  grid-template-columns:minmax(0,1.35fr) minmax(320px,.83fr);
+  align-items:start;
+  width:100%;
+  max-width:none;
+  gap:24px;
+ }
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #command-view .workspace-workbench > #vaos-main-voice,
+body.vaos-shell.workspace-body[data-jarvis-home] #command-view .workspace-workbench > .workspace-brief {
+ min-width:0;
+ margin:0 !important;
+ padding:clamp(20px,2.2vw,28px) !important;
+ border:1px solid var(--shell-line) !important;
+ border-radius:14px !important;
+ background:var(--shell-surface) !important;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #command-view .workspace-workbench > .workspace-brief {
+ background:#f2f5ee !important;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-widget__intro,
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-label {
+ position:static;
+ width:auto;
+ height:auto;
+ overflow:visible;
+ clip-path:none;
+ white-space:normal;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-widget__intro {
+ display:flex;
+ align-items:center;
+ justify-content:space-between;
+ flex-wrap:wrap;
+ gap:10px;
+ margin-bottom:18px;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-label {
+ display:block;
+ margin:0 0 7px;
+ font-size:12px;
+ font-weight:650;
+ color:var(--shell-muted);
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-widget__intro h2 {
+ font-size:clamp(1.25rem,1.7vw,1.55rem);
+ letter-spacing:-.03em;
+ color:var(--shell-text);
+ margin:0;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-main-voice .va-voice-badge {
+ font-size:11px;
+ font-weight:650;
+ color:var(--shell-accent);
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics {
+ display:grid;
+ grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+ gap:1px;
+ padding:1px;
+ border:1px solid var(--shell-line);
+ border-radius:10px;
+ background:var(--shell-line);
+ overflow:hidden;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics > * {
+ padding:17px 14px !important;
+ border:0 !important;
+ border-radius:0;
+ min-width:0;
+ background:var(--shell-surface) !important;
+ text-decoration:none;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics strong {
+ font-size:clamp(16px,1.5vw,22px);
+ overflow-wrap:anywhere;
+ font-variant-numeric:tabular-nums;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics small,
+body.vaos-shell.workspace-body[data-jarvis-home] .workspace-brief .fc-metrics span {
+ line-height:1.4;
+}
+body.vaos-shell.workspace-body[data-jarvis-home] #vaos-voice-ask {
+ min-height:44px;
+}
+@media(max-width:1119px) {
+ body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail {
+  grid-template-columns:repeat(2,minmax(0,1fr));
+ }
+}
+@media(max-width:600px) {
+ body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail {
+  grid-template-columns:minmax(0,1fr);
+ }
+ body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail a {
+  min-height:66px;
+  padding:13px 15px;
+ }
+ body.vaos-shell.workspace-body[data-jarvis-home] #command-view .workspace-workbench > #vaos-main-voice,
+ body.vaos-shell.workspace-body[data-jarvis-home] #command-view .workspace-workbench > .workspace-brief {
+  padding:17px !important;
+ }
+}
+@media(prefers-reduced-motion:reduce) {
+ body.vaos-shell.workspace-body[data-jarvis-home] .vaos-action-rail a {
+  transition:none;
+ }
+}

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
+import {spawnSync} from 'node:child_process';
 import {
   SPATIAL_SPECTRUM, categoryForSpatialNode, projectSpatialLayout, makeSpatialStars
 } from './spatial-visual-model.mjs';
@@ -79,5 +80,17 @@ test('Impeccable audit: readable statuses, reduced motion, responsive and offlin
   assert.doesNotMatch(value,/fetch\(|XMLHttpRequest|https?:\/\//);
   assert.match(value,/\.dispose\(\)/);
   assert.match(value,/prefers-reduced-motion: reduce/);
+ }
+});
+
+
+test('all scene modules pass Node ESM syntax verification',()=>{
+ for(const file of [
+  './spatial-visual-model.mjs','./spatial-three.mjs',
+  './factory-three-model.mjs','./factory-three.mjs',
+  './factory-twin-view.mjs','./spatial-command.mjs'
+ ]){
+  const result=spawnSync(process.execPath,['--check',new URL(file,import.meta.url).pathname],{encoding:'utf8'});
+  assert.equal(result.status,0,file+' has invalid syntax: '+result.stderr);
  }
 });

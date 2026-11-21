@@ -142,11 +142,15 @@ export function mountGraphifyArchitecture(root,{businessStatus='NOT_CHECKED'}={}
   last=projectGraphifyArchitecture({query,group:filter,focus});
   const position=positions(last.nodes);
   visual.replaceChildren(svgTitle);
+  const defs=svgEl('defs');
+  const marker=svgEl('marker',{id:'gf-arrowhead',markerWidth:6,markerHeight:6,refX:4,refY:3,orient:'auto'});
+  marker.append(svgEl('path',{d:'M0,0 L6,3 L0,6 Z',fill:'#7fc3db'}));
+  defs.append(marker);visual.append(defs);
   for(const edge of last.edges){
    const start=position.get(edge.from),end=position.get(edge.to);
    if(!start||!end)continue;
    const line=svgEl('path',{d:`M ${start.x+17} ${start.y} Q ${(start.x+end.x)/2} ${(start.y+end.y)/2-17} ${end.x-17} ${end.y}`,
-    fill:'none',stroke:'#6ca9c5','stroke-width':1.65,opacity:.6});
+    fill:'none',stroke:'#6ca9c5','stroke-width':1.65,opacity:.6,'marker-end':'url(#gf-arrowhead)'});
    const label=svgEl('title');
    label.textContent=edge.from+' imports '+edge.to+' (Graphify indexed)';
    line.append(label);visual.append(line);

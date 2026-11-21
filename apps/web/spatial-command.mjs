@@ -1,5 +1,6 @@
 import {projectSpatialSignals, selectSheetRows, SPATIAL_DATASETS, GRAPH_NODES} from './spatial-command-model.mjs';
 import {currentSpatialMemory, spatialViewFromHash} from './lib/spatial-view-memory.mjs';
+import {categoryForSpatialNode} from './spatial-visual-model.mjs';
 
 const $=id=>document.getElementById(id);
 const snapshot={current:projectSpatialSignals(null)};
@@ -104,7 +105,7 @@ function renderGraph(){
   if(!GRAPH_NODES.find(n=>n.id===id))continue;
   const button=document.createElement('button');button.type='button';button.className='sp-graph-node';
   button.style.setProperty('--x',x);button.style.setProperty('--y',y);button.style.setProperty('--z',z);
-  button.dataset.group=id==='VAOS'||id==='VYNDI OS'?'control':'knowledge';
+  button.dataset.group=categoryForSpatialNode(id);
   button.setAttribute('aria-pressed',String(id==='VAOS'));button.textContent=id;
   const category=document.createElement('span');category.textContent=id==='VAOS'||id==='VYNDI OS'?'Control':'Knowledge';
   button.append(category);
@@ -130,7 +131,8 @@ function attachSpatialMotion(){
  });
  stage.addEventListener('pointerleave',()=>apply(-12,-10));
  $('sp-motion').addEventListener('change',event=>{
-  motion=event.target.value;if(motion==='off'||reduce)apply(0,0);else apply(-12,-10);
+  motion=event.target.value;threeScene?.setMotion(motion);
+  if(motion==='off'||reduce)apply(0,0);else apply(-12,-10);
  });
  if(reduce){$('sp-motion').value='off';$('sp-motion').disabled=true;motion='off';apply(0,0);}
 }
@@ -162,7 +164,9 @@ async function toggleSpatialThree(){
   if(revision!==threeRevision || $('sp-lineage').hidden)return;
   const scene=await mountSpatialThree($('sp-graph-stage'),layout,{
    onSelect:()=>selectedNode,
-   reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+   reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+   motion,
+   onUnavailable:()=>disableThree()
   });
   if(revision!==threeRevision || $('sp-lineage').hidden){scene.dispose();return;}
   threeScene=scene;

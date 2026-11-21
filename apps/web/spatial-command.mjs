@@ -5,6 +5,7 @@ const $=id=>document.getElementById(id);
 const snapshot={current:projectSpatialSignals(null)};
 let motion='subtle';
 let selectedNode='VAOS';
+let threeScene=null, threeLoading=false, threeRevision=0;
 const viewMemory=currentSpatialMemory();
 const nodeDescriptions={
  'VAOS':'JARVIS orchestration, analytical reasoning and governed agent control. Production source status must be verified separately.',
@@ -30,6 +31,7 @@ function setTab(id,remember=true){
   const selected=element.dataset.tab===key;element.setAttribute('aria-selected',String(selected));element.tabIndex=selected?0:-1;
  }
  for(const element of document.querySelectorAll('.sp-panel-view'))element.hidden=element.id!=='sp-'+key;
+ if(key!=='lineage' && (threeScene || threeLoading))disableThree();
  if(key==='sheets')renderSheet();
  if(key==='lineage')renderGraph();
  if(remember)viewMemory.save(key,key==='sheets'?$('sp-dataset').value:key==='lineage'?selectedNode:null);
@@ -114,6 +116,7 @@ function selectNode(id,remember=true){
  selectedNode=id;
  for(const node of $('sp-graph-world').querySelectorAll('button'))node.setAttribute('aria-pressed',String(node.firstChild.textContent===id));
  text('sp-node-name',id);text('sp-node-note',nodeDescriptions[id]||'Architecture reference only; runtime linkage not certified.');
+ threeScene?.highlight(id);
  if(remember)viewMemory.save('lineage',id);
 }
 function attachSpatialMotion(){
@@ -131,6 +134,52 @@ function attachSpatialMotion(){
  });
  if(reduce){$('sp-motion').value='off';$('sp-motion').disabled=true;motion='off';apply(0,0);}
 }
+function disableThree(){
+ ++threeRevision;
+ threeScene?.dispose();
+ threeScene=null;
+ threeLoading=false;
+ const button=$('sp-three-toggle');
+ if(button){
+  button.disabled=false;
+  button.setAttribute('aria-pressed','false');
+  button.textContent='Enable 3D';
+ }
+ const status=$('sp-three-status');
+ if(status)status.textContent='2D view is active. 3D is optional.';
+}
+
+async function toggleSpatialThree(){
+ if(threeLoading)return;
+ if(threeScene){disableThree();return;}
+ const button=$('sp-three-toggle');
+ const status=$('sp-three-status');
+ const revision=++threeRevision;
+ threeLoading=true;button.disabled=true;
+ status.textContent='Preparing optional 3D scene…';
+ try{
+  const {mountSpatialThree}=await import('./spatial-three.mjs');
+  if(revision!==threeRevision || $('sp-lineage').hidden)return;
+  const scene=await mountSpatialThree($('sp-graph-stage'),layout,{
+   onSelect:()=>selectedNode,
+   reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+  });
+  if(revision!==threeRevision || $('sp-lineage').hidden){scene.dispose();return;}
+  threeScene=scene;
+  button.setAttribute('aria-pressed','true');
+  button.textContent='Return to 2D';
+  status.textContent='3D conceptual view active. Source connections remain unverified.';
+ }catch{
+  if(revision===threeRevision){
+   button.setAttribute('aria-pressed','false');
+   button.textContent='Enable 3D';
+   status.textContent='3D unavailable. The accessible 2D topology remains available.';
+  }
+ }finally{
+  if(revision===threeRevision){threeLoading=false;button.disabled=false;}
+ }
+}
+
 async function refreshSignals(){
  const button=$('sp-refresh');button.disabled=true;button.textContent='Refreshing…';
  try{
@@ -154,7 +203,10 @@ async function initialize(){
   $('sp-refresh').addEventListener('click',refreshSignals);$('sp-export').addEventListener('click',exportCsv);
   const initial=spatialViewFromHash(window.location.hash)||viewMemory.recall();
   if(initial?.tab==='sheets')select.value=initial.selection;
-  attachSpatialMotion();setTab(initial?.tab||'overview',false);
+  attachSpatialMotion();
+  $('sp-three-toggle').addEventListener('click',toggleSpatialThree);
+  window.addEventListener('pagehide',disableThree);
+  setTab(initial?.tab||'overview',false);
   if(initial?.tab==='lineage')selectNode(initial.selection);
   else viewMemory.save(initial?.tab||'overview',initial?.selection||null);
   await refreshSignals();

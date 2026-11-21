@@ -98,3 +98,14 @@
 @media(prefers-reduced-motion:reduce){
  .gf-lens *{transition:none!important;animation:none!important;scroll-behavior:auto!important}
 }
+
+/* Integrated visual analytics architecture disclosure */
+.av-graphify-details{margin:20px auto 22px;max-width:1600px;color:#e8f4f8}
+.av-graphify-details>summary{
+ cursor:pointer;display:list-item;border:1px solid #396075;background:#0f2d3f;
+ border-radius:9px;padding:14px 18px;font-size:13px;font-weight:750;
+}
+.av-graphify-details>summary span{font-size:10px;color:#b9ccd8;font-weight:500;margin-left:12px}
+.av-graphify-details>summary:focus-visible{outline:3px solid #f9d18f;outline-offset:3px}
+.av-graphify-details .gf-lens{margin-top:10px}
+@media(max-width:720px){.av-graphify-details>summary span{display:block;margin:5px 0 0}}

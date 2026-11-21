@@ -20,7 +20,7 @@ export async function mountSpatialThree(stage,layout,{
   });
  }catch{throw Error('WEBGL_NOT_AVAILABLE');}
  renderer.domElement.className='sp-three-canvas';
- renderer.domElement.setAttribute('aria-hidden','true');
+ renderer.domElement.setAttribute('aria-hidden', 'true');
  renderer.domElement.setAttribute('tabindex','-1');
  stage.insertBefore(renderer.domElement,stage.firstChild);
 
@@ -103,7 +103,7 @@ export async function mountSpatialThree(stage,layout,{
  const shouldReduce=()=>reducedMotion||reduce?.matches===true;
  function draw(){
   frame=0;
-  if(disposed || document.hidden) return;
+  if (disposed || document.hidden) return;
   // Interruption-friendly easing, capped by convergence; no continuous animation loop.
   if(shouldReduce()||motionMode==='off'){
    pivot.rotation.x=0;pivot.rotation.y=0;

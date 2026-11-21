@@ -10,6 +10,7 @@ import {
 } from './advanced-visual-renderers.mjs';
 import {mountFactoryTwin} from './factory-twin-view.mjs';
 import {mountExecutiveEvidence} from './executive-evidence.mjs';
+import {mountGraphifyArchitecture} from './graphify-architecture-ui.mjs';
 
 const $=id=>document.getElementById(id);
 const viewPicker=$('av-view');
@@ -178,6 +179,8 @@ async function bootstrap(){
   const result=await response.json();
   if(result?.authenticated!==true)throw Error('Session not authenticated');
   sessionStatus.hidden=true;$('av-main').hidden=false;
+  const graphifyLens=mountGraphifyArchitecture($('graphify-code-lens-analytics'),{businessStatus:'NOT_CHECKED'});
+  window.addEventListener('pagehide',()=>graphifyLens.dispose(),{once:true});
   $('av-json').value=JSON.stringify(scenario,null,2);
   setProvenance();bind();
   const kind=new URL(location.href).searchParams.get('viz');

@@ -83,3 +83,15 @@ test('Graphify architecture view appears within both knowledge and analytics das
  assert.match(css,/max-width:720px/);
  for(const s of [ui,three])assert.doesNotMatch(s,/fetch\(|\/api\/|method:\s*['"]POST|XMLHttpRequest/);
 });
+
+test('business analytics exposes the same pinned Graphify code lens without rewriting signed enterprise data',async()=>{
+ const [html,controller]=await Promise.all([
+  read('./visual-intelligence.html'),read('./visual-intelligence.mjs')
+ ]);
+ assert.match(html,/id="graphify-code-lens-analytics"/);
+ assert.match(html,/graphify-architecture\.css/);
+ assert.match(html,/not live business lineage|not business lineage/i);
+ assert.match(controller,/mountGraphifyArchitecture/);
+ assert.match(controller,/businessStatus:'NOT_CHECKED'/);
+ assert.match(controller,/\/api\/enterprise-bi\?/);
+});

@@ -45,6 +45,9 @@ jobs:
       - name: Install pinned runtime dependencies
         run: npm ci --ignore-scripts --no-audit --no-fund
 
+      - name: Verify pinned Graphify neural and BI code graph
+        run: node --test apps/web/graphify-architecture.test.mjs
+
       - name: Verify Cloudflare release uses the tested Wrangler lockfile
         run: node --test scripts/cloudflare/release-source-pin.test.mjs
 

@@ -8,6 +8,7 @@ export function mountFactoryTwin(host,source){
  const {stations}=factoryStationMap(source);
  host.replaceChildren();
  let yaw=.65,pitch=.52,zoom=1,selected=stations[0].id,disposed=false,drag=null,raf=0,paused=false;
+ let threeScene=null,threePending=false,threeRevision=0;
  const wrap=document.createElement('div');wrap.className='av-factory';
  const canvas=document.createElement('canvas');
  canvas.className='av-factory-canvas';canvas.tabIndex=0;
@@ -16,9 +17,9 @@ export function mountFactoryTwin(host,source){
  wrap.append(canvas);
  const toolbar=document.createElement('div');toolbar.className='av-factory-toolbar';
  const controls=[
-  ['Rotate left',()=>yaw-=.25],['Rotate right',()=>yaw+=.25],
-  ['Zoom in',()=>zoom=Math.min(2.4,zoom*1.2)],['Zoom out',()=>zoom=Math.max(.5,zoom/1.2)],
-  ['Reset view',()=>{yaw=.65;pitch=.52;zoom=1;}],
+  ['Rotate left',()=>{yaw-=.25;threeScene?.orbit(-.25);}],['Rotate right',()=>{yaw+=.25;threeScene?.orbit(.25);} ],
+  ['Zoom in',()=>{zoom=Math.min(2.4,zoom*1.2);threeScene?.zoom(.9);}],['Zoom out',()=>{zoom=Math.max(.5,zoom/1.2);threeScene?.zoom(1.1);}],
+  ['Reset view',()=>{yaw=.65;pitch=.52;zoom=1;threeScene?.reset();}],
   ['Pause motion',()=>{paused=!paused;pause.textContent=paused?'Resume motion':'Pause motion';}]
  ];
  let pause;
@@ -27,7 +28,32 @@ export function mountFactoryTwin(host,source){
   b.addEventListener('click',()=>{action();draw();});toolbar.append(b);
   if(title==='Pause motion')pause=b;
  }
- wrap.append(toolbar);
+ const vividToggle=document.createElement('button');
+ vividToggle.type='button';vividToggle.className='av-factory-three-toggle';
+ vividToggle.textContent='Enable 3D';vividToggle.setAttribute('aria-pressed','false');
+ vividToggle.setAttribute('aria-label','Enable optional Three.js scenario factory');
+ const vividStatus=document.createElement('span');
+ vividStatus.className='av-factory-three-status';
+ vividStatus.setAttribute('role','status');vividStatus.setAttribute('aria-live','polite');
+ vividStatus.textContent='2D factory view. Scenario only.';
+ vividToggle.addEventListener('click',toggleThree);
+ toolbar.append(vividToggle,vividStatus);
+ const legend=document.createElement('div');
+ legend.className='av-factory-spectrum';
+ legend.setAttribute('aria-label','Simulated factory status colours');
+ for(const [status,label,color] of [
+  ['SIMULATED_RUNNING','Simulated running','#55e0b8'],
+  ['SIMULATED_IDLE','Simulated idle','#73bfff'],
+  ['SIMULATED_FAULT','Simulated fault','#ff907d'],
+  ['HOLD','HOLD','#e5a6af'],
+  ['UNVERIFIED','Unverified','#e5bb82']
+ ]){
+  const item=document.createElement('span');
+  const mark=document.createElement('i');mark.setAttribute('aria-hidden','true');
+  mark.style.backgroundColor=color;
+  item.append(mark,document.createTextNode(label));legend.append(item);
+ }
+ wrap.append(toolbar,legend);
  const panel=document.createElement('div');panel.className='av-factory-detail';wrap.append(panel);
  const grid=document.createElement('div');grid.className='av-factory-stations';wrap.append(grid);
  host.append(wrap);
@@ -56,7 +82,7 @@ export function mountFactoryTwin(host,source){
  for(const s of stations){
   const b=document.createElement('button');b.type='button';b.dataset.station=s.id;
   b.textContent=s.label+' · '+s.status.replaceAll('_',' ');
-  b.addEventListener('click',()=>{selected=s.id;describeStation();draw();});
+  b.addEventListener('click',()=>{selected=s.id;threeScene?.select(s.id);describeStation();draw();});
   grid.append(b);
  }
  function resize(){
@@ -70,7 +96,7 @@ export function mountFactoryTwin(host,source){
   return {w,h};
  }
  function draw(time=0){
-  if(!ctx||disposed)return;
+  if(!ctx||disposed||threeScene)return;
   const {w,h}=resize();
   ctx.clearRect(0,0,w,h);
   const theme=getComputedStyle(canvas),paper=theme.getPropertyValue('--shell-canvas').trim()||'#f7f6f1',ink=theme.getPropertyValue('--shell-text').trim()||'#192a23';
@@ -156,15 +182,58 @@ export function mountFactoryTwin(host,source){
  canvas.addEventListener('pointercancel',pointerUp);
  canvas.addEventListener('wheel',wheel,{passive:false});
  canvas.addEventListener('keydown',key);
+ function disableThree(){
+  ++threeRevision;
+  threeScene?.dispose();threeScene=null;threePending=false;
+  canvas.hidden=false;
+  vividToggle.disabled=false;vividToggle.setAttribute('aria-pressed','false');
+  vividToggle.textContent='Enable 3D';
+  vividToggle.setAttribute('aria-label','Enable optional Three.js scenario factory');
+  vividStatus.textContent='2D factory view. Scenario only.';
+  if(!disposed){draw();if(!reduced&&!raf)raf=requestAnimationFrame(animate);}
+ }
+ async function toggleThree(){
+  if(threePending||disposed)return;
+  if(threeScene){disableThree();return;}
+  const revision=++threeRevision;
+  threePending=true;vividToggle.disabled=true;
+  vividStatus.textContent='Preparing local 3D factory…';
+  try{
+   const {mountFactoryThree}=await import('./factory-three.mjs');
+   if(disposed||revision!==threeRevision)return;
+   const scene=await mountFactoryThree(canvas,stations,{
+    selectedId:selected,
+    onSelect:id=>{selected=id;describeStation();},
+    onUnavailable:disableThree,
+    reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches
+   });
+   if(disposed||revision!==threeRevision){scene.dispose();return;}
+   threeScene=scene;
+   canvas.hidden=true;
+   if(raf){cancelAnimationFrame(raf);raf=0;}
+   vividToggle.textContent='Return to 2D';
+   vividToggle.setAttribute('aria-label','Return to interactive 2D scenario factory');
+   vividToggle.setAttribute('aria-pressed','true');
+   vividStatus.textContent='3D scenario view. Not live machinery or approved geometry.';
+  }catch{
+   if(revision===threeRevision){
+    canvas.hidden=false;
+    vividStatus.textContent='3D unavailable. The interactive 2D factory remains ready.';
+    if(!disposed)draw();
+   }
+  }finally{
+   if(revision===threeRevision){threePending=false;vividToggle.disabled=false;}
+  }
+ }
  const observer=typeof ResizeObserver==='function'?new ResizeObserver(()=>draw()):null;
  observer?.observe(canvas);
  const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches===true;
  const animate=time=>{
   if(disposed)return;
-  if(!paused&&!document.hidden)draw(time);
+  if(!paused&&!document.hidden&&!threeScene)draw(time);
   raf=requestAnimationFrame(animate);
  };
  describeStation();draw();
  if(!reduced)raf=requestAnimationFrame(animate);
- return ()=>{disposed=true;cancelAnimationFrame(raf);observer?.disconnect();canvas.removeEventListener('pointerdown',pointerDown);canvas.removeEventListener('pointermove',pointerMove);canvas.removeEventListener('pointerup',pointerUp);canvas.removeEventListener('pointercancel',pointerUp);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('keydown',key);host.replaceChildren();};
+ return ()=>{disposed=true;++threeRevision;threeScene?.dispose();threeScene=null;cancelAnimationFrame(raf);observer?.disconnect();canvas.removeEventListener('pointerdown',pointerDown);canvas.removeEventListener('pointermove',pointerMove);canvas.removeEventListener('pointerup',pointerUp);canvas.removeEventListener('pointercancel',pointerUp);canvas.removeEventListener('wheel',wheel);canvas.removeEventListener('keydown',key);host.replaceChildren();};
 }

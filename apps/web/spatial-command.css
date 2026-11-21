@@ -143,3 +143,101 @@ body.vaos-shell.spatial-workspace {
 @media(prefers-reduced-motion:reduce){
  .sp-graph-stage .sp-three-canvas { transition:none; }
 }
+
+
+/* Impeccable / Taste v1: vibrant spatial colour without losing source clarity.
+   Four colours describe conceptual systems, never operational authority. */
+body.vaos-shell.spatial-workspace {
+ --sp-vivid-control:#5af7cd;
+ --sp-vivid-graph:#70c9ff;
+ --sp-vivid-knowledge:#ddbaff;
+ --sp-vivid-engineering:#ffb37d;
+ --sp-vivid-ink:#0a1829;
+}
+.spatial-workspace .sp-hero {
+ border-color:#c9dad7;
+ background:linear-gradient(122deg,#fffcf4 4%,#f5faf8 49%,#edf4ff 100%);
+}
+.spatial-workspace .sp-hero-art {
+ background:radial-gradient(ellipse at 52% 44%,#1b5270,#0d3047 43%,#091626 85%);
+}
+.spatial-workspace .sp-art-halo {
+ background:radial-gradient(circle,#5af7cd38 0%,#70c9ff25 40%,transparent 72%);
+}
+.spatial-workspace .sp-art-orbit { border-color:#70c9ff70;box-shadow:none; }
+.spatial-workspace .sp-art-orbit-b { border-color:#ddbaff77; }
+.spatial-workspace .sp-art-core {
+ background:radial-gradient(circle at 28% 20%,#388ca1,#16445b 60%,#092e41 100%);
+ border-color:#70c9ff90;
+ box-shadow:inset 0 1px 0 #ffffff46,0 12px 44px #071d3170;
+}
+.spatial-workspace .sp-core-symbol {font-family:var(--shell-font,Manrope,sans-serif);}
+.spatial-workspace .sp-stat-row .sp-stat:nth-child(1) { border-top:3px solid #4dbd9d; }
+.spatial-workspace .sp-stat-row .sp-stat:nth-child(2) { border-top:3px solid #5da9d9; }
+.spatial-workspace .sp-stat-row .sp-stat:nth-child(3) { border-top:3px solid #b28dda; }
+.spatial-workspace .sp-stat-row .sp-stat:nth-child(4) { border-top:3px solid #e5a36d; }
+.spatial-workspace .sp-graph-stage {
+ background:
+  radial-gradient(ellipse at 52% 37%,#154c64 0%,#0d2a44 32%,#071725 75%,#081321 100%);
+ border:1px solid #27536c;
+ box-shadow:inset 0 1px 0 #74b5c22e;
+}
+.spatial-workspace .sp-graph-node {
+ background:#122b40e8;
+ color:#f3fafc;
+ border:1px solid #70c9ff85;
+ box-shadow:0 8px 22px #03121e55;
+ transition:background-color 180ms cubic-bezier(.22,1,.36,1),
+   border-color 180ms cubic-bezier(.22,1,.36,1),
+   transform 180ms cubic-bezier(.22,1,.36,1);
+}
+.spatial-workspace .sp-graph-node span { color:#b4cad7; }
+.spatial-workspace .sp-graph-node[data-group="control"] {border-color:var(--sp-vivid-control);background:#174a4a;}
+.spatial-workspace .sp-graph-node[data-group="graph"] {border-color:var(--sp-vivid-graph);background:#173b57;}
+.spatial-workspace .sp-graph-node[data-group="knowledge"] {border-color:var(--sp-vivid-knowledge);background:#342d54;}
+.spatial-workspace .sp-graph-node[data-group="engineering"] {border-color:var(--sp-vivid-engineering);background:#50392d;}
+.spatial-workspace .sp-graph-node[aria-pressed="true"] {
+ outline:2px solid #f6f9fe;
+ outline-offset:3px;
+ border-color:#f6f9fe;
+ box-shadow:0 10px 34px #020e1c70;
+}
+.spatial-workspace .sp-graph-node:focus-visible,
+.spatial-workspace .sp-three-toggle:focus-visible,
+.spatial-workspace .sp-motion-controls select:focus-visible {
+ outline:3px solid #f5c573;
+ outline-offset:4px;
+}
+.spatial-workspace .sp-graph-node:active {filter:brightness(1.14);}
+.spatial-workspace .sp-graph-stage .sp-three-canvas {opacity:1;}
+.spatial-workspace .sp-spectrum-legend {
+ position:absolute;top:16px;left:18px;right:18px;
+ z-index:2;display:flex;flex-wrap:wrap;gap:7px 12px;align-items:center;
+ padding:8px 11px;
+ width:fit-content;max-width:calc(100% - 36px);
+ border:1px solid #b6d0d734;
+ border-radius:7px;
+ background:#081825d8;
+ color:#e0eff5;
+ font-size:10px;
+ line-height:1.5;
+ pointer-events:none;
+}
+.spatial-workspace .sp-spectrum-legend>span {display:inline-flex;align-items:center;gap:6px;}
+.spatial-workspace .sp-spectrum-dot {display:inline-block;width:7px;height:7px;border-radius:50%;flex:none;}
+.spatial-workspace .sp-spectrum-dot--control {background:var(--sp-vivid-control);}
+.spatial-workspace .sp-spectrum-dot--graph {background:var(--sp-vivid-graph);}
+.spatial-workspace .sp-spectrum-dot--knowledge {background:var(--sp-vivid-knowledge);}
+.spatial-workspace .sp-spectrum-dot--engineering {background:var(--sp-vivid-engineering);}
+.spatial-workspace .sp-three-toggle[aria-pressed="true"] {
+ background:#153f4b;color:#ffffff!important;border-color:#2d7889;
+ box-shadow:inset 0 1px 0 #ffffff23;
+}
+.spatial-workspace .sp-three-toggle:not(:disabled):active {transform:scale(.985);}
+@media(max-width:790px){
+ .spatial-workspace .sp-spectrum-legend {gap:5px 9px;top:10px;left:10px;right:10px;max-width:calc(100% - 20px);font-size:9px;}
+ .spatial-workspace .sp-graph-node {transition-duration:150ms;}
+}
+@media(prefers-reduced-motion:reduce){
+ .spatial-workspace .sp-graph-node,.spatial-workspace .sp-three-toggle {transition:none;transform:none;}
+}

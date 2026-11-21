@@ -1,8 +1,11 @@
 import {projectSpatialSignals, selectSheetRows, SPATIAL_DATASETS, GRAPH_NODES} from './spatial-command-model.mjs';
 import {currentSpatialMemory, spatialViewFromHash} from './lib/spatial-view-memory.mjs';
+import {mountGraphifyArchitecture} from './graphify-architecture-ui.mjs';
+import {categoryForSpatialNode} from './spatial-visual-model.mjs';
 
 const $=id=>document.getElementById(id);
 const snapshot={current:projectSpatialSignals(null)};
+let architectureLens=null;
 let motion='subtle';
 let selectedNode='VAOS';
 let threeScene=null, threeLoading=false, threeRevision=0;
@@ -40,6 +43,7 @@ function observedDate(){const pieces=new Intl.DateTimeFormat('en-GB',{timeZone:'
 function windowPeriod(){const to=observedDate(),[y,m,d]=to.split('-').map(Number);const from=new Date(Date.UTC(y,m-1,d)-29*86400000).toISOString().slice(0,10);return {from,to}}
 function renderSignals(){
  const s=snapshot.current;
+ architectureLens?.setBusinessStatus(s.status);
  text('sp-observed',s.observed+' / '+s.expected);
  text('sp-observed-note',s.observed?s.observed+' signed aggregate families observed':'No trusted aggregate available');
  text('sp-confidence',s.status);
@@ -104,7 +108,7 @@ function renderGraph(){
   if(!GRAPH_NODES.find(n=>n.id===id))continue;
   const button=document.createElement('button');button.type='button';button.className='sp-graph-node';
   button.style.setProperty('--x',x);button.style.setProperty('--y',y);button.style.setProperty('--z',z);
-  button.dataset.group=id==='VAOS'||id==='VYNDI OS'?'control':'knowledge';
+  button.dataset.group=categoryForSpatialNode(id);
   button.setAttribute('aria-pressed',String(id==='VAOS'));button.textContent=id;
   const category=document.createElement('span');category.textContent=id==='VAOS'||id==='VYNDI OS'?'Control':'Knowledge';
   button.append(category);
@@ -130,7 +134,8 @@ function attachSpatialMotion(){
  });
  stage.addEventListener('pointerleave',()=>apply(-12,-10));
  $('sp-motion').addEventListener('change',event=>{
-  motion=event.target.value;if(motion==='off'||reduce)apply(0,0);else apply(-12,-10);
+  motion=event.target.value;threeScene?.setMotion(motion);
+  if(motion==='off'||reduce)apply(0,0);else apply(-12,-10);
  });
  if(reduce){$('sp-motion').value='off';$('sp-motion').disabled=true;motion='off';apply(0,0);}
 }
@@ -162,7 +167,9 @@ async function toggleSpatialThree(){
   if(revision!==threeRevision || $('sp-lineage').hidden)return;
   const scene=await mountSpatialThree($('sp-graph-stage'),layout,{
    onSelect:()=>selectedNode,
-   reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+   reducedMotion:window.matchMedia?.('(prefers-reduced-motion: reduce)').matches,
+   motion,
+   onUnavailable:()=>disableThree()
   });
   if(revision!==threeRevision || $('sp-lineage').hidden){scene.dispose();return;}
   threeScene=scene;
@@ -196,6 +203,8 @@ async function initialize(){
   const response=await fetch('/api/session',{credentials:'same-origin',cache:'no-store',headers:{Accept:'application/json'}});
   if(!response.ok || (await response.json()).authenticated!==true)throw new Error('AUTH_REQUIRED');
   msg.hidden=true;$('sp-main').hidden=false;
+  architectureLens=mountGraphifyArchitecture($('graphify-code-lens-spatial'),{businessStatus:snapshot.current.status});
+  window.addEventListener('pagehide',()=>architectureLens?.dispose(),{once:true});
   const select=$('sp-dataset');for(const item of SPATIAL_DATASETS){const opt=document.createElement('option');opt.value=item.id;opt.textContent=item.label;select.append(opt);}
   document.querySelectorAll('[data-tab]').forEach(btn=>btn.addEventListener('click',()=>setTab(btn.dataset.tab)));
   select.addEventListener('change',()=>{renderSheet();viewMemory.save('sheets',select.value);});
